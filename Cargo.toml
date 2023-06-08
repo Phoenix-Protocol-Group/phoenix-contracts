@@ -1,5 +1,5 @@
 [workspace]
-members = []
+members = ["contracts/*"]
 
 [workspace.package]
 version = "0.1.0"
@@ -8,10 +8,9 @@ license = "GPL 3.0"
 repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
 
 [workspace.dependencies]
-[dependencies]
 soroban-sdk = "0.8.4"
 
-[dev_dependencies]
+[workspace.dev_dependencies]
 soroban-sdk = { version = "0.8.4", features = ["testutils"] }
 
 [profile.release]
