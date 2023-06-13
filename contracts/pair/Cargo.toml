@@ -1,5 +1,5 @@
 [package]
-name = "phoenix-pool"
+name = "phoenix-pair"
 version = { workspace = true }
 authors = ["TotallyNotJakub <totallynotjakub@proton.me>"]
 repository = { workspace = true }
