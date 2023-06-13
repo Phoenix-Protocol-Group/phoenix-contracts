@@ -1,0 +1,16 @@
+[package]
+name = "phoenix-pair"
+version = { workspace = true }
+authors = ["TotallyNotJakub <totallynotjakub@proton.me>"]
+repository = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+testutils = ["soroban-sdk/testutils"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
