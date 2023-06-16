@@ -56,35 +56,35 @@ pub mod utils {
             .deploy(token_wasm_hash)
     }
 
-    pub fn save_total_shares(e: &Env, amount: i128) {
+    pub fn save_total_shares(e: &Env, amount: u128) {
         e.storage().set(&DataKey::TotalShares, &amount)
     }
 
-    pub fn save_pool_balance_a(e: &Env, amount: i128) {
+    pub fn save_pool_balance_a(e: &Env, amount: u128) {
         e.storage().set(&DataKey::ReserveA, &amount)
     }
 
-    pub fn save_pool_balance_b(e: &Env, amount: i128) {
+    pub fn save_pool_balance_b(e: &Env, amount: u128) {
         e.storage().set(&DataKey::ReserveB, &amount)
     }
 
-    pub fn mint_shares(e: &Env, share_token: Address, to: Address, amount: i128) {
+    pub fn mint_shares(e: &Env, share_token: Address, to: Address, amount: u128) {
         let total = get_total_shares(e);
 
-        token_contract::Client::new(e, &share_token).mint(&to, &amount);
+        token_contract::Client::new(e, &share_token).mint(&to, &(amount as i128));
 
         save_total_shares(e, total + amount);
     }
 
     // queries
-    pub fn get_total_shares(e: &Env) -> i128 {
+    pub fn get_total_shares(e: &Env) -> u128 {
         e.storage().get_unchecked(&DataKey::TotalShares).unwrap()
     }
-    pub fn get_pool_balance_a(e: &Env) -> i128 {
+    pub fn get_pool_balance_a(e: &Env) -> u128 {
         e.storage().get_unchecked(&DataKey::ReserveA).unwrap()
     }
 
-    pub fn get_pool_balance_b(e: &Env) -> i128 {
+    pub fn get_pool_balance_b(e: &Env) -> u128 {
         e.storage().get_unchecked(&DataKey::ReserveB).unwrap()
     }
 
@@ -93,27 +93,32 @@ pub mod utils {
     }
 
     pub fn get_deposit_amounts(
-        desired_a: i128,
-        min_a: i128,
-        desired_b: i128,
-        min_b: i128,
-        pool_balance_a: i128,
-        pool_balance_b: i128,
-    ) -> (i128, i128) {
+        desired_a: u128,
+        min_a: u128,
+        desired_b: u128,
+        min_b: u128,
+        pool_balance_a: u128,
+        pool_balance_b: u128,
+    ) -> (u128, u128) {
         if pool_balance_a == 0 && pool_balance_b == 0 {
             return (desired_a, desired_b);
         }
 
+        // determines the amount of asset B proportionally based on the desired amount of asset A
         let amount_b = desired_a * pool_balance_b / pool_balance_a;
         if amount_b <= desired_b {
             if amount_b < min_b {
-                panic!("amount_b less than min")
+                panic!(
+                    "Deposit amount for asset B ({}) is less than the minimum requirement ({})",
+                    amount_b, min_b
+                );
             }
             (desired_a, amount_b)
         } else {
+            // as above
             let amount_a = desired_b * pool_balance_a / pool_balance_b;
             if amount_a > desired_a || desired_a < min_a {
-                panic!("amount_a invalid")
+                panic!("Deposit amount for asset A ({}) is invalid. Either it exceeds the desired amount ({}) or falls below the minimum requirement ({})", amount_a, desired_a, min_a);
             }
             (amount_a, desired_b)
         }
