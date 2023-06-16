@@ -30,7 +30,14 @@ pub trait LiquidityPoolTrait {
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
     // is determined based on the difference between the reserves stored by this contract, and
     // the actual balance of token_a and token_b for this contract.
-    fn deposit(e: Env, to: Address, desired_a: u128, min_a: u128, desired_b: u128, min_b: u128);
+    fn provide_liquidity(
+        e: Env,
+        to: Address,
+        desired_a: u128,
+        min_a: u128,
+        desired_b: u128,
+        min_b: u128,
+    );
 
     // If "buy_a" is true, the swap will buy token_a and sell token_b. This is flipped if "buy_a" is false.
     // "out" is the amount being bought, with in_max being a safety to make sure you receive at least that amount.
@@ -40,7 +47,13 @@ pub trait LiquidityPoolTrait {
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
     // corresponding amount of token_a and token_b to "to".
     // Returns amount of both tokens withdrawn
-    fn withdraw(e: Env, to: Address, share_amount: u128, min_a: u128, min_b: u128) -> (u128, u128);
+    fn withdraw_liquidity(
+        e: Env,
+        to: Address,
+        share_amount: u128,
+        min_a: u128,
+        min_b: u128,
+    ) -> (u128, u128);
 
     // Returns the address for the pool share token
     fn query_share_token_address(e: Env) -> Address;
@@ -86,7 +99,14 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::save_pool_balance_b(&env, 0);
     }
 
-    fn deposit(env: Env, to: Address, desired_a: u128, min_a: u128, desired_b: u128, min_b: u128) {
+    fn provide_liquidity(
+        env: Env,
+        to: Address,
+        desired_a: u128,
+        min_a: u128,
+        desired_b: u128,
+        min_b: u128,
+    ) {
         // Depositor needs to authorize the deposit
         to.require_auth();
 
@@ -147,7 +167,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         unimplemented!()
     }
 
-    fn withdraw(
+    fn withdraw_liquidity(
         _e: Env,
         _to: Address,
         _share_amount: u128,
