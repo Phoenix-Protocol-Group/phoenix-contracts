@@ -13,13 +13,13 @@ mod token_contract {
     );
 }
 
-pub struct LiquidityPool;
-
 // Metadata that is added on to the WASM custom section
 contractmeta!(
     key = "Description",
     val = "Phoenix Protocol XYK Liquidity Pool"
 );
+
+pub struct LiquidityPool;
 
 pub trait LiquidityPoolTrait {
     // Sets the token contract addresses for this pool
@@ -29,11 +29,9 @@ pub trait LiquidityPoolTrait {
         token_wasm_hash: BytesN<32>,
         token_a: Address,
         token_b: Address,
+        share_token_decimals: u32,
         fee_recipient: Address,
     );
-
-    // Returns the token contract address for the pool share token
-    fn share_id(e: Env) -> Address;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
     // is determined based on the difference between the reserves stored by this contract, and
@@ -49,6 +47,9 @@ pub trait LiquidityPoolTrait {
     // corresponding amount of token_a and token_b to "to".
     // Returns amount of both tokens withdrawn
     fn withdraw(e: Env, to: Address, share_amount: i128, min_a: i128, min_b: i128) -> (i128, i128);
+
+    // Returns the address for the pool share token
+    fn query_share_token_address(e: Env) -> Address;
 }
 
 #[contractimpl]
@@ -58,6 +59,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_wasm_hash: BytesN<32>,
         token_a: Address,
         token_b: Address,
+        share_token_decimals: u32,
         _fee_recipient: Address,
     ) {
         // Token order validation to make sure only one instance of a pool can exist
@@ -72,7 +74,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             // admin
             &env.current_contract_address(),
             // number of decimals on the share token
-            &7u32,
+            &share_token_decimals,
             // name
             &Bytes::from_slice(&env, b"Pool Share Token"),
             // symbol
@@ -88,10 +90,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::put_total_shares(&env, 0);
         utils::put_reserve_a(&env, 0);
         utils::put_reserve_b(&env, 0);
-    }
-
-    fn share_id(_e: Env) -> Address {
-        unimplemented!()
     }
 
     fn deposit(env: Env, to: Address, desired_a: i128, min_a: i128, desired_b: i128, min_b: i128) {
@@ -150,6 +148,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         _min_b: i128,
     ) -> (i128, i128) {
         unimplemented!()
+    }
+
+    // Queries
+
+    fn query_share_token_address(env: Env) -> Address {
+        get_config(&env).share_token
     }
 }
 
