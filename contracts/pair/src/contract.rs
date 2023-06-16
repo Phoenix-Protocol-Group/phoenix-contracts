@@ -87,16 +87,19 @@ impl LiquidityPoolTrait for LiquidityPool {
             share_token: share_token_address,
         };
         save_config(&env, config);
-        utils::put_total_shares(&env, 0);
-        utils::put_reserve_a(&env, 0);
-        utils::put_reserve_b(&env, 0);
+        utils::save_total_shares(&env, 0);
+        utils::save_pool_balance_a(&env, 0);
+        utils::save_pool_balance_b(&env, 0);
     }
 
     fn deposit(env: Env, to: Address, desired_a: i128, min_a: i128, desired_b: i128, min_b: i128) {
         // Depositor needs to authorize the deposit
         to.require_auth();
 
-        let (reserve_a, reserve_b) = (utils::get_reserve_a(&env), utils::get_reserve_b(&env));
+        let (reserve_a, reserve_b) = (
+            utils::get_pool_balance_a(&env),
+            utils::get_pool_balance_b(&env),
+        );
 
         // Calculate deposit amounts
         let amounts =
@@ -132,8 +135,8 @@ impl LiquidityPoolTrait for LiquidityPool {
             to,
             new_total_shares - total_shares,
         );
-        utils::put_reserve_a(&env, balance_a);
-        utils::put_reserve_b(&env, balance_b);
+        utils::save_pool_balance_a(&env, balance_a);
+        utils::save_pool_balance_b(&env, balance_b);
     }
 
     fn swap(_e: Env, _to: Address, _buy_a: bool, _out: i128, _in_max: i128) {
@@ -175,15 +178,15 @@ mod utils {
             .deploy(token_wasm_hash)
     }
 
-    pub fn put_total_shares(e: &Env, amount: i128) {
+    pub fn save_total_shares(e: &Env, amount: i128) {
         e.storage().set(&DataKey::TotalShares, &amount)
     }
 
-    pub fn put_reserve_a(e: &Env, amount: i128) {
+    pub fn save_pool_balance_a(e: &Env, amount: i128) {
         e.storage().set(&DataKey::ReserveA, &amount)
     }
 
-    pub fn put_reserve_b(e: &Env, amount: i128) {
+    pub fn save_pool_balance_b(e: &Env, amount: i128) {
         e.storage().set(&DataKey::ReserveB, &amount)
     }
 
@@ -192,18 +195,18 @@ mod utils {
 
         token_contract::Client::new(e, &share_token).mint(&to, &amount);
 
-        put_total_shares(e, total + amount);
+        save_total_shares(e, total + amount);
     }
 
     // queries
     pub fn get_total_shares(e: &Env) -> i128 {
         e.storage().get_unchecked(&DataKey::TotalShares).unwrap()
     }
-    pub fn get_reserve_a(e: &Env) -> i128 {
+    pub fn get_pool_balance_a(e: &Env) -> i128 {
         e.storage().get_unchecked(&DataKey::ReserveA).unwrap()
     }
 
-    pub fn get_reserve_b(e: &Env) -> i128 {
+    pub fn get_pool_balance_b(e: &Env) -> i128 {
         e.storage().get_unchecked(&DataKey::ReserveB).unwrap()
     }
 
@@ -216,21 +219,21 @@ mod utils {
         min_a: i128,
         desired_b: i128,
         min_b: i128,
-        reserve_a: i128,
-        reserve_b: i128,
+        pool_balance_a: i128,
+        pool_balance_b: i128,
     ) -> (i128, i128) {
-        if reserve_a == 0 && reserve_b == 0 {
+        if pool_balance_a == 0 && pool_balance_b == 0 {
             return (desired_a, desired_b);
         }
 
-        let amount_b = desired_a * reserve_b / reserve_a;
+        let amount_b = desired_a * pool_balance_b / pool_balance_a;
         if amount_b <= desired_b {
             if amount_b < min_b {
                 panic!("amount_b less than min")
             }
             (desired_a, amount_b)
         } else {
-            let amount_a = desired_b * reserve_a / reserve_b;
+            let amount_a = desired_b * pool_balance_a / pool_balance_b;
             if amount_a > desired_a || desired_a < min_a {
                 panic!("amount_a invalid")
             }
