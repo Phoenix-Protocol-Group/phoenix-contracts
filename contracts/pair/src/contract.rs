@@ -103,6 +103,13 @@ impl LiquidityPoolTrait for LiquidityPool {
             pool_balance_b,
         );
 
+        // TODO: Add slippage_tolerance to configuration
+        assert_slippage_tolerance(
+            None,
+            &[amounts.0, amounts.1],
+            &[pool_balance_a, pool_balance_b],
+        );
+
         let config = get_config(&env);
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
