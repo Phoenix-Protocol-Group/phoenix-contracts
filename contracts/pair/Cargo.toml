@@ -14,3 +14,4 @@ testutils = ["soroban-sdk/testutils"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
+num-integer = { workspace = true }

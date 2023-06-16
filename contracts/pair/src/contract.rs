@@ -1,8 +1,18 @@
 use soroban_sdk::{
-    contractimpl, contractmeta, Address, Bytes, BytesN, ConversionError, Env, RawVal, TryFromVal,
+    contractimpl, contractmeta, xdr::ToXdr, Address, Bytes, BytesN, ConversionError, Env, RawVal,
+    TryFromVal,
 };
 
-use crate::token::{create_contract, token};
+use num_integer::Roots;
+
+mod token_contract {
+    // The import will code generate:
+    // - A ContractClient type that can be used to invoke functions on the contract.
+    // - Any types in the contract that were annotated with #[contracttype].
+    soroban_sdk::contractimport!(
+        file = "../token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
+    );
+}
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -68,7 +78,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_wasm_hash: BytesN<32>,
         token_a: Address,
         token_b: Address,
-        fee_recipient: Address,
+        _fee_recipient: Address,
     ) {
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
@@ -76,41 +86,91 @@ impl LiquidityPoolTrait for LiquidityPool {
         }
 
         // deploy token contract
-        let share_contract = create_contract(&e, &token_wasm_hash, &token_a, &token_b);
-        token::Client::new(&e, &share_contract).initialize(
+        let share_contract_address =
+            utils::deploy_token_contract(&e, &token_wasm_hash, &token_a, &token_b);
+        token_contract::Client::new(&e, &share_contract_address).initialize(
+            // admin
             &e.current_contract_address(),
+            // number of decimals on the share token
             &7u32,
+            // name
             &Bytes::from_slice(&e, b"Pool Share Token"),
+            // symbol
             &Bytes::from_slice(&e, b"POOL"),
         );
 
         utils::put_token_a(&e, token_a);
         utils::put_token_b(&e, token_b);
-        utils::put_token_share(&e, share_contract.try_into().unwrap());
+        utils::put_token_share(&e, share_contract_address);
         utils::put_total_shares(&e, 0);
         utils::put_reserve_a(&e, 0);
         utils::put_reserve_b(&e, 0);
     }
 
-    fn share_id(e: Env) -> Address {
+    fn share_id(_e: Env) -> Address {
         unimplemented!()
     }
 
     fn deposit(e: Env, to: Address, desired_a: i128, min_a: i128, desired_b: i128, min_b: i128) {
+        // Depositor needs to authorize the deposit
+        to.require_auth();
+
+        let (reserve_a, reserve_b) = (utils::get_reserve_a(&e), utils::get_reserve_b(&e));
+
+        // Calculate deposit amounts
+        let amounts =
+            utils::get_deposit_amounts(desired_a, min_a, desired_b, min_b, reserve_a, reserve_b);
+
+        let token_a_client = token_contract::Client::new(&e, &utils::get_token_a(&e));
+        let token_b_client = token_contract::Client::new(&e, &utils::get_token_b(&e));
+
+        token_a_client.transfer(&to, &e.current_contract_address(), &amounts.0);
+        token_b_client.transfer(&to, &e.current_contract_address(), &amounts.1);
+
+        // Now calculate how many new pool shares to mint
+        let (balance_a, balance_b) = (utils::get_balance_a(&e), utils::get_balance_b(&e));
+        let total_shares = utils::get_total_shares(&e);
+
+        let zero = 0;
+        let new_total_shares = if reserve_a > zero && reserve_b > zero {
+            let shares_a = (balance_a * total_shares) / reserve_a;
+            let shares_b = (balance_b * total_shares) / reserve_b;
+            shares_a.min(shares_b)
+        } else {
+            (balance_a * balance_b).sqrt()
+        };
+
+        utils::mint_shares(&e, to, new_total_shares - total_shares);
+        utils::put_reserve_a(&e, balance_a);
+        utils::put_reserve_b(&e, balance_b);
+    }
+
+    fn swap(_e: Env, _to: Address, _buy_a: bool, _out: i128, _in_max: i128) {
         unimplemented!()
     }
 
-    fn swap(e: Env, to: Address, buy_a: bool, out: i128, in_max: i128) {
-        unimplemented!()
-    }
-
-    fn withdraw(e: Env, to: Address, share_amount: i128, min_a: i128, min_b: i128) -> (i128, i128) {
+    fn withdraw(_e: Env, _to: Address, _share_amount: i128, _min_a: i128, _min_b: i128) -> (i128, i128) {
         unimplemented!()
     }
 }
 
 mod utils {
     use super::*;
+
+    pub fn deploy_token_contract(
+        e: &Env,
+        token_wasm_hash: &BytesN<32>,
+        token_a: &Address,
+        token_b: &Address,
+    ) -> Address {
+        let mut salt = Bytes::new(e);
+        salt.append(&token_a.to_xdr(e));
+        salt.append(&token_b.to_xdr(e));
+        let salt = e.crypto().sha256(&salt);
+        e.deployer()
+            .with_current_contract(&salt)
+            .deploy(token_wasm_hash)
+    }
 
     pub fn put_token_a(e: &Env, contract: Address) {
         e.storage().set(&DataKey::TokenA, &contract);
@@ -134,5 +194,78 @@ mod utils {
 
     pub fn put_reserve_b(e: &Env, amount: i128) {
         e.storage().set(&DataKey::ReserveB, &amount)
+    }
+
+    pub fn mint_shares(e: &Env, to: Address, amount: i128) {
+        let total = get_total_shares(e);
+        let share_contract_id = get_token_share(e);
+
+        token_contract::Client::new(e, &share_contract_id).mint(&to, &amount);
+
+        put_total_shares(e, total + amount);
+    }
+
+    // queries
+    fn get_token_share(e: &Env) -> Address {
+        e.storage().get_unchecked(&DataKey::TokenShare).unwrap()
+    }
+
+    pub fn get_total_shares(e: &Env) -> i128 {
+        e.storage().get_unchecked(&DataKey::TotalShares).unwrap()
+    }
+
+    pub fn get_token_a(e: &Env) -> Address {
+        e.storage().get_unchecked(&DataKey::TokenA).unwrap()
+    }
+
+    pub fn get_token_b(e: &Env) -> Address {
+        e.storage().get_unchecked(&DataKey::TokenB).unwrap()
+    }
+
+    pub fn get_reserve_a(e: &Env) -> i128 {
+        e.storage().get_unchecked(&DataKey::ReserveA).unwrap()
+    }
+
+    pub fn get_reserve_b(e: &Env) -> i128 {
+        e.storage().get_unchecked(&DataKey::ReserveB).unwrap()
+    }
+
+    pub fn get_balance(e: &Env, contract: Address) -> i128 {
+        token_contract::Client::new(e, &contract).balance(&e.current_contract_address())
+    }
+
+    pub fn get_balance_a(e: &Env) -> i128 {
+        get_balance(e, get_token_a(e))
+    }
+
+    pub fn get_balance_b(e: &Env) -> i128 {
+        get_balance(e, get_token_b(e))
+    }
+
+    pub fn get_deposit_amounts(
+        desired_a: i128,
+        min_a: i128,
+        desired_b: i128,
+        min_b: i128,
+        reserve_a: i128,
+        reserve_b: i128,
+    ) -> (i128, i128) {
+        if reserve_a == 0 && reserve_b == 0 {
+            return (desired_a, desired_b);
+        }
+
+        let amount_b = desired_a * reserve_b / reserve_a;
+        if amount_b <= desired_b {
+            if amount_b < min_b {
+                panic!("amount_b less than min")
+            }
+            (desired_a, amount_b)
+        } else {
+            let amount_a = desired_b * reserve_a / reserve_b;
+            if amount_a > desired_a || desired_a < min_a {
+                panic!("amount_a invalid")
+            }
+            (amount_a, desired_b)
+        }
     }
 }

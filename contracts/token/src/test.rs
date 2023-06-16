@@ -97,16 +97,16 @@ fn test() {
             (&user2, false).into_val(&e),
         )]
     );
-    assert!(!token.authorized(&user2));
+    assert_eq!(token.authorized(&user2), false);
 
     token.set_authorized(&user3, &true);
-    assert!(token.authorized(&user3));
+    assert_eq!(token.authorized(&user3), true);
 
     token.clawback(&user3, &100);
     assert_eq!(
         e.auths(),
         [(
-            admin2,
+            admin2.clone(),
             token.address.clone(),
             Symbol::short("clawback"),
             (&user3, 100_i128).into_val(&e),
