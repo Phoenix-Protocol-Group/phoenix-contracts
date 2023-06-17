@@ -24,7 +24,6 @@ pub trait LiquidityPoolTrait {
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
-        fee_recipient: Address,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -67,7 +66,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
-        _fee_recipient: Address,
     ) {
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
