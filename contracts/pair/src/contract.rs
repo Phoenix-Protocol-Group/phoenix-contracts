@@ -19,7 +19,7 @@ pub trait LiquidityPoolTrait {
     // Sets the token contract addresses for this pool
     // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token
     fn initialize(
-        e: Env,
+        env: Env,
         token_wasm_hash: BytesN<32>,
         token_a: Address,
         token_b: Address,
@@ -30,8 +30,8 @@ pub trait LiquidityPoolTrait {
     // is determined based on the difference between the reserves stored by this contract, and
     // the actual balance of token_a and token_b for this contract.
     fn provide_liquidity(
-        e: Env,
-        to: Address,
+        env: Env,
+        depositor: Address,
         desired_a: u128,
         min_a: u128,
         desired_b: u128,
@@ -41,7 +41,15 @@ pub trait LiquidityPoolTrait {
     // If "buy_a" is true, the swap will buy token_a and sell token_b. This is flipped if "buy_a" is false.
     // "out" is the amount being bought, with in_max being a safety to make sure you receive at least that amount.
     // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to "to".
-    fn swap(e: Env, to: Address, buy_a: bool, out: u128, in_max: u128);
+    fn swap(
+        env: Env,
+        sender: Address,
+        buy_a: bool,
+        out: u128,
+        in_max: u128,
+        belief_price: u128,
+        max_spread: u128,
+    );
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
     // corresponding amount of token_a and token_b to "to".
@@ -99,14 +107,14 @@ impl LiquidityPoolTrait for LiquidityPool {
 
     fn provide_liquidity(
         env: Env,
-        to: Address,
+        depositor: Address,
         desired_a: u128,
         min_a: u128,
         desired_b: u128,
         min_b: u128,
     ) {
         // Depositor needs to authorize the deposit
-        to.require_auth();
+        depositor.require_auth();
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
@@ -134,8 +142,16 @@ impl LiquidityPoolTrait for LiquidityPool {
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
         // Move tokens from client's wallet to the contract
-        token_a_client.transfer(&to, &env.current_contract_address(), &(amounts.0 as i128));
-        token_b_client.transfer(&to, &env.current_contract_address(), &(amounts.1 as i128));
+        token_a_client.transfer(
+            &depositor,
+            &env.current_contract_address(),
+            &(amounts.0 as i128),
+        );
+        token_b_client.transfer(
+            &depositor,
+            &env.current_contract_address(),
+            &(amounts.1 as i128),
+        );
 
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, config.token_a) as u128;
@@ -154,14 +170,36 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::mint_shares(
             &env,
             config.share_token,
-            to,
+            depositor,
             new_total_shares - total_shares,
         );
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
     }
 
-    fn swap(_e: Env, _to: Address, _buy_a: bool, _out: u128, _in_max: u128) {
+    fn swap(
+        env: Env,
+        sender: Address,
+        buy_a: bool,
+        buy_amount: u128,
+        sell_amount_max: u128,
+        belief_price: u128,
+        max_spread: u128,
+    ) {
+        sender.require_auth();
+
+        let pool_balance_a = utils::get_pool_balance_a(&env);
+        let pool_balance_b = utils::get_pool_balance_b(&env);
+        let (pool_balance_sell, pool_balance_buy) = if buy_a {
+            (pool_balance_b, pool_balance_a)
+        } else {
+            (pool_balance_a, pool_balance_b)
+        };
+
+        if max_spread < calculate_spread(belief_price, max_spread, buy_amount, sell_amount_max) {
+            panic!("Max spread exceeded");
+        }
+
         unimplemented!()
     }
 
@@ -182,7 +220,7 @@ impl LiquidityPoolTrait for LiquidityPool {
     }
 }
 
-pub fn assert_slippage_tolerance(
+fn assert_slippage_tolerance(
     slippage_tolerance: Option<u128>,
     deposits: &[u128; 2],
     pools: &[u128; 2],
@@ -212,4 +250,16 @@ pub fn assert_slippage_tolerance(
             deposits, pools
         );
     }
+}
+
+fn calculate_spread(
+    belief_price: u128,
+    max_spread: u128,
+    buy_amount: u128,
+    sell_amount: u128,
+) -> u128 {
+    let buying_price = belief_price + ((belief_price * max_spread) / 100);
+    let selling_price = belief_price - ((belief_price * max_spread) / 100);
+    let spread = (buying_price * buy_amount) - (selling_price * sell_amount);
+    spread
 }
