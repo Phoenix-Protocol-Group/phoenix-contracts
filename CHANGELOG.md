@@ -10,9 +10,10 @@ and this project adheres to
 
 - initial architecture draft ([#2])
 - rust workspace with working CI ([#5])
+- implement crate to easier manipulate Decimal types ([#21])
 
 [#2]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/2
 [#5]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/5
-
+[#21]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/21
 
 [unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/blob/HEAD
