@@ -2,6 +2,7 @@ use soroban_sdk::{contractimpl, contractmeta, Address, Bytes, BytesN, Env};
 
 use num_integer::Roots;
 
+use decimal::Decimal;
 use crate::{
     storage::{get_config, save_config, utils, Config},
     token_contract,
@@ -46,8 +47,8 @@ pub trait LiquidityPoolTrait {
         sender: Address,
         sell_a: bool,
         sell_amount: u128,
-        belief_price: Option<u128>,
-        max_spread: u128,
+        belief_price: Option<u64>,
+        max_spread: u64,
     );
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
@@ -181,10 +182,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         sender: Address,
         sell_a: bool,
         sell_amount: u128,
-        belief_price: Option<u128>,
-        max_spread: u128,
+        belief_price: Option<u64>,
+        max_spread: u64,
     ) {
         sender.require_auth();
+
+        let belief_price = belief_price.map(|val| Decimal::percent(val));
+        let max_spread = Decimal::percent(max_spread);
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
@@ -198,7 +202,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             pool_balance_sell,
             pool_balance_buy,
             sell_amount,
-            1_000u128, // TODO: Add comission rate to the message
+            Decimal::percent(1), // TODO: Add comission rate to the message
         );
 
         assert_max_spread(
@@ -267,12 +271,12 @@ impl LiquidityPoolTrait for LiquidityPool {
 }
 
 fn assert_slippage_tolerance(
-    slippage_tolerance: Option<u128>,
+    slippage_tolerance: Option<Decimal>,
     deposits: &[u128; 2],
     pools: &[u128; 2],
 ) {
-    let default_slippage = 100; // Representing 1.00 (100%) as the default slippage tolerance
-    let max_allowed_slippage = 500; // Representing 5.00 (500%) as the maximum allowed slippage tolerance
+    let default_slippage = Decimal::percent(100); // Representing 1.00 (100%) as the default slippage tolerance
+    let max_allowed_slippage = Decimal::percent(500); // Representing 5.00 (500%) as the maximum allowed slippage tolerance
 
     let slippage_tolerance = slippage_tolerance.unwrap_or(default_slippage);
     if slippage_tolerance > max_allowed_slippage {
@@ -299,24 +303,24 @@ fn assert_slippage_tolerance(
 }
 
 pub fn assert_max_spread(
-    belief_price: Option<u128>,
-    max_spread: u128,
+    belief_price: Option<Decimal>,
+    max_spread: Decimal,
     offer_amount: u128,
     return_amount: u128,
     spread_amount: u128,
 ) {
-    let expected_return = belief_price.map(|price| (offer_amount * price) / 1_000_000);
+    let expected_return = belief_price.map(|price| offer_amount * price);
 
     let total_return = return_amount + spread_amount;
 
     let spread_ratio = if let Some(expected_return) = expected_return {
-        spread_amount * 1_000_000 / expected_return
+        spread_amount / expected_return
     } else {
-        spread_amount * 1_000_000 / total_return
+        spread_amount / total_return
     };
 
     assert!(
-        dbg!(spread_ratio) <= dbg!(max_spread),
+        spread_ratio <= max_spread,
         "Spread exceeds maximum allowed"
     );
 }
@@ -337,7 +341,7 @@ pub fn compute_swap(
     offer_pool: u128,
     ask_pool: u128,
     offer_amount: u128,
-    commission_rate: u128,
+    commission_rate: Decimal,
 ) -> (u128, u128, u128) {
     // Calculate the cross product of offer_pool and ask_pool
     let cp: u128 = offer_pool * ask_pool;
@@ -347,12 +351,12 @@ pub fn compute_swap(
 
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
     let spread_amount: u128 =
-        (dbg!(offer_amount) * dbg!(ask_pool) / dbg!(offer_pool)) - return_amount;
+        (offer_amount * ask_pool / offer_pool) - return_amount;
 
-    let commission_amount: u128 = return_amount * (commission_rate / 10);
+    let commission_amount: u128 = return_amount * commission_rate;
 
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
-    let return_amount: u128 = dbg!(return_amount) - dbg!(commission_amount);
+    let return_amount: u128 = return_amount - commission_amount;
 
     (return_amount, spread_amount, commission_amount)
 }
