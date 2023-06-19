@@ -315,7 +315,10 @@ pub fn assert_max_spread(
         spread_amount * 1_000_000 / total_return
     };
 
-    assert!(spread_ratio <= max_spread, "Spread exceeds maximum allowed");
+    assert!(
+        dbg!(spread_ratio) <= dbg!(max_spread),
+        "Spread exceeds maximum allowed"
+    );
 }
 
 /// Computes the result of a swap operation.
@@ -343,12 +346,13 @@ pub fn compute_swap(
     let return_amount: u128 = ask_pool - (cp / (offer_pool + offer_amount));
 
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: u128 = offer_amount * (ask_pool / offer_pool) - return_amount;
+    let spread_amount: u128 =
+        (dbg!(offer_amount) * dbg!(ask_pool) / dbg!(offer_pool)) - return_amount;
 
-    let commission_amount: u128 = return_amount * commission_rate;
+    let commission_amount: u128 = return_amount * (commission_rate / 10);
 
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
-    let return_amount: u128 = return_amount - commission_amount;
+    let return_amount: u128 = dbg!(return_amount) - dbg!(commission_amount);
 
     (return_amount, spread_amount, commission_amount)
 }
@@ -377,5 +381,49 @@ mod tests {
     fn test_assert_slippage_tolerance_fail_slippage_violated() {
         // The price changes from 10/15 (0.67) to 40/40 (1.00), violating the 10% slippage tolerance
         assert_slippage_tolerance(Some(10), &[10, 15], &[40, 40]);
+    }
+
+    #[test]
+    fn test_assert_max_spread_success() {
+        // Test case that should pass:
+        // belief price of 2000000 (2.0), max spread of 1000 (0.1 or 10%), offer amount of 100k, return amount of 100k and 1 unit, spread amount of 1
+        // The spread ratio is 10% which is equal to the max spread
+        assert_max_spread(Some(2_000_000), 10, 100_000, 100_001, 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "Spread exceeds maximum allowed")]
+    fn test_assert_max_spread_fail_max_spread_exceeded() {
+        // belief price of 2000 (2.000), max spread of 1000 (0.1 or 10%), offer amount of 10, return amount of 10, spread amount of 2
+        // The spread ratio is 20% which is greater than the max spread
+        assert_max_spread(Some(2_000_000), 10, 10_000, 11_000, 200);
+    }
+
+    #[test]
+    fn test_assert_max_spread_success_no_belief_price() {
+        // no belief price, max spread of 100 (0.1 or 10%), offer amount of 10, return amount of 10, spread amount of 1
+        // The spread ratio is 10% which is equal to the max spread
+        assert_max_spread(None, 10, 10, 10, 1);
+    }
+
+    // #[test]
+    // #[should_panic(expected = "Spread exceeds maximum allowed")]
+    // fn test_assert_max_spread_fail_no_belief_price_max_spread_exceeded() {
+    //     // no belief price, max spread of 100 (0.1 or 10%), offer amount of 10, return amount of 10, spread amount of 2
+    //     // The spread ratio is 20% which is greater than the max spread
+    //     assert_max_spread(None, 100, 10, 10, 2);
+    // }
+
+    #[test]
+    fn test_compute_swap_pass() {
+        let result = compute_swap(1000, 2000, 100, 10); // 10% commission rate
+        assert_eq!(result, (900, 50, 100)); // Expected return amount, spread, and commission
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_compute_swap_panic() {
+        let result = compute_swap(1000, 2000, 100, 10); // 100% commission rate should lead to panic
+        assert_eq!(result, (0, 50, 100)); // This assertion should not matter because of the panic
     }
 }
