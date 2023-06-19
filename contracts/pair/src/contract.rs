@@ -352,3 +352,30 @@ pub fn compute_swap(
 
     (return_amount, spread_amount, commission_amount)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_assert_slippage_tolerance_success() {
+        // Test case that should pass:
+        // slippage tolerance of 50 (0.5 or 50%), deposits of 10 and 20, pools of 30 and 60
+        // The price changes fall within the slippage tolerance
+        assert_slippage_tolerance(Some(50), &[10, 20], &[30, 60]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Slippage tolerance 600 exceeds the maximum allowed value")]
+    fn test_assert_slippage_tolerance_fail_tolerance_too_high() {
+        // Test case that should fail due to slippage tolerance being too high
+        assert_slippage_tolerance(Some(600), &[10, 20], &[30, 60]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Slippage tolerance violated. Deposits: [10, 15], Pools: [40, 40]")]
+    fn test_assert_slippage_tolerance_fail_slippage_violated() {
+        // The price changes from 10/15 (0.67) to 40/40 (1.00), violating the 10% slippage tolerance
+        assert_slippage_tolerance(Some(10), &[10, 15], &[40, 40]);
+    }
+}
