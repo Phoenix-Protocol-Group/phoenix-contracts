@@ -1,3 +1,6 @@
+// A lot of this code is taken from the cosmwasm-std crate, which is licensed under the Apache
+// License 2.0 - https://github.com/CosmWasm/cosmwasm.
+
 #![no_std]
 use core::ops::Mul;
 
