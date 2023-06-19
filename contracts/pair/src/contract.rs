@@ -44,10 +44,9 @@ pub trait LiquidityPoolTrait {
     fn swap(
         env: Env,
         sender: Address,
-        buy_a: bool,
-        out: u128,
-        in_max: u128,
-        belief_price: u128,
+        sell_a: bool,
+        sell_amount: u128,
+        belief_price: Option<u128>,
         max_spread: u128,
     );
 
@@ -180,27 +179,74 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn swap(
         env: Env,
         sender: Address,
-        buy_a: bool,
-        buy_amount: u128,
-        sell_amount_max: u128,
-        belief_price: u128,
+        sell_a: bool,
+        sell_amount: u128,
+        belief_price: Option<u128>,
         max_spread: u128,
     ) {
         sender.require_auth();
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
-        let (pool_balance_sell, pool_balance_buy) = if buy_a {
-            (pool_balance_b, pool_balance_a)
-        } else {
+        let (pool_balance_sell, pool_balance_buy) = if sell_a {
             (pool_balance_a, pool_balance_b)
+        } else {
+            (pool_balance_b, pool_balance_a)
         };
 
-        if max_spread < calculate_spread(belief_price, max_spread, buy_amount, sell_amount_max) {
-            panic!("Max spread exceeded");
-        }
+        let (buy_amount, spread_amount, _commission_amount) = compute_swap(
+            pool_balance_sell,
+            pool_balance_buy,
+            sell_amount,
+            1_000u128, // TODO: Add comission rate to the message
+        );
 
-        unimplemented!()
+        assert_max_spread(
+            belief_price,
+            max_spread,
+            buy_amount,
+            sell_amount, /*+ commission_amount*/
+            spread_amount,
+        );
+
+        let config = get_config(&env);
+
+        // Transfer the amount being sold to the contract
+        let (sell_token, buy_token) = if sell_a {
+            (config.token_a, config.token_b)
+        } else {
+            (config.token_b, config.token_a)
+        };
+
+        // transfer tokens to swap
+        token_contract::Client::new(&env, &sell_token).transfer(
+            &sender,
+            &env.current_contract_address(),
+            &(sell_amount as i128),
+        );
+
+        // return swapped tokens to user
+        token_contract::Client::new(&env, &buy_token).transfer(
+            &env.current_contract_address(),
+            &sender,
+            &(buy_amount as i128),
+        );
+
+        // user is offering to sell A, so they will receive B
+        // A balance is bigger, B balance is smaller
+        let (balance_a, balance_b) = if sell_a {
+            (
+                pool_balance_a + sell_amount,
+                pool_balance_b /*- protocol_fee_amount */ - buy_amount,
+            )
+        } else {
+            (
+                pool_balance_a /*- protocol_fee_amount */ - buy_amount,
+                pool_balance_b + sell_amount,
+            )
+        };
+        utils::save_pool_balance_a(&env, balance_a);
+        utils::save_pool_balance_b(&env, balance_b);
     }
 
     fn withdraw_liquidity(
@@ -252,14 +298,57 @@ fn assert_slippage_tolerance(
     }
 }
 
-fn calculate_spread(
-    belief_price: u128,
+pub fn assert_max_spread(
+    belief_price: Option<u128>,
     max_spread: u128,
-    buy_amount: u128,
-    sell_amount: u128,
-) -> u128 {
-    let buying_price = belief_price + ((belief_price * max_spread) / 100);
-    let selling_price = belief_price - ((belief_price * max_spread) / 100);
-    let spread = (buying_price * buy_amount) - (selling_price * sell_amount);
-    spread
+    offer_amount: u128,
+    return_amount: u128,
+    spread_amount: u128,
+) {
+    let expected_return = belief_price.map(|price| (offer_amount * price) / 1_000_000);
+
+    let total_return = return_amount + spread_amount;
+
+    let spread_ratio = if let Some(expected_return) = expected_return {
+        spread_amount * 1_000_000 / expected_return
+    } else {
+        spread_amount * 1_000_000 / total_return
+    };
+
+    assert!(spread_ratio <= max_spread, "Spread exceeds maximum allowed");
+}
+
+/// Computes the result of a swap operation.
+///
+/// Arguments:
+/// - `offer_pool`: Total amount of offer assets in the pool.
+/// - `ask_pool`: Total amount of ask assets in the pool.
+/// - `offer_amount`: Amount of offer assets to swap.
+/// - `commission_rate`: Total amount of fees charged for the swap.
+///
+/// Returns a tuple containing the following values:
+/// - The resulting amount of ask assets after the swap.
+/// - The spread amount, representing the difference between the expected and actual swap amounts.
+/// - The commission amount, representing the fees charged for the swap.
+pub fn compute_swap(
+    offer_pool: u128,
+    ask_pool: u128,
+    offer_amount: u128,
+    commission_rate: u128,
+) -> (u128, u128, u128) {
+    // Calculate the cross product of offer_pool and ask_pool
+    let cp: u128 = offer_pool * ask_pool;
+
+    // Calculate the resulting amount of ask assets after the swap
+    let return_amount: u128 = ask_pool - (cp / (offer_pool + offer_amount));
+
+    // Calculate the spread amount, representing the difference between the expected and actual swap amounts
+    let spread_amount: u128 = offer_amount * (ask_pool / offer_pool) - return_amount;
+
+    let commission_amount: u128 = return_amount * commission_rate;
+
+    // Deduct the commission (minus the part that goes to the protocol) from the return amount
+    let return_amount: u128 = return_amount - commission_amount;
+
+    (return_amount, spread_amount, commission_amount)
 }
