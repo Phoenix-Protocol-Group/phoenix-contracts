@@ -187,7 +187,7 @@ impl LiquidityPoolTrait for LiquidityPool {
     ) {
         sender.require_auth();
 
-        let belief_price = belief_price.map(|val| Decimal::percent(val));
+        let belief_price = belief_price.map(Decimal::percent);
         let max_spread = Decimal::percent(max_spread);
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
@@ -397,14 +397,18 @@ mod tests {
     #[test]
     #[should_panic(expected = "Spread exceeds maximum allowed")]
     fn test_assert_max_spread_fail_max_spread_exceeded() {
-        // belief price of 2.0, max spread of 10%, offer amount of 10, return amount of 10, spread amount of 2
-        // The spread ratio is 20% which is greater than the max spread
+        let belief_price = Some(Decimal::percent(250)); // belief price is 2.5
+        let max_spread = Decimal::percent(10); // 10% is the maximum allowed spread
+        let offer_amount = 100;
+        let return_amount = 100; // These values are chosen such that the spread ratio will be more than 10%
+        let spread_amount = 35;
+
         assert_max_spread(
-            Some(Decimal::percent(200)),
-            Decimal::percent(10),
-            10_000,
-            11_000,
-            200,
+            belief_price,
+            max_spread,
+            offer_amount,
+            return_amount,
+            spread_amount,
         );
     }
 
@@ -415,24 +419,23 @@ mod tests {
         assert_max_spread(None, Decimal::percent(10), 10, 10, 1);
     }
 
-    // #[test]
-    // #[should_panic(expected = "Spread exceeds maximum allowed")]
-    // fn test_assert_max_spread_fail_no_belief_price_max_spread_exceeded() {
-    //     // no belief price, max spread of 100 (0.1 or 10%), offer amount of 10, return amount of 10, spread amount of 2
-    //     // The spread ratio is 20% which is greater than the max spread
-    //     assert_max_spread(None, 100, 10, 10, 2);
-    // }
+    #[test]
+    #[should_panic(expected = "Spread exceeds maximum allowed")]
+    fn test_assert_max_spread_fail_no_belief_price_max_spread_exceeded() {
+        // no belief price, max spread of 10%, offer amount of 10, return amount of 10, spread amount of 2
+        // The spread ratio is 20% which is greater than the max spread
+        assert_max_spread(None, Decimal::percent(10), 10, 10, 2);
+    }
 
     #[test]
     fn test_compute_swap_pass() {
         let result = compute_swap(1000, 2000, 100, Decimal::percent(10)); // 10% commission rate
-        assert_eq!(result, (900, 50, 100)); // Expected return amount, spread, and commission
+        assert_eq!(result, (164, 18, 18)); // Expected return amount, spread, and commission
     }
 
     #[test]
-    #[should_panic]
-    fn test_compute_swap_panic() {
-        let result = compute_swap(1000, 2000, 100, Decimal::one()); // 100% commission rate should lead to panic
-        assert_eq!(result, (0, 50, 100)); // This assertion should not matter because of the panic
+    fn test_compute_swap_full_commission() {
+        let result = compute_swap(1000, 2000, 100, Decimal::one()); // 100% commission rate should lead to return_amount being 0
+        assert_eq!(result, (0, 18, 182));
     }
 }
