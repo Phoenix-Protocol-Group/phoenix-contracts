@@ -27,5 +27,3 @@ pub fn deploy_liquidity_pool_contract<'a>(
     pool.initialize(&token_wasm_hash, token_a, token_b, &share_token_decimals);
     pool
 }
-
-

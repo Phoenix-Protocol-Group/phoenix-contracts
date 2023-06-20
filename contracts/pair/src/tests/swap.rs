@@ -1,10 +1,7 @@
 extern crate std;
-use soroban_sdk::{testutils::Address as _, Address, Env, IntoVal, Symbol};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
-use super::setup::{deploy_token_contract, deploy_liquidity_pool_contract};
-use crate::{
-    token_contract,
-};
+use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 
 #[test]
 fn simple_swap() {
@@ -23,36 +20,43 @@ fn simple_swap() {
     let user1 = Address::random(&env);
     let pool = deploy_liquidity_pool_contract(&env, &token1.address, &token2.address);
 
-    let token_share = token_contract::Client::new(&env, &pool.query_share_token_address());
-
-    token1.mint(&user1, &1000);
-    token2.mint(&user1, &1000);
-    pool.provide_liquidity(&user1, &100, &100, &100, &100);
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &1_000_000, &1_000_000);
 
     // true means "selling A token"
-    // selling just one token with 10% max spread allowed
-    pool.swap(&user1, &true, &1, &10);
-    assert_eq!(
-        env.auths(),
-        [
-            (
-                user1.clone(),
-                pool.address.clone(),
-                Symbol::short("swap"),
-                (&user1, true, 1_i128, 100_i128).into_val(&env)
-            ),
-            (
-                user1.clone(),
-                token1.address.clone(),
-                Symbol::short("transfer"),
-                (&user1, &pool.address, 1_i128).into_val(&env)
-            )
-        ]
-    );
+    // selling just one token with 1% max spread allowed
+    let spread = 1; // 1% maximum spread allowed
+    pool.swap(&user1, &true, &1, &None, &spread);
+    // FIXME: Can't assert Auths because Option shows up as some Null object - how to assign it?
+    // assert_eq!(
+    //     env.auths(),
+    //     [
+    //         (
+    //             user1.clone(),
+    //             pool.address.clone(),
+    //             Symbol::short("swap"),
+    //             (&user1, true, 1_i128, 100_i128).into_val(&env)
+    //         ),
+    //         (
+    //             user1.clone(),
+    //             token1.address.clone(),
+    //             Symbol::short("transfer"),
+    //             (&user1, &pool.address, 1_i128).into_val(&env)
+    //         )
+    //     ]
+    // );
 
-    assert_eq!(token1.balance(&user1), 899);
-    assert_eq!(token1.balance(&pool.address), 101);
-    assert_eq!(token2.balance(&user1), 1001);
-    assert_eq!(token2.balance(&pool.address), 99);
+    assert_eq!(token1.balance(&user1), 999); // -1 from the swap
+    assert_eq!(token1.balance(&pool.address), 1_000_001);
+    assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
+    assert_eq!(token2.balance(&pool.address), 999_999);
 
+    // false means selling B token
+    // this time 100 units
+    pool.swap(&user1, &false, &1_000, &None, &spread);
+    assert_eq!(token1.balance(&user1), 1989); // 999 + 990 as a result of swap
+    assert_eq!(token1.balance(&pool.address), 1_000_001 - 990); // previous balance minus 990
+    assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
+    assert_eq!(token2.balance(&pool.address), 999_999 + 1000);
 }

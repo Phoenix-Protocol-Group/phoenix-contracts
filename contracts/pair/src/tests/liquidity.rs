@@ -1,10 +1,8 @@
 extern crate std;
 use soroban_sdk::{testutils::Address as _, Address, Env, IntoVal, Symbol};
 
-use super::setup::{deploy_token_contract, deploy_liquidity_pool_contract};
-use crate::{
-    token_contract,
-};
+use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
+use crate::token_contract;
 
 #[test]
 fn provide_liqudity() {
