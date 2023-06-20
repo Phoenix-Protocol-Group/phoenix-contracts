@@ -2,7 +2,7 @@
 members = ["contracts/*", "packages/*"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "GPL 3.0"
 repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
