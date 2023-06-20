@@ -8,9 +8,10 @@ license = "GPL 3.0"
 repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
 
 [workspace.dependencies]
+decimal = { path = "./packages/decimal"}
+num-integer = { version = "0.1.45", default-features = false, features = ["i128"] }
 soroban-sdk = "0.8.4"
 soroban-token-sdk = "0.8.4"
-num-integer = { version = "0.1.45", default-features = false, features = ["i128"] }
 
 [workspace.dev_dependencies]
 soroban-sdk = { version = "0.8.4", features = ["testutils"] }

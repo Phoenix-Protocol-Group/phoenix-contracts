@@ -2,8 +2,12 @@
 // License 2.0 - https://github.com/CosmWasm/cosmwasm.
 
 #![no_std]
-use core::ops::Mul;
+use core::{
+    cmp::{PartialEq, PartialOrd},
+    ops::Mul,
+};
 
+#[derive(Default, Debug, PartialEq, Eq, PartialOrd)]
 pub struct Decimal(u128);
 
 #[allow(dead_code)]
@@ -105,6 +109,25 @@ impl Decimal {
             Some(Decimal(Self::DECIMAL_FRACTIONAL_SQUARED / self.0))
         }
     }
+
+    /// Returns the ratio (numerator / denominator) as a Decimal.
+    /// Panics if the denominator is zero or if the operation would cause an overflow.
+    pub fn from_ratio(numerator: u128, denominator: u128) -> Self {
+        // Check if the denominator is zero.
+        if denominator == 0 {
+            panic!("Denominator cannot be zero");
+        }
+
+        // Check if the operation would cause an overflow.
+        if numerator.checked_mul(Self::DECIMAL_FRACTIONAL).is_none() {
+            panic!("Overflow error");
+        }
+
+        // Calculate the ratio.
+        let ratio = numerator * Self::DECIMAL_FRACTIONAL / denominator;
+
+        Decimal(ratio)
+    }
 }
 
 impl Mul<Decimal> for u128 {
@@ -160,6 +183,33 @@ mod tests {
     fn decimal_percent() {
         let value = Decimal::percent(50);
         assert_eq!(value.0, Decimal::DECIMAL_FRACTIONAL / 2u128);
+    }
+
+    #[test]
+    fn decimal_from_ratio_works() {
+        // 1.0
+        assert_eq!(Decimal::from_ratio(1u128, 1u128), Decimal::one());
+        assert_eq!(Decimal::from_ratio(53u128, 53u128), Decimal::one());
+        assert_eq!(Decimal::from_ratio(125u128, 125u128), Decimal::one());
+
+        // 1.5
+        assert_eq!(Decimal::from_ratio(3u128, 2u128), Decimal::percent(150));
+        assert_eq!(Decimal::from_ratio(150u128, 100u128), Decimal::percent(150));
+        assert_eq!(Decimal::from_ratio(333u128, 222u128), Decimal::percent(150));
+
+        // 1/3 (result floored)
+        assert_eq!(
+            Decimal::from_ratio(1u128, 3u128),
+            Decimal(333_333_333_333_333_333u128)
+        );
+
+        // 2/3 (result floored)
+        assert_eq!(
+            Decimal::from_ratio(2u128, 3u128),
+            Decimal(666_666_666_666_666_666u128)
+        );
+
+        assert_eq!(Decimal::from_ratio(0u128, u128::MAX), Decimal::zero());
     }
 
     #[test]
