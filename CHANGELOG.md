@@ -6,6 +6,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.0] - 2023-06-20
+
 ### Added
 
 - initial architecture draft ([#2])
