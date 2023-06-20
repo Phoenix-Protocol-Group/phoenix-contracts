@@ -6,6 +6,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.0] - 2023-06-20
+
 ### Added
 
 - initial architecture draft ([#2])
@@ -20,4 +22,5 @@ and this project adheres to
 [#19]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/19
 [#24]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/24
 
-[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/blob/HEAD
+[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/04263245592bd2f4902766dfbc45d830e87570b1...v0.2.0
