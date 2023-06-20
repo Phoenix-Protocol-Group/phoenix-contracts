@@ -3,7 +3,7 @@ use soroban_sdk::{contractimpl, contractmeta, Address, Bytes, BytesN, Env};
 use num_integer::Roots;
 
 use crate::{
-    storage::{get_config, save_config, utils, Config},
+    storage::{get_config, save_config, utils, Asset, Config, PairType, PoolResponse},
     token_contract,
 };
 use decimal::Decimal;
@@ -62,8 +62,16 @@ pub trait LiquidityPoolTrait {
         min_b: u128,
     ) -> (u128, u128);
 
+    // QUERIES
+
+    // Returns the configuration structure containing the addresses
+    fn query_config(env: Env) -> Config;
+
     // Returns the address for the pool share token
-    fn query_share_token_address(e: Env) -> Address;
+    fn query_share_token_address(env: Env) -> Address;
+
+    // Returns  the total amount of LP tokens and assets in a specific pool
+    fn query_pool_info(env: Env) -> PoolResponse;
 }
 
 #[contractimpl]
@@ -98,6 +106,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             token_a,
             token_b,
             share_token: share_token_address,
+            pair_type: PairType::Xyk,
         };
         save_config(&env, config);
         utils::save_total_shares(&env, 0);
@@ -265,8 +274,31 @@ impl LiquidityPoolTrait for LiquidityPool {
 
     // Queries
 
+    fn query_config(env: Env) -> Config {
+        get_config(&env)
+    }
+
     fn query_share_token_address(env: Env) -> Address {
         get_config(&env).share_token
+    }
+
+    fn query_pool_info(env: Env) -> PoolResponse {
+        let config = get_config(&env);
+
+        PoolResponse {
+            asset_a: Asset {
+                address: config.token_a,
+                amount: utils::get_pool_balance_a(&env),
+            },
+            asset_b: Asset {
+                address: config.token_b,
+                amount: utils::get_pool_balance_b(&env),
+            },
+            asset_lp_share: Asset {
+                address: config.share_token,
+                amount: utils::get_total_shares(&env),
+            },
+        }
     }
 }
 

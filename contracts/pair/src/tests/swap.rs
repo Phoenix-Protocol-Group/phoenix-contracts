@@ -2,6 +2,7 @@ extern crate std;
 use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
+use crate::storage::{Asset, PoolResponse};
 
 #[test]
 fn simple_swap() {
@@ -47,16 +48,49 @@ fn simple_swap() {
     //     ]
     // );
 
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001u128
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999u128
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 1_000_000u128
+            }
+        }
+    );
     assert_eq!(token1.balance(&user1), 999); // -1 from the swap
-    assert_eq!(token1.balance(&pool.address), 1_000_001);
     assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
-    assert_eq!(token2.balance(&pool.address), 999_999);
 
     // false means selling B token
     // this time 100 units
     pool.swap(&user1, &false, &1_000, &None, &spread);
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001 - 990, // previous balance minus 990
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999 + 1000
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1_000_000u128 // this has not changed
+            }
+        }
+    );
     assert_eq!(token1.balance(&user1), 1989); // 999 + 990 as a result of swap
-    assert_eq!(token1.balance(&pool.address), 1_000_001 - 990); // previous balance minus 990
     assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
-    assert_eq!(token2.balance(&pool.address), 999_999 + 1000);
 }

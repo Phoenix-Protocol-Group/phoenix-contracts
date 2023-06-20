@@ -22,11 +22,19 @@ impl TryFromVal<Env, DataKey> for RawVal {
 }
 
 #[contracttype]
+#[derive(Clone, Copy, Debug)]
+#[repr(u32)]
+pub enum PairType {
+    Xyk = 0,
+}
+
+#[contracttype]
 #[derive(Clone, Debug)]
 pub struct Config {
     pub token_a: Address,
     pub token_b: Address,
     pub share_token: Address,
+    pub pair_type: PairType,
 }
 const CONFIG: Symbol = Symbol::short("CONFIG");
 
@@ -36,6 +44,27 @@ pub fn get_config(env: &Env) -> Config {
 
 pub fn save_config(env: &Env, config: Config) {
     env.storage().set(&CONFIG, &config);
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Asset {
+    /// Address of the asset
+    pub address: Address,
+    /// The total amount of those tokens in the pool
+    pub amount: u128,
+}
+
+/// This struct is used to return a query result with the total amount of LP tokens and assets in a specific pool.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PoolResponse {
+    /// The asset A in the pool together with asset amounts
+    pub asset_a: Asset,
+    /// The asset B in the pool together with asset amounts
+    pub asset_b: Asset,
+    /// The total amount of LP tokens currently issued
+    pub asset_lp_share: Asset,
 }
 
 pub mod utils {
