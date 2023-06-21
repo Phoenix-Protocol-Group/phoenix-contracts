@@ -66,13 +66,13 @@ pub trait LiquidityPoolTrait {
     // QUERIES
 
     // Returns the configuration structure containing the addresses
-    fn query_config(env: Env) -> Config;
+    fn query_config(env: Env) -> Result<Config, ContractError>;
 
     // Returns the address for the pool share token
-    fn query_share_token_address(env: Env) -> Address;
+    fn query_share_token_address(env: Env) -> Result<Address, ContractError>;
 
     // Returns  the total amount of LP tokens and assets in a specific pool
-    fn query_pool_info(env: Env) -> PoolResponse;
+    fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
 }
 
 #[contractimpl]
@@ -134,18 +134,19 @@ impl LiquidityPoolTrait for LiquidityPool {
         // Depositor needs to authorize the deposit
         depositor.require_auth();
 
-        let pool_balance_a = utils::get_pool_balance_a(&env);
-        let pool_balance_b = utils::get_pool_balance_b(&env);
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
 
         // Calculate deposit amounts
         let amounts = utils::get_deposit_amounts(
+            &env,
             desired_a,
             min_a,
             desired_b,
             min_b,
             pool_balance_a,
             pool_balance_b,
-        );
+        )?;
 
         // TODO: Add slippage_tolerance to configuration
         assert_slippage_tolerance(
@@ -155,7 +156,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             &[pool_balance_a, pool_balance_b],
         )?;
 
-        let config = get_config(&env);
+        let config = get_config(&env)?;
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
@@ -175,7 +176,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, &config.token_a) as u128;
         let balance_b = utils::get_balance(&env, &config.token_b) as u128;
-        let total_shares = utils::get_total_shares(&env);
+        let total_shares = utils::get_total_shares(&env)?;
 
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
             let shares_a = (balance_a * total_shares) / pool_balance_a;
@@ -191,7 +192,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             config.share_token,
             depositor,
             new_total_shares - total_shares,
-        );
+        )?;
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
@@ -220,8 +221,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         let belief_price = belief_price.map(Decimal::percent);
         let max_spread = Decimal::percent(max_spread);
 
-        let pool_balance_a = utils::get_pool_balance_a(&env);
-        let pool_balance_b = utils::get_pool_balance_b(&env);
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
         let (pool_balance_sell, pool_balance_buy) = if sell_a {
             (pool_balance_a, pool_balance_b)
         } else {
@@ -244,7 +245,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             spread_amount,
         )?;
 
-        let config = get_config(&env);
+        let config = get_config(&env)?;
 
         // Transfer the amount being sold to the contract
         let (sell_token, buy_token) = if sell_a {
@@ -305,31 +306,31 @@ impl LiquidityPoolTrait for LiquidityPool {
 
     // Queries
 
-    fn query_config(env: Env) -> Config {
+    fn query_config(env: Env) -> Result<Config, ContractError> {
         get_config(&env)
     }
 
-    fn query_share_token_address(env: Env) -> Address {
-        get_config(&env).share_token
+    fn query_share_token_address(env: Env) -> Result<Address, ContractError> {
+        Ok(get_config(&env)?.share_token)
     }
 
-    fn query_pool_info(env: Env) -> PoolResponse {
-        let config = get_config(&env);
+    fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError> {
+        let config = get_config(&env)?;
 
-        PoolResponse {
+        Ok(PoolResponse {
             asset_a: Asset {
                 address: config.token_a,
-                amount: utils::get_pool_balance_a(&env),
+                amount: utils::get_pool_balance_a(&env)?,
             },
             asset_b: Asset {
                 address: config.token_b,
-                amount: utils::get_pool_balance_b(&env),
+                amount: utils::get_pool_balance_b(&env)?,
             },
             asset_lp_share: Asset {
                 address: config.share_token,
-                amount: utils::get_total_shares(&env),
+                amount: utils::get_total_shares(&env)?,
             },
-        }
+        })
     }
 }
 
