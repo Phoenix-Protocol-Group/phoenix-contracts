@@ -17,5 +17,5 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            contracts/pair/target/wasm32-unknown-unknown/release/phoenix_pair.wasm
-            contracts/pair/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
+            target/wasm32-unknown-unknown/release/phoenix_pair.wasm
+            target/wasm32-unknown-unknown/release/soroban_token_contract.wasm

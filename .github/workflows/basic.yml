@@ -19,11 +19,6 @@ jobs:
           override: true
       - name: Build
         run: make build
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: soroban-token
-          path: contracts/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
 
   test:
     needs: build
@@ -39,11 +34,6 @@ jobs:
           toolchain: 1.70.0
           target: wasm32-unknown-unknown
           override: true
-      - name: Download artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: soroban-token
-          path: contracts/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
       - name: Run tests
         run: make test
 
@@ -62,10 +52,5 @@ jobs:
           toolchain: 1.70.0
           override: true
           components: rustfmt, clippy
-      - name: Download artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: soroban-token
-          path: contracts/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
       - name: Run lints
         run: make lints
