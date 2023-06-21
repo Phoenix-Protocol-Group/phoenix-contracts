@@ -1,8 +1,9 @@
-use soroban_sdk::{contractimpl, contractmeta, Address, Bytes, BytesN, Env};
+use soroban_sdk::{contractimpl, contractmeta, log, Address, Bytes, BytesN, Env};
 
 use num_integer::Roots;
 
 use crate::{
+    error::ContractError,
     storage::{get_config, save_config, utils, Asset, Config, PairType, PoolResponse},
     token_contract,
 };
@@ -25,7 +26,7 @@ pub trait LiquidityPoolTrait {
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
-    );
+    ) -> Result<(), ContractError>;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
     // is determined based on the difference between the reserves stored by this contract, and
@@ -37,7 +38,7 @@ pub trait LiquidityPoolTrait {
         min_a: u128,
         desired_b: u128,
         min_b: u128,
-    );
+    ) -> Result<(), ContractError>;
 
     // If "buy_a" is true, the swap will buy token_a and sell token_b. This is flipped if "buy_a" is false.
     // "out" is the amount being bought, with in_max being a safety to make sure you receive at least that amount.
@@ -49,7 +50,7 @@ pub trait LiquidityPoolTrait {
         sell_amount: u128,
         belief_price: Option<u64>,
         max_spread: u64,
-    );
+    ) -> Result<(), ContractError>;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
     // corresponding amount of token_a and token_b to "to".
@@ -60,18 +61,18 @@ pub trait LiquidityPoolTrait {
         share_amount: u128,
         min_a: u128,
         min_b: u128,
-    ) -> (u128, u128);
+    ) -> Result<(u128, u128), ContractError>;
 
     // QUERIES
 
     // Returns the configuration structure containing the addresses
-    fn query_config(env: Env) -> Config;
+    fn query_config(env: Env) -> Result<Config, ContractError>;
 
     // Returns the address for the pool share token
-    fn query_share_token_address(env: Env) -> Address;
+    fn query_share_token_address(env: Env) -> Result<Address, ContractError>;
 
     // Returns  the total amount of LP tokens and assets in a specific pool
-    fn query_pool_info(env: Env) -> PoolResponse;
+    fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
 }
 
 #[contractimpl]
@@ -82,10 +83,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
-    ) {
+    ) -> Result<(), ContractError> {
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
-            panic!("token_a must be less than token_b");
+            log!(&env, "token_a must be less than token_b");
+            return Err(ContractError::FirstTokenMustBeSmallerThenSecond);
         }
 
         // deploy token contract
@@ -103,8 +105,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         );
 
         let config = Config {
-            token_a,
-            token_b,
+            token_a: token_a.clone(),
+            token_b: token_b.clone(),
             share_token: share_token_address,
             pair_type: PairType::Xyk,
         };
@@ -112,6 +114,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
+
+        env.events()
+            .publish(("initialize", "XYK LP token_a"), token_a);
+        env.events()
+            .publish(("initialize", "XYK LP token_b"), token_b);
+
+        Ok(())
     }
 
     fn provide_liquidity(
@@ -121,31 +130,33 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_a: u128,
         desired_b: u128,
         min_b: u128,
-    ) {
+    ) -> Result<(), ContractError> {
         // Depositor needs to authorize the deposit
         depositor.require_auth();
 
-        let pool_balance_a = utils::get_pool_balance_a(&env);
-        let pool_balance_b = utils::get_pool_balance_b(&env);
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
 
         // Calculate deposit amounts
         let amounts = utils::get_deposit_amounts(
+            &env,
             desired_a,
             min_a,
             desired_b,
             min_b,
             pool_balance_a,
             pool_balance_b,
-        );
+        )?;
 
         // TODO: Add slippage_tolerance to configuration
         assert_slippage_tolerance(
+            &env,
             None,
             &[amounts.0, amounts.1],
             &[pool_balance_a, pool_balance_b],
-        );
+        )?;
 
-        let config = get_config(&env);
+        let config = get_config(&env)?;
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
@@ -163,9 +174,9 @@ impl LiquidityPoolTrait for LiquidityPool {
         );
 
         // Now calculate how many new pool shares to mint
-        let balance_a = utils::get_balance(&env, config.token_a) as u128;
-        let balance_b = utils::get_balance(&env, config.token_b) as u128;
-        let total_shares = utils::get_total_shares(&env);
+        let balance_a = utils::get_balance(&env, &config.token_a) as u128;
+        let balance_b = utils::get_balance(&env, &config.token_b) as u128;
+        let total_shares = utils::get_total_shares(&env)?;
 
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
             let shares_a = (balance_a * total_shares) / pool_balance_a;
@@ -181,9 +192,20 @@ impl LiquidityPoolTrait for LiquidityPool {
             config.share_token,
             depositor,
             new_total_shares - total_shares,
-        );
+        )?;
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
+
+        env.events()
+            .publish(("provideLiquidity", "token_a"), &config.token_a);
+        env.events()
+            .publish(("provideLiquidity", "token_a-amount"), amounts.0);
+        env.events()
+            .publish(("provideLiquidity", "token_a"), &config.token_b);
+        env.events()
+            .publish(("provideLiquidity", "token_b-amount"), amounts.1);
+
+        Ok(())
     }
 
     fn swap(
@@ -193,14 +215,14 @@ impl LiquidityPoolTrait for LiquidityPool {
         sell_amount: u128,
         belief_price: Option<u64>,
         max_spread: u64,
-    ) {
+    ) -> Result<(), ContractError> {
         sender.require_auth();
 
         let belief_price = belief_price.map(Decimal::percent);
         let max_spread = Decimal::percent(max_spread);
 
-        let pool_balance_a = utils::get_pool_balance_a(&env);
-        let pool_balance_b = utils::get_pool_balance_b(&env);
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
         let (pool_balance_sell, pool_balance_buy) = if sell_a {
             (pool_balance_a, pool_balance_b)
         } else {
@@ -215,14 +237,15 @@ impl LiquidityPoolTrait for LiquidityPool {
         );
 
         assert_max_spread(
+            &env,
             belief_price,
             max_spread,
             buy_amount,
             sell_amount, /*+ commission_amount*/
             spread_amount,
-        );
+        )?;
 
-        let config = get_config(&env);
+        let config = get_config(&env)?;
 
         // Transfer the amount being sold to the contract
         let (sell_token, buy_token) = if sell_a {
@@ -260,6 +283,15 @@ impl LiquidityPoolTrait for LiquidityPool {
         };
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
+
+        env.events().publish(("swap", "sell_token"), sell_token);
+        env.events().publish(("swap", "sell_amount"), sell_amount);
+        env.events().publish(("swap", "buy_token"), buy_token);
+        env.events().publish(("swap", "buy_amount"), buy_amount);
+        env.events()
+            .publish(("swap", "spread_amount"), spread_amount);
+
+        Ok(())
     }
 
     fn withdraw_liquidity(
@@ -268,51 +300,53 @@ impl LiquidityPoolTrait for LiquidityPool {
         _share_amount: u128,
         _min_a: u128,
         _min_b: u128,
-    ) -> (u128, u128) {
+    ) -> Result<(u128, u128), ContractError> {
         unimplemented!()
     }
 
     // Queries
 
-    fn query_config(env: Env) -> Config {
+    fn query_config(env: Env) -> Result<Config, ContractError> {
         get_config(&env)
     }
 
-    fn query_share_token_address(env: Env) -> Address {
-        get_config(&env).share_token
+    fn query_share_token_address(env: Env) -> Result<Address, ContractError> {
+        Ok(get_config(&env)?.share_token)
     }
 
-    fn query_pool_info(env: Env) -> PoolResponse {
-        let config = get_config(&env);
+    fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError> {
+        let config = get_config(&env)?;
 
-        PoolResponse {
+        Ok(PoolResponse {
             asset_a: Asset {
                 address: config.token_a,
-                amount: utils::get_pool_balance_a(&env),
+                amount: utils::get_pool_balance_a(&env)?,
             },
             asset_b: Asset {
                 address: config.token_b,
-                amount: utils::get_pool_balance_b(&env),
+                amount: utils::get_pool_balance_b(&env)?,
             },
             asset_lp_share: Asset {
                 address: config.share_token,
-                amount: utils::get_total_shares(&env),
+                amount: utils::get_total_shares(&env)?,
             },
-        }
+        })
     }
 }
 
 fn assert_slippage_tolerance(
+    env: &Env,
     slippage_tolerance: Option<Decimal>,
     deposits: &[u128; 2],
     pools: &[u128; 2],
-) {
+) -> Result<(), ContractError> {
     let default_slippage = Decimal::percent(100); // Representing 1.00 (100%) as the default slippage tolerance
     let max_allowed_slippage = Decimal::percent(500); // Representing 5.00 (500%) as the maximum allowed slippage tolerance
 
     let slippage_tolerance = slippage_tolerance.unwrap_or(default_slippage);
     if slippage_tolerance > max_allowed_slippage {
-        panic!("Slippage tolerance exceeds the maximum allowed value");
+        log!(env, "Slippage tolerance exceeds the maximum allowed value");
+        return Err(ContractError::SlippageToleranceExceeded);
     }
 
     let slippage_tolerance = slippage_tolerance * 100; // Converting to a percentage value
@@ -324,20 +358,27 @@ fn assert_slippage_tolerance(
     if deposits[0] * pools[1] * one_minus_slippage_tolerance > deposits[1] * pools[0] * 10000
         || deposits[1] * pools[0] * one_minus_slippage_tolerance > deposits[0] * pools[1] * 10000
     {
-        panic!(
-            "Slippage tolerance violated. Deposits: {:?}, Pools: {:?}",
-            deposits, pools
+        log!(
+            env,
+            "Slippage tolerance violated. Deposits: 0: {} 1: {}, Pools: 0: {} 1: {}",
+            deposits[0],
+            deposits[1],
+            pools[0],
+            pools[1]
         );
+        return Err(ContractError::SlippageToleranceViolated);
     }
+    Ok(())
 }
 
 pub fn assert_max_spread(
+    env: &Env,
     belief_price: Option<Decimal>,
     max_spread: Decimal,
     offer_amount: u128,
     return_amount: u128,
     spread_amount: u128,
-) {
+) -> Result<(), ContractError> {
     let expected_return = belief_price.map(|price| offer_amount * price);
 
     let total_return = return_amount + spread_amount;
@@ -348,7 +389,11 @@ pub fn assert_max_spread(
         Decimal::from_ratio(spread_amount, total_return)
     };
 
-    assert!(spread_ratio <= max_spread, "Spread exceeds maximum allowed");
+    if spread_ratio > max_spread {
+        log!(env, "Spread exceeds maximum allowed");
+        return Err(ContractError::SpreadExceedsMaxAllowed);
+    }
+    Ok(())
 }
 
 /// Computes the result of a swap operation.
@@ -392,71 +437,87 @@ mod tests {
 
     #[test]
     fn test_assert_slippage_tolerance_success() {
+        let env = Env::default();
         // Test case that should pass:
         // slippage tolerance of 50 (0.5 or 50%), deposits of 10 and 20, pools of 30 and 60
         // The price changes fall within the slippage tolerance
-        assert_slippage_tolerance(Some(Decimal::percent(50)), &[10, 20], &[30, 60]);
+        assert_slippage_tolerance(&env, Some(Decimal::percent(50)), &[10, 20], &[30, 60]).unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Slippage tolerance exceeds the maximum allowed value")]
     fn test_assert_slippage_tolerance_fail_tolerance_too_high() {
+        let env = Env::default();
         // Test case that should fail due to slippage tolerance being too high
-        assert_slippage_tolerance(Some(Decimal::percent(600)), &[10, 20], &[30, 60]);
+        let result =
+            assert_slippage_tolerance(&env, Some(Decimal::percent(600)), &[10, 20], &[30, 60])
+                .unwrap_err();
+        assert_eq!(ContractError::SlippageToleranceExceeded, result);
     }
 
     #[test]
-    #[should_panic(expected = "Slippage tolerance violated. Deposits: [10, 15], Pools: [40, 40]")]
     fn test_assert_slippage_tolerance_fail_slippage_violated() {
+        let env = Env::default();
         // The price changes from 10/15 (0.67) to 40/40 (1.00), violating the 10% slippage tolerance
-        assert_slippage_tolerance(Some(Decimal::percent(10)), &[10, 15], &[40, 40]);
+        let result =
+            assert_slippage_tolerance(&env, Some(Decimal::percent(10)), &[10, 15], &[40, 40])
+                .unwrap_err();
+        assert_eq!(ContractError::SlippageToleranceViolated, result);
     }
 
     #[test]
     fn test_assert_max_spread_success() {
+        let env = Env::default();
         // Test case that should pass:
         // belief price of 2.0, max spread of 10%, offer amount of 100k, return amount of 100k and 1 unit, spread amount of 1
         // The spread ratio is 10% which is equal to the max spread
         assert_max_spread(
+            &env,
             Some(Decimal::percent(200)),
             Decimal::percent(10),
             100_000,
             100_001,
             1,
-        );
+        )
+        .unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Spread exceeds maximum allowed")]
     fn test_assert_max_spread_fail_max_spread_exceeded() {
+        let env = Env::default();
+
         let belief_price = Some(Decimal::percent(250)); // belief price is 2.5
         let max_spread = Decimal::percent(10); // 10% is the maximum allowed spread
         let offer_amount = 100;
         let return_amount = 100; // These values are chosen such that the spread ratio will be more than 10%
         let spread_amount = 35;
 
-        assert_max_spread(
+        let result = assert_max_spread(
+            &env,
             belief_price,
             max_spread,
             offer_amount,
             return_amount,
             spread_amount,
-        );
+        )
+        .unwrap_err();
+        assert_eq!(ContractError::SpreadExceedsMaxAllowed, result);
     }
 
     #[test]
     fn test_assert_max_spread_success_no_belief_price() {
+        let env = Env::default();
         // no belief price, max spread of 100 (0.1 or 10%), offer amount of 10, return amount of 10, spread amount of 1
         // The spread ratio is 10% which is equal to the max spread
-        assert_max_spread(None, Decimal::percent(10), 10, 10, 1);
+        assert_max_spread(&env, None, Decimal::percent(10), 10, 10, 1).unwrap();
     }
 
     #[test]
-    #[should_panic(expected = "Spread exceeds maximum allowed")]
     fn test_assert_max_spread_fail_no_belief_price_max_spread_exceeded() {
+        let env = Env::default();
         // no belief price, max spread of 10%, offer amount of 10, return amount of 10, spread amount of 2
         // The spread ratio is 20% which is greater than the max spread
-        assert_max_spread(None, Decimal::percent(10), 10, 10, 2);
+        let result = assert_max_spread(&env, None, Decimal::percent(10), 10, 10, 2).unwrap_err();
+        assert_eq!(ContractError::SpreadExceedsMaxAllowed, result);
     }
 
     #[test]
