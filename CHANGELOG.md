@@ -6,6 +6,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- better error support for pair contract; introduced logs and events ([#28])
+
+[#28]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/28
+
 ## [0.2.0] - 2023-06-20
 
 ### Added
