@@ -2,7 +2,7 @@ default: all
 
 all: lint build test
 
-test:
+test: build
 	cargo test
 
 build:

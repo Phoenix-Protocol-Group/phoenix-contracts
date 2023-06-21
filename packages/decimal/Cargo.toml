@@ -1,11 +1,9 @@
 [package]
 name = "decimal"
-version = { workspace = true }
+version = "0.2.0"
 authors = ["TotallyNotJakub <totallynotjakub@proton.me>"]
-repository = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
+edition = "2021"
+license = "GPL 3.0"
 
 [dependencies]
