@@ -103,8 +103,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         );
 
         let config = Config {
-            token_a,
-            token_b,
+            token_a: token_a.clone(),
+            token_b: token_b.clone(),
             share_token: share_token_address,
             pair_type: PairType::Xyk,
         };
@@ -112,6 +112,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
+
+        env.events()
+            .publish(("initialize", "XYK LP token_a"), token_a);
+        env.events()
+            .publish(("initialize", "XYK LP token_b"), token_b);
     }
 
     fn provide_liquidity(
@@ -163,8 +168,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         );
 
         // Now calculate how many new pool shares to mint
-        let balance_a = utils::get_balance(&env, config.token_a) as u128;
-        let balance_b = utils::get_balance(&env, config.token_b) as u128;
+        let balance_a = utils::get_balance(&env, &config.token_a) as u128;
+        let balance_b = utils::get_balance(&env, &config.token_b) as u128;
         let total_shares = utils::get_total_shares(&env);
 
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
@@ -184,6 +189,15 @@ impl LiquidityPoolTrait for LiquidityPool {
         );
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
+
+        env.events()
+            .publish(("provideLiquidity", "token_a"), &config.token_a);
+        env.events()
+            .publish(("provideLiquidity", "token_a-amount"), amounts.0);
+        env.events()
+            .publish(("provideLiquidity", "token_a"), &config.token_b);
+        env.events()
+            .publish(("provideLiquidity", "token_b-amount"), amounts.1);
     }
 
     fn swap(
@@ -260,6 +274,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         };
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
+
+        env.events().publish(("swap", "sell_token"), sell_token);
+        env.events().publish(("swap", "sell_amount"), sell_amount);
+        env.events().publish(("swap", "buy_token"), buy_token);
+        env.events().publish(("swap", "buy_amount"), buy_amount);
+        env.events()
+            .publish(("swap", "spread_amount"), spread_amount);
     }
 
     fn withdraw_liquidity(

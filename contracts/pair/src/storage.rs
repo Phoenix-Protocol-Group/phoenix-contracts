@@ -117,8 +117,8 @@ pub mod utils {
         e.storage().get_unchecked(&DataKey::ReserveB).unwrap()
     }
 
-    pub fn get_balance(e: &Env, contract: Address) -> i128 {
-        token_contract::Client::new(e, &contract).balance(&e.current_contract_address())
+    pub fn get_balance(e: &Env, contract: &Address) -> i128 {
+        token_contract::Client::new(e, contract).balance(&e.current_contract_address())
     }
 
     pub fn get_deposit_amounts(
