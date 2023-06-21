@@ -1,6 +1,3 @@
-
-# Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
-
 on: [pull_request]
 
 name: Basic
@@ -21,13 +18,7 @@ jobs:
           target: wasm32-unknown-unknown
           override: true
 
-      - name: Run unit tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked
-        env:
-          RUST_BACKTRACE: 1
+      - run: make test
 
   lints:
     name: Lints
@@ -44,15 +35,4 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-targets -- -D warnings
-
+      - run: make lints

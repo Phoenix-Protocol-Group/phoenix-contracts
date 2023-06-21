@@ -6,7 +6,7 @@ test:
 	cargo test
 
 build:
-	$(MAKE) -C ../token || break;
+	$(MAKE) -C ../token build || break;
 	cargo build --target wasm32-unknown-unknown --release
 
 lint: fmt clippy

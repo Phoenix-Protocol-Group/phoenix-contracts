@@ -20,6 +20,11 @@ fmt:
 		$(MAKE) -C $$dir fmt || exit 1; \
 	done
 
+lints: fmt
+	@for dir in $(SUBDIRS) ; do \
+		$(MAKE) -C $$dir clippy || exit 1; \
+	done
+
 clean:
 	@for dir in $(SUBDIRS) ; do \
 		$(MAKE) -C $$dir clean || exit 1; \
