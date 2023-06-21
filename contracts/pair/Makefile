@@ -14,7 +14,7 @@ lint: fmt clippy
 fmt:
 	cargo fmt --all
 
-clippy:
+clippy: build
 	cargo clippy --all-targets -- -D warnings
 
 clean:

@@ -6,11 +6,21 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- automated release job which will create artifacts after new tag publication ([#29])
+- standarized Makefiles across whole repository ([#29])
+
 ### Changed
 
 - better error support for pair contract; introduced logs and events ([#28])
 
+### Removed
+
+- remove Rust [workspace feature](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html) ([#29])
+
 [#28]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/28
+[#29]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/29
 
 ## [0.2.0] - 2023-06-20
 

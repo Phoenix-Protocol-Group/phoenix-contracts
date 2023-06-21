@@ -4,7 +4,29 @@ name: Basic
 
 jobs:
 
+  build:
+    name: Build binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.70.0
+          target: wasm32-unknown-unknown
+          override: true
+      - name: Build
+        run: make build
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: soroban-token
+          path: contracts/token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
+
   test:
+    needs: build
     name: Test Suite
     runs-on: ubuntu-latest
     steps:
@@ -17,10 +39,16 @@ jobs:
           toolchain: 1.70.0
           target: wasm32-unknown-unknown
           override: true
-
-      - run: make test
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: soroban-token
+          path: contracts/token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
+      - name: Run tests
+        run: make test
 
   lints:
+    needs: build
     name: Lints
     runs-on: ubuntu-latest
     steps:
@@ -34,5 +62,10 @@ jobs:
           toolchain: 1.70.0
           override: true
           components: rustfmt, clippy
-
-      - run: make lints
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: soroban-token
+          path: contracts/token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
+      - name: Run lints
+        run: make lints
