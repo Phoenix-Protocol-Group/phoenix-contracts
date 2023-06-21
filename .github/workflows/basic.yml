@@ -51,6 +51,7 @@ jobs:
           profile: minimal
           toolchain: 1.70.0
           override: true
+          target: wasm32-unknown-unknown
           components: rustfmt, clippy
       - name: Run lints
         run: make lints
