@@ -23,7 +23,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: soroban-token
-          path: contracts/token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
+          path: contracts/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
 
   test:
     needs: build
@@ -43,7 +43,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: soroban-token
-          path: contracts/token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
+          path: contracts/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
       - name: Run tests
         run: make test
 
@@ -66,6 +66,6 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: soroban-token
-          path: contracts/token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
+          path: contracts/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
       - name: Run lints
         run: make lints
