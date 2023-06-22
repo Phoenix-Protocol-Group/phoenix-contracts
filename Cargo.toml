@@ -1,3 +1,31 @@
 [workspace]
 members = ["contracts/*", "packages/*"]
-resolver = "2"
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+license = "GPL 3.0"
+repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
+
+[workspace.dependencies]
+decimal = { path = "./packages/decimal"}
+num-integer = { version = "0.1.45", default-features = false, features = ["i128"] }
+soroban-sdk = "0.8.4"
+soroban-token-sdk = "0.8.4"
+
+[workspace.dev_dependencies]
+soroban-sdk = { version = "0.8.4", features = ["testutils"] }
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+
+[profile.release-with-logs]
+inherits = "release"
+debug-assertions = true

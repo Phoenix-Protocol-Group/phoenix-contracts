@@ -1,31 +1,11 @@
 [package]
 name = "soroban-token-contract"
 description = "Soroban standard token contract"
-version = "0.2.0"
-authors = ["TotallyNotJakub <totallynotjakub@proton.me>"]
-repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
+version = "0.0.6"
 edition = "2021"
-license = "GPL 3.0"
 
 [lib]
 crate-type = ["cdylib"]
-
-[features]
-testutils = ["soroban-sdk/testutils"]
-
-[profile.release]
-opt-level = "z"
-overflow-checks = true
-debug = 0
-strip = "symbols"
-debug-assertions = false
-panic = "abort"
-codegen-units = 1
-lto = true
-
-[profile.release-with-logs]
-inherits = "release"
-debug-assertions = true
 
 [dependencies]
 soroban-sdk = { version = "0.8.4" }
