@@ -1,0 +1,21 @@
+name: Release Artifacts
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+" # Push events to matching v*, i.e. 1.0, 20.15.10
+      - "v[0-9]+.[0-9]+.[0-9]+-rc*" # Push events to matching v*, i.e. 1.0-rc1, 20.15.10-rc5
+
+jobs:
+  release-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Build Artifacts
+        run: make build
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/wasm32-unknown-unknown/release/phoenix_pair.wasm
+            target/wasm32-unknown-unknown/release/soroban_token_contract.wasm

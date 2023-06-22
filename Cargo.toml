@@ -1,5 +1,6 @@
 [workspace]
 members = ["contracts/*", "packages/*"]
+resolver = "2"
 
 [workspace.package]
 version = "0.2.0"
@@ -14,7 +15,6 @@ soroban-sdk = "0.8.4"
 soroban-token-sdk = "0.8.4"
 
 [workspace.dev_dependencies]
-soroban-sdk = { version = "0.8.4", features = ["testutils"] }
 
 [profile.release]
 opt-level = "z"

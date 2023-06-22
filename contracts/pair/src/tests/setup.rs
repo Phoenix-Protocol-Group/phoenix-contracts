@@ -11,7 +11,7 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 
 fn install_token_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
-        file = "../token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
+        file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
     );
     env.install_contract_wasm(WASM)
 }

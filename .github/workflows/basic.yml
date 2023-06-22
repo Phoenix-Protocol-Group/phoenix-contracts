@@ -1,13 +1,27 @@
-
-# Based on https://github.com/actions-rs/example/blob/master/.github/workflows/quickstart.yml
-
 on: [pull_request]
 
 name: Basic
 
 jobs:
 
+  build:
+    name: Build binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.70.0
+          target: wasm32-unknown-unknown
+          override: true
+      - name: Build
+        run: make build
+
   test:
+    needs: build
     name: Test Suite
     runs-on: ubuntu-latest
     steps:
@@ -20,16 +34,11 @@ jobs:
           toolchain: 1.70.0
           target: wasm32-unknown-unknown
           override: true
-
-      - name: Run unit tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked
-        env:
-          RUST_BACKTRACE: 1
+      - name: Run tests
+        run: make test
 
   lints:
+    needs: build
     name: Lints
     runs-on: ubuntu-latest
     steps:
@@ -42,17 +51,7 @@ jobs:
           profile: minimal
           toolchain: 1.70.0
           override: true
+          target: wasm32-unknown-unknown
           components: rustfmt, clippy
-
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-targets -- -D warnings
-
+      - name: Run lints
+        run: make lints

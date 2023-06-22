@@ -29,6 +29,8 @@ jobs:
           command: install
           args: cargo-tarpaulin --version 0.25.2
 
+      - run: make build
+
       - name: Run code coverage check with tarpaulin
         uses: actions-rs/cargo@v1
         with:
