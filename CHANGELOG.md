@@ -6,7 +6,7 @@ and this project adheres to
 
 ## [Unreleased]
 
-## [0.2.3] - 2023-06-22
+## [0.2.7] - 2023-06-22
 
 ### Added
 
@@ -36,6 +36,6 @@ and this project adheres to
 [#19]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/19
 [#24]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/24
 
-[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.3...HEAD
-[0.2.3]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.0...v0.2.3
+[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.0...v0.2.7
 [0.2.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/04263245592bd2f4902766dfbc45d830e87570b1...v0.2.0

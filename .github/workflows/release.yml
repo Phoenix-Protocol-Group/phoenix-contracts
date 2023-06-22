@@ -21,9 +21,11 @@ jobs:
       - name: Build Artifacts
         run: make build
       - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.JAKUB_SECRET_CI }}
         run: >-
           gh release create ${{ github.ref_name }}
-          "target/wasm32-unknown-unknown/release/*.wasm"
+          target/wasm32-unknown-unknown/release/*.wasm
           --generate-notes
           --title "${{ github.ref_name }}"
 
