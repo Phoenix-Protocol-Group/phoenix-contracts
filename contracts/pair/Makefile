@@ -2,7 +2,7 @@ default: all
 
 all: lint build test
 
-test:
+test: build # because of token dependency
 	cargo test
 
 build:
