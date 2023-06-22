@@ -21,6 +21,8 @@ jobs:
       - name: Build Artifacts
         run: make build
       - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: >-
           gh release create ${{ github.ref_name }}
           "target/wasm32-unknown-unknown/release/*.wasm"
