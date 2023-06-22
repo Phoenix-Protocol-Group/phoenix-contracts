@@ -20,9 +20,10 @@ jobs:
           override: true
       - name: Build Artifacts
         run: make build
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            target/wasm32-unknown-unknown/release/phoenix_pair.wasm
-            target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
+      - name: Release
+        run: >-
+          gh release create ${{ github.ref_name }}
+          "target/wasm32-unknown-unknown/release/*.wasm"
+          --generate-notes
+          --title "${{ github.ref_name }}"
+
