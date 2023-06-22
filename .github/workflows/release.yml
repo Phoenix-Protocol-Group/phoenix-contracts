@@ -20,10 +20,14 @@ jobs:
           override: true
       - name: Build Artifacts
         run: make build
+      - name: Debug
+        run: ls -lR target/wasm32-unknown-unknown
       - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: >-
           gh release create ${{ github.ref_name }}
-          "target/wasm32-unknown-unknown/release/*.wasm"
+          target/wasm32-unknown-unknown/release/*.wasm
           --generate-notes
           --title "${{ github.ref_name }}"
 
