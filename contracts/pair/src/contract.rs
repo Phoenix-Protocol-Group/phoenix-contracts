@@ -4,7 +4,9 @@ use num_integer::Roots;
 
 use crate::{
     error::ContractError,
-    storage::{get_config, save_config, utils, Asset, Config, PairType, PoolResponse},
+    storage::{
+        get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
+    },
     token_contract,
 };
 use decimal::Decimal;
@@ -26,6 +28,7 @@ pub trait LiquidityPoolTrait {
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
+        swap_fee_bps: i32,
     ) -> Result<(), ContractError>;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -83,6 +86,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
+        swap_fee_bps: i32,
     ) -> Result<(), ContractError> {
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
@@ -109,6 +113,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             token_b: token_b.clone(),
             share_token: share_token_address,
             pair_type: PairType::Xyk,
+            total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
         };
         save_config(&env, config);
         utils::save_total_shares(&env, 0);

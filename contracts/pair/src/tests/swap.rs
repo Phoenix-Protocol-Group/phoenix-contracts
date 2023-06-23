@@ -19,7 +19,8 @@ fn simple_swap() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::random(&env);
-    let pool = deploy_liquidity_pool_contract(&env, &token1.address, &token2.address);
+    let swap_fees = 0i32;
+    let pool = deploy_liquidity_pool_contract(&env, &token1.address, &token2.address, swap_fees);
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);

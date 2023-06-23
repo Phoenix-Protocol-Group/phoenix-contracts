@@ -4,6 +4,7 @@ use soroban_sdk::{
 };
 
 use crate::{error::ContractError, token_contract};
+use decimal::Decimal;
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -35,8 +36,28 @@ pub struct Config {
     pub token_b: Address,
     pub share_token: Address,
     pub pair_type: PairType,
+    /// The total fees (in bps) charged by a pair of this type.
+    /// In relation to the returned amount of tokens
+    pub total_fee_bps: i32,
 }
 const CONFIG: Symbol = Symbol::short("CONFIG");
+
+const MAX_TOTAL_FEE_BPS: i32 = 10_000;
+
+/// This method is used to check fee bps.
+pub fn validate_fee_bps(env: &Env, total_fee_bps: i32) -> Result<i32, ContractError> {
+    if total_fee_bps > MAX_TOTAL_FEE_BPS {
+        log!(env, "Total fees cannot be greater than 100%");
+        return Err(ContractError::InvalidFeeBps);
+    }
+    Ok(total_fee_bps)
+}
+
+impl Config {
+    pub fn protocol_fee_rate(&self) -> Decimal {
+        Decimal::from_ratio(self.total_fee_bps as i128, 10_000i128)
+    }
+}
 
 pub fn get_config(env: &Env) -> Result<Config, ContractError> {
     match env.storage().get(&CONFIG) {

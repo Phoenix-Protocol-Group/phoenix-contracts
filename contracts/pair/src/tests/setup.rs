@@ -20,10 +20,17 @@ pub fn deploy_liquidity_pool_contract<'a>(
     env: &Env,
     token_a: &Address,
     token_b: &Address,
+    swap_fees: i32,
 ) -> LiquidityPoolClient<'a> {
     let pool = LiquidityPoolClient::new(env, &env.register_contract(None, LiquidityPool {}));
     let token_wasm_hash = install_token_wasm(env);
     let share_token_decimals = 7u32;
-    pool.initialize(&token_wasm_hash, token_a, token_b, &share_token_decimals);
+    pool.initialize(
+        &token_wasm_hash,
+        token_a,
+        token_b,
+        &share_token_decimals,
+        &swap_fees,
+    );
     pool
 }
