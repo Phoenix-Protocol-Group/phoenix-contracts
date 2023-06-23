@@ -22,14 +22,16 @@ pub struct LiquidityPool;
 pub trait LiquidityPoolTrait {
     // Sets the token contract addresses for this pool
     // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         token_wasm_hash: BytesN<32>,
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
-        swap_fee_bps: i32,
+        swap_fee_bps: i64,
         fee_recipient: Address,
+        max_allowed_slippage_bps: i64,
     ) -> Result<(), ContractError>;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -42,6 +44,7 @@ pub trait LiquidityPoolTrait {
         min_a: i128,
         desired_b: i128,
         min_b: i128,
+        custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError>;
 
     // If "buy_a" is true, the swap will buy token_a and sell token_b. This is flipped if "buy_a" is false.
@@ -52,8 +55,8 @@ pub trait LiquidityPoolTrait {
         sender: Address,
         sell_a: bool,
         sell_amount: i128,
-        belief_price: Option<u64>,
-        max_spread: u64,
+        belief_price: Option<i64>,
+        max_spread: i64,
     ) -> Result<(), ContractError>;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
@@ -81,14 +84,16 @@ pub trait LiquidityPoolTrait {
 
 #[contractimpl]
 impl LiquidityPoolTrait for LiquidityPool {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         token_wasm_hash: BytesN<32>,
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
-        swap_fee_bps: i32,
+        swap_fee_bps: i64,
         fee_recipient: Address,
+        max_allowed_slippage_bps: i64,
     ) -> Result<(), ContractError> {
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
@@ -117,6 +122,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             pair_type: PairType::Xyk,
             total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
             fee_recipient,
+            max_allowed_slippage: max_allowed_slippage_bps,
         };
         save_config(&env, config);
         utils::save_total_shares(&env, 0);
@@ -138,6 +144,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_a: i128,
         desired_b: i128,
         min_b: i128,
+        custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError> {
         // sender needs to authorize the deposit
         sender.require_auth();
@@ -156,15 +163,15 @@ impl LiquidityPoolTrait for LiquidityPool {
             pool_balance_b,
         )?;
 
-        // TODO: Add slippage_tolerance to configuration
+        let config = get_config(&env)?;
+
         assert_slippage_tolerance(
             &env,
-            None,
+            custom_slippage_bps,
             &[amounts.0, amounts.1],
             &[pool_balance_a, pool_balance_b],
+            config.max_allowed_slippage(),
         )?;
-
-        let config = get_config(&env)?;
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
@@ -215,8 +222,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         sender: Address,
         sell_a: bool,
         sell_amount: i128,
-        belief_price: Option<u64>,
-        max_spread: u64,
+        belief_price: Option<i64>,
+        max_spread: i64,
     ) -> Result<(), ContractError> {
         sender.require_auth();
 
@@ -403,14 +410,18 @@ impl LiquidityPoolTrait for LiquidityPool {
 
 fn assert_slippage_tolerance(
     env: &Env,
-    slippage_tolerance: Option<Decimal>,
+    slippage_tolerance: Option<i64>,
     deposits: &[i128; 2],
     pools: &[i128; 2],
+    max_allowed_slippage: Decimal,
 ) -> Result<(), ContractError> {
-    let default_slippage = Decimal::percent(100); // Representing 1.00 (100%) as the default slippage tolerance
-    let max_allowed_slippage = Decimal::percent(500); // Representing 5.00 (500%) as the maximum allowed slippage tolerance
+    let default_slippage = Decimal::percent(1); // Representing 1% as the default slippage tolerance
 
-    let slippage_tolerance = slippage_tolerance.unwrap_or(default_slippage);
+    let slippage_tolerance = if let Some(slippage_tolerance) = slippage_tolerance {
+        Decimal::bps(slippage_tolerance)
+    } else {
+        default_slippage
+    };
     if slippage_tolerance > max_allowed_slippage {
         log!(env, "Slippage tolerance exceeds the maximum allowed value");
         return Err(ContractError::SlippageToleranceExceeded);
@@ -506,28 +517,48 @@ mod tests {
     fn test_assert_slippage_tolerance_success() {
         let env = Env::default();
         // Test case that should pass:
-        // slippage tolerance of 50 (0.5 or 50%), deposits of 10 and 20, pools of 30 and 60
+        // slippage tolerance of 5000 (0.5 or 50%), deposits of 10 and 20, pools of 30 and 60
         // The price changes fall within the slippage tolerance
-        assert_slippage_tolerance(&env, Some(Decimal::percent(50)), &[10, 20], &[30, 60]).unwrap();
+        let max_allowed_slippage = 5_000i64;
+        assert_slippage_tolerance(
+            &env,
+            Some(max_allowed_slippage),
+            &[10, 20],
+            &[30, 60],
+            Decimal::bps(max_allowed_slippage),
+        )
+        .unwrap();
     }
 
     #[test]
     fn test_assert_slippage_tolerance_fail_tolerance_too_high() {
         let env = Env::default();
         // Test case that should fail due to slippage tolerance being too high
-        let result =
-            assert_slippage_tolerance(&env, Some(Decimal::percent(600)), &[10, 20], &[30, 60])
-                .unwrap_err();
+        let max_allowed_slippage = Decimal::bps(5_000i64);
+        let result = assert_slippage_tolerance(
+            &env,
+            Some(60_000),
+            &[10, 20],
+            &[30, 60],
+            max_allowed_slippage,
+        )
+        .unwrap_err();
         assert_eq!(ContractError::SlippageToleranceExceeded, result);
     }
 
     #[test]
     fn test_assert_slippage_tolerance_fail_slippage_violated() {
         let env = Env::default();
+        let max_allowed_slippage = Decimal::bps(5_000i64);
         // The price changes from 10/15 (0.67) to 40/40 (1.00), violating the 10% slippage tolerance
-        let result =
-            assert_slippage_tolerance(&env, Some(Decimal::percent(10)), &[10, 15], &[40, 40])
-                .unwrap_err();
+        let result = assert_slippage_tolerance(
+            &env,
+            Some(1_000),
+            &[10, 15],
+            &[40, 40],
+            max_allowed_slippage,
+        )
+        .unwrap_err();
         assert_eq!(ContractError::SlippageToleranceViolated, result);
     }
 
