@@ -55,15 +55,15 @@ fn simple_swap() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 1_000_001u128
+                amount: 1_000_001i128
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 999_999u128
+                amount: 999_999i128
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 1_000_000u128
+                amount: 1_000_000i128
             }
         }
     );
@@ -87,7 +87,7 @@ fn simple_swap() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 1_000_000u128 // this has not changed
+                amount: 1_000_000i128 // this has not changed
             }
         }
     );

@@ -55,7 +55,7 @@ pub struct Asset {
     /// Address of the asset
     pub address: Address,
     /// The total amount of those tokens in the pool
-    pub amount: u128,
+    pub amount: i128,
 }
 
 /// This struct is used to return a query result with the total amount of LP tokens and assets in a specific pool.
@@ -88,15 +88,15 @@ pub mod utils {
             .deploy(token_wasm_hash)
     }
 
-    pub fn save_total_shares(e: &Env, amount: u128) {
+    pub fn save_total_shares(e: &Env, amount: i128) {
         e.storage().set(&DataKey::TotalShares, &amount)
     }
 
-    pub fn save_pool_balance_a(e: &Env, amount: u128) {
+    pub fn save_pool_balance_a(e: &Env, amount: i128) {
         e.storage().set(&DataKey::ReserveA, &amount)
     }
 
-    pub fn save_pool_balance_b(e: &Env, amount: u128) {
+    pub fn save_pool_balance_b(e: &Env, amount: i128) {
         e.storage().set(&DataKey::ReserveB, &amount)
     }
 
@@ -104,29 +104,29 @@ pub mod utils {
         e: &Env,
         share_token: Address,
         to: Address,
-        amount: u128,
+        amount: i128,
     ) -> Result<(), ContractError> {
         let total = get_total_shares(e)?;
 
-        token_contract::Client::new(e, &share_token).mint(&to, &(amount as i128));
+        token_contract::Client::new(e, &share_token).mint(&to, &amount);
 
         save_total_shares(e, total + amount);
         Ok(())
     }
 
     // queries
-    pub fn get_total_shares(e: &Env) -> Result<u128, ContractError> {
+    pub fn get_total_shares(e: &Env) -> Result<i128, ContractError> {
         e.storage()
             .get_unchecked(&DataKey::TotalShares)
             .map_err(|_| ContractError::FailedToLoadFromStorage)
     }
-    pub fn get_pool_balance_a(e: &Env) -> Result<u128, ContractError> {
+    pub fn get_pool_balance_a(e: &Env) -> Result<i128, ContractError> {
         e.storage()
             .get_unchecked(&DataKey::ReserveA)
             .map_err(|_| ContractError::FailedToLoadFromStorage)
     }
 
-    pub fn get_pool_balance_b(e: &Env) -> Result<u128, ContractError> {
+    pub fn get_pool_balance_b(e: &Env) -> Result<i128, ContractError> {
         e.storage()
             .get_unchecked(&DataKey::ReserveB)
             .map_err(|_| ContractError::FailedToLoadFromStorage)
@@ -138,13 +138,13 @@ pub mod utils {
 
     pub fn get_deposit_amounts(
         env: &Env,
-        desired_a: u128,
-        min_a: u128,
-        desired_b: u128,
-        min_b: u128,
-        pool_balance_a: u128,
-        pool_balance_b: u128,
-    ) -> Result<(u128, u128), ContractError> {
+        desired_a: i128,
+        min_a: i128,
+        desired_b: i128,
+        min_b: i128,
+        pool_balance_a: i128,
+        pool_balance_b: i128,
+    ) -> Result<(i128, i128), ContractError> {
         if pool_balance_a == 0 && pool_balance_b == 0 {
             return Ok((desired_a, desired_b));
         }

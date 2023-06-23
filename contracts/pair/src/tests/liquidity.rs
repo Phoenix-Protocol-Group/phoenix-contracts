@@ -41,7 +41,7 @@ fn provide_liqudity() {
                 user1.clone(),
                 pool.address.clone(),
                 Symbol::new(&env, "provide_liquidity"),
-                (&user1, 100_u128, 100_u128, 100_u128, 100_u128).into_val(&env)
+                (&user1, 100_i128, 100_i128, 100_i128, 100_i128).into_val(&env)
             ),
             (
                 user1.clone(),
@@ -71,15 +71,15 @@ fn provide_liqudity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address,
-                amount: 100u128
+                amount: 100i128
             },
             asset_b: Asset {
                 address: token2.address,
-                amount: 100u128
+                amount: 100i128
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 100u128
+                amount: 100i128
             }
         }
     );

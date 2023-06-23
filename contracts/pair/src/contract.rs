@@ -34,10 +34,10 @@ pub trait LiquidityPoolTrait {
     fn provide_liquidity(
         env: Env,
         depositor: Address,
-        desired_a: u128,
-        min_a: u128,
-        desired_b: u128,
-        min_b: u128,
+        desired_a: i128,
+        min_a: i128,
+        desired_b: i128,
+        min_b: i128,
     ) -> Result<(), ContractError>;
 
     // If "buy_a" is true, the swap will buy token_a and sell token_b. This is flipped if "buy_a" is false.
@@ -47,7 +47,7 @@ pub trait LiquidityPoolTrait {
         env: Env,
         sender: Address,
         sell_a: bool,
-        sell_amount: u128,
+        sell_amount: i128,
         belief_price: Option<u64>,
         max_spread: u64,
     ) -> Result<(), ContractError>;
@@ -58,10 +58,10 @@ pub trait LiquidityPoolTrait {
     fn withdraw_liquidity(
         env: Env,
         recipient: Address,
-        share_amount: u128,
-        min_a: u128,
-        min_b: u128,
-    ) -> Result<(u128, u128), ContractError>;
+        share_amount: i128,
+        min_a: i128,
+        min_b: i128,
+    ) -> Result<(i128, i128), ContractError>;
 
     // QUERIES
 
@@ -126,10 +126,10 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn provide_liquidity(
         env: Env,
         depositor: Address,
-        desired_a: u128,
-        min_a: u128,
-        desired_b: u128,
-        min_b: u128,
+        desired_a: i128,
+        min_a: i128,
+        desired_b: i128,
+        min_b: i128,
     ) -> Result<(), ContractError> {
         // Depositor needs to authorize the deposit
         depositor.require_auth();
@@ -162,20 +162,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
         // Move tokens from client's wallet to the contract
-        token_a_client.transfer(
-            &depositor,
-            &env.current_contract_address(),
-            &(amounts.0 as i128),
-        );
-        token_b_client.transfer(
-            &depositor,
-            &env.current_contract_address(),
-            &(amounts.1 as i128),
-        );
+        token_a_client.transfer(&depositor, &env.current_contract_address(), &(amounts.0));
+        token_b_client.transfer(&depositor, &env.current_contract_address(), &(amounts.1));
 
         // Now calculate how many new pool shares to mint
-        let balance_a = utils::get_balance(&env, &config.token_a) as u128;
-        let balance_b = utils::get_balance(&env, &config.token_b) as u128;
+        let balance_a = utils::get_balance(&env, &config.token_a);
+        let balance_b = utils::get_balance(&env, &config.token_b);
         let total_shares = utils::get_total_shares(&env)?;
 
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
@@ -212,7 +204,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         env: Env,
         sender: Address,
         sell_a: bool,
-        sell_amount: u128,
+        sell_amount: i128,
         belief_price: Option<u64>,
         max_spread: u64,
     ) -> Result<(), ContractError> {
@@ -258,14 +250,14 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_contract::Client::new(&env, &sell_token).transfer(
             &sender,
             &env.current_contract_address(),
-            &(sell_amount as i128),
+            &sell_amount,
         );
 
         // return swapped tokens to user
         token_contract::Client::new(&env, &buy_token).transfer(
             &env.current_contract_address(),
             &sender,
-            &(buy_amount as i128),
+            &buy_amount,
         );
 
         // user is offering to sell A, so they will receive B
@@ -297,10 +289,10 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn withdraw_liquidity(
         env: Env,
         recipient: Address,
-        share_amount: u128,
-        min_a: u128,
-        min_b: u128,
-    ) -> Result<(u128, u128), ContractError> {
+        share_amount: i128,
+        min_a: i128,
+        min_b: i128,
+    ) -> Result<(i128, i128), ContractError> {
         recipient.require_auth();
 
         let config = get_config(&env)?;
@@ -344,8 +336,8 @@ impl LiquidityPoolTrait for LiquidityPool {
 fn assert_slippage_tolerance(
     env: &Env,
     slippage_tolerance: Option<Decimal>,
-    deposits: &[u128; 2],
-    pools: &[u128; 2],
+    deposits: &[i128; 2],
+    pools: &[i128; 2],
 ) -> Result<(), ContractError> {
     let default_slippage = Decimal::percent(100); // Representing 1.00 (100%) as the default slippage tolerance
     let max_allowed_slippage = Decimal::percent(500); // Representing 5.00 (500%) as the maximum allowed slippage tolerance
@@ -358,8 +350,8 @@ fn assert_slippage_tolerance(
 
     let slippage_tolerance = slippage_tolerance * 100; // Converting to a percentage value
     let one_minus_slippage_tolerance = 10000 - slippage_tolerance;
-    let deposits: [u128; 2] = [deposits[0], deposits[1]];
-    let pools: [u128; 2] = [pools[0], pools[1]];
+    let deposits: [i128; 2] = [deposits[0], deposits[1]];
+    let pools: [i128; 2] = [pools[0], pools[1]];
 
     // Ensure each price does not change more than what the slippage tolerance allows
     if deposits[0] * pools[1] * one_minus_slippage_tolerance > deposits[1] * pools[0] * 10000
@@ -382,9 +374,9 @@ pub fn assert_max_spread(
     env: &Env,
     belief_price: Option<Decimal>,
     max_spread: Decimal,
-    offer_amount: u128,
-    return_amount: u128,
-    spread_amount: u128,
+    offer_amount: i128,
+    return_amount: i128,
+    spread_amount: i128,
 ) -> Result<(), ContractError> {
     let expected_return = belief_price.map(|price| offer_amount * price);
 
@@ -416,24 +408,24 @@ pub fn assert_max_spread(
 /// - The spread amount, representing the difference between the expected and actual swap amounts.
 /// - The commission amount, representing the fees charged for the swap.
 pub fn compute_swap(
-    offer_pool: u128,
-    ask_pool: u128,
-    offer_amount: u128,
+    offer_pool: i128,
+    ask_pool: i128,
+    offer_amount: i128,
     commission_rate: Decimal,
-) -> (u128, u128, u128) {
+) -> (i128, i128, i128) {
     // Calculate the cross product of offer_pool and ask_pool
-    let cp: u128 = offer_pool * ask_pool;
+    let cp: i128 = offer_pool * ask_pool;
 
     // Calculate the resulting amount of ask assets after the swap
-    let return_amount: u128 = ask_pool - (cp / (offer_pool + offer_amount));
+    let return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount));
 
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: u128 = (offer_amount * ask_pool / offer_pool) - return_amount;
+    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - return_amount;
 
-    let commission_amount: u128 = return_amount * commission_rate;
+    let commission_amount: i128 = return_amount * commission_rate;
 
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
-    let return_amount: u128 = return_amount - commission_amount;
+    let return_amount: i128 = return_amount - commission_amount;
 
     (return_amount, spread_amount, commission_amount)
 }
