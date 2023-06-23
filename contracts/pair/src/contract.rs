@@ -188,7 +188,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
-        env.events().publish(("provide_liquidity", "sender"), sender);
+        env.events()
+            .publish(("provide_liquidity", "sender"), sender);
         env.events()
             .publish(("provide_liquidity", "token_a"), &config.token_a);
         env.events()
@@ -305,9 +306,9 @@ impl LiquidityPoolTrait for LiquidityPool {
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
 
-        let total_shares = utils::get_total_shares(&env)?;
         let mut share_ratio = Decimal::zero();
-        if !total_shares == 0i128 {
+        let total_shares = utils::get_total_shares(&env)?;
+        if total_shares != 0i128 {
             share_ratio = Decimal::from_ratio(share_amount, total_shares);
         }
 
@@ -316,14 +317,18 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         if return_amount_a < min_a || return_amount_b < min_b {
             log!(
-                env,
-                "Minimum amount of token_a or token_b is not satisfied!"
+                &env,
+                "Minimum amount of token_a or token_b is not satisfied! min_a: {}, min_b: {}, return_amount_a: {}, return_amount_b: {}",
+                min_a,
+                min_b,
+                return_amount_a,
+                return_amount_b
             );
             return Err(ContractError::WithdrawMinNotSatisfied);
         }
 
         // burn shares
-        utils::burn_shares(&env, &config.share_token, &sender, share_amount)?;
+        utils::burn_shares(&env, &config.share_token, share_amount)?;
         // transfer tokens from sender to contract
         token_contract::Client::new(&env, &config.token_a).transfer(
             &env.current_contract_address(),
@@ -339,10 +344,14 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::save_pool_balance_a(&env, pool_balance_a - return_amount_a);
         utils::save_pool_balance_b(&env, pool_balance_b - return_amount_b);
 
-        env.events().publish(("withdraw_liquidity", "sender"), sender);
-        env.events().publish(("withdraw_liquidity", "shares_amount"), share_amount);
-        env.events().publish(("withdraw_liquidity", "return_amount_a"), return_amount_a);
-        env.events().publish(("withdraw_liquidity", "return_amount_b"), return_amount_b);
+        env.events()
+            .publish(("withdraw_liquidity", "sender"), sender);
+        env.events()
+            .publish(("withdraw_liquidity", "shares_amount"), share_amount);
+        env.events()
+            .publish(("withdraw_liquidity", "return_amount_a"), return_amount_a);
+        env.events()
+            .publish(("withdraw_liquidity", "return_amount_b"), return_amount_b);
 
         Ok((return_amount_a, return_amount_b))
     }

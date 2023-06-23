@@ -114,15 +114,10 @@ pub mod utils {
         Ok(())
     }
 
-    pub fn burn_shares(
-        e: &Env,
-        share_token: &Address,
-        to: &Address,
-        amount: i128,
-    ) -> Result<(), ContractError> {
+    pub fn burn_shares(e: &Env, share_token: &Address, amount: i128) -> Result<(), ContractError> {
         let total = get_total_shares(e)?;
 
-        token_contract::Client::new(e, share_token).burn(to, &amount);
+        token_contract::Client::new(e, share_token).burn(&e.current_contract_address(), &amount);
 
         save_total_shares(e, total - amount);
         Ok(())
