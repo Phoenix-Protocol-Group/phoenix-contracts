@@ -11,6 +11,7 @@ and this project adheres to
 - implement checksum in release artifacts ([#37])
 - implement withdraw endpoint in pair contract ([#38])
 - implement protocol fees that are subtracted during the swap ([#40])
+- implement slippage tolerance into pair contract ([#41])
 
 ### Changed
 
@@ -19,6 +20,7 @@ and this project adheres to
 [#37]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/37
 [#38]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/38
 [#40]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/40
+[#41]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/41
 
 ## [0.2.7] - 2023-06-22
 

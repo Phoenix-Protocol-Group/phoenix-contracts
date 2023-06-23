@@ -23,8 +23,14 @@ fn provide_liqudity() {
     }
     let user1 = Address::random(&env);
     let swap_fees = 0i64;
-    let pool =
-        deploy_liquidity_pool_contract(&env, &token1.address, &token2.address, swap_fees, None);
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+    );
 
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);
@@ -103,8 +109,14 @@ fn withdraw_liqudity() {
     }
     let user1 = Address::random(&env);
     let swap_fees = 0i64;
-    let pool =
-        deploy_liquidity_pool_contract(&env, &token1.address, &token2.address, swap_fees, None);
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+    );
 
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);

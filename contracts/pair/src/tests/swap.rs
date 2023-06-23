@@ -21,8 +21,14 @@ fn simple_swap() {
     }
     let user1 = Address::random(&env);
     let swap_fees = 0i64;
-    let pool =
-        deploy_liquidity_pool_contract(&env, &token1.address, &token2.address, swap_fees, None);
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+    );
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
@@ -124,6 +130,7 @@ fn swap_with_high_fee() {
         &token2.address,
         swap_fees,
         fee_recipient.clone(),
+        None,
     );
 
     let initial_liquidity = 1_000_000i128;

@@ -40,6 +40,7 @@ pub struct Config {
     /// In relation to the returned amount of tokens
     pub total_fee_bps: i64,
     pub fee_recipient: Address,
+    pub max_allowed_slippage: i64,
 }
 const CONFIG: Symbol = Symbol::short("CONFIG");
 
@@ -57,6 +58,10 @@ pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> Result<i64, ContractEr
 impl Config {
     pub fn protocol_fee_rate(&self) -> Decimal {
         Decimal::bps(self.total_fee_bps)
+    }
+
+    pub fn max_allowed_slippage(&self) -> Decimal {
+        Decimal::bps(self.max_allowed_slippage)
     }
 }
 
