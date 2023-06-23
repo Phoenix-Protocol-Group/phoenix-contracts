@@ -181,8 +181,8 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         utils::mint_shares(
             &env,
-            config.share_token,
-            depositor,
+            &config.share_token,
+            &depositor,
             new_total_shares - total_shares,
         )?;
         utils::save_pool_balance_a(&env, balance_a);
@@ -288,19 +288,56 @@ impl LiquidityPoolTrait for LiquidityPool {
 
     fn withdraw_liquidity(
         env: Env,
-        recipient: Address,
+        sender: Address,
         share_amount: i128,
         min_a: i128,
         min_b: i128,
     ) -> Result<(i128, i128), ContractError> {
-        recipient.require_auth();
+        sender.require_auth();
 
         let config = get_config(&env)?;
 
         let share_token_client = token_contract::Client::new(&env, &config.share_token);
-        share_token_client.transfer(&recipient, &env.current_contract_address(), &share_amount);
+        share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
 
-        unimplemented!()
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
+
+        let total_shares = utils::get_total_shares(&env)?;
+        let mut share_ratio = Decimal::zero();
+        if !total_shares == 0i128 {
+            share_ratio = Decimal::from_ratio(share_amount, total_shares);
+        }
+
+        let return_amount_a = pool_balance_a * share_ratio;
+        let return_amount_b = pool_balance_b * share_ratio;
+
+        if return_amount_a < min_a || return_amount_b < min_b {
+            log!(
+                env,
+                "Minimum amount of token_a or token_b is not satisfied!"
+            );
+            return Err(ContractError::WithdrawMinNotSatisfied);
+        }
+
+        // burn shares
+        utils::burn_shares(&env, &config.share_token, &sender, share_amount)?;
+        // transfer tokens from sender to contract
+        token_contract::Client::new(&env, &config.token_a).transfer(
+            &env.current_contract_address(),
+            &sender,
+            &return_amount_a,
+        );
+        token_contract::Client::new(&env, &config.token_b).transfer(
+            &env.current_contract_address(),
+            &sender,
+            &return_amount_b,
+        );
+        // update pool balances
+        utils::save_pool_balance_a(&env, pool_balance_a - return_amount_a);
+        utils::save_pool_balance_b(&env, pool_balance_b - return_amount_b);
+
+        Ok((return_amount_a, return_amount_b))
     }
 
     // Queries

@@ -7,7 +7,7 @@ use core::{
     ops::Mul,
 };
 
-#[derive(Default, Debug, PartialEq, Eq, PartialOrd)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 pub struct Decimal(i128);
 
 #[allow(dead_code)]
