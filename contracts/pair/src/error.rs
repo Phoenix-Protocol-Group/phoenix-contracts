@@ -12,4 +12,5 @@ pub enum ContractError {
     FailedToLoadFromStorage = 6,
     DepositAmountBLessThenMin = 7,
     DepositAmountAExceedsOrBelowMin = 8,
+    WithdrawMinNotSatisfied = 9,
 }
