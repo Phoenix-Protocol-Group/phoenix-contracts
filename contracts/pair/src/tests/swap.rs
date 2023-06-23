@@ -20,13 +20,15 @@ fn simple_swap() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::random(&env);
-    let swap_fees = 0i32;
+    let swap_fees = 0i64;
     let pool =
         deploy_liquidity_pool_contract(&env, &token1.address, &token2.address, swap_fees, None);
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
-    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &1_000_000, &1_000_000);
+    pool.provide_liquidity(
+        &user1, &1_000_000, &1_000_000, &1_000_000, &1_000_000, &None,
+    );
 
     // true means "selling A token"
     // selling just one token with 1% max spread allowed
@@ -114,7 +116,7 @@ fn swap_with_high_fee() {
     }
     let user1 = Address::random(&env);
 
-    let swap_fees = 1_000i32; // 10% bps
+    let swap_fees = 1_000i64; // 10% bps
     let fee_recipient = Address::random(&env);
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -134,6 +136,7 @@ fn swap_with_high_fee() {
         &initial_liquidity,
         &initial_liquidity,
         &initial_liquidity,
+        &None,
     );
 
     let spread = 10; // 10% maximum spread allowed

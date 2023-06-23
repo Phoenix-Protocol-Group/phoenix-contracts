@@ -38,15 +38,15 @@ pub struct Config {
     pub pair_type: PairType,
     /// The total fees (in bps) charged by a pair of this type.
     /// In relation to the returned amount of tokens
-    pub total_fee_bps: i32,
+    pub total_fee_bps: i64,
     pub fee_recipient: Address,
 }
 const CONFIG: Symbol = Symbol::short("CONFIG");
 
-const MAX_TOTAL_FEE_BPS: i32 = 10_000;
+const MAX_TOTAL_FEE_BPS: i64 = 10_000;
 
 /// This method is used to check fee bps.
-pub fn validate_fee_bps(env: &Env, total_fee_bps: i32) -> Result<i32, ContractError> {
+pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> Result<i64, ContractError> {
     if total_fee_bps > MAX_TOTAL_FEE_BPS {
         log!(env, "Total fees cannot be greater than 100%");
         return Err(ContractError::InvalidFeeBps);
@@ -56,7 +56,7 @@ pub fn validate_fee_bps(env: &Env, total_fee_bps: i32) -> Result<i32, ContractEr
 
 impl Config {
     pub fn protocol_fee_rate(&self) -> Decimal {
-        Decimal::from_ratio(self.total_fee_bps as i128, 10_000i128)
+        Decimal::bps(self.total_fee_bps)
     }
 }
 

@@ -39,12 +39,12 @@ impl Decimal {
     }
 
     /// Convert x% into Decimal
-    pub fn percent(x: u64) -> Self {
+    pub fn percent(x: i64) -> Self {
         Self((x as i128) * 10_000_000_000_000_000)
     }
 
     /// Convert basis points (x/10000) into Decimal
-    pub fn bps(x: u64) -> Self {
+    pub fn bps(x: i64) -> Self {
         Self((x as i128) * 100_000_000_000_000)
     }
 

@@ -22,7 +22,7 @@ fn provide_liqudity() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::random(&env);
-    let swap_fees = 0i32;
+    let swap_fees = 0i64;
     let pool =
         deploy_liquidity_pool_contract(&env, &token1.address, &token2.address, swap_fees, None);
 
@@ -35,7 +35,7 @@ fn provide_liqudity() {
     token2.mint(&user1, &1000);
     assert_eq!(token2.balance(&user1), 1000);
 
-    pool.provide_liquidity(&user1, &100, &100, &100, &100);
+    pool.provide_liquidity(&user1, &100, &100, &100, &100, &None);
     assert_eq!(
         env.auths(),
         [
@@ -43,7 +43,7 @@ fn provide_liqudity() {
                 user1.clone(),
                 pool.address.clone(),
                 Symbol::new(&env, "provide_liquidity"),
-                (&user1, 100_i128, 100_i128, 100_i128, 100_i128).into_val(&env)
+                (&user1, 100_i128, 100_i128, 100_i128, 100_i128, None::<i64>).into_val(&env)
             ),
             (
                 user1.clone(),
@@ -102,7 +102,7 @@ fn withdraw_liqudity() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::random(&env);
-    let swap_fees = 0i32;
+    let swap_fees = 0i64;
     let pool =
         deploy_liquidity_pool_contract(&env, &token1.address, &token2.address, swap_fees, None);
 
@@ -111,7 +111,7 @@ fn withdraw_liqudity() {
 
     token1.mint(&user1, &100);
     token2.mint(&user1, &100);
-    pool.provide_liquidity(&user1, &100, &100, &100, &100);
+    pool.provide_liquidity(&user1, &100, &100, &100, &100, &None);
 
     assert_eq!(token1.balance(&user1), 0);
     assert_eq!(token1.balance(&pool.address), 100);

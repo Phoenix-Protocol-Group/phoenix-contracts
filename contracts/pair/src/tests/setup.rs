@@ -20,7 +20,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
     env: &Env,
     token_a: &Address,
     token_b: &Address,
-    swap_fees: i32,
+    swap_fees: i64,
     fee_recipient: impl Into<Option<Address>>,
 ) -> LiquidityPoolClient<'a> {
     let pool = LiquidityPoolClient::new(env, &env.register_contract(None, LiquidityPool {}));
