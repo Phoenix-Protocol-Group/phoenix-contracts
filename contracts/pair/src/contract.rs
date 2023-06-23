@@ -56,8 +56,8 @@ pub trait LiquidityPoolTrait {
     // corresponding amount of token_a and token_b to "to".
     // Returns amount of both tokens withdrawn
     fn withdraw_liquidity(
-        e: Env,
-        to: Address,
+        env: Env,
+        recipient: Address,
         share_amount: u128,
         min_a: u128,
         min_b: u128,
@@ -295,12 +295,19 @@ impl LiquidityPoolTrait for LiquidityPool {
     }
 
     fn withdraw_liquidity(
-        _e: Env,
-        _to: Address,
-        _share_amount: u128,
-        _min_a: u128,
-        _min_b: u128,
+        env: Env,
+        recipient: Address,
+        share_amount: u128,
+        min_a: u128,
+        min_b: u128,
     ) -> Result<(u128, u128), ContractError> {
+        recipient.require_auth();
+
+        let config = get_config(&env)?;
+
+        let share_token_client = token_contract::Client::new(&env, &config.share_token);
+        share_token_client.transfer(&recipient, &env.current_contract_address(), &share_amount);
+
         unimplemented!()
     }
 
