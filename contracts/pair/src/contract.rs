@@ -125,14 +125,14 @@ impl LiquidityPoolTrait for LiquidityPool {
 
     fn provide_liquidity(
         env: Env,
-        depositor: Address,
+        sender: Address,
         desired_a: i128,
         min_a: i128,
         desired_b: i128,
         min_b: i128,
     ) -> Result<(), ContractError> {
-        // Depositor needs to authorize the deposit
-        depositor.require_auth();
+        // sender needs to authorize the deposit
+        sender.require_auth();
 
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
@@ -162,8 +162,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
         // Move tokens from client's wallet to the contract
-        token_a_client.transfer(&depositor, &env.current_contract_address(), &(amounts.0));
-        token_b_client.transfer(&depositor, &env.current_contract_address(), &(amounts.1));
+        token_a_client.transfer(&sender, &env.current_contract_address(), &(amounts.0));
+        token_b_client.transfer(&sender, &env.current_contract_address(), &(amounts.1));
 
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, &config.token_a);
@@ -182,20 +182,21 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::mint_shares(
             &env,
             &config.share_token,
-            &depositor,
+            &sender,
             new_total_shares - total_shares,
         )?;
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
+        env.events().publish(("provide_liquidity", "sender"), sender);
         env.events()
-            .publish(("provideLiquidity", "token_a"), &config.token_a);
+            .publish(("provide_liquidity", "token_a"), &config.token_a);
         env.events()
-            .publish(("provideLiquidity", "token_a-amount"), amounts.0);
+            .publish(("provide_liquidity", "token_a-amount"), amounts.0);
         env.events()
-            .publish(("provideLiquidity", "token_a"), &config.token_b);
+            .publish(("provide_liquidity", "token_a"), &config.token_b);
         env.events()
-            .publish(("provideLiquidity", "token_b-amount"), amounts.1);
+            .publish(("provide_liquidity", "token_b-amount"), amounts.1);
 
         Ok(())
     }
@@ -276,6 +277,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
+        env.events().publish(("swap", "sender"), sender);
         env.events().publish(("swap", "sell_token"), sell_token);
         env.events().publish(("swap", "sell_amount"), sell_amount);
         env.events().publish(("swap", "buy_token"), buy_token);
@@ -336,6 +338,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         // update pool balances
         utils::save_pool_balance_a(&env, pool_balance_a - return_amount_a);
         utils::save_pool_balance_b(&env, pool_balance_b - return_amount_b);
+
+        env.events().publish(("withdraw_liquidity", "sender"), sender);
+        env.events().publish(("withdraw_liquidity", "shares_amount"), share_amount);
+        env.events().publish(("withdraw_liquidity", "return_amount_a"), return_amount_a);
+        env.events().publish(("withdraw_liquidity", "return_amount_b"), return_amount_b);
 
         Ok((return_amount_a, return_amount_b))
     }
