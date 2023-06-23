@@ -4,7 +4,6 @@ use soroban_sdk::contracterror;
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum ContractError {
-    InvalidFeeBps = 0,
     FirstTokenMustBeSmallerThenSecond = 1,
     SlippageToleranceExceeded = 2,
     SlippageToleranceViolated = 3,
@@ -14,4 +13,5 @@ pub enum ContractError {
     DepositAmountBLessThenMin = 7,
     DepositAmountAExceedsOrBelowMin = 8,
     WithdrawMinNotSatisfied = 9,
+    InvalidFeeBps = 11,
 }

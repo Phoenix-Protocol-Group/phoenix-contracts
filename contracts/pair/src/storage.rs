@@ -39,6 +39,7 @@ pub struct Config {
     /// The total fees (in bps) charged by a pair of this type.
     /// In relation to the returned amount of tokens
     pub total_fee_bps: i32,
+    pub fee_recipient: Address,
 }
 const CONFIG: Symbol = Symbol::short("CONFIG");
 

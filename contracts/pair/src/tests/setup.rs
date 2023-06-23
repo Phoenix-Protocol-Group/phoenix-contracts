@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
@@ -21,9 +21,11 @@ pub fn deploy_liquidity_pool_contract<'a>(
     token_a: &Address,
     token_b: &Address,
     swap_fees: i32,
+    fee_recipient: impl Into<Option<Address>>,
 ) -> LiquidityPoolClient<'a> {
     let pool = LiquidityPoolClient::new(env, &env.register_contract(None, LiquidityPool {}));
     let token_wasm_hash = install_token_wasm(env);
+    let fee_recipient = fee_recipient.into().unwrap_or_else(|| Address::random(env));
     let share_token_decimals = 7u32;
     pool.initialize(
         &token_wasm_hash,
@@ -31,6 +33,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
         token_b,
         &share_token_decimals,
         &swap_fees,
+        &fee_recipient,
     );
     pool
 }
