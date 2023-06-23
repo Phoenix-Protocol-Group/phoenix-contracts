@@ -18,14 +18,20 @@ jobs:
           toolchain: 1.70.0
           target: wasm32-unknown-unknown
           override: true
-      - name: Build Artifacts
+      - name: Build artifacts
         run: make build
+      - name: Optimize artifacts
+      - name: Generate checksums
+        run: |
+          cd target/wasm32-unknown-unknown/release/
+          sha256sum *.wasm > checksums.txt
       - name: Release
         env:
           GH_TOKEN: ${{ secrets.JAKUB_SECRET_CI }}
         run: >-
           gh release create ${{ github.ref_name }}
           target/wasm32-unknown-unknown/release/*.wasm
+          target/wasm32-unknown-unknown/release/checksums.txt
           --generate-notes
           --title "${{ github.ref_name }}"
 
