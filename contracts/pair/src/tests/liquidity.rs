@@ -22,7 +22,9 @@ fn provide_liqudity() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::random(&env);
-    let pool = deploy_liquidity_pool_contract(&env, &token1.address, &token2.address);
+    let swap_fees = 0i32;
+    let pool =
+        deploy_liquidity_pool_contract(&env, &token1.address, &token2.address, swap_fees, None);
 
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);
@@ -100,7 +102,9 @@ fn withdraw_liqudity() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::random(&env);
-    let pool = deploy_liquidity_pool_contract(&env, &token1.address, &token2.address);
+    let swap_fees = 0i32;
+    let pool =
+        deploy_liquidity_pool_contract(&env, &token1.address, &token2.address, swap_fees, None);
 
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);

@@ -4,7 +4,9 @@ use num_integer::Roots;
 
 use crate::{
     error::ContractError,
-    storage::{get_config, save_config, utils, Asset, Config, PairType, PoolResponse},
+    storage::{
+        get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
+    },
     token_contract,
 };
 use decimal::Decimal;
@@ -26,6 +28,8 @@ pub trait LiquidityPoolTrait {
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
+        swap_fee_bps: i32,
+        fee_recipient: Address,
     ) -> Result<(), ContractError>;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -83,6 +87,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_a: Address,
         token_b: Address,
         share_token_decimals: u32,
+        swap_fee_bps: i32,
+        fee_recipient: Address,
     ) -> Result<(), ContractError> {
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
@@ -109,6 +115,8 @@ impl LiquidityPoolTrait for LiquidityPool {
             token_b: token_b.clone(),
             share_token: share_token_address,
             pair_type: PairType::Xyk,
+            total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
+            fee_recipient,
         };
         save_config(&env, config);
         utils::save_total_shares(&env, 0);
@@ -223,11 +231,13 @@ impl LiquidityPoolTrait for LiquidityPool {
             (pool_balance_b, pool_balance_a)
         };
 
-        let (buy_amount, spread_amount, _commission_amount) = compute_swap(
+        let config = get_config(&env)?;
+
+        let (buy_amount, spread_amount, commission_amount) = compute_swap(
             pool_balance_sell,
             pool_balance_buy,
             sell_amount,
-            Decimal::percent(1), // TODO: Add comission rate to the message
+            config.protocol_fee_rate(),
         );
 
         assert_max_spread(
@@ -235,11 +245,9 @@ impl LiquidityPoolTrait for LiquidityPool {
             belief_price,
             max_spread,
             buy_amount,
-            sell_amount, /*+ commission_amount*/
+            sell_amount + commission_amount,
             spread_amount,
         )?;
-
-        let config = get_config(&env)?;
 
         // Transfer the amount being sold to the contract
         let (sell_token, buy_token) = if sell_a {
@@ -262,16 +270,23 @@ impl LiquidityPoolTrait for LiquidityPool {
             &buy_amount,
         );
 
+        // send commission to fee recipient
+        token_contract::Client::new(&env, &buy_token).transfer(
+            &env.current_contract_address(),
+            &config.fee_recipient,
+            &commission_amount,
+        );
+
         // user is offering to sell A, so they will receive B
         // A balance is bigger, B balance is smaller
         let (balance_a, balance_b) = if sell_a {
             (
                 pool_balance_a + sell_amount,
-                pool_balance_b /*- protocol_fee_amount */ - buy_amount,
+                pool_balance_b - commission_amount - buy_amount,
             )
         } else {
             (
-                pool_balance_a /*- protocol_fee_amount */ - buy_amount,
+                pool_balance_a - commission_amount - buy_amount,
                 pool_balance_b + sell_amount,
             )
         };
