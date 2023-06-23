@@ -6,6 +6,18 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- implement checksum in release artifacts ([#37])
+- implement withdraw endpoint in pair contract ([#38])
+
+### Changed
+
+- replace u128 with i128 in Decimal crate implementation... because someone sometime might want to use negative numbers in their contracts ([#38])
+
+[#37]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/37
+[#38]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/38
+
 ## [0.2.7] - 2023-06-22
 
 ### Added
