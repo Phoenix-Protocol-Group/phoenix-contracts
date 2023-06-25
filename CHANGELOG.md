@@ -16,11 +16,13 @@ and this project adheres to
 ### Changed
 
 - replace u128 with i128 in Decimal crate implementation... because someone sometime might want to use negative numbers in their contracts ([#38])
+- improved architecture docs ([#44])
 
 [#37]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/37
 [#38]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/38
 [#40]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/40
 [#41]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/41
+[#44]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/44
 
 ## [0.2.7] - 2023-06-22
 

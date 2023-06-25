@@ -2,7 +2,7 @@
 This repository contains the Rust source code for the smart contracts of the Phoenix DEX.
 
 ## Overview
-Phoenix will be a set of DeFi protocols hosted on Soroban platform.
+Phoenix will be a set of DeFi protocols hosted on Soroban platform. Directory `docs` contains brief description of architecture, including flow diagrams.
 
 ## Prerequisites
 The following tools are required for compiling the smart contracts:
