@@ -180,20 +180,11 @@ fn swap_with_high_fee() {
 }
 
 #[test]
-fn swap_simulation() {
+fn swap_simulation_even_pool() {
     let env = Env::default();
-    env.mock_all_auths();
 
-    let mut admin1 = Address::random(&env);
-    let mut admin2 = Address::random(&env);
-
-    let mut token1 = deploy_token_contract(&env, &admin1);
-    let mut token2 = deploy_token_contract(&env, &admin2);
-    if token2.address < token1.address {
-        std::mem::swap(&mut token1, &mut token2);
-        std::mem::swap(&mut admin1, &mut admin2);
-    }
-    let user1 = Address::random(&env);
+    let token1 = deploy_token_contract(&env, &Address::random(&env));
+    let token2 = deploy_token_contract(&env, &Address::random(&env));
 
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_liquidity_pool_contract(
@@ -206,7 +197,7 @@ fn swap_simulation() {
     );
 
     let initial_liquidity = 1_000_000i128;
-
+    let user1 = Address::random(&env);
     token1.mint(&user1, &initial_liquidity);
     token2.mint(&user1, &initial_liquidity);
     pool.provide_liquidity(
@@ -227,6 +218,19 @@ fn swap_simulation() {
     // Y_new = 90_909.0909
     let output_amount = 90_910i128; // rounding
     let fees = Decimal::percent(10) * output_amount;
+    assert_eq!(
+        result,
+        SimulateSwapResponse {
+            return_amount: output_amount - fees,
+            spread_amount: 9090, // spread amount is basically 10%, since it's basically 10% of the
+            // first token
+            commission_amount: fees,
+            total_return: 100_000
+        }
+    );
+
+    // false indicates selling the other asset - transaction goes the same
+    let result = pool.simulate_swap(&false, &100_000);
     assert_eq!(
         result,
         SimulateSwapResponse {
