@@ -6,6 +6,7 @@ use crate::{
     error::ContractError,
     storage::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
+        SimulateSwapResponse,
     },
     token_contract,
 };
@@ -54,7 +55,7 @@ pub trait LiquidityPoolTrait {
         env: Env,
         sender: Address,
         sell_a: bool,
-        sell_amount: i128,
+        offer_amount: i128,
         belief_price: Option<i64>,
         max_spread: i64,
     ) -> Result<(), ContractError>;
@@ -82,7 +83,11 @@ pub trait LiquidityPoolTrait {
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
 
     // Simulate swap transaction
-    fn simulate_swap(env: Env, sell_a: bool, sell_amount: i128) -> Result<(), ContractError>;
+    fn simulate_swap(
+        env: Env,
+        sell_a: bool,
+        sell_amount: i128,
+    ) -> Result<SimulateSwapResponse, ContractError>;
 }
 
 #[contractimpl]
@@ -224,7 +229,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         env: Env,
         sender: Address,
         sell_a: bool,
-        sell_amount: i128,
+        offer_amount: i128,
         belief_price: Option<i64>,
         max_spread: i64,
     ) -> Result<(), ContractError> {
@@ -243,10 +248,10 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let config = get_config(&env)?;
 
-        let (buy_amount, spread_amount, commission_amount) = compute_swap(
+        let (return_amount, spread_amount, commission_amount) = compute_swap(
             pool_balance_sell,
             pool_balance_buy,
-            sell_amount,
+            offer_amount,
             config.protocol_fee_rate(),
         );
 
@@ -254,8 +259,8 @@ impl LiquidityPoolTrait for LiquidityPool {
             &env,
             belief_price,
             max_spread,
-            sell_amount,
-            buy_amount + commission_amount,
+            offer_amount,
+            return_amount + commission_amount,
             spread_amount,
         )?;
 
@@ -270,14 +275,14 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_contract::Client::new(&env, &sell_token).transfer(
             &sender,
             &env.current_contract_address(),
-            &sell_amount,
+            &offer_amount,
         );
 
         // return swapped tokens to user
         token_contract::Client::new(&env, &buy_token).transfer(
             &env.current_contract_address(),
             &sender,
-            &buy_amount,
+            &return_amount,
         );
 
         // send commission to fee recipient
@@ -291,13 +296,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         // A balance is bigger, B balance is smaller
         let (balance_a, balance_b) = if sell_a {
             (
-                pool_balance_a + sell_amount,
-                pool_balance_b - commission_amount - buy_amount,
+                pool_balance_a + offer_amount,
+                pool_balance_b - commission_amount - return_amount,
             )
         } else {
             (
-                pool_balance_a - commission_amount - buy_amount,
-                pool_balance_b + sell_amount,
+                pool_balance_a - commission_amount - return_amount,
+                pool_balance_b + offer_amount,
             )
         };
         utils::save_pool_balance_a(&env, balance_a);
@@ -305,9 +310,10 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         env.events().publish(("swap", "sender"), sender);
         env.events().publish(("swap", "sell_token"), sell_token);
-        env.events().publish(("swap", "sell_amount"), sell_amount);
+        env.events().publish(("swap", "offer_amount"), offer_amount);
         env.events().publish(("swap", "buy_token"), buy_token);
-        env.events().publish(("swap", "buy_amount"), buy_amount);
+        env.events()
+            .publish(("swap", "return_amount"), return_amount);
         env.events()
             .publish(("swap", "spread_amount"), spread_amount);
 
@@ -410,7 +416,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         })
     }
 
-    fn simulate_swap(env: Env, sell_a: bool, sell_amount: i128) -> Result<(), ContractError> {
+    fn simulate_swap(
+        env: Env,
+        sell_a: bool,
+        offer_amount: i128,
+    ) -> Result<SimulateSwapResponse, ContractError> {
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
         let (pool_balance_sell, pool_balance_buy) = if sell_a {
@@ -421,19 +431,21 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let config = get_config(&env)?;
 
-        let (buy_amount, spread_amount, commission_amount) = compute_swap(
+        let (return_amount, spread_amount, commission_amount) = compute_swap(
             pool_balance_sell,
             pool_balance_buy,
-            sell_amount,
+            offer_amount,
             config.protocol_fee_rate(),
         );
 
-        let return_amount = sell_amount + commission_amount;
-        let total_return =  return_amount + spread_amount;
+        let total_return = return_amount + commission_amount + spread_amount;
 
-        let spread_ratio = Decimal::from_ratio(spread_amount, total_return);
-
-        Ok(())
+        Ok(SimulateSwapResponse {
+            return_amount,
+            spread_amount,
+            commission_amount,
+            total_return,
+        })
     }
 }
 

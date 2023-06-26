@@ -97,6 +97,15 @@ pub struct PoolResponse {
     pub asset_lp_share: Asset,
 }
 
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct SimulateSwapResponse {
+    pub return_amount: i128,
+    pub commission_amount: i128,
+    pub spread_amount: i128,
+    pub total_return: i128,
+}
+
 pub mod utils {
     use super::*;
 
