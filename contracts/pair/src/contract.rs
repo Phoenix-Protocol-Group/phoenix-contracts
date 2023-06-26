@@ -80,6 +80,9 @@ pub trait LiquidityPoolTrait {
 
     // Returns  the total amount of LP tokens and assets in a specific pool
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
+
+    // Simulate swap transaction
+    fn simulate_swap(env: Env, sell_a: bool, sell_amount: i128) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -405,6 +408,32 @@ impl LiquidityPoolTrait for LiquidityPool {
                 amount: utils::get_total_shares(&env)?,
             },
         })
+    }
+
+    fn simulate_swap(env: Env, sell_a: bool, sell_amount: i128) -> Result<(), ContractError> {
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
+        let (pool_balance_sell, pool_balance_buy) = if sell_a {
+            (pool_balance_a, pool_balance_b)
+        } else {
+            (pool_balance_b, pool_balance_a)
+        };
+
+        let config = get_config(&env)?;
+
+        let (buy_amount, spread_amount, commission_amount) = compute_swap(
+            pool_balance_sell,
+            pool_balance_buy,
+            sell_amount,
+            config.protocol_fee_rate(),
+        );
+
+        let return_amount = sell_amount + commission_amount;
+        let total_return =  return_amount + spread_amount;
+
+        let spread_ratio = Decimal::from_ratio(spread_amount, total_return);
+
+        Ok(())
     }
 }
 
