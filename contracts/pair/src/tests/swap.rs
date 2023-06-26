@@ -2,7 +2,7 @@ extern crate std;
 use soroban_sdk::{testutils::Address as _, Address, Env, IntoVal, Symbol};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
-use crate::storage::{Asset, PoolResponse};
+use crate::storage::{Asset, PoolResponse, SimulateSwapResponse};
 use decimal::Decimal;
 
 #[test]
@@ -177,4 +177,64 @@ fn swap_with_high_fee() {
     let fees = Decimal::percent(10) * output_amount;
     assert_eq!(token2.balance(&user1), output_amount - fees);
     assert_eq!(token2.balance(&fee_recipient), fees);
+}
+
+#[test]
+fn swap_simulation() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+
+    let swap_fees = 1_000i64; // 10% bps
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        Address::random(&env),
+        None,
+    );
+
+    let initial_liquidity = 1_000_000i128;
+
+    token1.mint(&user1, &initial_liquidity);
+    token2.mint(&user1, &initial_liquidity);
+    pool.provide_liquidity(
+        &user1,
+        &initial_liquidity,
+        &initial_liquidity,
+        &initial_liquidity,
+        &initial_liquidity,
+        &None,
+    );
+
+    // let's simulate swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
+    let result = pool.simulate_swap(&true, &100_000);
+
+    // This is XYK LP with constant product formula
+    // Y_new = (X_in * Y_old) / (X_in + X_old)
+    // Y_new = (100_000 * 1_000_000) / (100_000 + 1_000_000)
+    // Y_new = 90_909.0909
+    let output_amount = 90_910i128; // rounding
+    let fees = Decimal::percent(10) * output_amount;
+    assert_eq!(
+        result,
+        SimulateSwapResponse {
+            return_amount: output_amount - fees,
+            spread_amount: 9090, // spread amount is basically 10%, since it's basically 10% of the
+            // first token
+            commission_amount: fees,
+            total_return: 100_000
+        }
+    );
 }

@@ -98,7 +98,7 @@ pub struct PoolResponse {
 }
 
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SimulateSwapResponse {
     pub return_amount: i128,
     pub commission_amount: i128,
