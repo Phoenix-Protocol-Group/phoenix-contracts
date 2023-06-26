@@ -254,8 +254,8 @@ impl LiquidityPoolTrait for LiquidityPool {
             &env,
             belief_price,
             max_spread,
-            buy_amount,
-            sell_amount + commission_amount,
+            sell_amount,
+            buy_amount + commission_amount,
             spread_amount,
         )?;
 
