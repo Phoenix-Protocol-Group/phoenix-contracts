@@ -26,6 +26,7 @@ pub trait LiquidityPoolTrait {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
+        admin: Address,
         token_wasm_hash: BytesN<32>,
         token_a: Address,
         token_b: Address,
@@ -71,6 +72,9 @@ pub trait LiquidityPoolTrait {
         min_b: i128,
     ) -> Result<(i128, i128), ContractError>;
 
+    // Migration entrypoint
+    fn upgrade(e: Env, new_wasm_hash: BytesN<32>) -> Result<(), ContractError>;
+
     // QUERIES
 
     // Returns the configuration structure containing the addresses
@@ -102,6 +106,7 @@ impl LiquidityPoolTrait for LiquidityPool {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
+        admin: Address,
         token_wasm_hash: BytesN<32>,
         token_a: Address,
         token_b: Address,
@@ -140,6 +145,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_slippage: max_allowed_slippage_bps,
         };
         save_config(&env, config);
+        utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
@@ -392,6 +398,14 @@ impl LiquidityPoolTrait for LiquidityPool {
             .publish(("withdraw_liquidity", "return_amount_b"), return_amount_b);
 
         Ok((return_amount_a, return_amount_b))
+    }
+
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), ContractError> {
+        let admin: Address = utils::get_admin(&env)?;
+        admin.require_auth();
+
+        env.update_current_contract_wasm(&new_wasm_hash);
+        Ok(())
     }
 
     // Queries
