@@ -6,6 +6,7 @@ use crate::{
     error::ContractError,
     storage::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
+        SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
@@ -54,7 +55,7 @@ pub trait LiquidityPoolTrait {
         env: Env,
         sender: Address,
         sell_a: bool,
-        sell_amount: i128,
+        offer_amount: i128,
         belief_price: Option<i64>,
         max_spread: i64,
     ) -> Result<(), ContractError>;
@@ -80,6 +81,20 @@ pub trait LiquidityPoolTrait {
 
     // Returns  the total amount of LP tokens and assets in a specific pool
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
+
+    // Simulate swap transaction
+    fn simulate_swap(
+        env: Env,
+        sell_a: bool,
+        sell_amount: i128,
+    ) -> Result<SimulateSwapResponse, ContractError>;
+
+    // Simulate reverse swap transaction
+    fn simulate_reverse_swap(
+        env: Env,
+        sell_a: bool,
+        ask_amount: i128,
+    ) -> Result<SimulateReverseSwapResponse, ContractError>;
 }
 
 #[contractimpl]
@@ -221,7 +236,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         env: Env,
         sender: Address,
         sell_a: bool,
-        sell_amount: i128,
+        offer_amount: i128,
         belief_price: Option<i64>,
         max_spread: i64,
     ) -> Result<(), ContractError> {
@@ -240,10 +255,10 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let config = get_config(&env)?;
 
-        let (buy_amount, spread_amount, commission_amount) = compute_swap(
+        let (return_amount, spread_amount, commission_amount) = compute_swap(
             pool_balance_sell,
             pool_balance_buy,
-            sell_amount,
+            offer_amount,
             config.protocol_fee_rate(),
         );
 
@@ -251,8 +266,8 @@ impl LiquidityPoolTrait for LiquidityPool {
             &env,
             belief_price,
             max_spread,
-            buy_amount,
-            sell_amount + commission_amount,
+            offer_amount,
+            return_amount + commission_amount,
             spread_amount,
         )?;
 
@@ -267,14 +282,14 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_contract::Client::new(&env, &sell_token).transfer(
             &sender,
             &env.current_contract_address(),
-            &sell_amount,
+            &offer_amount,
         );
 
         // return swapped tokens to user
         token_contract::Client::new(&env, &buy_token).transfer(
             &env.current_contract_address(),
             &sender,
-            &buy_amount,
+            &return_amount,
         );
 
         // send commission to fee recipient
@@ -288,13 +303,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         // A balance is bigger, B balance is smaller
         let (balance_a, balance_b) = if sell_a {
             (
-                pool_balance_a + sell_amount,
-                pool_balance_b - commission_amount - buy_amount,
+                pool_balance_a + offer_amount,
+                pool_balance_b - commission_amount - return_amount,
             )
         } else {
             (
-                pool_balance_a - commission_amount - buy_amount,
-                pool_balance_b + sell_amount,
+                pool_balance_a - commission_amount - return_amount,
+                pool_balance_b + offer_amount,
             )
         };
         utils::save_pool_balance_a(&env, balance_a);
@@ -302,9 +317,10 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         env.events().publish(("swap", "sender"), sender);
         env.events().publish(("swap", "sell_token"), sell_token);
-        env.events().publish(("swap", "sell_amount"), sell_amount);
+        env.events().publish(("swap", "offer_amount"), offer_amount);
         env.events().publish(("swap", "buy_token"), buy_token);
-        env.events().publish(("swap", "buy_amount"), buy_amount);
+        env.events()
+            .publish(("swap", "return_amount"), return_amount);
         env.events()
             .publish(("swap", "spread_amount"), spread_amount);
 
@@ -404,6 +420,67 @@ impl LiquidityPoolTrait for LiquidityPool {
                 address: config.share_token,
                 amount: utils::get_total_shares(&env)?,
             },
+        })
+    }
+
+    fn simulate_swap(
+        env: Env,
+        sell_a: bool,
+        offer_amount: i128,
+    ) -> Result<SimulateSwapResponse, ContractError> {
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
+        let (pool_balance_offer, pool_balance_ask) = if sell_a {
+            (pool_balance_a, pool_balance_b)
+        } else {
+            (pool_balance_b, pool_balance_a)
+        };
+
+        let config = get_config(&env)?;
+
+        let (ask_amount, spread_amount, commission_amount) = compute_swap(
+            pool_balance_offer,
+            pool_balance_ask,
+            offer_amount,
+            config.protocol_fee_rate(),
+        );
+
+        let total_return = ask_amount + commission_amount + spread_amount;
+
+        Ok(SimulateSwapResponse {
+            ask_amount,
+            spread_amount,
+            commission_amount,
+            total_return,
+        })
+    }
+
+    fn simulate_reverse_swap(
+        env: Env,
+        sell_a: bool,
+        ask_amount: i128,
+    ) -> Result<SimulateReverseSwapResponse, ContractError> {
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
+        let (pool_balance_offer, pool_balance_ask) = if sell_a {
+            (pool_balance_a, pool_balance_b)
+        } else {
+            (pool_balance_b, pool_balance_a)
+        };
+
+        let config = get_config(&env)?;
+
+        let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
+            pool_balance_offer,
+            pool_balance_ask,
+            ask_amount,
+            config.protocol_fee_rate(),
+        )?;
+
+        Ok(SimulateReverseSwapResponse {
+            offer_amount,
+            spread_amount,
+            commission_amount,
         })
     }
 }
@@ -507,6 +584,41 @@ pub fn compute_swap(
     let return_amount: i128 = return_amount - commission_amount;
 
     (return_amount, spread_amount, commission_amount)
+}
+
+/// Returns an amount of offer assets for a specified amount of ask assets.
+///
+/// * **offer_pool** total amount of offer assets in the pool.
+/// * **ask_pool** total amount of ask assets in the pool.
+/// * **ask_amount** amount of ask assets to swap to.
+/// * **commission_rate** total amount of fees charged for the swap.
+pub fn compute_offer_amount(
+    offer_pool: i128,
+    ask_pool: i128,
+    ask_amount: i128,
+    commission_rate: Decimal,
+) -> Result<(i128, i128, i128), ContractError> {
+    // Calculate the cross product of offer_pool and ask_pool
+    let cp: i128 = offer_pool * ask_pool;
+
+    // Calculate one minus the commission rate
+    let one_minus_commission = Decimal::one() - commission_rate;
+
+    // Calculate the inverse of one minus the commission rate
+    let inv_one_minus_commission = Decimal::one() / one_minus_commission;
+
+    // Calculate the resulting amount of ask assets after the swap
+    let offer_amount: i128 = cp / (ask_pool - (ask_amount * inv_one_minus_commission)) - offer_pool;
+
+    let ask_before_commission = ask_amount * inv_one_minus_commission;
+
+    // Calculate the spread amount, representing the difference between the expected and actual swap amounts
+    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_before_commission;
+
+    // Calculate the commission amount
+    let commission_amount: i128 = ask_before_commission * commission_rate;
+
+    Ok((offer_amount, spread_amount, commission_amount))
 }
 
 #[cfg(test)]
@@ -628,5 +740,25 @@ mod tests {
     fn test_compute_swap_full_commission() {
         let result = compute_swap(1000, 2000, 100, Decimal::one()); // 100% commission rate should lead to return_amount being 0
         assert_eq!(result, (0, 18, 182));
+    }
+
+    #[test]
+    fn test_compute_offer_amount() {
+        let offer_pool = 1000000;
+        let ask_pool = 1000000;
+        let commission_rate = Decimal::percent(10);
+        let ask_amount = 1000;
+
+        let result =
+            compute_offer_amount(offer_pool, ask_pool, ask_amount, commission_rate).unwrap();
+
+        // Test that the offer amount is less than the original pool size, due to commission
+        assert!(result.0 < offer_pool);
+
+        // Test that the spread amount is non-negative
+        assert!(result.1 >= 0);
+
+        // Test that the commission amount is exactly 10% of the offer amount
+        assert_eq!(result.2, result.0 * Decimal::percent(10));
     }
 }

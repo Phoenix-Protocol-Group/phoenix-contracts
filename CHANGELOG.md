@@ -12,6 +12,7 @@ and this project adheres to
 - implement withdraw endpoint in pair contract ([#38])
 - implement protocol fees that are subtracted during the swap ([#40])
 - implement slippage tolerance into pair contract ([#41])
+- implement swap/reverse swap simulation ([#45])
 
 ### Changed
 
@@ -23,6 +24,7 @@ and this project adheres to
 [#40]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/40
 [#41]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/41
 [#44]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/44
+[#45]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/45
 
 ## [0.2.7] - 2023-06-22
 
