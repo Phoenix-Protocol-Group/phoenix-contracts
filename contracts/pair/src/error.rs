@@ -15,4 +15,5 @@ pub enum ContractError {
     WithdrawMinNotSatisfied = 9,
     InvalidFeeBps = 11,
     EmptyPoolBalance = 12,
+    InvalidAmounts = 13,
 }

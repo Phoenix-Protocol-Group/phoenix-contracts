@@ -42,7 +42,7 @@ pub trait LiquidityPoolTrait {
     fn provide_liquidity(
         env: Env,
         depositor: Address,
-        desired_a: i128,
+        desired_a: Option<i128>,
         min_a: Option<i128>,
         desired_b: Option<i128>,
         min_b: Option<i128>,
@@ -161,7 +161,7 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn provide_liquidity(
         env: Env,
         sender: Address,
-        desired_a: i128,
+        desired_a: Option<i128>,
         min_a: Option<i128>,
         desired_b: Option<i128>,
         min_b: Option<i128>,
@@ -170,23 +170,49 @@ impl LiquidityPoolTrait for LiquidityPool {
         // sender needs to authorize the deposit
         sender.require_auth();
 
-        let (desired_a, desired_b) = if let Some(desired_b) = desired_b {
-            (desired_a, desired_b)
-        } else {
-            let pool_balance_a = utils::get_pool_balance_a(&env)?;
-            let pool_balance_b = utils::get_pool_balance_b(&env)?;
-            let (a, a_for_swap) =
-                divide_provided_deposit(&env, pool_balance_a, pool_balance_b, desired_a, true)?;
-            let SimulateSwapResponse {
-                ask_amount,
-                spread_amount: _,
-                commission_amount: _,
-                total_return: _,
-            } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
-            do_swap(env.clone(), sender.clone(), true, a_for_swap, None, 5)?;
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
 
-            // return: original Token A amount, simulated result of swap of portion
-            (a, ask_amount)
+        // Check if both tokens are provided, one token is provided, or none are provided
+        let (desired_a, desired_b) = match (desired_a, desired_b) {
+            // Both tokens are provided
+            (Some(a), Some(b)) if a > 0 && b > 0 => (a, b),
+            // Only token A is provided
+            (Some(a), None) if a > 0 => {
+                let (a, a_for_swap) =
+                    divide_provided_deposit(&env, pool_balance_a, pool_balance_b, a, true)?;
+                let SimulateSwapResponse {
+                    ask_amount,
+                    spread_amount: _,
+                    commission_amount: _,
+                    total_return: _,
+                } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
+                do_swap(env.clone(), sender.clone(), true, a_for_swap, None, 5)?;
+                // return: Token A amount, simulated result of swap of portion A
+                (a, ask_amount)
+            }
+            // Only token B is provided
+            (None, Some(b)) if b > 0 => {
+                let (b, b_for_swap) =
+                    divide_provided_deposit(&env, pool_balance_a, pool_balance_b, b, false)?;
+                let SimulateSwapResponse {
+                    ask_amount,
+                    spread_amount: _,
+                    commission_amount: _,
+                    total_return: _,
+                } = Self::simulate_swap(env.clone(), false, b_for_swap)?;
+                do_swap(env.clone(), sender.clone(), false, b_for_swap, None, 5)?;
+                // return: simulated result of swap of portion B,  Token B amount
+                (ask_amount, b)
+            }
+            // None or invalid amounts are provided
+            _ => {
+                log!(
+                    &env,
+                    "At least one token must be provided and must be bigger then 0!"
+                );
+                return Err(ContractError::InvalidAmounts);
+            }
         };
 
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
