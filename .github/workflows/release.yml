@@ -20,7 +20,6 @@ jobs:
           override: true
       - name: Build artifacts
         run: make build
-      - name: Optimize artifacts
       - name: Generate checksums
         run: |
           cd target/wasm32-unknown-unknown/release/
