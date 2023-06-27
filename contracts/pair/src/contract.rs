@@ -550,6 +550,39 @@ pub fn compute_swap(
     (return_amount, spread_amount, commission_amount)
 }
 
+/// Returns an amount of offer assets for a specified amount of ask assets.
+///
+/// * **offer_pool** total amount of offer assets in the pool.
+/// * **ask_pool** total amount of ask assets in the pool.
+/// * **ask_amount** amount of ask assets to swap to.
+/// * **commission_rate** total amount of fees charged for the swap.
+pub fn compute_offer_amount(
+    offer_pool: i128,
+    ask_pool: i128,
+    ask_amount: i128,
+    commission_rate: Decimal,
+) -> Result<(i128, i128, i128), ContractError> {
+    // Calculate the cross product of offer_pool and ask_pool
+    let cp: i128 = offer_pool * ask_pool;
+
+    // Calculate one minus the commission rate
+    let one_minus_commission = Decimal::one() - commission_rate;
+
+    // Calculate the inverse of one minus the commission rate
+    let inv_one_minus_commission = Decimal::one() / one_minus_commission;
+
+    // Calculate the resulting amount of ask assets after the swap
+    let offer_amount: i128 = cp / (ask_pool - (ask_amount * inv_one_minus_commission.try_into()?)) - offer_pool;
+
+    // Calculate the spread amount, representing the difference between the expected and actual swap amounts
+    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_amount;
+
+    // Calculate the commission amount
+    let commission_amount: i128 = (ask_amount * inv_one_minus_commission.try_into()?).try_into()?;
+
+    Ok((offer_amount, spread_amount, commission_amount))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
