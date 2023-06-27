@@ -42,10 +42,10 @@ pub trait LiquidityPoolTrait {
     fn provide_liquidity(
         env: Env,
         depositor: Address,
-        desired_a: i128,
-        min_a: i128,
-        desired_b: i128,
-        min_b: i128,
+        desired_a: Option<i128>,
+        min_a: Option<i128>,
+        desired_b: Option<i128>,
+        min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError>;
 
@@ -161,14 +161,59 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn provide_liquidity(
         env: Env,
         sender: Address,
-        desired_a: i128,
-        min_a: i128,
-        desired_b: i128,
-        min_b: i128,
+        desired_a: Option<i128>,
+        min_a: Option<i128>,
+        desired_b: Option<i128>,
+        min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError> {
         // sender needs to authorize the deposit
         sender.require_auth();
+
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
+
+        // Check if both tokens are provided, one token is provided, or none are provided
+        let (desired_a, desired_b) = match (desired_a, desired_b) {
+            // Both tokens are provided
+            (Some(a), Some(b)) if a > 0 && b > 0 => (a, b),
+            // Only token A is provided
+            (Some(a), None) if a > 0 => {
+                let (a, a_for_swap) =
+                    divide_provided_deposit(&env, pool_balance_a, pool_balance_b, a, true)?;
+                let SimulateSwapResponse {
+                    ask_amount,
+                    spread_amount: _,
+                    commission_amount: _,
+                    total_return: _,
+                } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
+                do_swap(env.clone(), sender.clone(), true, a_for_swap, None, 5)?;
+                // return: Token A amount, simulated result of swap of portion A
+                (a, ask_amount)
+            }
+            // Only token B is provided
+            (None, Some(b)) if b > 0 => {
+                let (b, b_for_swap) =
+                    divide_provided_deposit(&env, pool_balance_a, pool_balance_b, b, false)?;
+                let SimulateSwapResponse {
+                    ask_amount,
+                    spread_amount: _,
+                    commission_amount: _,
+                    total_return: _,
+                } = Self::simulate_swap(env.clone(), false, b_for_swap)?;
+                do_swap(env.clone(), sender.clone(), false, b_for_swap, None, 5)?;
+                // return: simulated result of swap of portion B,  Token B amount
+                (ask_amount, b)
+            }
+            // None or invalid amounts are provided
+            _ => {
+                log!(
+                    &env,
+                    "At least one token must be provided and must be bigger then 0!"
+                );
+                return Err(ContractError::InvalidAmounts);
+            }
+        };
 
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
@@ -248,89 +293,7 @@ impl LiquidityPoolTrait for LiquidityPool {
     ) -> Result<(), ContractError> {
         sender.require_auth();
 
-        let belief_price = belief_price.map(Decimal::percent);
-        let max_spread = Decimal::percent(max_spread);
-
-        let pool_balance_a = utils::get_pool_balance_a(&env)?;
-        let pool_balance_b = utils::get_pool_balance_b(&env)?;
-        let (pool_balance_sell, pool_balance_buy) = if sell_a {
-            (pool_balance_a, pool_balance_b)
-        } else {
-            (pool_balance_b, pool_balance_a)
-        };
-
-        let config = get_config(&env)?;
-
-        let (return_amount, spread_amount, commission_amount) = compute_swap(
-            pool_balance_sell,
-            pool_balance_buy,
-            offer_amount,
-            config.protocol_fee_rate(),
-        );
-
-        assert_max_spread(
-            &env,
-            belief_price,
-            max_spread,
-            offer_amount,
-            return_amount + commission_amount,
-            spread_amount,
-        )?;
-
-        // Transfer the amount being sold to the contract
-        let (sell_token, buy_token) = if sell_a {
-            (config.token_a, config.token_b)
-        } else {
-            (config.token_b, config.token_a)
-        };
-
-        // transfer tokens to swap
-        token_contract::Client::new(&env, &sell_token).transfer(
-            &sender,
-            &env.current_contract_address(),
-            &offer_amount,
-        );
-
-        // return swapped tokens to user
-        token_contract::Client::new(&env, &buy_token).transfer(
-            &env.current_contract_address(),
-            &sender,
-            &return_amount,
-        );
-
-        // send commission to fee recipient
-        token_contract::Client::new(&env, &buy_token).transfer(
-            &env.current_contract_address(),
-            &config.fee_recipient,
-            &commission_amount,
-        );
-
-        // user is offering to sell A, so they will receive B
-        // A balance is bigger, B balance is smaller
-        let (balance_a, balance_b) = if sell_a {
-            (
-                pool_balance_a + offer_amount,
-                pool_balance_b - commission_amount - return_amount,
-            )
-        } else {
-            (
-                pool_balance_a - commission_amount - return_amount,
-                pool_balance_b + offer_amount,
-            )
-        };
-        utils::save_pool_balance_a(&env, balance_a);
-        utils::save_pool_balance_b(&env, balance_b);
-
-        env.events().publish(("swap", "sender"), sender);
-        env.events().publish(("swap", "sell_token"), sell_token);
-        env.events().publish(("swap", "offer_amount"), offer_amount);
-        env.events().publish(("swap", "buy_token"), buy_token);
-        env.events()
-            .publish(("swap", "return_amount"), return_amount);
-        env.events()
-            .publish(("swap", "spread_amount"), spread_amount);
-
-        Ok(())
+        do_swap(env, sender, sell_a, offer_amount, belief_price, max_spread)
     }
 
     fn withdraw_liquidity(
@@ -497,6 +460,136 @@ impl LiquidityPoolTrait for LiquidityPool {
             commission_amount,
         })
     }
+}
+
+fn do_swap(
+    env: Env,
+    sender: Address,
+    sell_a: bool,
+    offer_amount: i128,
+    belief_price: Option<i64>,
+    max_spread: i64,
+) -> Result<(), ContractError> {
+    let belief_price = belief_price.map(Decimal::percent);
+    let max_spread = Decimal::percent(max_spread);
+
+    let pool_balance_a = utils::get_pool_balance_a(&env)?;
+    let pool_balance_b = utils::get_pool_balance_b(&env)?;
+    let (pool_balance_sell, pool_balance_buy) = if sell_a {
+        (pool_balance_a, pool_balance_b)
+    } else {
+        (pool_balance_b, pool_balance_a)
+    };
+
+    let config = get_config(&env)?;
+
+    let (return_amount, spread_amount, commission_amount) = compute_swap(
+        pool_balance_sell,
+        pool_balance_buy,
+        offer_amount,
+        config.protocol_fee_rate(),
+    );
+
+    assert_max_spread(
+        &env,
+        belief_price,
+        max_spread,
+        offer_amount,
+        return_amount + commission_amount,
+        spread_amount,
+    )?;
+
+    // Transfer the amount being sold to the contract
+    let (sell_token, buy_token) = if sell_a {
+        (config.token_a, config.token_b)
+    } else {
+        (config.token_b, config.token_a)
+    };
+
+    // transfer tokens to swap
+    token_contract::Client::new(&env, &sell_token).transfer(
+        &sender,
+        &env.current_contract_address(),
+        &offer_amount,
+    );
+
+    // return swapped tokens to user
+    token_contract::Client::new(&env, &buy_token).transfer(
+        &env.current_contract_address(),
+        &sender,
+        &return_amount,
+    );
+
+    // send commission to fee recipient
+    token_contract::Client::new(&env, &buy_token).transfer(
+        &env.current_contract_address(),
+        &config.fee_recipient,
+        &commission_amount,
+    );
+
+    // user is offering to sell A, so they will receive B
+    // A balance is bigger, B balance is smaller
+    let (balance_a, balance_b) = if sell_a {
+        (
+            pool_balance_a + offer_amount,
+            pool_balance_b - commission_amount - return_amount,
+        )
+    } else {
+        (
+            pool_balance_a - commission_amount - return_amount,
+            pool_balance_b + offer_amount,
+        )
+    };
+    utils::save_pool_balance_a(&env, balance_a);
+    utils::save_pool_balance_b(&env, balance_b);
+
+    env.events().publish(("swap", "sender"), sender);
+    env.events().publish(("swap", "sell_token"), sell_token);
+    env.events().publish(("swap", "offer_amount"), offer_amount);
+    env.events().publish(("swap", "buy_token"), buy_token);
+    env.events()
+        .publish(("swap", "return_amount"), return_amount);
+    env.events()
+        .publish(("swap", "spread_amount"), spread_amount);
+
+    Ok(())
+}
+
+/// Divides `deposit` into parts to maintain the pool ratio.
+/// Returns the amount of A and B tokens to add to the pool.
+///
+/// * **a_pool** current amount of A tokens in the pool.
+/// * **b_pool** current deposit of B tokens in the pool.
+/// * **deposit** total deposit of tokens to provide.
+fn divide_provided_deposit(
+    env: &Env,
+    a_pool: i128,
+    b_pool: i128,
+    deposit: i128,
+    sell_a: bool,
+) -> Result<(i128, i128), ContractError> {
+    // Validate the inputs
+    if a_pool <= 0 || b_pool <= 0 || deposit <= 0 {
+        log!(env, "Both pools and deposit must be a positive!");
+        return Err(ContractError::EmptyPoolBalance);
+    }
+
+    // Calculate the current ratio in the pool
+    let ratio = Decimal::from_ratio(b_pool, a_pool);
+
+    let (a_to_add, b_to_add) = if sell_a {
+        // Solve the system of equations: a + b = deposit and b/a = ratio
+        let a = deposit * (Decimal::one() + ratio).inv().unwrap();
+        let b = ratio * a;
+        (a, b)
+    } else {
+        // Solve the system of equations: a + b = deposit and a/b = ratio
+        let b = deposit * (Decimal::one() + Decimal::one() / ratio).inv().unwrap();
+        let a = b * ratio.inv().unwrap();
+        (b, a)
+    };
+
+    Ok((a_to_add, b_to_add))
 }
 
 fn assert_slippage_tolerance(
@@ -774,5 +867,31 @@ mod tests {
 
         // Test that the commission amount is exactly 10% of the offer amount
         assert_eq!(result.2, result.0 * Decimal::percent(10));
+    }
+
+    #[test]
+    fn test_divide_provided_deposit_sell_a() {
+        let env = Env::default();
+        // 1:2 pool, providing 1500 of asset A
+        let (a, b) = divide_provided_deposit(&env, 1000, 2000, 1500, true).unwrap();
+
+        assert_eq!(a, 499, "When sell_a is true, amount a should be 500");
+        assert_eq!(b, 998, "When sell_a is true, amount b should be 1000"); // rounding error
+    }
+
+    #[test]
+    fn test_divide_provided_deposit_not_sell_a() {
+        let env = Env::default();
+        let (a, b) = divide_provided_deposit(&env, 1000, 2000, 1500, false).unwrap();
+
+        assert_eq!(a, 999, "When sell_a is false, amount a should be 1000"); // rounding error
+        assert_eq!(b, 499, "When sell_a is false, amount b should be 500");
+    }
+
+    #[test]
+    #[should_panic(expected = "EmptyPoolBalance")]
+    fn test_divide_provided_deposit_fail() {
+        let env = Env::default();
+        divide_provided_deposit(&env, 0, 0, 0, true).unwrap();
     }
 }

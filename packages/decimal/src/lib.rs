@@ -4,7 +4,7 @@
 #![no_std]
 use core::{
     cmp::{PartialEq, PartialOrd},
-    ops::{Mul, Sub, Div},
+    ops::{Add, Div, Mul, Sub},
 };
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
@@ -99,7 +99,7 @@ impl Decimal {
     /// Returns the multiplicative inverse `1/d` for decimal `d`.
     ///
     /// If `d` is zero, none is returned.
-    fn inv(&self) -> Option<Self> {
+    pub fn inv(&self) -> Option<Self> {
         if self.is_zero() {
             None
         } else {
@@ -130,6 +130,13 @@ impl Decimal {
     }
 }
 
+impl Add for Decimal {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Decimal(self.0 + other.0)
+    }
+}
 impl Sub for Decimal {
     type Output = Self;
 
@@ -151,6 +158,14 @@ impl Mul<i128> for Decimal {
 
     fn mul(self, rhs: i128) -> Self::Output {
         rhs * self
+    }
+}
+
+impl Div<i128> for Decimal {
+    type Output = Self;
+
+    fn div(self, rhs: i128) -> Self::Output {
+        Decimal(self.0 / rhs)
     }
 }
 

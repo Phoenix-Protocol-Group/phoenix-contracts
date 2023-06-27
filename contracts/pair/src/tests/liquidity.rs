@@ -7,6 +7,10 @@ use crate::{
     token_contract,
 };
 
+// TODO: add more edge cases
+// - exceed slippage
+// - try to exceed spread during single amount liqudity providing
+
 #[test]
 fn provide_liqudity() {
     let env = Env::default();
@@ -41,7 +45,14 @@ fn provide_liqudity() {
     token2.mint(&user1, &1000);
     assert_eq!(token2.balance(&user1), 1000);
 
-    pool.provide_liquidity(&user1, &100, &100, &100, &100, &None);
+    pool.provide_liquidity(
+        &user1,
+        &Some(100),
+        &Some(100),
+        &Some(100),
+        &Some(100),
+        &None,
+    );
     assert_eq!(
         env.auths(),
         [
@@ -123,7 +134,14 @@ fn withdraw_liqudity() {
 
     token1.mint(&user1, &100);
     token2.mint(&user1, &100);
-    pool.provide_liquidity(&user1, &100, &100, &100, &100, &None);
+    pool.provide_liquidity(
+        &user1,
+        &Some(100),
+        &Some(100),
+        &Some(100),
+        &Some(100),
+        &None,
+    );
 
     assert_eq!(token1.balance(&user1), 0);
     assert_eq!(token1.balance(&pool.address), 100);
@@ -186,4 +204,158 @@ fn withdraw_liqudity() {
     assert_eq!(token1.balance(&pool.address), 0);
     assert_eq!(token2.balance(&user1), 100);
     assert_eq!(token2.balance(&pool.address), 0);
+}
+
+#[test]
+#[should_panic = "Status(ContractError(12))"]
+fn provide_liqudity_single_asset_on_empty_pool() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+    );
+
+    token1.mint(&user1, &1_000_000);
+
+    // providing liquidity with single asset is not allowed on an empty pool
+    pool.provide_liquidity(
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+        &None,
+        &None,
+    );
+}
+
+#[test]
+fn provide_liqudity_single_asset_equal() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+    );
+
+    token1.mint(&user1, &1_000_000);
+    token2.mint(&user1, &1_000_000);
+
+    // providing liquidity with single asset is not allowed on an empty pool
+    pool.provide_liquidity(
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+    );
+    assert_eq!(token1.balance(&pool.address), 1_000_000);
+    assert_eq!(token2.balance(&pool.address), 1_000_000);
+
+    token1.mint(&user1, &100_000);
+    // Providing 100k of token1 to 1:1 pool will perform swap which will create imbalance
+    pool.provide_liquidity(
+        &user1,
+        &Some(100_000),
+        &Some(50_000),
+        &None,
+        &Some(45_000),
+        &None,
+    );
+    // before swap : A(1_000_000), B(1_000_000)
+    // since pool is equal divides 50/50 sum for swap
+    // swap 50k A for B = 47620
+    // after swap : A(1_050_000), B(952_380)
+    // after providing liquidity
+    // A(1_100_000), B(997_731)
+
+    assert_eq!(token1.balance(&pool.address), 1_100_000);
+    assert_eq!(token2.balance(&pool.address), 997_731);
+}
+
+#[test]
+fn provide_liqudity_single_asset_one_third() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+    );
+
+    token1.mint(&user1, &1_000_000);
+    token2.mint(&user1, &3_000_000);
+
+    // providing liquidity with single asset is not allowed on an empty pool
+    pool.provide_liquidity(
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(3_000_000),
+        &Some(3_000_000),
+        &None,
+    );
+    assert_eq!(token1.balance(&pool.address), 1_000_000);
+    assert_eq!(token2.balance(&pool.address), 3_000_000);
+
+    token2.mint(&user1, &100_000);
+    // Providing 100k of token2 to 1:3 pool will perform swap which will create imbalance
+    pool.provide_liquidity(&user1, &None, &None, &Some(100_000), &None, &None);
+    // before swap : A(1_000_000), B(3_000_000)
+    // since pool is 1/3 divides 75/25 sum for swap
+    // swap 25k B for A = 8265
+    // after swap : A(991_735), B(3_024_999)
+    // after providing liquidity
+    // A(1_000_000), B(3_050_208)
+
+    assert_eq!(token2.balance(&pool.address), 3_050_208);
+    assert_eq!(token1.balance(&pool.address), 1_000_000);
 }

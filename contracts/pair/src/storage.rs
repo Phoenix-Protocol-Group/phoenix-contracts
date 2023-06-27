@@ -203,9 +203,9 @@ pub mod utils {
     pub fn get_deposit_amounts(
         env: &Env,
         desired_a: i128,
-        min_a: i128,
+        min_a: Option<i128>,
         desired_b: i128,
-        min_b: i128,
+        min_b: Option<i128>,
         pool_balance_a: i128,
         pool_balance_b: i128,
     ) -> Result<(i128, i128), ContractError> {
@@ -213,25 +213,33 @@ pub mod utils {
             return Ok((desired_a, desired_b));
         }
 
-        // determines the amount of asset B proportionally based on the desired amount of asset A
         let amount_b = desired_a * pool_balance_b / pool_balance_a;
         if amount_b <= desired_b {
-            if amount_b < min_b {
-                log!(
-                    env,
-                    "Deposit amount for asset B ({}) is less than the minimum requirement ({})",
-                    amount_b,
-                    min_b
-                );
-                return Err(ContractError::DepositAmountBLessThenMin);
+            if let Some(min_b) = min_b {
+                if amount_b < min_b {
+                    log!(
+                        env,
+                        "Deposit amount for asset B ({}) is less than the minimum requirement ({})",
+                        amount_b,
+                        min_b
+                    );
+                    return Err(ContractError::DepositAmountBLessThenMin);
+                }
             }
             Ok((desired_a, amount_b))
         } else {
-            // as above
             let amount_a = desired_b * pool_balance_a / pool_balance_b;
-            if amount_a > desired_a || desired_a < min_a {
-                log!(env, "Deposit amount for asset A ({}) is invalid. Either it exceeds the desired amount ({}) or falls below the minimum requirement ({})", amount_a, desired_a, min_a);
-                return Err(ContractError::DepositAmountAExceedsOrBelowMin);
+            if let Some(min_a) = min_a {
+                if amount_a < min_a || desired_a < min_a {
+                    log!(
+                    env,
+                    "Deposit amount for asset A ({}) is invalid. Either it exceeds the desired amount ({}) or falls below the minimum requirement ({})",
+                    amount_a,
+                    desired_a,
+                    min_a
+                );
+                    return Err(ContractError::DepositAmountAExceedsOrBelowMin);
+                }
             }
             Ok((amount_a, desired_b))
         }

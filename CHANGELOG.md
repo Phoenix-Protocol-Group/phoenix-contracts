@@ -8,16 +8,17 @@ and this project adheres to
 
 ### Added
 
-- implement checksum in release artifacts ([#37])
-- implement withdraw endpoint in pair contract ([#38])
-- implement protocol fees that are subtracted during the swap ([#40])
-- implement slippage tolerance into pair contract ([#41])
-- implement swap/reverse swap simulation ([#45])
-- implement upgrade entrypoint ([#46])
+- Pair: implement checksum in release artifacts ([#37])
+- Pair: implement withdraw endpoint in pair contract ([#38])
+- Pair: implement protocol fees that are subtracted during the swap ([#40])
+- Pair: implement slippage tolerance into pair contract ([#41])
+- Pair: implement swap/reverse swap simulation ([#45])
+- Pair: implement upgrade entrypoint ([#46])
+- Pair: implement single asset liqudity providing ([#50])
 
 ### Changed
 
-- replace u128 with i128 in Decimal crate implementation... because someone sometime might want to use negative numbers in their contracts ([#38])
+- Decimal: replace u128 with i128 in Decimal crate implementation... because someone sometime might want to use negative numbers in their contracts ([#38])
 - improved architecture docs ([#44])
 
 [#37]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/37
@@ -27,12 +28,13 @@ and this project adheres to
 [#44]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/44
 [#45]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/45
 [#46]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/46
+[#50]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/50
 
 ## [0.2.7] - 2023-06-22
 
 ### Added
 
-- automated release job which will create artifacts after new tag publication ([#29])
+- CI: automated release job which will create artifacts after new tag publication ([#29])
 - standarized Makefiles across whole repository ([#29])
 
 ### Changed

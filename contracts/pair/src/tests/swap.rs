@@ -33,7 +33,12 @@ fn simple_swap() {
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
     pool.provide_liquidity(
-        &user1, &1_000_000, &1_000_000, &1_000_000, &1_000_000, &None,
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
     );
 
     // true means "selling A token"
@@ -138,10 +143,10 @@ fn swap_with_high_fee() {
     token2.mint(&user1, &initial_liquidity);
     pool.provide_liquidity(
         &user1,
-        &initial_liquidity,
-        &initial_liquidity,
-        &initial_liquidity,
-        &initial_liquidity,
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
         &None,
     );
 
@@ -206,10 +211,10 @@ fn swap_simulation_even_pool() {
     token2.mint(&user1, &initial_liquidity);
     pool.provide_liquidity(
         &user1,
-        &initial_liquidity,
-        &initial_liquidity,
-        &initial_liquidity,
-        &initial_liquidity,
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
         &None,
     );
 
@@ -304,10 +309,10 @@ fn swap_simulation_one_third_pool() {
     token2.mint(&user1, &(3 * initial_liquidity));
     pool.provide_liquidity(
         &user1,
-        &initial_liquidity,
-        &initial_liquidity,
-        &(3 * initial_liquidity),
-        &(3 * initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(3 * initial_liquidity),
+        &Some(3 * initial_liquidity),
         &None,
     );
 
