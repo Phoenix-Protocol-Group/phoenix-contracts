@@ -13,6 +13,7 @@ and this project adheres to
 - implement protocol fees that are subtracted during the swap ([#40])
 - implement slippage tolerance into pair contract ([#41])
 - implement swap/reverse swap simulation ([#45])
+- implement upgrade entrypoint ([#46])
 
 ### Changed
 
@@ -25,6 +26,7 @@ and this project adheres to
 [#41]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/41
 [#44]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/44
 [#45]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/45
+[#46]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/46
 
 ## [0.2.7] - 2023-06-22
 
