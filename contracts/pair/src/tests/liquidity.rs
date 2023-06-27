@@ -41,7 +41,7 @@ fn provide_liqudity() {
     token2.mint(&user1, &1000);
     assert_eq!(token2.balance(&user1), 1000);
 
-    pool.provide_liquidity(&user1, &100, &100, &100, &100, &None);
+    pool.provide_liquidity(&user1, &100, &Some(100), &Some(100), &Some(100), &None);
     assert_eq!(
         env.auths(),
         [
@@ -123,7 +123,7 @@ fn withdraw_liqudity() {
 
     token1.mint(&user1, &100);
     token2.mint(&user1, &100);
-    pool.provide_liquidity(&user1, &100, &100, &100, &100, &None);
+    pool.provide_liquidity(&user1, &100, &Some(100), &Some(100), &Some(100), &None);
 
     assert_eq!(token1.balance(&user1), 0);
     assert_eq!(token1.balance(&pool.address), 100);

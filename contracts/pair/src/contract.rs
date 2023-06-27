@@ -43,9 +43,9 @@ pub trait LiquidityPoolTrait {
         env: Env,
         depositor: Address,
         desired_a: i128,
-        min_a: i128,
-        desired_b: i128,
-        min_b: i128,
+        min_a: Option<i128>,
+        desired_b: Option<i128>,
+        min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError>;
 
@@ -162,9 +162,9 @@ impl LiquidityPoolTrait for LiquidityPool {
         env: Env,
         sender: Address,
         desired_a: i128,
-        min_a: i128,
-        desired_b: i128,
-        min_b: i128,
+        min_a: Option<i128>,
+        desired_b: Option<i128>,
+        min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError> {
         // sender needs to authorize the deposit
@@ -172,6 +172,22 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
+
+        let (desired_a, desired_b) = if let Some(desired_b) = desired_b {
+            (desired_a, desired_b)
+        } else {
+            let (a, a_for_swap) =
+                divide_provided_deposit(&env, pool_balance_a, pool_balance_b, desired_a, true)?;
+            let SimulateSwapResponse {
+                ask_amount,
+                spread_amount: _,
+                commission_amount: _,
+                total_return: _,
+            } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
+            Self::swap(env.clone(), sender.clone(), true, a_for_swap, None, 5)?;
+
+            (a, ask_amount)
+        };
 
         // Calculate deposit amounts
         let amounts = utils::get_deposit_amounts(
@@ -497,6 +513,43 @@ impl LiquidityPoolTrait for LiquidityPool {
             commission_amount,
         })
     }
+}
+
+/// Divides `deposit` into parts to maintain the pool ratio.
+/// Returns the amount of A and B tokens to add to the pool.
+///
+/// * **a_pool** current amount of A tokens in the pool.
+/// * **b_pool** current deposit of B tokens in the pool.
+/// * **deposit** total deposit of tokens to provide.
+fn divide_provided_deposit(
+    env: &Env,
+    a_pool: i128,
+    b_pool: i128,
+    deposit: i128,
+    sell_a: bool,
+) -> Result<(i128, i128), ContractError> {
+    // Validate the inputs
+    if a_pool <= 0 || b_pool <= 0 || deposit <= 0 {
+        log!(env, "Both pools and deposit must be a positive!");
+        return Err(ContractError::EmptyPoolBalance);
+    }
+
+    // Calculate the current ratio in the pool
+    let ratio = Decimal::from_ratio(b_pool, a_pool);
+
+    let (a_to_add, b_to_add) = if sell_a {
+        // Solve the system of equations: a + b = deposit and b/a = ratio
+        let a = deposit * (Decimal::one() + ratio).inv().unwrap();
+        let b = ratio * a;
+        (a, b)
+    } else {
+        // Solve the system of equations: a + b = deposit and a/b = ratio
+        let b = deposit * (Decimal::one() + Decimal::one() / ratio).inv().unwrap();
+        let a = b * ratio.inv().unwrap();
+        (b, a)
+    };
+
+    Ok((a_to_add, b_to_add))
 }
 
 fn assert_slippage_tolerance(
