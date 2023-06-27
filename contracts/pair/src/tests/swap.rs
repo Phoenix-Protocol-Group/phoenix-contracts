@@ -182,9 +182,13 @@ fn swap_with_high_fee() {
 #[test]
 fn swap_simulation_even_pool() {
     let env = Env::default();
+    env.mock_all_auths();
 
-    let token1 = deploy_token_contract(&env, &Address::random(&env));
-    let token2 = deploy_token_contract(&env, &Address::random(&env));
+    let mut token1 = deploy_token_contract(&env, &Address::random(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::random(&env));
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
 
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_liquidity_pool_contract(
@@ -222,8 +226,8 @@ fn swap_simulation_even_pool() {
         result,
         SimulateSwapResponse {
             return_amount: output_amount - fees,
-            spread_amount: 9090, // spread amount is basically 10%, since it's basically 10% of the
-            // first token
+            // spread_amount: Decimal::from_ratio(100_000, 1_000_000) * output_amount, // since it's 10% of the pool
+            spread_amount: 9090, // rounding error, one less then ^
             commission_amount: fees,
             total_return: 100_000
         }
@@ -239,6 +243,78 @@ fn swap_simulation_even_pool() {
             // first token
             commission_amount: fees,
             total_return: 100_000
+        }
+    );
+}
+
+#[test]
+fn swap_simulation_one_third_pool() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut token1 = deploy_token_contract(&env, &Address::random(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::random(&env));
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let swap_fees = 500i64; // 5% bps
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        Address::random(&env),
+        None,
+    );
+
+    let initial_liquidity = 1_000_000i128;
+    let user1 = Address::random(&env);
+    token1.mint(&user1, &initial_liquidity);
+    token2.mint(&user1, &(3 * initial_liquidity));
+    pool.provide_liquidity(
+        &user1,
+        &initial_liquidity,
+        &initial_liquidity,
+        &(3 * initial_liquidity),
+        &(3 * initial_liquidity),
+        &None,
+    );
+
+    // let's simulate swap 100_000 units of Token 1 in 1:3 pool with 5% protocol fee
+    let result = pool.simulate_swap(&true, &100_000);
+
+    // This is XYK LP with constant product formula
+    // Y_new = (X_in * Y_old) / (X_in + X_old)
+    // Y_new = (100_000 * 3_000_000) / (100_000 + 1_000_000)
+    // Y_new = 272_727.27
+    let output_amount = 272_728i128; // rounding
+    let fees = Decimal::percent(5) * output_amount;
+    assert_eq!(
+        result,
+        SimulateSwapResponse {
+            return_amount: output_amount - fees,
+            spread_amount: Decimal::from_ratio(100_000, 1_000_000) * output_amount, // since it's 10% of the pool
+            commission_amount: fees,
+            total_return: 300_000
+        }
+    );
+
+    // false indicates selling the other asset - transaction goes the same
+    let result = pool.simulate_swap(&false, &100_000);
+    // Y_new = (X_in * Y_old) / (X_in + X_old)
+    // Y_new = (100_000 * 1_000_000) / (100_000 + 3_000_000)
+    // Y_new = 32_258.06
+    let output_amount = 32_259i128; // rounding
+    let fees = Decimal::percent(5) * output_amount;
+    assert_eq!(
+        result,
+        SimulateSwapResponse {
+            return_amount: output_amount - fees,
+            // spread_amount: Decimal::from_ratio(100_000i128, 3_000_000i128) * output_amount,
+            spread_amount: 1074, // rounding error, one less then ^
+            commission_amount: fees,
+            total_return: 33_333
         }
     );
 }
