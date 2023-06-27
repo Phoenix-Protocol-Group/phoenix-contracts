@@ -12,6 +12,7 @@ pub enum DataKey {
     TotalShares = 0,
     ReserveA = 1,
     ReserveB = 2,
+    Admin = 3,
 }
 
 impl TryFromVal<Env, DataKey> for RawVal {
@@ -132,6 +133,10 @@ pub mod utils {
             .deploy(token_wasm_hash)
     }
 
+    pub fn save_admin(e: &Env, address: Address) {
+        e.storage().set(&DataKey::Admin, &address)
+    }
+
     pub fn save_total_shares(e: &Env, amount: i128) {
         e.storage().set(&DataKey::TotalShares, &amount)
     }
@@ -168,6 +173,12 @@ pub mod utils {
     }
 
     // queries
+    pub fn get_admin(e: &Env) -> Result<Address, ContractError> {
+        e.storage()
+            .get_unchecked(&DataKey::Admin)
+            .map_err(|_| ContractError::FailedToLoadFromStorage)
+    }
+
     pub fn get_total_shares(e: &Env) -> Result<i128, ContractError> {
         e.storage()
             .get_unchecked(&DataKey::TotalShares)

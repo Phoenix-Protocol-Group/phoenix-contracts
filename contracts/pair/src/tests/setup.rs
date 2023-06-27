@@ -30,6 +30,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
     let max_allowed_slippage = max_allowed_slippage_bps.into().unwrap_or(5_000); // 50% if not specified
     let share_token_decimals = 7u32;
     pool.initialize(
+        &Address::random(env),
         &token_wasm_hash,
         token_a,
         token_b,
