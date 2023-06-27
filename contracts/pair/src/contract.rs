@@ -610,11 +610,13 @@ pub fn compute_offer_amount(
     // Calculate the resulting amount of ask assets after the swap
     let offer_amount: i128 = cp / (ask_pool - (ask_amount * inv_one_minus_commission)) - offer_pool;
 
+    let ask_before_commission = ask_amount * inv_one_minus_commission;
+
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_amount;
+    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_before_commission;
 
     // Calculate the commission amount
-    let commission_amount: i128 = ask_amount * inv_one_minus_commission;
+    let commission_amount: i128 = ask_before_commission * commission_rate;
 
     Ok((offer_amount, spread_amount, commission_amount))
 }
@@ -738,5 +740,25 @@ mod tests {
     fn test_compute_swap_full_commission() {
         let result = compute_swap(1000, 2000, 100, Decimal::one()); // 100% commission rate should lead to return_amount being 0
         assert_eq!(result, (0, 18, 182));
+    }
+
+    #[test]
+    fn test_compute_offer_amount() {
+        let offer_pool = 1000000;
+        let ask_pool = 1000000;
+        let commission_rate = Decimal::percent(10);
+        let ask_amount = 1000;
+
+        let result =
+            compute_offer_amount(offer_pool, ask_pool, ask_amount, commission_rate).unwrap();
+
+        // Test that the offer amount is less than the original pool size, due to commission
+        assert!(result.0 < offer_pool);
+
+        // Test that the spread amount is non-negative
+        assert!(result.1 >= 0);
+
+        // Test that the commission amount is exactly 10% of the offer amount
+        assert_eq!(result.2, result.0 * Decimal::percent(10));
     }
 }

@@ -2,7 +2,7 @@ extern crate std;
 use soroban_sdk::{testutils::Address as _, Address, Env, IntoVal, Symbol};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
-use crate::storage::{Asset, PoolResponse, SimulateSwapResponse};
+use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
 use decimal::Decimal;
 
 #[test]
@@ -214,7 +214,8 @@ fn swap_simulation_even_pool() {
     );
 
     // let's simulate swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
-    let result = pool.simulate_swap(&true, &100_000);
+    let offer_amount = 100_000i128;
+    let result = pool.simulate_swap(&true, &offer_amount);
 
     // This is XYK LP with constant product formula
     // Y_new = (X_in * Y_old) / (X_in + X_old)
@@ -229,12 +230,27 @@ fn swap_simulation_even_pool() {
             // spread_amount: Decimal::from_ratio(100_000, 1_000_000) * output_amount, // since it's 10% of the pool
             spread_amount: 9090, // rounding error, one less then ^
             commission_amount: fees,
-            total_return: 100_000
+            total_return: offer_amount
+        }
+    );
+
+    // now reverse swap querie should give us similar results
+    // User wants to buy output_amount of tokens
+    let result = pool.simulate_reverse_swap(&true, &(output_amount - fees));
+    assert_eq!(
+        result,
+        SimulateReverseSwapResponse {
+            // offer_amount,
+            offer_amount: 99_999i128, // rounding error
+            // spread_amount: Decimal::from_ratio(100_000, 1_000_000) * output_amount, // since it's 10% of the pool
+            spread_amount: 9090, // rounding error, one less then ^
+            // commission_amount: fees,
+            commission_amount: 9090,
         }
     );
 
     // false indicates selling the other asset - transaction goes the same
-    let result = pool.simulate_swap(&false, &100_000);
+    let result = pool.simulate_swap(&false, &offer_amount);
     assert_eq!(
         result,
         SimulateSwapResponse {
@@ -242,7 +258,21 @@ fn swap_simulation_even_pool() {
             spread_amount: 9090, // spread amount is basically 10%, since it's basically 10% of the
             // first token
             commission_amount: fees,
-            total_return: 100_000
+            total_return: offer_amount
+        }
+    );
+
+    // again reverse swap should show the same values
+    let result = pool.simulate_reverse_swap(&false, &(output_amount - fees));
+    assert_eq!(
+        result,
+        SimulateReverseSwapResponse {
+            // offer_amount,
+            offer_amount: 99_999i128, // rounding error
+            // spread_amount: Decimal::from_ratio(100_000, 1_000_000) * output_amount, // since it's 10% of the pool
+            spread_amount: 9090, // rounding error, one less then ^
+            // commission_amount: fees,
+            commission_amount: 9090,
         }
     );
 }
@@ -282,7 +312,8 @@ fn swap_simulation_one_third_pool() {
     );
 
     // let's simulate swap 100_000 units of Token 1 in 1:3 pool with 5% protocol fee
-    let result = pool.simulate_swap(&true, &100_000);
+    let offer_amount = 100_000i128;
+    let result = pool.simulate_swap(&true, &offer_amount);
 
     // This is XYK LP with constant product formula
     // Y_new = (X_in * Y_old) / (X_in + X_old)
@@ -294,9 +325,21 @@ fn swap_simulation_one_third_pool() {
         result,
         SimulateSwapResponse {
             ask_amount: output_amount - fees,
-            spread_amount: Decimal::from_ratio(100_000, 1_000_000) * output_amount, // since it's 10% of the pool
+            spread_amount: Decimal::from_ratio(offer_amount, 1_000_000) * output_amount, // since it's 10% of the pool
             commission_amount: fees,
             total_return: 300_000
+        }
+    );
+
+    // now reverse swap querie should give us similar results
+    // User wants to buy output_amount of tokens
+    let result = pool.simulate_reverse_swap(&true, &(output_amount - fees));
+    assert_eq!(
+        result,
+        SimulateReverseSwapResponse {
+            offer_amount,
+            spread_amount: Decimal::from_ratio(offer_amount, 1_000_000) * output_amount, // since it's 10% of the pool
+            commission_amount: fees,
         }
     );
 
@@ -315,6 +358,18 @@ fn swap_simulation_one_third_pool() {
             spread_amount: 1074, // rounding error, one less then ^
             commission_amount: fees,
             total_return: 33_333
+        }
+    );
+
+    // reverse should mirror it
+    let result = pool.simulate_reverse_swap(&false, &(output_amount - fees));
+    assert_eq!(
+        result,
+        SimulateReverseSwapResponse {
+            // offer_amount,
+            offer_amount: 100_002i128, // rounding error
+            spread_amount: Decimal::from_ratio(offer_amount, 3_000_000) * output_amount, // since it's 10% of the pool
+            commission_amount: fees,
         }
     );
 }
