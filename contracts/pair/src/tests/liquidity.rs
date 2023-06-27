@@ -7,6 +7,10 @@ use crate::{
     token_contract,
 };
 
+// TODO: add more edge cases
+// - exceed slippage
+// - try to exceed spread during single amount liqudity providing
+
 #[test]
 fn provide_liqudity() {
     let env = Env::default();
