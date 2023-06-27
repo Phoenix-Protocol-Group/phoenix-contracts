@@ -1,9 +1,8 @@
 extern crate std;
-use soroban_sdk::{testutils::Address as _, Address, Env, IntoVal, Symbol, testutils::{Events, Logger}, vec};
+use soroban_sdk::{testutils::Address as _, Address, Env, IntoVal, Symbol};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
-    error::ContractError,
     storage::{Asset, PoolResponse},
     token_contract,
 };
@@ -222,7 +221,7 @@ fn provide_liqudity_single_asset_on_empty_pool() {
 }
 
 #[test]
-fn provide_liqudity_single_asset() {
+fn provide_liqudity_single_asset_equal() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -262,14 +261,15 @@ fn provide_liqudity_single_asset() {
     assert_eq!(token2.balance(&pool.address), 1_000_000);
 
     token1.mint(&user1, &100_000);
+    // Providing 100k of token1 to 1:1 pool will perform swap which will create imbalance
     pool.provide_liquidity(&user1, &100_000, &Some(50_000), &None, &Some(45_000), &None);
-    // Providing 100k to 1:1 pool should result in 50k of each token
-    // Y_new = (X_in * Y_old) / (X_in + X_old)
-    // Y_new = (50_000 * 1_000_000) / (50_000 + 1_000_000)
-    // Y_new = 272_727.27
+    // before swap : A(1_000_000), B(1_000_000)
+    // since pool is equal divides 50/50 sum for swap
+    // swap 50k A for B = 47620
+    // after swap : A(1_050_000), B(952_380)
+    // after providing liquidity
+    // A(1_100_000), B(997_731)
 
-    let logs = env.logger().all();
-        std::println!("{}", logs.join("\n"));
-
-    assert_eq!(vec![&env], env.events().all());
+    assert_eq!(token1.balance(&pool.address), 1_100_000);
+    assert_eq!(token2.balance(&pool.address), 997_731);
 }

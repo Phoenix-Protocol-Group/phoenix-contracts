@@ -180,16 +180,12 @@ impl LiquidityPoolTrait for LiquidityPool {
             let SimulateSwapResponse {
                 ask_amount,
                 spread_amount: _,
-                commission_amount,
+                commission_amount: _,
                 total_return: _,
             } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
             do_swap(env.clone(), sender.clone(), true, a_for_swap, None, 5)?;
 
-
-            log!(&env, "A: {}", a);
-            log!(&env, "B: {}", ask_amount);
-            log!(&env, "commission: {}", commission_amount);
-
+            // return: original Token A amount, simulated result of swap of portion
             (a, ask_amount)
         };
 
@@ -206,8 +202,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             pool_balance_a,
             pool_balance_b,
         )?;
-        log!(&env, "{}", amounts.0);
-        log!(&env, "{}", amounts.1);
 
         let config = get_config(&env)?;
 
