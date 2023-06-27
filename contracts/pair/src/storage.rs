@@ -100,10 +100,18 @@ pub struct PoolResponse {
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SimulateSwapResponse {
-    pub return_amount: i128,
+    pub ask_amount: i128,
     pub commission_amount: i128,
     pub spread_amount: i128,
     pub total_return: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SimulateReverseSwapResponse {
+    pub offer_amount: i128,
+    pub commission_amount: i128,
+    pub spread_amount: i128,
 }
 
 pub mod utils {

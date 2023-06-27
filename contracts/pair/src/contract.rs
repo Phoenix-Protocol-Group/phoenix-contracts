@@ -6,7 +6,7 @@ use crate::{
     error::ContractError,
     storage::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
-        SimulateSwapResponse,
+        SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
@@ -88,6 +88,13 @@ pub trait LiquidityPoolTrait {
         sell_a: bool,
         sell_amount: i128,
     ) -> Result<SimulateSwapResponse, ContractError>;
+
+    // Simulate reverse swap transaction
+    fn simulate_reverse_swap(
+        env: Env,
+        sell_a: bool,
+        ask_amount: i128,
+    ) -> Result<SimulateReverseSwapResponse, ContractError>;
 }
 
 #[contractimpl]
@@ -423,7 +430,7 @@ impl LiquidityPoolTrait for LiquidityPool {
     ) -> Result<SimulateSwapResponse, ContractError> {
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
-        let (pool_balance_sell, pool_balance_buy) = if sell_a {
+        let (pool_balance_offer, pool_balance_ask) = if sell_a {
             (pool_balance_a, pool_balance_b)
         } else {
             (pool_balance_b, pool_balance_a)
@@ -431,20 +438,49 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let config = get_config(&env)?;
 
-        let (return_amount, spread_amount, commission_amount) = compute_swap(
-            pool_balance_sell,
-            pool_balance_buy,
+        let (ask_amount, spread_amount, commission_amount) = compute_swap(
+            pool_balance_offer,
+            pool_balance_ask,
             offer_amount,
             config.protocol_fee_rate(),
         );
 
-        let total_return = return_amount + commission_amount + spread_amount;
+        let total_return = ask_amount + commission_amount + spread_amount;
 
         Ok(SimulateSwapResponse {
-            return_amount,
+            ask_amount,
             spread_amount,
             commission_amount,
             total_return,
+        })
+    }
+
+    fn simulate_reverse_swap(
+        env: Env,
+        sell_a: bool,
+        ask_amount: i128,
+    ) -> Result<SimulateReverseSwapResponse, ContractError> {
+        let pool_balance_a = utils::get_pool_balance_a(&env)?;
+        let pool_balance_b = utils::get_pool_balance_b(&env)?;
+        let (pool_balance_offer, pool_balance_ask) = if sell_a {
+            (pool_balance_a, pool_balance_b)
+        } else {
+            (pool_balance_b, pool_balance_a)
+        };
+
+        let config = get_config(&env)?;
+
+        let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
+            pool_balance_offer,
+            pool_balance_ask,
+            ask_amount,
+            config.protocol_fee_rate(),
+        )?;
+
+        Ok(SimulateReverseSwapResponse {
+            offer_amount,
+            spread_amount,
+            commission_amount,
         })
     }
 }
@@ -572,13 +608,13 @@ pub fn compute_offer_amount(
     let inv_one_minus_commission = Decimal::one() / one_minus_commission;
 
     // Calculate the resulting amount of ask assets after the swap
-    let offer_amount: i128 = cp / (ask_pool - (ask_amount * inv_one_minus_commission.try_into()?)) - offer_pool;
+    let offer_amount: i128 = cp / (ask_pool - (ask_amount * inv_one_minus_commission)) - offer_pool;
 
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
     let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_amount;
 
     // Calculate the commission amount
-    let commission_amount: i128 = (ask_amount * inv_one_minus_commission.try_into()?).try_into()?;
+    let commission_amount: i128 = ask_amount * inv_one_minus_commission;
 
     Ok((offer_amount, spread_amount, commission_amount))
 }

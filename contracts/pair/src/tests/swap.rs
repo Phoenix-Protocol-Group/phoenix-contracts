@@ -225,7 +225,7 @@ fn swap_simulation_even_pool() {
     assert_eq!(
         result,
         SimulateSwapResponse {
-            return_amount: output_amount - fees,
+            ask_amount: output_amount - fees,
             // spread_amount: Decimal::from_ratio(100_000, 1_000_000) * output_amount, // since it's 10% of the pool
             spread_amount: 9090, // rounding error, one less then ^
             commission_amount: fees,
@@ -238,7 +238,7 @@ fn swap_simulation_even_pool() {
     assert_eq!(
         result,
         SimulateSwapResponse {
-            return_amount: output_amount - fees,
+            ask_amount: output_amount - fees,
             spread_amount: 9090, // spread amount is basically 10%, since it's basically 10% of the
             // first token
             commission_amount: fees,
@@ -293,7 +293,7 @@ fn swap_simulation_one_third_pool() {
     assert_eq!(
         result,
         SimulateSwapResponse {
-            return_amount: output_amount - fees,
+            ask_amount: output_amount - fees,
             spread_amount: Decimal::from_ratio(100_000, 1_000_000) * output_amount, // since it's 10% of the pool
             commission_amount: fees,
             total_return: 300_000
@@ -310,7 +310,7 @@ fn swap_simulation_one_third_pool() {
     assert_eq!(
         result,
         SimulateSwapResponse {
-            return_amount: output_amount - fees,
+            ask_amount: output_amount - fees,
             // spread_amount: Decimal::from_ratio(100_000i128, 3_000_000i128) * output_amount,
             spread_amount: 1074, // rounding error, one less then ^
             commission_amount: fees,

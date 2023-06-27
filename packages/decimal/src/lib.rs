@@ -4,7 +4,7 @@
 #![no_std]
 use core::{
     cmp::{PartialEq, PartialOrd},
-    ops::Mul,
+    ops::{Mul, Sub, Div},
 };
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
@@ -130,6 +130,30 @@ impl Decimal {
     }
 }
 
+impl Sub for Decimal {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Decimal(self.0 - other.0)
+    }
+}
+
+impl Div for Decimal {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self {
+        Decimal::from_ratio(self.numerator(), rhs.numerator())
+    }
+}
+
+impl Mul<i128> for Decimal {
+    type Output = i128;
+
+    fn mul(self, rhs: i128) -> Self::Output {
+        rhs * self
+    }
+}
+
 impl Mul<Decimal> for i128 {
     type Output = Self;
 
@@ -140,14 +164,6 @@ impl Mul<Decimal> for i128 {
             return 0i128;
         }
         self * rhs.0 / Decimal::DECIMAL_FRACTIONAL
-    }
-}
-
-impl Mul<i128> for Decimal {
-    type Output = i128;
-
-    fn mul(self, rhs: i128) -> Self::Output {
-        rhs * self
     }
 }
 
