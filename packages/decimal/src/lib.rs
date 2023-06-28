@@ -597,4 +597,25 @@ mod tests {
     fn decimal_div_by_zero_panics() {
         let _value = Decimal::one() / Decimal::zero();
     }
+
+    #[test]
+    fn decimal_i128_division() {
+        // a/b
+        let left = Decimal::percent(150); // 1.5
+        let right = 3i128;
+        assert_eq!(left / right, Decimal::percent(50));
+
+        // 0/a
+        let left = Decimal::zero();
+        let right = 300i128;
+        assert_eq!(left / right, Decimal::zero());
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to divide by zero")]
+    fn decimal_uint128_divide_by_zero() {
+        let left = Decimal::percent(150); // 1.5
+        let right = 0i128;
+        let _result = left / right;
+    }
 }
