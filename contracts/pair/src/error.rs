@@ -16,4 +16,5 @@ pub enum ContractError {
     InvalidFeeBps = 11,
     EmptyPoolBalance = 12,
     InvalidAmounts = 13,
+    Unauthorized = 14,
 }
