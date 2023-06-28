@@ -168,6 +168,25 @@ impl Sub for Decimal {
     }
 }
 
+impl Mul for Decimal {
+    type Output = Self;
+
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn mul(self, other: Self) -> Self {
+        // Decimals are fractions. We can multiply two decimals a and b
+        // via
+        //       (a.numerator() * b.numerator()) / (a.denominator() * b.denominator())
+        //     = (a.numerator() * b.numerator()) / a.denominator() / b.denominator()
+
+        let result_as_uint256 = self.numerator() as u128 * other.numerator() as u128
+            / Self::DECIMAL_FRACTIONAL as u128;
+        match result_as_uint256.try_into() {
+            Ok(result) => Self(result),
+            Err(_) => panic!("attempt to multiply with overflow"),
+        }
+    }
+}
+
 impl Div for Decimal {
     type Output = Self;
 
@@ -365,6 +384,78 @@ mod tests {
         );
         assert_eq!(Decimal::percent(5) + Decimal::zero(), Decimal::percent(5));
         assert_eq!(Decimal::zero() + Decimal::zero(), Decimal::zero());
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to add with overflow")]
+    fn decimal_add_overflow_panics() {
+        let _value = Decimal::MAX + Decimal::percent(50);
+    }
+
+    #[test]
+    fn decimal_sub_works() {
+        let value = Decimal::one() - Decimal::percent(50); // 0.5
+        assert_eq!(value.0, Decimal::DECIMAL_FRACTIONAL / 2i128);
+
+        assert_eq!(
+            Decimal::percent(9) - Decimal::percent(4),
+            Decimal::percent(5)
+        );
+        assert_eq!(Decimal::percent(16) - Decimal::zero(), Decimal::percent(16));
+        assert_eq!(Decimal::percent(16) - Decimal::percent(16), Decimal::zero());
+        assert_eq!(Decimal::zero() - Decimal::zero(), Decimal::zero());
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to subtract with overflow")]
+    fn decimal_sub_overflow_panics() {
+        let _value = Decimal::zero() - Decimal::percent(50);
+    }
+
+    #[test]
+    fn decimal_implements_mul() {
+        let one = Decimal::one();
+        let two = one + one;
+        let half = Decimal::percent(50);
+
+        // 1*x and x*1
+        assert_eq!(one * Decimal::percent(0), Decimal::percent(0));
+        assert_eq!(one * Decimal::percent(1), Decimal::percent(1));
+        assert_eq!(one * Decimal::percent(10), Decimal::percent(10));
+        assert_eq!(one * Decimal::percent(100), Decimal::percent(100));
+        assert_eq!(one * Decimal::percent(1000), Decimal::percent(1000));
+        assert_eq!(one * Decimal::MAX, Decimal::MAX);
+        assert_eq!(Decimal::percent(0) * one, Decimal::percent(0));
+        assert_eq!(Decimal::percent(1) * one, Decimal::percent(1));
+        assert_eq!(Decimal::percent(10) * one, Decimal::percent(10));
+        assert_eq!(Decimal::percent(100) * one, Decimal::percent(100));
+        assert_eq!(Decimal::percent(1000) * one, Decimal::percent(1000));
+        assert_eq!(Decimal::MAX * one, Decimal::MAX);
+
+        // double
+        assert_eq!(two * Decimal::percent(0), Decimal::percent(0));
+        assert_eq!(two * Decimal::percent(1), Decimal::percent(2));
+        assert_eq!(two * Decimal::percent(10), Decimal::percent(20));
+        assert_eq!(two * Decimal::percent(100), Decimal::percent(200));
+        assert_eq!(two * Decimal::percent(1000), Decimal::percent(2000));
+        assert_eq!(Decimal::percent(0) * two, Decimal::percent(0));
+        assert_eq!(Decimal::percent(1) * two, Decimal::percent(2));
+        assert_eq!(Decimal::percent(10) * two, Decimal::percent(20));
+        assert_eq!(Decimal::percent(100) * two, Decimal::percent(200));
+        assert_eq!(Decimal::percent(1000) * two, Decimal::percent(2000));
+
+        // half
+        assert_eq!(half * Decimal::percent(0), Decimal::percent(0));
+        assert_eq!(half * Decimal::percent(1), Decimal::permille(5));
+        assert_eq!(half * Decimal::percent(10), Decimal::percent(5));
+        assert_eq!(half * Decimal::percent(100), Decimal::percent(50));
+        assert_eq!(half * Decimal::percent(1000), Decimal::percent(500));
+        assert_eq!(Decimal::percent(0) * half, Decimal::percent(0));
+        assert_eq!(Decimal::percent(1) * half, Decimal::permille(5));
+        assert_eq!(Decimal::percent(10) * half, Decimal::percent(5));
+        assert_eq!(Decimal::percent(100) * half, Decimal::percent(50));
+        assert_eq!(Decimal::percent(1000) * half, Decimal::percent(500));
+
     }
 
     #[test]
