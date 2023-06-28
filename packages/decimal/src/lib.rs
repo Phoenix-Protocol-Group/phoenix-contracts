@@ -17,6 +17,10 @@ impl Decimal {
     /// The number of decimal places. Since decimal types are fixed-point rather than
     /// floating-point, this is a constant.
     pub const DECIMAL_PLACES: u32 = 18;
+    /// The largest value that can be represented by this decimal type.
+    pub const MAX: Self = Self(i128::MAX);
+    /// The smallest value that can be represented by this decimal type.
+    pub const MIN: Self = Self(i128::MIN);
 
     pub fn new(value: i128) -> Self {
         Decimal(value)
@@ -41,6 +45,11 @@ impl Decimal {
     /// Convert x% into Decimal
     pub fn percent(x: i64) -> Self {
         Self((x as i128) * 10_000_000_000_000_000)
+    }
+
+    /// Convert permille (x/1000) into Decimal
+    pub fn permille(x: i64) -> Self {
+        Self(((x as i128) * 1_000_000_000_000_000).into())
     }
 
     /// Convert basis points (x/10000) into Decimal
@@ -110,22 +119,36 @@ impl Decimal {
         }
     }
 
-    /// Returns the ratio (numerator / denominator) as a Decimal.
-    /// Panics if the denominator is zero or if the operation would cause an overflow.
-    pub fn from_ratio(numerator: i128, denominator: i128) -> Self {
+    pub fn from_ratio(numerator: impl Into<i128>, denominator: impl Into<i128>) -> Self {
+        let numerator_signed = numerator.into();
+        let denominator_signed = denominator.into();
+
         // Check if the denominator is zero.
-        if denominator == 0 {
-            panic!("Denominator cannot be zero");
+        if denominator_signed == 0 {
+            panic!("Denominator must not be zero");
         }
 
-        // Check if the operation would cause an overflow.
-        if numerator.checked_mul(Self::DECIMAL_FRACTIONAL).is_none() {
-            panic!("Overflow error");
-        }
+        // Get the absolute values and the sign
+        let numerator = numerator_signed.abs() as u128;
+        let denominator = denominator_signed.abs() as u128;
+        let sign = (numerator_signed >= 0) == (denominator_signed >= 0);
 
-        // Calculate the ratio.
-        let ratio = numerator * Self::DECIMAL_FRACTIONAL / denominator;
+        // Scale up the numerator by the number of decimal places
+        let numerator = numerator
+            .checked_mul(Self::DECIMAL_FRACTIONAL as u128)
+            .expect("Multiplication overflow");
 
+        // Perform the division
+        let ratio_unsigned = numerator / denominator;
+
+        // Convert back to i128 and apply the sign
+        let ratio = if sign {
+            ratio_unsigned as i128
+        } else {
+            -(ratio_unsigned as i128)
+        };
+
+        // Return the Decimal
         Decimal(ratio)
     }
 }
@@ -228,6 +251,10 @@ mod tests {
         assert_eq!(Decimal::from_ratio(150i128, 100i128), Decimal::percent(150));
         assert_eq!(Decimal::from_ratio(333i128, 222i128), Decimal::percent(150));
 
+        // 0.125
+        assert_eq!(Decimal::from_ratio(1i64, 8i64), Decimal::permille(125));
+        assert_eq!(Decimal::from_ratio(125i64, 1000i64), Decimal::permille(125));
+
         // 1/3 (result floored)
         assert_eq!(
             Decimal::from_ratio(1i128, 3i128),
@@ -240,7 +267,104 @@ mod tests {
             Decimal(666_666_666_666_666_666i128)
         );
 
+        // large inputs
         assert_eq!(Decimal::from_ratio(0i128, i128::MAX), Decimal::zero());
+
+        // due to limited possibilities - we're only allowed to use i128 as input - maximum
+        // number this implementation supports without overflow is u128 / DECIMAL_FRACTIONAL
+        // 340282366920938463463374607431768211455 / 10^18 is approximately 340282366920938.
+        assert_eq!(
+            Decimal::from_ratio(340282366920938i128, 340282366920938i128),
+            Decimal::one()
+        );
+        // This works because of similar orders of magnitude
+        assert_eq!(
+            Decimal::from_ratio(34028236692093900000i128, 34028236692093900000i128),
+            Decimal::one()
+        );
+        assert_eq!(
+            Decimal::from_ratio(34028236692093900000i128, 1i128),
+            Decimal::new(34028236692093900000i128 * Decimal::DECIMAL_FRACTIONAL)
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Denominator must not be zero")]
+    fn decimal_from_ratio_panics_for_zero_denominator() {
+        Decimal::from_ratio(1i128, 0i128);
+    }
+
+    #[test]
+    #[should_panic(expected = "Multiplication overflow")]
+    fn decimal_from_ratio_panics_for_mul_overflow() {
+        Decimal::from_ratio(i128::MAX, 1i128);
+    }
+
+    #[test]
+    fn decimal_decimal_places_works() {
+        let zero = Decimal::zero();
+        let one = Decimal::one();
+        let half = Decimal::percent(50);
+        let two = Decimal::percent(200);
+        let max = Decimal::MAX;
+
+        assert_eq!(zero.decimal_places(), 18);
+        assert_eq!(one.decimal_places(), 18);
+        assert_eq!(half.decimal_places(), 18);
+        assert_eq!(two.decimal_places(), 18);
+        assert_eq!(max.decimal_places(), 18);
+    }
+
+    #[test]
+    fn decimal_is_zero_works() {
+        assert!(Decimal::zero().is_zero());
+        assert!(Decimal::percent(0).is_zero());
+        assert!(Decimal::permille(0).is_zero());
+
+        assert!(!Decimal::one().is_zero());
+        assert!(!Decimal::percent(123).is_zero());
+        assert!(!Decimal::permille(1234).is_zero());
+    }
+
+    #[test]
+    fn decimal_inv_works() {
+        // d = 0
+        assert_eq!(Decimal::zero().inv(), None);
+
+        // d == 1
+        assert_eq!(Decimal::one().inv(), Some(Decimal::one()));
+
+        // d > 1 exact
+        assert_eq!(Decimal::percent(200).inv(), Some(Decimal::percent(50)));
+        assert_eq!(Decimal::percent(2_000).inv(), Some(Decimal::percent(5)));
+        assert_eq!(Decimal::percent(20_000).inv(), Some(Decimal::permille(5)));
+        assert_eq!(Decimal::percent(200_000).inv(), Some(Decimal::bps(5)));
+
+        // d > 1 rounded
+        assert_eq!(Decimal::percent(300).inv(), Some(Decimal::from_ratio(1i128, 3i128)));
+        assert_eq!(Decimal::percent(600).inv(), Some(Decimal::from_ratio(1i128, 6i128)));
+
+        // d < 1 exact
+        assert_eq!(Decimal::percent(50).inv(), Some(Decimal::percent(200)));
+        assert_eq!(Decimal::percent(5).inv(), Some(Decimal::percent(2_000)));
+        assert_eq!(Decimal::permille(5).inv(), Some(Decimal::percent(20_000)));
+        assert_eq!(Decimal::bps(5).inv(), Some(Decimal::percent(200_000)));
+    }
+
+    #[test]
+    fn decimal_add_works() {
+        let value = Decimal::one() + Decimal::percent(50); // 1.5
+        assert_eq!(
+            value.0,
+            Decimal::DECIMAL_FRACTIONAL * 3i128 / 2i128
+        );
+
+        assert_eq!(
+            Decimal::percent(5) + Decimal::percent(4),
+            Decimal::percent(9)
+        );
+        assert_eq!(Decimal::percent(5) + Decimal::zero(), Decimal::percent(5));
+        assert_eq!(Decimal::zero() + Decimal::zero(), Decimal::zero());
     }
 
     #[test]
