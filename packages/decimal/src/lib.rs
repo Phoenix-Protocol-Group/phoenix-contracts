@@ -11,6 +11,12 @@ use core::{
 use num_bigint::ToBigInt;
 use num_traits::ToPrimitive;
 
+#[derive(Debug)]
+enum Error {
+    Overflow,
+    DivideByZero,
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 pub struct Decimal(i128);
 
@@ -125,28 +131,40 @@ impl Decimal {
 
     /// Returns the ratio (numerator / denominator) as a Decimal
     pub fn from_ratio(numerator: impl Into<i128>, denominator: impl Into<i128>) -> Self {
+        match Decimal::checked_from_ratio(numerator, denominator) {
+            Ok(ratio) => ratio,
+            Err(Error::DivideByZero) => panic!("Denominator must not be zero"),
+            Err(Error::Overflow) => panic!("Multiplication overflow"),
+        }
+    }
+
+    /// Returns the ratio (numerator / denominator) as a Decimal
+    fn checked_from_ratio(
+        numerator: impl Into<i128>,
+        denominator: impl Into<i128>,
+    ) -> Result<Self, Error> {
         let numerator = numerator.into();
         let denominator = denominator.into();
 
         // If denominator is zero, panic.
         if denominator == 0 {
-            panic!("Denominator must not be zero");
+            return Err(Error::DivideByZero);
         }
 
         // Convert numerator and denominator to BigInt.
+        // unwrap since i128 is always convertible to BigInt
         let numerator = numerator.to_bigint().unwrap();
         let denominator = denominator.to_bigint().unwrap();
+        let decimal_fractional = Self::DECIMAL_FRACTIONAL.to_bigint().unwrap();
 
         // Compute the ratio: (numerator * DECIMAL_FRACTIONAL) / denominator
-        let ratio = (numerator * Self::DECIMAL_FRACTIONAL.to_bigint().unwrap()) / denominator;
+        let ratio = (numerator * decimal_fractional) / denominator;
 
         // Convert back to i128. If conversion fails, panic.
-        let ratio = ratio
-            .to_i128()
-            .unwrap_or_else(|| panic!("Multiplication overflow"));
+        let ratio = ratio.to_i128().ok_or(Error::Overflow)?;
 
         // Construct and return the Decimal.
-        Decimal(ratio)
+        Ok(Decimal(ratio))
     }
 }
 
@@ -196,7 +214,11 @@ impl Div for Decimal {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self {
-        Decimal::from_ratio(self.numerator(), rhs.numerator())
+        match Decimal::checked_from_ratio(self.numerator(), rhs.numerator()) {
+            Ok(ratio) => ratio,
+            Err(Error::DivideByZero) => panic!("Division failed - denominator must not be zero"),
+            Err(Error::Overflow) => panic!("Division failed - multiplication overflow"),
+        }
     }
 }
 
@@ -565,13 +587,13 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Multiplication overflow")]
+    #[should_panic(expected = "Division failed - multiplication overflow")]
     fn decimal_div_overflow_panics() {
         let _value = Decimal::MAX / Decimal::percent(10);
     }
 
     #[test]
-    #[should_panic(expected = "Denominator must not be zero")]
+    #[should_panic(expected = "Division failed - denominator must not be zero")]
     fn decimal_div_by_zero_panics() {
         let _value = Decimal::one() / Decimal::zero();
     }
