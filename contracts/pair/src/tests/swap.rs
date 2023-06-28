@@ -43,7 +43,7 @@ fn simple_swap() {
 
     // true means "selling A token"
     // selling just one token with 1% max spread allowed
-    let spread = 1i64; // 1% maximum spread allowed
+    let spread = 100i64; // 1% maximum spread allowed
     pool.swap(&user1, &true, &1, &None, &spread);
     assert_eq!(
         env.auths(),
@@ -150,7 +150,7 @@ fn swap_with_high_fee() {
         &None,
     );
 
-    let spread = 10; // 10% maximum spread allowed
+    let spread = 1_000; // 10% maximum spread allowed
 
     // let's swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
     pool.swap(&user1, &true, &100_000, &None, &spread);
