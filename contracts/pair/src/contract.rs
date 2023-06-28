@@ -58,7 +58,7 @@ pub trait LiquidityPoolTrait {
         sell_a: bool,
         offer_amount: i128,
         belief_price: Option<i64>,
-        max_spread: i64,
+        max_spread_bps: i64,
     ) -> Result<(), ContractError>;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
@@ -187,7 +187,15 @@ impl LiquidityPoolTrait for LiquidityPool {
                     commission_amount: _,
                     total_return: _,
                 } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
-                do_swap(env.clone(), sender.clone(), true, a_for_swap, None, 5)?;
+                let max_spread = Decimal::bps(500); // max 5% spread
+                do_swap(
+                    env.clone(),
+                    sender.clone(),
+                    true,
+                    a_for_swap,
+                    None,
+                    max_spread,
+                )?;
                 // return: Token A amount, simulated result of swap of portion A
                 (a, ask_amount)
             }
@@ -201,7 +209,15 @@ impl LiquidityPoolTrait for LiquidityPool {
                     commission_amount: _,
                     total_return: _,
                 } = Self::simulate_swap(env.clone(), false, b_for_swap)?;
-                do_swap(env.clone(), sender.clone(), false, b_for_swap, None, 5)?;
+                let max_spread = Decimal::bps(500); // max 5% spread
+                do_swap(
+                    env.clone(),
+                    sender.clone(),
+                    false,
+                    b_for_swap,
+                    None,
+                    max_spread,
+                )?;
                 // return: simulated result of swap of portion B,  Token B amount
                 (ask_amount, b)
             }
@@ -289,10 +305,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         sell_a: bool,
         offer_amount: i128,
         belief_price: Option<i64>,
-        max_spread: i64,
+        max_spread_bps: i64,
     ) -> Result<(), ContractError> {
         sender.require_auth();
 
+        let max_spread = Decimal::bps(max_spread_bps);
         do_swap(env, sender, sell_a, offer_amount, belief_price, max_spread)
     }
 
@@ -468,10 +485,9 @@ fn do_swap(
     sell_a: bool,
     offer_amount: i128,
     belief_price: Option<i64>,
-    max_spread: i64,
+    max_spread: Decimal,
 ) -> Result<(), ContractError> {
     let belief_price = belief_price.map(Decimal::percent);
-    let max_spread = Decimal::percent(max_spread);
 
     let pool_balance_a = utils::get_pool_balance_a(&env)?;
     let pool_balance_b = utils::get_pool_balance_b(&env)?;
