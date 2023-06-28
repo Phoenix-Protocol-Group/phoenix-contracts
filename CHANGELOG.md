@@ -6,6 +6,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Changed
+
+- Decimal: use num_bigint crate to increase increase range of allowed values and prevent avoidable overflow; increase test coverage ([#55])
+
+[#55]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/55
+
 ## [0.3.1] - 2023-06-27
 
 ### Added
