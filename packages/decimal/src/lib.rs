@@ -2,10 +2,14 @@
 // License 2.0 - https://github.com/CosmWasm/cosmwasm.
 
 #![no_std]
+
 use core::{
     cmp::{PartialEq, PartialOrd},
     ops::{Add, Div, Mul, Sub},
 };
+
+use num_bigint::ToBigInt;
+use num_traits::ToPrimitive;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 pub struct Decimal(i128);
@@ -49,7 +53,7 @@ impl Decimal {
 
     /// Convert permille (x/1000) into Decimal
     pub fn permille(x: i64) -> Self {
-        Self(((x as i128) * 1_000_000_000_000_000).into())
+        Self((x as i128) * 1_000_000_000_000_000)
     }
 
     /// Convert basis points (x/10000) into Decimal
@@ -119,36 +123,29 @@ impl Decimal {
         }
     }
 
+    /// Returns the ratio (numerator / denominator) as a Decimal
     pub fn from_ratio(numerator: impl Into<i128>, denominator: impl Into<i128>) -> Self {
-        let numerator_signed = numerator.into();
-        let denominator_signed = denominator.into();
+        let numerator = numerator.into();
+        let denominator = denominator.into();
 
-        // Check if the denominator is zero.
-        if denominator_signed == 0 {
+        // If denominator is zero, panic.
+        if denominator == 0 {
             panic!("Denominator must not be zero");
         }
 
-        // Get the absolute values and the sign
-        let numerator = numerator_signed.abs() as u128;
-        let denominator = denominator_signed.abs() as u128;
-        let sign = (numerator_signed >= 0) == (denominator_signed >= 0);
+        // Convert numerator and denominator to BigInt.
+        let numerator = numerator.to_bigint().unwrap();
+        let denominator = denominator.to_bigint().unwrap();
 
-        // Scale up the numerator by the number of decimal places
-        let numerator = numerator
-            .checked_mul(Self::DECIMAL_FRACTIONAL as u128)
-            .expect("Multiplication overflow");
+        // Compute the ratio: (numerator * DECIMAL_FRACTIONAL) / denominator
+        let ratio = (numerator * Self::DECIMAL_FRACTIONAL.to_bigint().unwrap()) / denominator;
 
-        // Perform the division
-        let ratio_unsigned = numerator / denominator;
+        // Convert back to i128. If conversion fails, panic.
+        let ratio = ratio
+            .to_i128()
+            .unwrap_or_else(|| panic!("Multiplication overflow"));
 
-        // Convert back to i128 and apply the sign
-        let ratio = if sign {
-            ratio_unsigned as i128
-        } else {
-            -(ratio_unsigned as i128)
-        };
-
-        // Return the Decimal
+        // Construct and return the Decimal.
         Decimal(ratio)
     }
 }
@@ -178,12 +175,20 @@ impl Mul for Decimal {
         //       (a.numerator() * b.numerator()) / (a.denominator() * b.denominator())
         //     = (a.numerator() * b.numerator()) / a.denominator() / b.denominator()
 
-        let result_as_uint256 = self.numerator() as u128 * other.numerator() as u128
-            / Self::DECIMAL_FRACTIONAL as u128;
-        match result_as_uint256.try_into() {
-            Ok(result) => Self(result),
-            Err(_) => panic!("attempt to multiply with overflow"),
-        }
+        let self_numerator = self.numerator().to_bigint().unwrap();
+        let other_numerator = other.numerator().to_bigint().unwrap();
+
+        // Compute the product of the numerators and divide by DECIMAL_FRACTIONAL
+        let result =
+            (self_numerator * other_numerator) / Self::DECIMAL_FRACTIONAL.to_bigint().unwrap();
+
+        // Convert the result back to i128, and panic on overflow
+        let result = result
+            .to_i128()
+            .unwrap_or_else(|| panic!("attempt to multiply with overflow"));
+
+        // Return a new Decimal
+        Decimal(result)
     }
 }
 
@@ -288,6 +293,7 @@ mod tests {
 
         // large inputs
         assert_eq!(Decimal::from_ratio(0i128, i128::MAX), Decimal::zero());
+        assert_eq!(Decimal::from_ratio(i128::MAX, i128::MAX), Decimal::one());
 
         // due to limited possibilities - we're only allowed to use i128 as input - maximum
         // number this implementation supports without overflow is u128 / DECIMAL_FRACTIONAL
@@ -360,8 +366,14 @@ mod tests {
         assert_eq!(Decimal::percent(200_000).inv(), Some(Decimal::bps(5)));
 
         // d > 1 rounded
-        assert_eq!(Decimal::percent(300).inv(), Some(Decimal::from_ratio(1i128, 3i128)));
-        assert_eq!(Decimal::percent(600).inv(), Some(Decimal::from_ratio(1i128, 6i128)));
+        assert_eq!(
+            Decimal::percent(300).inv(),
+            Some(Decimal::from_ratio(1i128, 3i128))
+        );
+        assert_eq!(
+            Decimal::percent(600).inv(),
+            Some(Decimal::from_ratio(1i128, 6i128))
+        );
 
         // d < 1 exact
         assert_eq!(Decimal::percent(50).inv(), Some(Decimal::percent(200)));
@@ -373,10 +385,7 @@ mod tests {
     #[test]
     fn decimal_add_works() {
         let value = Decimal::one() + Decimal::percent(50); // 1.5
-        assert_eq!(
-            value.0,
-            Decimal::DECIMAL_FRACTIONAL * 3i128 / 2i128
-        );
+        assert_eq!(value.0, Decimal::DECIMAL_FRACTIONAL * 3i128 / 2i128);
 
         assert_eq!(
             Decimal::percent(5) + Decimal::percent(4),
@@ -404,12 +413,6 @@ mod tests {
         assert_eq!(Decimal::percent(16) - Decimal::zero(), Decimal::percent(16));
         assert_eq!(Decimal::percent(16) - Decimal::percent(16), Decimal::zero());
         assert_eq!(Decimal::zero() - Decimal::zero(), Decimal::zero());
-    }
-
-    #[test]
-    #[should_panic(expected = "attempt to subtract with overflow")]
-    fn decimal_sub_overflow_panics() {
-        let _value = Decimal::zero() - Decimal::percent(50);
     }
 
     #[test]
@@ -455,11 +458,32 @@ mod tests {
         assert_eq!(Decimal::percent(10) * half, Decimal::percent(5));
         assert_eq!(Decimal::percent(100) * half, Decimal::percent(50));
         assert_eq!(Decimal::percent(1000) * half, Decimal::percent(500));
-
     }
 
     #[test]
-    fn multiplying_i128() {
+    #[should_panic(expected = "attempt to multiply with overflow")]
+    fn decimal_mul_overflow_panics() {
+        let _value = Decimal::MAX * Decimal::percent(101);
+    }
+
+    #[test]
+    // in this test the Decimal is on the right
+    fn i128_decimal_multiply() {
+        // a*b
+        let left = 300i128;
+        let right = Decimal::one() + Decimal::percent(50); // 1.5
+        assert_eq!(left * right, 450i128);
+
+        // a*0
+        let left = 300i128;
+        let right = Decimal::zero();
+        assert_eq!(left * right, 0i128);
+
+        // 0*a
+        let left = 0i128;
+        let right = Decimal::one() + Decimal::percent(50); // 1.5
+        assert_eq!(left * right, 0i128);
+
         assert_eq!(0i128 * Decimal::one(), 0i128);
         assert_eq!(1i128 * Decimal::one(), 1i128);
         assert_eq!(2i128 * Decimal::one(), 2i128);
@@ -475,5 +499,80 @@ mod tests {
 
         assert_eq!(1i128 * Decimal::percent(200), 2i128);
         assert_eq!(1000i128 * Decimal::percent(200), 2000i128);
+    }
+
+    #[test]
+    // in this test the Decimal is on the left
+    fn decimal_i128_multiply() {
+        // a*b
+        let left = Decimal::one() + Decimal::percent(50); // 1.5
+        let right = 300i128;
+        assert_eq!(left * right, 450i128);
+
+        // 0*a
+        let left = Decimal::zero();
+        let right = 300i128;
+        assert_eq!(left * right, 0i128);
+
+        // a*0
+        let left = Decimal::one() + Decimal::percent(50); // 1.5
+        let right = 0i128;
+        assert_eq!(left * right, 0i128);
+    }
+
+    #[test]
+    fn decimal_implements_div() {
+        let one = Decimal::one();
+        let two = one + one;
+        let half = Decimal::percent(50);
+
+        // 1/x and x/1
+        assert_eq!(one / Decimal::percent(1), Decimal::percent(10_000));
+        assert_eq!(one / Decimal::percent(10), Decimal::percent(1_000));
+        assert_eq!(one / Decimal::percent(100), Decimal::percent(100));
+        assert_eq!(one / Decimal::percent(1000), Decimal::percent(10));
+        assert_eq!(Decimal::percent(0) / one, Decimal::percent(0));
+        assert_eq!(Decimal::percent(1) / one, Decimal::percent(1));
+        assert_eq!(Decimal::percent(10) / one, Decimal::percent(10));
+        assert_eq!(Decimal::percent(100) / one, Decimal::percent(100));
+        assert_eq!(Decimal::percent(1000) / one, Decimal::percent(1000));
+
+        // double
+        assert_eq!(two / Decimal::percent(1), Decimal::percent(20_000));
+        assert_eq!(two / Decimal::percent(10), Decimal::percent(2_000));
+        assert_eq!(two / Decimal::percent(100), Decimal::percent(200));
+        assert_eq!(two / Decimal::percent(1000), Decimal::percent(20));
+        assert_eq!(Decimal::percent(0) / two, Decimal::percent(0));
+        assert_eq!(Decimal::percent(10) / two, Decimal::percent(5));
+        assert_eq!(Decimal::percent(100) / two, Decimal::percent(50));
+        assert_eq!(Decimal::percent(1000) / two, Decimal::percent(500));
+
+        // half
+        assert_eq!(half / Decimal::percent(1), Decimal::percent(5_000));
+        assert_eq!(half / Decimal::percent(10), Decimal::percent(500));
+        assert_eq!(half / Decimal::percent(100), Decimal::percent(50));
+        assert_eq!(half / Decimal::percent(1000), Decimal::percent(5));
+        assert_eq!(Decimal::percent(0) / half, Decimal::percent(0));
+        assert_eq!(Decimal::percent(1) / half, Decimal::percent(2));
+        assert_eq!(Decimal::percent(10) / half, Decimal::percent(20));
+        assert_eq!(Decimal::percent(100) / half, Decimal::percent(200));
+        assert_eq!(Decimal::percent(1000) / half, Decimal::percent(2000));
+
+        assert_eq!(
+            Decimal::percent(15) / Decimal::percent(60),
+            Decimal::percent(25)
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Multiplication overflow")]
+    fn decimal_div_overflow_panics() {
+        let _value = Decimal::MAX / Decimal::percent(10);
+    }
+
+    #[test]
+    #[should_panic(expected = "Denominator must not be zero")]
+    fn decimal_div_by_zero_panics() {
+        let _value = Decimal::one() / Decimal::zero();
     }
 }

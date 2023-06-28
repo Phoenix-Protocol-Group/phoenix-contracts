@@ -215,6 +215,10 @@ dependencies = [
 [[package]]
 name = "decimal"
 version = "0.3.1"
+dependencies = [
+ "num-bigint",
+ "num-traits",
+]
 
 [[package]]
 name = "derive_arbitrary"
