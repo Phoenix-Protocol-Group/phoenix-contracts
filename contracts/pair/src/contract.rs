@@ -34,6 +34,7 @@ pub trait LiquidityPoolTrait {
         swap_fee_bps: i64,
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
+        max_allowed_spread_bps: i64,
     ) -> Result<(), ContractError>;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -58,7 +59,7 @@ pub trait LiquidityPoolTrait {
         sell_a: bool,
         offer_amount: i128,
         belief_price: Option<i64>,
-        max_spread_bps: i64,
+        max_spread_bps: Option<i64>,
     ) -> Result<(), ContractError>;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
@@ -71,6 +72,17 @@ pub trait LiquidityPoolTrait {
         min_a: i128,
         min_b: i128,
     ) -> Result<(i128, i128), ContractError>;
+
+    // Allows admin address set during initialization to change some parameters of the
+    // configuration
+    fn update_config(
+        env: Env,
+        sender: Address,
+        total_fee_bps: Option<i64>,
+        fee_recipient: Option<Address>,
+        max_allowed_slippage_bps: Option<i64>,
+        max_allowed_spread_bps: Option<i64>,
+    ) -> Result<(), ContractError>;
 
     // Migration entrypoint
     fn upgrade(e: Env, new_wasm_hash: BytesN<32>) -> Result<(), ContractError>;
@@ -114,11 +126,17 @@ impl LiquidityPoolTrait for LiquidityPool {
         swap_fee_bps: i64,
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
+        max_allowed_spread_bps: i64,
     ) -> Result<(), ContractError> {
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
             log!(&env, "token_a must be less than token_b");
             return Err(ContractError::FirstTokenMustBeSmallerThenSecond);
+        }
+
+        if !(0..=10_000).contains(&swap_fee_bps) {
+            log!(&env, "Fees must be between 0 and 100%");
+            return Err(ContractError::InvalidFeeBps);
         }
 
         // deploy token contract
@@ -142,7 +160,8 @@ impl LiquidityPoolTrait for LiquidityPool {
             pair_type: PairType::Xyk,
             total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
             fee_recipient,
-            max_allowed_slippage: max_allowed_slippage_bps,
+            max_allowed_slippage_bps,
+            max_allowed_spread_bps,
         };
         save_config(&env, config);
         utils::save_admin(&env, admin);
@@ -187,15 +206,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     commission_amount: _,
                     total_return: _,
                 } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
-                let max_spread = Decimal::bps(500); // max 5% spread
-                do_swap(
-                    env.clone(),
-                    sender.clone(),
-                    true,
-                    a_for_swap,
-                    None,
-                    max_spread,
-                )?;
+                do_swap(env.clone(), sender.clone(), true, a_for_swap, None, None)?;
                 // return: Token A amount, simulated result of swap of portion A
                 (a, ask_amount)
             }
@@ -209,15 +220,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     commission_amount: _,
                     total_return: _,
                 } = Self::simulate_swap(env.clone(), false, b_for_swap)?;
-                let max_spread = Decimal::bps(500); // max 5% spread
-                do_swap(
-                    env.clone(),
-                    sender.clone(),
-                    false,
-                    b_for_swap,
-                    None,
-                    max_spread,
-                )?;
+                do_swap(env.clone(), sender.clone(), false, b_for_swap, None, None)?;
                 // return: simulated result of swap of portion B,  Token B amount
                 (ask_amount, b)
             }
@@ -305,12 +308,18 @@ impl LiquidityPoolTrait for LiquidityPool {
         sell_a: bool,
         offer_amount: i128,
         belief_price: Option<i64>,
-        max_spread_bps: i64,
+        max_spread_bps: Option<i64>,
     ) -> Result<(), ContractError> {
         sender.require_auth();
 
-        let max_spread = Decimal::bps(max_spread_bps);
-        do_swap(env, sender, sell_a, offer_amount, belief_price, max_spread)
+        do_swap(
+            env,
+            sender,
+            sell_a,
+            offer_amount,
+            belief_price,
+            max_spread_bps,
+        )
     }
 
     fn withdraw_liquidity(
@@ -378,6 +387,41 @@ impl LiquidityPoolTrait for LiquidityPool {
             .publish(("withdraw_liquidity", "return_amount_b"), return_amount_b);
 
         Ok((return_amount_a, return_amount_b))
+    }
+
+    fn update_config(
+        env: Env,
+        sender: Address,
+        total_fee_bps: Option<i64>,
+        fee_recipient: Option<Address>,
+        max_allowed_slippage_bps: Option<i64>,
+        max_allowed_spread_bps: Option<i64>,
+    ) -> Result<(), ContractError> {
+        if sender != utils::get_admin(&env)? {
+            return Err(ContractError::Unauthorized);
+        }
+
+        let mut config = get_config(&env)?;
+
+        if let Some(total_fee_bps) = total_fee_bps {
+            if !(0..=10_000).contains(&total_fee_bps) {
+                return Err(ContractError::InvalidFeeBps);
+            }
+            config.total_fee_bps = total_fee_bps;
+        }
+        if let Some(fee_recipient) = fee_recipient {
+            config.fee_recipient = fee_recipient;
+        }
+        if let Some(max_allowed_slippage_bps) = max_allowed_slippage_bps {
+            config.max_allowed_slippage_bps = max_allowed_slippage_bps;
+        }
+        if let Some(max_allowed_spread_bps) = max_allowed_spread_bps {
+            config.max_allowed_spread_bps = max_allowed_spread_bps;
+        }
+
+        save_config(&env, config);
+
+        Ok(())
     }
 
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), ContractError> {
@@ -485,9 +529,12 @@ fn do_swap(
     sell_a: bool,
     offer_amount: i128,
     belief_price: Option<i64>,
-    max_spread: Decimal,
+    max_spread: Option<i64>,
 ) -> Result<(), ContractError> {
+    let config = get_config(&env)?;
+
     let belief_price = belief_price.map(Decimal::percent);
+    let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
 
     let pool_balance_a = utils::get_pool_balance_a(&env)?;
     let pool_balance_b = utils::get_pool_balance_b(&env)?;
@@ -496,8 +543,6 @@ fn do_swap(
     } else {
         (pool_balance_b, pool_balance_a)
     };
-
-    let config = get_config(&env)?;
 
     let (return_amount, spread_amount, commission_amount) = compute_swap(
         pool_balance_sell,

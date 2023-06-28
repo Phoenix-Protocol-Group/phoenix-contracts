@@ -34,6 +34,7 @@ fn provide_liqudity() {
         swap_fees,
         None,
         None,
+        None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -125,6 +126,7 @@ fn withdraw_liqudity() {
         &token1.address,
         &token2.address,
         swap_fees,
+        None,
         None,
         None,
     );
@@ -230,6 +232,7 @@ fn provide_liqudity_single_asset_on_empty_pool() {
         swap_fees,
         None,
         None,
+        None,
     );
 
     token1.mint(&user1, &1_000_000);
@@ -266,6 +269,7 @@ fn provide_liqudity_single_asset_equal() {
         &token1.address,
         &token2.address,
         swap_fees,
+        None,
         None,
         None,
     );
@@ -327,6 +331,7 @@ fn provide_liqudity_single_asset_one_third() {
         &token1.address,
         &token2.address,
         swap_fees,
+        None,
         None,
         None,
     );

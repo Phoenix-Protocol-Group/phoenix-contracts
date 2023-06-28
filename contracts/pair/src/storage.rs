@@ -41,7 +41,10 @@ pub struct Config {
     /// In relation to the returned amount of tokens
     pub total_fee_bps: i64,
     pub fee_recipient: Address,
-    pub max_allowed_slippage: i64,
+    /// The maximum amount of slippage (in bps) that is tolerated during providing liquidity
+    pub max_allowed_slippage_bps: i64,
+    /// The maximum amount of spread (in bps) that is tolerated during swap
+    pub max_allowed_spread_bps: i64,
 }
 const CONFIG: Symbol = Symbol::short("CONFIG");
 
@@ -62,7 +65,7 @@ impl Config {
     }
 
     pub fn max_allowed_slippage(&self) -> Decimal {
-        Decimal::bps(self.max_allowed_slippage)
+        Decimal::bps(self.max_allowed_slippage_bps)
     }
 }
 
