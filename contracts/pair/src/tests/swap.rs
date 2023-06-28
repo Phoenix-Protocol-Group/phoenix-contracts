@@ -23,6 +23,7 @@ fn simple_swap() {
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
+        None,
         &token1.address,
         &token2.address,
         swap_fees,
@@ -131,6 +132,7 @@ fn swap_with_high_fee() {
     let fee_recipient = Address::random(&env);
     let pool = deploy_liquidity_pool_contract(
         &env,
+        None,
         &token1.address,
         &token2.address,
         swap_fees,
@@ -200,6 +202,7 @@ fn swap_simulation_even_pool() {
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_liquidity_pool_contract(
         &env,
+        None,
         &token1.address,
         &token2.address,
         swap_fees,
@@ -299,6 +302,7 @@ fn swap_simulation_one_third_pool() {
     let swap_fees = 500i64; // 5% bps
     let pool = deploy_liquidity_pool_contract(
         &env,
+        None,
         &token1.address,
         &token2.address,
         swap_fees,

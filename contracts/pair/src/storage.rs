@@ -24,14 +24,14 @@ impl TryFromVal<Env, DataKey> for RawVal {
 }
 
 #[contracttype]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum PairType {
     Xyk = 0,
 }
 
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
     pub token_a: Address,
     pub token_b: Address,

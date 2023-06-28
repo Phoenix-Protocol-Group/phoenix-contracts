@@ -78,6 +78,7 @@ pub trait LiquidityPoolTrait {
     fn update_config(
         env: Env,
         sender: Address,
+        new_admin: Option<Address>,
         total_fee_bps: Option<i64>,
         fee_recipient: Option<Address>,
         max_allowed_slippage_bps: Option<i64>,
@@ -392,6 +393,7 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn update_config(
         env: Env,
         sender: Address,
+        new_admin: Option<Address>,
         total_fee_bps: Option<i64>,
         fee_recipient: Option<Address>,
         max_allowed_slippage_bps: Option<i64>,
@@ -403,6 +405,9 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let mut config = get_config(&env)?;
 
+        if let Some(new_admin) = new_admin {
+            utils::save_admin(&env, new_admin);
+        }
         if let Some(total_fee_bps) = total_fee_bps {
             if !(0..=10_000).contains(&total_fee_bps) {
                 return Err(ContractError::InvalidFeeBps);

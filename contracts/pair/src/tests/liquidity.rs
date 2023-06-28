@@ -29,6 +29,7 @@ fn provide_liqudity() {
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
+        None,
         &token1.address,
         &token2.address,
         swap_fees,
@@ -123,6 +124,7 @@ fn withdraw_liqudity() {
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
+        None,
         &token1.address,
         &token2.address,
         swap_fees,
@@ -227,6 +229,7 @@ fn provide_liqudity_single_asset_on_empty_pool() {
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
+        None,
         &token1.address,
         &token2.address,
         swap_fees,
@@ -266,6 +269,7 @@ fn provide_liqudity_single_asset_equal() {
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
+        None,
         &token1.address,
         &token2.address,
         swap_fees,
@@ -328,6 +332,7 @@ fn provide_liqudity_single_asset_one_third() {
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
+        None,
         &token1.address,
         &token2.address,
         swap_fees,
