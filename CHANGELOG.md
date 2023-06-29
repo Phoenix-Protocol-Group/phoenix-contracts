@@ -10,7 +10,7 @@ and this project adheres to
 
 - Decimal: use num_bigint crate to increase increase range of allowed values and prevent avoidable overflow; increase test coverage ([#55])
 - Pair: modify swap signature to accept spread as BPS instead of plain number translated to percentage ([#56])
-- Pair: implement update_config message ([#57])
+- Pair: implement update_config message ([#58])
 
 [#55]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/55
 [#56]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/56
