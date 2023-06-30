@@ -13,8 +13,7 @@ decimal = { path = "./packages/decimal"}
 num-integer = { version = "0.1.45", default-features = false, features = ["i128"] }
 soroban-sdk = "0.8.4"
 soroban-token-sdk = "0.8.4"
-
-[workspace.dev_dependencies]
+test-case = "3.1"
 
 [profile.release]
 opt-level = "z"
