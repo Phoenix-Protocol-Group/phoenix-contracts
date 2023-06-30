@@ -165,16 +165,17 @@ impl Curve {
             (Curve::SaturatingLinear(sl1), Curve::SaturatingLinear(sl2)) => {
                 // convert to piecewise linear, then combine those
                 Curve::PiecewiseLinear(
-                    PiecewiseLinear::from(sl1).combine(&PiecewiseLinear::from(sl2)),
+                    from_saturating_linear(env, sl1)
+                        .combine(env, &from_saturating_linear(env, sl2)),
                 )
             }
             (Curve::SaturatingLinear(sl), Curve::PiecewiseLinear(pl))
             | (Curve::PiecewiseLinear(pl), Curve::SaturatingLinear(sl)) => {
                 // convert sl to piecewise linear, then combine
-                Curve::PiecewiseLinear(PiecewiseLinear::from(sl).combine(pl))
+                Curve::PiecewiseLinear(from_saturating_linear(env, sl).combine(env, pl))
             }
             (Curve::PiecewiseLinear(pl1), Curve::PiecewiseLinear(pl2)) => {
-                Curve::PiecewiseLinear(pl1.combine(pl2))
+                Curve::PiecewiseLinear(pl1.combine(env, pl2))
             }
         }
     }
@@ -274,17 +275,15 @@ impl PiecewiseLinear {
     pub fn value(&self, x: u64) -> u128 {
         let mut iter = self.steps.iter();
 
+        let mut prev: Option<(u64, u128)> = None;
         let mut next = match iter.next() {
             Some(Ok(val)) => val,
-            _ => panic!("Steps are empty or error in reading steps"), // or handle this situation differently
+            _ => panic!("Steps are empty or error in reading steps"),
         };
 
-        let mut prev: Option<&(u64, u128)> = None;
-
         for step_result in iter {
-            // only break if x is not above prev
             if x >= next.0 {
-                prev = Some(&next);
+                prev = Some(next);
                 next = step_result.unwrap();
             } else {
                 break;
@@ -302,46 +301,12 @@ impl PiecewiseLinear {
             } else if x >= next.0 {
                 next.1
             } else {
-                interpolate(*last, next, x)
+                interpolate(last, next, x)
             }
         } else {
             next.1
         }
     }
-
-    // pub fn value(&self, x: u64) -> u128 {
-    //     // figure out the pair of points it lies between
-    //     let (mut prev, mut next): (Option<&(u64, u128)>, _) = (None, &self.steps[0]);
-    //     for step in &self.steps[1..] {
-    //         // only break if x is not above prev
-    //         if x >= next.0 {
-    //             prev = Some(next);
-    //             next = step;
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    //     // at this time:
-    //     // prev may be None (this was lower than first point)
-    //     // x may equal prev.0 (use this value)
-    //     // x may be greater than next (if higher than last item)
-    //     // OR x may be between prev and next (interpolate)
-    //     if let Some(last) = prev {
-    //         if x == last.0 {
-    //             // this handles exact match with low end
-    //             last.1
-    //         } else if x >= next.0 {
-    //             // this handles both higher than all and exact match
-    //             next.1
-    //         } else {
-    //             // here we do linear interpolation
-    //             interpolate(*last, *next, x)
-    //         }
-    //     } else {
-    //         // lower than all, use first
-    //         next.1
-    //     }
-    // }
 
     /// general sanity checks on input values to ensure this is valid.
     /// these checks should be included by the other validate_* functions
@@ -426,27 +391,29 @@ impl PiecewiseLinear {
         (low, high)
     }
 
-    pub fn combine(&self, other: &PiecewiseLinear) -> PiecewiseLinear {
+    /// adds two piecewise linear curves and returns the result
+    pub fn combine(&self, env: &Env, other: &PiecewiseLinear) -> PiecewiseLinear {
         // collect x-coordinates for combined curve
-        let mut x: soroban_sdk::Vec<_> = self
-            .steps
-            .iter()
-            .chain(other.steps.iter())
-            .map(|step_result| {
-                let (x, _) = step_result.unwrap();
-                x
-            })
-            .collect::<soroban_sdk::Vec<_>>();
+        let mut x = soroban_sdk::Vec::new(&env);
+        for step_result in self.steps.iter().chain(other.steps.iter()) {
+            let (x_val, _) = step_result.unwrap();
+            x.push_back(x_val);
+        }
 
         // sort and deduplicate the vector
-        // Using bubble sort as an example, but you should use a more efficient sorting algorithm
+        // Using bubble sort for now... we should use a more efficient sorting algorithm
         let len = x.len();
         for i in 0..len {
             for j in 0..len - i - 1 {
-                if x[j] > x[j + 1] {
-                    let tmp = x[j];
-                    x[j] = x[j + 1];
-                    x[j + 1] = tmp;
+                let val_j = x.get(j).unwrap().unwrap();
+                let val_next = x.get(j + 1).unwrap().unwrap();
+                if val_j > val_next {
+                    // remove and store the larger value
+                    x.remove(j).unwrap();
+                    // use a temporary variable for swapping
+                    let tmp = val_j;
+                    x.set(j, val_next);
+                    x.set(j + 1, tmp);
                 }
             }
         }
@@ -454,7 +421,9 @@ impl PiecewiseLinear {
         // deduplication
         let mut i = 0;
         while i < x.len() - 1 {
-            if x[i] == x[i + 1] {
+            let val_i = x.get_unchecked(i).unwrap();
+            let val_next = x.get_unchecked(i + 1).unwrap();
+            if val_i == val_next {
                 x.remove(i);
             } else {
                 i += 1;
@@ -462,45 +431,19 @@ impl PiecewiseLinear {
         }
 
         // map to full coordinates
-        PiecewiseLinear {
-            steps: x
-                .into_iter()
-                .map(|x| (x, self.value(x) + other.value(x)))
-                .collect::<soroban_sdk::Vec<_>>(),
+        let mut steps = soroban_sdk::Vec::new(&env);
+        for x_val in x {
+            let x_val = x_val.unwrap();
+            steps.push_back((x_val, self.value(x_val) + other.value(x_val)));
         }
+
+        PiecewiseLinear { steps }
     }
-
-
-    /// adds two piecewise linear curves and returns the result
-    // pub fn combine(&self, other: &PiecewiseLinear) -> PiecewiseLinear {
-    //     // collect x-coordinates for combined curve
-    //     let mut x: Vec<_> = self
-    //         .steps
-    //         .iter()
-    //         .chain(other.steps.iter())
-    //         .map(|step_result| {
-    //             let (x, _) = step_result.unwrap();
-    //             x
-    //         })
-    //         .collect();
-    //     x.sort_unstable();
-    //     x.dedup();
-
-    //     // map to full coordinates
-    //     PiecewiseLinear {
-    //         steps: x
-    //             .into_iter()
-    //             .map(|x| (x, self.value(x) + other.value(x)))
-    //             .collect(),
-    //     }
-    // }
 }
 
-impl From<&SaturatingLinear> for PiecewiseLinear {
-    fn from(sl: &SaturatingLinear) -> Self {
-        PiecewiseLinear {
-            steps: vec![(sl.min_x, sl.min_y), (sl.max_x, sl.max_y)],
-        }
+pub fn from_saturating_linear(env: &Env, sl: &SaturatingLinear) -> PiecewiseLinear {
+    PiecewiseLinear {
+        steps: vec![env, (sl.min_x, sl.min_y), (sl.max_x, sl.max_y)],
     }
 }
 
