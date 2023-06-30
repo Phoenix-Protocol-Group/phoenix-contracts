@@ -22,17 +22,19 @@ jobs:
           toolchain: 1.70.0
           target: wasm32-unknown-unknown
           override: true
-
       - name: Install tarpaulin
         uses: actions-rs/cargo@v1
         with:
           command: install
           args: cargo-tarpaulin --version 0.25.2
-
       - run: make build
-
       - name: Run code coverage check with tarpaulin
         uses: actions-rs/cargo@v1
         with:
           command: tarpaulin
-          args: --workspace --timeout 120
+          args: --workspace --timeout 120 --out Xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./target/tarpaulin/coverage.json

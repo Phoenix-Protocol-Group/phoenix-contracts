@@ -15,3 +15,5 @@ target/
 # Auto-gen
 .cargo-ok
 /artifacts/
+
+cobertura.xml
