@@ -15,11 +15,13 @@ and this project adheres to
 - Decimal: use num_bigint crate to increase increase range of allowed values and prevent avoidable overflow; increase test coverage ([#55])
 - Pair: modify swap signature to accept spread as BPS instead of plain number translated to percentage ([#56])
 - Pair: implement update_config message ([#58])
+- Decimal: Replace [wee-alloc](https://github.com/rustwasm/wee_alloc) in favor of soroban allo features ([#63])
 
 [#55]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/55
 [#56]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/56
 [#58]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/58
 [#62]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/62
+[#63]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/63
 
 ## [0.3.1] - 2023-06-27
 

@@ -12,10 +12,6 @@ use num_bigint::ToBigInt;
 use num_traits::ToPrimitive;
 
 extern crate alloc;
-extern crate wee_alloc;
-
-#[global_allocator]
-static ALLOCATOR: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[derive(Debug)]
 enum Error {

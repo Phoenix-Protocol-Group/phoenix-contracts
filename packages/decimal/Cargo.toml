@@ -9,4 +9,4 @@ license = { workspace = true }
 [dependencies]
 num-bigint = { version = "0.4", default-features = false }
 num-traits = { version = "0.2", default-features = false }
-wee_alloc = "0.4.5"
+soroban-sdk = { workspace = true, features = ["alloc"]}
