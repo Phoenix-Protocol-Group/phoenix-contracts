@@ -1,8 +1,7 @@
-# on:
-#   push:
-#     branches:
-#       - main
-on: [pull_request]
+on:
+  push:
+    branches:
+      - main
 
 name: Code coverage check
 
