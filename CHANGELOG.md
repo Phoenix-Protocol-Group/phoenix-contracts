@@ -6,6 +6,10 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Curve: Add fully functional implementation of distribution curve that handles 3 types (constant, linear and piecewise linear) ([#62])
+
 ### Changed
 
 - Decimal: use num_bigint crate to increase increase range of allowed values and prevent avoidable overflow; increase test coverage ([#55])
@@ -15,6 +19,7 @@ and this project adheres to
 [#55]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/55
 [#56]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/56
 [#58]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/58
+[#62]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/62
 
 ## [0.3.1] - 2023-06-27
 

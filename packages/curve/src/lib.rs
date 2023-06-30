@@ -1,3 +1,6 @@
+// Most of this code is taken from the wynd-utils crate, which is licensed under the Apache
+// License Apache 2.0 - https://github.com/wynddao/wynd-contracts
+
 #![no_std]
 
 use core::cmp::Ordering;
