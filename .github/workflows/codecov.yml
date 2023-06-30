@@ -1,8 +1,7 @@
-# on:
-#   push:
-#     branches:
-#       - main
-on: [pull_request]
+on:
+  push:
+    branches:
+      - main
 
 name: Code coverage check
 
@@ -38,4 +37,4 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./target/tarpaulin/coverage.json
+          file: ./cobertura.xml

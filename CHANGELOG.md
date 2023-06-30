@@ -9,6 +9,7 @@ and this project adheres to
 ### Added
 
 - Curve: Add fully functional implementation of distribution curve that handles 3 types (constant, linear and piecewise linear) ([#62])
+- CI: Upload CI results to codecov and implement coverage badge in the readme ([#64])
 
 ### Changed
 
@@ -22,6 +23,7 @@ and this project adheres to
 [#58]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/58
 [#62]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/62
 [#63]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/63
+[#64]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/64
 
 ## [0.3.1] - 2023-06-27
 

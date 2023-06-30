@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/Phoenix-Protocol-Group/phoenix-contracts/branch/main/graph/badge.svg?token=BJMG2IINQB)](https://codecov.io/gh/Phoenix-Protocol-Group/phoenix-contracts)
+
 # Phoenix DEX Smart Contracts
 This repository contains the Rust source code for the smart contracts of the Phoenix DEX.
 
