@@ -1,7 +1,8 @@
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
+on: [pull_request]
 
 name: Code coverage check
 
@@ -19,20 +20,21 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.70.0
+          toolchain: nightly
           target: wasm32-unknown-unknown
           override: true
-
-      - name: Install tarpaulin
-        uses: actions-rs/cargo@v1
+      - name: Install grcov
+        run: cargo install grcov
+      - name: Run tests
+        run: |
+          export CARGO_INCREMENTAL=0
+          export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort"
+          export RUSTDOCFLAGS="-Cpanic=abort"
+          make test
+          zip -0 ccov.zip `find . \( -name "*.gc*" \) -print`
+          grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" -o lcov.info
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
         with:
-          command: install
-          args: cargo-tarpaulin --version 0.25.2
-
-      - run: make build
-
-      - name: Run code coverage check with tarpaulin
-        uses: actions-rs/cargo@v1
-        with:
-          command: tarpaulin
-          args: --workspace --timeout 120
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./lcov.info
