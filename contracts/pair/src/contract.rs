@@ -8,7 +8,7 @@ use crate::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
     },
-    token_contract,
+    token_contract, validate_int_parameters,
 };
 use decimal::Decimal;
 
@@ -187,6 +187,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError> {
+        // validate_int_parameters!(share_token_decimals)?;
         // sender needs to authorize the deposit
         sender.require_auth();
 
