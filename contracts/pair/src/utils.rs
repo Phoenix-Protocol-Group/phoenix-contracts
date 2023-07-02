@@ -1,10 +1,11 @@
+// Validate if int value is bigger then 0
 #[macro_export]
 macro_rules! validate_int_parameters {
     ($($arg:expr),*) => {
         {
             let mut res: Result<(), $crate::error::ContractError> = Ok(());
             $(
-                let value: Option<i128> = Into::<Option<i128>>::into($arg);
+                let value: Option<i128> = Into::<Option<_>>::into($arg);
                 if let Some(val) = value {
                     if val <= 0 {
                         res = Err($crate::error::ContractError::ArgumentsInvalidLessOrEqualZero);
