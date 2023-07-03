@@ -227,48 +227,68 @@ pub mod utils {
             }
         }
 
-        let amount_a = desired_b * pool_balance_a / pool_balance_b;
-        if amount_a > desired_a {
-            log!(
+        let amount_a = {
+            let mut amount_a = desired_b * pool_balance_a / pool_balance_b;
+            if amount_a > desired_a {
+                // If the amount is within 1% of the desired amount, we accept it
+                if dbg!(Decimal::from_ratio(amount_a, desired_a) - Decimal::one())
+                    <= dbg!(Decimal::percent(1))
+                {
+                    amount_a = desired_a;
+                } else {
+                    log!(
                 env,
                 "Deposit amount for asset A ({}) is invalid. It exceeds the desired amount ({})",
                 amount_a,
                 desired_a,
             );
-            return Err(ContractError::DepositAmountExceedsOrBelowMin);
-        };
-        if let Some(min_a) = min_a {
-            if amount_a < min_a {
-                log!(
+                    return Err(ContractError::DepositAmountExceedsOrBelowMin);
+                }
+            };
+            if let Some(min_a) = min_a {
+                if amount_a < min_a {
+                    log!(
                 env,
                 "Deposit amount for asset A ({}) is invalid. It falls below the minimum requirement ({})",
                 amount_a,
                 min_a
             );
-                return Err(ContractError::DepositAmountExceedsOrBelowMin);
+                    return Err(ContractError::DepositAmountExceedsOrBelowMin);
+                }
             }
-        }
+            amount_a
+        };
 
-        let amount_b = desired_a * pool_balance_b / pool_balance_a;
-        if amount_b > desired_b {
-            log!(
+        let amount_b = {
+            let mut amount_b = desired_a * pool_balance_b / pool_balance_a;
+            if amount_b > desired_b {
+                // If the amount is within 1% of the desired amount, we accept it
+                if dbg!(Decimal::from_ratio(amount_b, desired_b) - Decimal::one())
+                    <= dbg!(Decimal::percent(1))
+                {
+                    amount_b = desired_b;
+                } else {
+                    log!(
                 env,
                 "Deposit amount for asset B ({}) is invalid. It exceeds the desired amount ({})",
                 amount_b,
                 desired_b,
             );
-            return Err(ContractError::DepositAmountExceedsOrBelowMin);
-        };
-        if let Some(min_b) = min_b {
-            if amount_b < min_b {
-                log!(
+                    return Err(ContractError::DepositAmountExceedsOrBelowMin);
+                }
+            };
+            if let Some(min_b) = min_b {
+                if amount_b < min_b {
+                    log!(
                 env,
                 "Deposit amount for asset B ({}) is invalid. It falls below the minimum requirement ({})",
                 amount_b,
-                min_b
+                min_a
             );
-                return Err(ContractError::DepositAmountExceedsOrBelowMin);
+                    return Err(ContractError::DepositAmountExceedsOrBelowMin);
+                }
             }
+            amount_b
         };
 
         Ok((amount_a, amount_b))

@@ -198,9 +198,23 @@ impl LiquidityPoolTrait for LiquidityPool {
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
 
         // Check if both tokens are provided, one token is provided, or none are provided
-        let (desired_a, desired_b) = match (desired_a, desired_b) {
+        let amounts = match (desired_a, desired_b) {
             // Both tokens are provided
-            (Some(a), Some(b)) if a > 0 && b > 0 => (a, b),
+            (Some(a), Some(b)) if a > 0 && b > 0 => {
+                let pool_balance_a = utils::get_pool_balance_a(&env)?;
+                let pool_balance_b = dbg!(utils::get_pool_balance_b(&env)?);
+
+                // Calculate deposit amounts
+                dbg!(utils::get_deposit_amounts(
+                    &env,
+                    a,
+                    min_a,
+                    b,
+                    min_b,
+                    pool_balance_a,
+                    pool_balance_b,
+                )?)
+            },
             // Only token A is provided
             (Some(a), None) if a > 0 => {
                 let (a, a_for_swap) =
@@ -213,7 +227,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
                 do_swap(env.clone(), sender.clone(), true, a_for_swap, None, None)?;
                 // return: Token A amount, simulated result of swap of portion A
-                (a, ask_amount)
+                dbg!((a, ask_amount))
             }
             // Only token B is provided
             (None, Some(b)) if b > 0 => {
@@ -238,20 +252,6 @@ impl LiquidityPoolTrait for LiquidityPool {
                 return Err(ContractError::InvalidAmounts);
             }
         };
-
-        let pool_balance_a = utils::get_pool_balance_a(&env)?;
-        let pool_balance_b = utils::get_pool_balance_b(&env)?;
-
-        // Calculate deposit amounts
-        let amounts = utils::get_deposit_amounts(
-            &env,
-            desired_a,
-            min_a,
-            desired_b,
-            min_b,
-            pool_balance_a,
-            pool_balance_b,
-        )?;
 
         let config = get_config(&env)?;
 
@@ -685,14 +685,15 @@ fn assert_slippage_tolerance(
         return Err(ContractError::SlippageToleranceExceeded);
     }
 
-    let slippage_tolerance = slippage_tolerance * 100; // Converting to a percentage value
-    let one_minus_slippage_tolerance = 10000 - slippage_tolerance;
+    let one_minus_slippage_tolerance = Decimal::one() - slippage_tolerance;
     let deposits: [i128; 2] = [deposits[0], deposits[1]];
     let pools: [i128; 2] = [pools[0], pools[1]];
 
     // Ensure each price does not change more than what the slippage tolerance allows
-    if deposits[0] * pools[1] * one_minus_slippage_tolerance > deposits[1] * pools[0] * 10000
-        || deposits[1] * pools[0] * one_minus_slippage_tolerance > deposits[0] * pools[1] * 10000
+    if deposits[0] * pools[1] * one_minus_slippage_tolerance
+        > deposits[1] * pools[0] * Decimal::one()
+        || deposits[1] * pools[0] * one_minus_slippage_tolerance
+            > deposits[0] * pools[1] * Decimal::one()
     {
         log!(
             env,

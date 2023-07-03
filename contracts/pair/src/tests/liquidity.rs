@@ -278,20 +278,20 @@ fn provide_liqudity_single_asset_equal() {
         None,
     );
 
-    token1.mint(&user1, &1_000_000);
-    token2.mint(&user1, &1_000_000);
+    token1.mint(&user1, &10_000_000);
+    token2.mint(&user1, &10_000_000);
 
     // providing liquidity with single asset is not allowed on an empty pool
     pool.provide_liquidity(
         &user1,
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &Some(1_000_000),
+        &Some(10_000_000),
+        &Some(10_000_000),
+        &Some(10_000_000),
+        &Some(10_000_000),
         &None,
     );
-    assert_eq!(token1.balance(&pool.address), 1_000_000);
-    assert_eq!(token2.balance(&pool.address), 1_000_000);
+    assert_eq!(token1.balance(&pool.address), 10_000_000);
+    assert_eq!(token2.balance(&pool.address), 10_000_000);
 
     token1.mint(&user1, &100_000);
     // Providing 100k of token1 to 1:1 pool will perform swap which will create imbalance
@@ -300,18 +300,20 @@ fn provide_liqudity_single_asset_equal() {
         &Some(100_000),
         &Some(50_000),
         &None,
-        &Some(45_000),
+        &Some(49_000),
         &None,
     );
-    // before swap : A(1_000_000), B(1_000_000)
+    // before swap : A(10_000_000), B(10_000_000)
     // since pool is equal divides 50/50 sum for swap
-    // swap 50k A for B = 47620
-    // after swap : A(1_050_000), B(952_380)
+    // swap 50k A for B = 49752
+    // after swap : A(1_050_000), B(9_950_248)
     // after providing liquidity
-    // A(1_100_000), B(997_731)
+    // A(1_100_000), B(999_751)
 
-    assert_eq!(token1.balance(&pool.address), 1_100_000);
-    assert_eq!(token2.balance(&pool.address), 997_731);
+    assert_eq!(token1.balance(&pool.address), 10_100_000);
+    assert_eq!(token2.balance(&pool.address), 10_999_751);
+    assert_eq!(token1.balance(&user1), 0);
+    assert_eq!(token2.balance(&user1), 0);
 }
 
 #[test]
