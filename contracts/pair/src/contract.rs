@@ -201,9 +201,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         let amounts = match (desired_a, desired_b) {
             // Both tokens are provided
             (Some(a), Some(b)) if a > 0 && b > 0 => {
-                let pool_balance_a = utils::get_pool_balance_a(&env)?;
-                let pool_balance_b = dbg!(utils::get_pool_balance_b(&env)?);
-
                 // Calculate deposit amounts
                 dbg!(utils::get_deposit_amounts(
                     &env,
@@ -241,7 +238,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 } = Self::simulate_swap(env.clone(), false, b_for_swap)?;
                 do_swap(env.clone(), sender.clone(), false, b_for_swap, None, None)?;
                 // return: simulated result of swap of portion B,  Token B amount
-                (ask_amount, b)
+                dbg!((ask_amount, b))
             }
             // None or invalid amounts are provided
             _ => {
@@ -649,7 +646,7 @@ fn divide_provided_deposit(
     }
 
     // Calculate the current ratio in the pool
-    let ratio = Decimal::from_ratio(b_pool, a_pool);
+    let ratio = dbg!(Decimal::from_ratio(b_pool, a_pool));
 
     let (a_to_add, b_to_add) = if sell_a {
         // Solve the system of equations: a + b = deposit and b/a = ratio
@@ -663,7 +660,7 @@ fn divide_provided_deposit(
         (b, a)
     };
 
-    Ok((a_to_add, b_to_add))
+    Ok(dbg!((a_to_add, b_to_add)))
 }
 
 fn assert_slippage_tolerance(
@@ -690,10 +687,10 @@ fn assert_slippage_tolerance(
     let pools: [i128; 2] = [pools[0], pools[1]];
 
     // Ensure each price does not change more than what the slippage tolerance allows
-    if deposits[0] * pools[1] * one_minus_slippage_tolerance
-        > deposits[1] * pools[0] * Decimal::one()
-        || deposits[1] * pools[0] * one_minus_slippage_tolerance
-            > deposits[0] * pools[1] * Decimal::one()
+    if dbg!(deposits[0] * pools[1] * one_minus_slippage_tolerance)
+        > dbg!(deposits[1] * pools[0] * Decimal::one())
+        || dbg!(deposits[1] * pools[0] * one_minus_slippage_tolerance)
+            > dbg!(deposits[0] * pools[1] * Decimal::one())
     {
         log!(
             env,
