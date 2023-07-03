@@ -214,7 +214,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     pool_balance_a,
                     pool_balance_b,
                 )?)
-            },
+            }
             // Only token A is provided
             (Some(a), None) if a > 0 => {
                 let (a, a_for_swap) =
