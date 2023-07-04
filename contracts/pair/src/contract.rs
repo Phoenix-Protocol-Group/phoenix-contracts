@@ -204,7 +204,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             // Both tokens are provided
             (Some(a), Some(b)) if a > 0 && b > 0 => {
                 // Calculate deposit amounts
-                dbg!(utils::get_deposit_amounts(
+                utils::get_deposit_amounts(
                     &env,
                     a,
                     min_a,
@@ -212,35 +212,23 @@ impl LiquidityPoolTrait for LiquidityPool {
                     min_b,
                     pool_balance_a,
                     pool_balance_b,
-                )?)
+                )?
             }
             // Only token A is provided
             (Some(a), None) if a > 0 => {
                 let (a_for_swap, b_from_swap) =
                     divide_provided_deposit(&env, pool_balance_a, pool_balance_b, a, true)?;
-                // let SimulateSwapResponse {
-                //     ask_amount,
-                //     spread_amount: _,
-                //     commission_amount: _,
-                //     total_return: _,
-                // } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
                 do_swap(env.clone(), sender.clone(), true, a_for_swap, None, None)?;
                 // return: Token A amount, simulated result of swap of portion A
-                dbg!((a - a_for_swap, b_from_swap))
+                (a - a_for_swap, b_from_swap)
             }
             // Only token B is provided
             (None, Some(b)) if b > 0 => {
                 let (b_for_swap, a_from_swap) =
                     divide_provided_deposit(&env, pool_balance_a, pool_balance_b, b, false)?;
-                // let SimulateSwapResponse {
-                //     ask_amount,
-                //     spread_amount: _,
-                //     commission_amount: _,
-                //     total_return: _,
-                // } = Self::simulate_swap(env.clone(), false, b_for_swap)?;
                 do_swap(env.clone(), sender.clone(), false, b_for_swap, None, None)?;
                 // return: simulated result of swap of portion B,  Token B amount
-                dbg!((a_from_swap, b - b_for_swap))
+                (a_from_swap, b - b_for_swap)
             }
             // None or invalid amounts are provided
             _ => {
@@ -628,12 +616,15 @@ fn do_swap(
     Ok(())
 }
 
-/// Divides `deposit` into parts to maintain the pool ratio.
-/// Returns the amount of A and B tokens to add to the pool.
-///
-/// * **a_pool** current amount of A tokens in the pool.
-/// * **b_pool** current deposit of B tokens in the pool.
-/// * **deposit** total deposit of tokens to provide.
+/// This function divides the deposit in such a way that when swapping it for the other token,
+/// the resulting amounts of tokens maintain the current pool's ratio.
+/// * `a_pool` - The current amount of Token A in the liquidity pool.
+/// * `b_pool` - The current amount of Token B in the liquidity pool.
+/// * `deposit` - The total amount of tokens that the user wants to deposit into the liquidity pool.
+/// * `sell_a` - A boolean that indicates whether the deposit is in Token A (if true) or in Token B (if false).
+/// # Returns
+/// * A tuple `(final_offer_amount, final_ask_amount)`, where `final_offer_amount` is the amount of deposit tokens
+///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.
 fn divide_provided_deposit(
     env: &Env,
     a_pool: i128,
@@ -649,48 +640,53 @@ fn divide_provided_deposit(
 
     // Calculate the current ratio in the pool
     let target_ratio = Decimal::from_ratio(b_pool, a_pool);
+    // Define boundaries for binary search algorithm
     let mut low = 0;
     let mut high = deposit;
+
+    // Tolerance is the smallest difference in deposit that we care about
     let tolerance = 500;
 
-    let mut final_offer_amount = deposit;
-    let mut final_ask_amount = 0;
+    let mut final_offer_amount = deposit; // amount of deposit tokens to be swapped
+    let mut final_ask_amount = 0; // amount of other tokens to be received
 
     while high - low > tolerance {
-        let mid = (low + high) / 2;
+        let mid = (low + high) / 2; // Calculate middle point
+
+        // Simulate swap to get amount of other tokens to be received for `mid` amount of deposit tokens
         let SimulateSwapResponse {
             ask_amount,
             spread_amount: _,
             commission_amount: _,
             total_return: _,
         } = LiquidityPool::simulate_swap(env.clone(), sell_a, mid)?;
+
+        // Update final amounts
         final_offer_amount = mid;
         final_ask_amount = ask_amount;
 
-        if sell_a {
-            let ratio = Decimal::from_ratio(ask_amount, deposit - mid);
-
-            if assert_approx_ratio(ratio, target_ratio, Decimal::one()) {
-                break;
-            }
-
-            if ratio > target_ratio {
-                high = mid;
-            } else {
-                low = mid;
-            }
+        // Calculate the ratio that would result from swapping `mid` deposit tokens
+        let ratio = if sell_a {
+            Decimal::from_ratio(ask_amount, deposit - mid)
         } else {
-            let ratio = Decimal::from_ratio(deposit - mid, ask_amount);
+            Decimal::from_ratio(deposit - mid, ask_amount)
+        };
 
-            if assert_approx_ratio(ratio, target_ratio, Decimal::one()) {
-                break;
-            }
-
-            if ratio > target_ratio {
-                low = mid;
-            } else {
+        // If the resulting ratio is approximately equal (1%) to the target ratio, break the loop
+        if assert_approx_ratio(ratio, target_ratio, Decimal::one()) {
+            break;
+        }
+        // Update boundaries for the next iteration of the binary search
+        if ratio > target_ratio {
+            if sell_a {
                 high = mid;
+            } else {
+                low = mid;
             }
+        } else if sell_a {
+            low = mid;
+        } else {
+            high = mid;
         };
     }
     Ok((final_offer_amount, final_ask_amount))
@@ -715,18 +711,16 @@ fn assert_slippage_tolerance(
         return Err(ContractError::SlippageToleranceExceeded);
     }
 
-    let one_minus_slippage_tolerance = dbg!(Decimal::one() - slippage_tolerance);
+    let one_minus_slippage_tolerance = Decimal::one() - slippage_tolerance;
     let deposits: [i128; 2] = [deposits[0], deposits[1]];
     let pools: [i128; 2] = [pools[0], pools[1]];
 
     // Ensure each price does not change more than what the slippage tolerance allows
-    if dbg!(
-        deposits[0] * pools[1] * one_minus_slippage_tolerance
-            > deposits[1] * pools[0] * Decimal::one()
-    ) || dbg!(
-        deposits[1] * pools[0] * one_minus_slippage_tolerance
+    if deposits[0] * pools[1] * one_minus_slippage_tolerance
+        > deposits[1] * pools[0] * Decimal::one()
+        || deposits[1] * pools[0] * one_minus_slippage_tolerance
             > deposits[0] * pools[1] * Decimal::one()
-    ) {
+    {
         log!(
             env,
             "Slippage tolerance violated. Deposits: 0: {} 1: {}, Pools: 0: {} 1: {}",
