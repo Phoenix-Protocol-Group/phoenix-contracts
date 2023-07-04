@@ -364,7 +364,7 @@ fn provide_liqudity_single_asset_one_third() {
 
     token2.mint(&user1, &100_000);
     // Providing 100k of token2 to 1:3 pool will perform swap which will create imbalance
-    let slippage_tolerance_bps = 5000; // 3%
+    let slippage_tolerance_bps = 300; // 3%
     pool.provide_liquidity(
         &user1,
         &None,

@@ -692,6 +692,15 @@ fn divide_provided_deposit(
     Ok((final_offer_amount, final_ask_amount))
 }
 
+/// This function asserts that the slippage does not exceed the provided tolerance.
+/// # Arguments
+/// * `slippage_tolerance` - An optional user-provided slippage tolerance as basis points.
+/// * `deposits` - The amounts of tokens that the user deposits into each of the two pools.
+/// * `pools` - The amounts of tokens in each of the two pools before the deposit.
+/// * `max_allowed_slippage` - The maximum allowed slippage as a decimal.
+/// # Returns
+/// * An error if the slippage exceeds the tolerance or if the tolerance itself exceeds the maximum allowed,
+///   otherwise Ok.
 fn assert_slippage_tolerance(
     env: &Env,
     slippage_tolerance: Option<i64>,
@@ -701,6 +710,8 @@ fn assert_slippage_tolerance(
 ) -> Result<(), ContractError> {
     let default_slippage = Decimal::percent(1); // Representing 1% as the default slippage tolerance
 
+    // If user provided a slippage tolerance, convert it from basis points to a decimal
+    // Otherwise, use the default slippage tolerance
     let slippage_tolerance = if let Some(slippage_tolerance) = slippage_tolerance {
         Decimal::bps(slippage_tolerance)
     } else {
@@ -711,6 +722,7 @@ fn assert_slippage_tolerance(
         return Err(ContractError::SlippageToleranceExceeded);
     }
 
+    // Calculate the limit below which the deposit-to-pool ratio must not fall for each token
     let one_minus_slippage_tolerance = Decimal::one() - slippage_tolerance;
     let deposits: [i128; 2] = [deposits[0], deposits[1]];
     let pools: [i128; 2] = [pools[0], pools[1]];
@@ -734,6 +746,14 @@ fn assert_slippage_tolerance(
     Ok(())
 }
 
+/// This function asserts that the spread (slippage) does not exceed a given maximum.
+/// * `belief_price` - An optional user-provided belief price, i.e., the expected price per token.
+/// * `max_spread` - The maximum allowed spread (slippage) as a fraction of the return amount.
+/// * `offer_amount` - The amount of tokens that the user offers to swap.
+/// * `return_amount` - The amount of tokens that the user receives in return.
+/// * `spread_amount` - The spread (slippage) amount, i.e., the difference between the expected and actual return.
+/// # Returns
+/// * An error if the spread exceeds the maximum allowed, otherwise Ok.
 pub fn assert_max_spread(
     env: &Env,
     belief_price: Option<Decimal>,
@@ -742,10 +762,15 @@ pub fn assert_max_spread(
     return_amount: i128,
     spread_amount: i128,
 ) -> Result<(), ContractError> {
+    // Calculate the expected return if a belief price is provided
     let expected_return = belief_price.map(|price| offer_amount * price);
 
+    // Total return is the sum of the amount received and the spread
     let total_return = return_amount + spread_amount;
 
+    // Calculate the spread ratio, the fraction of the return that is due to spread
+    // If the user has specified a belief price, use it to calculate the expected return
+    // Otherwise, use the total return
     let spread_ratio = if let Some(expected_return) = expected_return {
         Decimal::from_ratio(spread_amount, expected_return)
     } else {
