@@ -173,3 +173,42 @@ fn update_config_update_admin() {
         }
     );
 }
+
+#[test]
+#[should_panic(expected = "ContractError(11)")]
+fn update_config_too_high_fees() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        Some(admin1.clone()),
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        user1.clone(),
+        500,
+        200,
+    );
+
+    // update fees and recipient
+    pool.update_config(
+        &admin1,
+        &None,
+        &Some(10_100i64), // 101% fees
+        &Some(admin2.clone()),
+        &None,
+        &None,
+    );
+}
