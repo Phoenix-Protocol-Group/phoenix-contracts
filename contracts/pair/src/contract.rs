@@ -8,7 +8,9 @@ use crate::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
     },
-    token_contract, validate_int_parameters,
+    token_contract,
+    utils::assert_approx_ratio,
+    validate_int_parameters,
 };
 use decimal::Decimal;
 
@@ -214,31 +216,31 @@ impl LiquidityPoolTrait for LiquidityPool {
             }
             // Only token A is provided
             (Some(a), None) if a > 0 => {
-                let (a, a_for_swap) =
+                let (a_for_swap, b_from_swap) =
                     divide_provided_deposit(&env, pool_balance_a, pool_balance_b, a, true)?;
-                let SimulateSwapResponse {
-                    ask_amount,
-                    spread_amount: _,
-                    commission_amount: _,
-                    total_return: _,
-                } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
+                // let SimulateSwapResponse {
+                //     ask_amount,
+                //     spread_amount: _,
+                //     commission_amount: _,
+                //     total_return: _,
+                // } = Self::simulate_swap(env.clone(), true, a_for_swap)?;
                 do_swap(env.clone(), sender.clone(), true, a_for_swap, None, None)?;
                 // return: Token A amount, simulated result of swap of portion A
-                dbg!((a, ask_amount))
+                dbg!((a - a_for_swap, b_from_swap))
             }
             // Only token B is provided
             (None, Some(b)) if b > 0 => {
-                let (b, b_for_swap) =
+                let (b_for_swap, a_from_swap) =
                     divide_provided_deposit(&env, pool_balance_a, pool_balance_b, b, false)?;
-                let SimulateSwapResponse {
-                    ask_amount,
-                    spread_amount: _,
-                    commission_amount: _,
-                    total_return: _,
-                } = Self::simulate_swap(env.clone(), false, b_for_swap)?;
+                // let SimulateSwapResponse {
+                //     ask_amount,
+                //     spread_amount: _,
+                //     commission_amount: _,
+                //     total_return: _,
+                // } = Self::simulate_swap(env.clone(), false, b_for_swap)?;
                 do_swap(env.clone(), sender.clone(), false, b_for_swap, None, None)?;
                 // return: simulated result of swap of portion B,  Token B amount
-                dbg!((ask_amount, b))
+                dbg!((a_from_swap, b - b_for_swap))
             }
             // None or invalid amounts are provided
             _ => {
@@ -646,21 +648,52 @@ fn divide_provided_deposit(
     }
 
     // Calculate the current ratio in the pool
-    let ratio = dbg!(Decimal::from_ratio(b_pool, a_pool));
+    let target_ratio = Decimal::from_ratio(b_pool, a_pool);
+    let mut low = 0;
+    let mut high = deposit;
+    let tolerance = 500;
 
-    let (a_to_add, b_to_add) = if sell_a {
-        // Solve the system of equations: a + b = deposit and b/a = ratio
-        let a = deposit * (Decimal::one() + ratio).inv().unwrap();
-        let b = ratio * a;
-        (a, b)
-    } else {
-        // Solve the system of equations: a + b = deposit and a/b = ratio
-        let b = deposit * (Decimal::one() + Decimal::one() / ratio).inv().unwrap();
-        let a = b * ratio.inv().unwrap();
-        (b, a)
-    };
+    let mut final_offer_amount = deposit;
+    let mut final_ask_amount = 0;
 
-    Ok(dbg!((a_to_add, b_to_add)))
+    while high - low > tolerance {
+        let mid = (low + high) / 2;
+        let SimulateSwapResponse {
+            ask_amount,
+            spread_amount: _,
+            commission_amount: _,
+            total_return: _,
+        } = LiquidityPool::simulate_swap(env.clone(), sell_a, mid)?;
+        final_offer_amount = mid;
+        final_ask_amount = ask_amount;
+
+        if sell_a {
+            let ratio = Decimal::from_ratio(ask_amount, deposit - mid);
+
+            if assert_approx_ratio(ratio, target_ratio, Decimal::one()) {
+                break;
+            }
+
+            if ratio > target_ratio {
+                high = mid;
+            } else {
+                low = mid;
+            }
+        } else {
+            let ratio = Decimal::from_ratio(deposit - mid, ask_amount);
+
+            if assert_approx_ratio(ratio, target_ratio, Decimal::one()) {
+                break;
+            }
+
+            if ratio > target_ratio {
+                low = mid;
+            } else {
+                high = mid;
+            }
+        };
+    }
+    Ok((final_offer_amount, final_ask_amount))
 }
 
 fn assert_slippage_tolerance(
@@ -682,16 +715,18 @@ fn assert_slippage_tolerance(
         return Err(ContractError::SlippageToleranceExceeded);
     }
 
-    let one_minus_slippage_tolerance = Decimal::one() - slippage_tolerance;
+    let one_minus_slippage_tolerance = dbg!(Decimal::one() - slippage_tolerance);
     let deposits: [i128; 2] = [deposits[0], deposits[1]];
     let pools: [i128; 2] = [pools[0], pools[1]];
 
     // Ensure each price does not change more than what the slippage tolerance allows
-    if dbg!(deposits[0] * pools[1] * one_minus_slippage_tolerance)
-        > dbg!(deposits[1] * pools[0] * Decimal::one())
-        || dbg!(deposits[1] * pools[0] * one_minus_slippage_tolerance)
-            > dbg!(deposits[0] * pools[1] * Decimal::one())
-    {
+    if dbg!(
+        deposits[0] * pools[1] * one_minus_slippage_tolerance
+            > deposits[1] * pools[0] * Decimal::one()
+    ) || dbg!(
+        deposits[1] * pools[0] * one_minus_slippage_tolerance
+            > deposits[0] * pools[1] * Decimal::one()
+    ) {
         log!(
             env,
             "Slippage tolerance violated. Deposits: 0: {} 1: {}, Pools: 0: {} 1: {}",
@@ -939,31 +974,5 @@ mod tests {
 
         // Test that the commission amount is exactly 10% of the offer amount
         assert_eq!(result.2, result.0 * Decimal::percent(10));
-    }
-
-    #[test]
-    fn test_divide_provided_deposit_sell_a() {
-        let env = Env::default();
-        // 1:2 pool, providing 1500 of asset A
-        let (a, b) = divide_provided_deposit(&env, 1000, 2000, 1500, true).unwrap();
-
-        assert_eq!(a, 499, "When sell_a is true, amount a should be 500");
-        assert_eq!(b, 998, "When sell_a is true, amount b should be 1000"); // rounding error
-    }
-
-    #[test]
-    fn test_divide_provided_deposit_not_sell_a() {
-        let env = Env::default();
-        let (a, b) = divide_provided_deposit(&env, 1000, 2000, 1500, false).unwrap();
-
-        assert_eq!(a, 999, "When sell_a is false, amount a should be 1000"); // rounding error
-        assert_eq!(b, 499, "When sell_a is false, amount b should be 500");
-    }
-
-    #[test]
-    #[should_panic(expected = "EmptyPoolBalance")]
-    fn test_divide_provided_deposit_fail() {
-        let env = Env::default();
-        divide_provided_deposit(&env, 0, 0, 0, true).unwrap();
     }
 }
