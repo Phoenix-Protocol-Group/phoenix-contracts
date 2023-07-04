@@ -6,6 +6,7 @@ use crate::{
     storage::{Asset, PoolResponse},
     token_contract,
 };
+use decimal::Decimal;
 
 // TODO: add more edge cases
 // - exceed slippage
@@ -318,8 +319,83 @@ fn provide_liqudity_single_asset_equal() {
     assert_eq!(token2.balance(&user1), 0);
 }
 
-// FIXME
-// This test  won't work now because my algorithm to split tokens is invalid.
+#[test]
+fn provide_liqudity_single_asset_equal_with_fees() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+    let swap_fees = 1_000i64; // 10% bps
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+        None,
+    );
+
+    let initial_pool_liquidity = 10_000_000;
+    token1.mint(&user1, &initial_pool_liquidity);
+    token2.mint(&user1, &initial_pool_liquidity);
+
+    // providing liquidity with single asset is not allowed on an empty pool
+    pool.provide_liquidity(
+        &user1,
+        &Some(initial_pool_liquidity),
+        &Some(initial_pool_liquidity),
+        &Some(initial_pool_liquidity),
+        &Some(initial_pool_liquidity),
+        &None,
+    );
+    assert_eq!(token1.balance(&pool.address), initial_pool_liquidity);
+    assert_eq!(token2.balance(&pool.address), initial_pool_liquidity);
+
+    let token_a_amount = 100_000;
+    token1.mint(&user1, &token_a_amount);
+    // Providing 100k of token1 to 1:1 pool will perform swap which will create imbalance
+    pool.provide_liquidity(
+        &user1,
+        &Some(token_a_amount),
+        &Some(50_000),
+        &None,
+        &Some(49_000),
+        &None,
+    );
+    // before swap : A(10_000_000), B(10_000_000)
+    // algorithm splits 100k in such way, so that after swapping (with 10% fee)
+    // it will provide liquidity maintining 1:1 ratio
+    // split is 47_266 token A and 47213 token B (52_734 of token A was swapped to B)
+    // after swap : A(10_052_734), B(9_947_542)
+    // after providing liquidity
+    // A(1_100_000), B(9_994_755)
+
+    // return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount))
+    let return_amount = 52_458; // that's how many tokens B would be received from 52_734 tokens A
+    let fees = Decimal::percent(10);
+    assert_eq!(
+        token1.balance(&pool.address),
+        initial_pool_liquidity + token_a_amount
+    );
+    assert_eq!(
+        token2.balance(&pool.address),
+        initial_pool_liquidity - return_amount * fees
+    );
+    assert_eq!(token1.balance(&user1), 0);
+    assert_eq!(token2.balance(&user1), 0);
+}
+
 #[test]
 fn provide_liqudity_single_asset_one_third() {
     let env = Env::default();
