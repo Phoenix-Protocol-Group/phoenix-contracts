@@ -6,6 +6,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.4.0] - 2023-07-04
+
 ### Fixed
 
 - Pair: Incorrect division of assets during providing liquidity with single token; solution was to implement binary search approximation algorithm that finds optimal division to keep the pool ratio intact (within 1%) ([#66])
@@ -87,7 +89,8 @@ and this project adheres to
 [#19]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/19
 [#24]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/24
 
-[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.3.1...HEAD
+[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.7...v0.3.1
 [0.2.7]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.0...v0.2.7
 [0.2.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/04263245592bd2f4902766dfbc45d830e87570b1...v0.2.0
