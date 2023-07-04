@@ -361,9 +361,88 @@ mod tests {
     }
 
     #[test]
+    fn test_get_deposit_amounts_amount_b_greater_than_desired_and_less_than_min_b() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 50, Some(100), 200, Some(300), 100, 200);
+        assert_eq!(result, Err(ContractError::IncorrectLiqudityParameters));
+    }
+
+    #[test]
     fn test_get_deposit_amounts_amount_a_less_than_min_a() {
         let env = Env::default();
         let result = utils::get_deposit_amounts(&env, 100, Some(200), 200, None, 100, 200);
         assert_eq!(result, Err(ContractError::IncorrectLiqudityParameters));
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_ratio() {
+        let env = Env::default();
+        let (amount_a, amount_b) =
+            utils::get_deposit_amounts(&env, 1000, None, 2000, None, 5000, 10000).unwrap();
+        // The desired ratio is within 1% of the current pool ratio, so the desired amounts are returned
+        assert_eq!(amount_a, 1000);
+        assert_eq!(amount_b, 2000);
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_exceeds_desired() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 1000, None, 2000, None, 10000, 5000);
+        // The calculated deposit for asset A exceeds the desired amount and is not within 1% tolerance
+        assert_eq!(
+            result.unwrap_err(),
+            ContractError::DepositAmountExceedsOrBelowMin
+        );
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_below_min() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 5000, Some(2000), 2000, None, 10000, 5000);
+        // The calculated deposit for asset A is below the minimum requirement
+        assert_eq!(
+            result.unwrap_err(),
+            ContractError::DepositAmountExceedsOrBelowMin
+        );
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_below_min_b() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 5000, None, 5000, Some(1000), 5000, 10000);
+        // The calculated deposit for asset B is below the minimum requirement
+        assert_eq!(
+            result.unwrap_err(),
+            ContractError::DepositAmountExceedsOrBelowMin
+        );
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_accept_a_within_1_percent() {
+        let env = Env::default();
+        // Set up the inputs so that amount_a = (1010 * 1000 / 1000) = 1010, which is > desired_a (1000),
+        // but the ratio is exactly 1.01, which is within the 1% tolerance
+        let result = utils::get_deposit_amounts(&env, 1000, None, 1010, None, 1000, 1000).unwrap();
+        assert_eq!(result, (1000, 1000));
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_accept_b_within_1_percent() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 1010, None, 1000, None, 1000, 1000).unwrap();
+        assert_eq!(result, (1000, 1000));
+    }
+
+    #[test]
+    fn test_validate_fee_bps() {
+        let env = Env::default();
+        let result = validate_fee_bps(&env, 0);
+        assert_eq!(result, Ok(0));
+        let result = validate_fee_bps(&env, 9999);
+        assert_eq!(result, Ok(9999));
+        let result = validate_fee_bps(&env, 10_000);
+        assert_eq!(result, Ok(10_000));
+        let result = validate_fee_bps(&env, 10_001);
+        assert_eq!(result, Err(ContractError::InvalidFeeBps));
     }
 }
