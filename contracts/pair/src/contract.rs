@@ -225,7 +225,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 )?;
                 do_swap(env.clone(), sender.clone(), true, a_for_swap, None, None)?;
                 // return: rest of Token A amount, simulated result of swap of portion A
-                dbg!((a - a_for_swap, b_from_swap))
+                (a - a_for_swap, b_from_swap)
             }
             // Only token B is provided
             (None, Some(b)) if b > 0 => {
@@ -479,7 +479,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         sell_a: bool,
         offer_amount: i128,
     ) -> Result<SimulateSwapResponse, ContractError> {
-        dbg!("simulate swap");
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
         let (pool_balance_offer, pool_balance_ask) = if sell_a {
@@ -550,7 +549,6 @@ fn do_swap(
     let belief_price = belief_price.map(Decimal::percent);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
 
-    dbg!("actual swap");
     let pool_balance_a = utils::get_pool_balance_a(&env)?;
     let pool_balance_b = utils::get_pool_balance_b(&env)?;
     let (pool_balance_sell, pool_balance_buy) = if sell_a {
@@ -616,8 +614,8 @@ fn do_swap(
             pool_balance_b + offer_amount,
         )
     };
-    utils::save_pool_balance_a(&env, dbg!(balance_a));
-    utils::save_pool_balance_b(&env, dbg!(balance_b));
+    utils::save_pool_balance_a(&env, balance_a);
+    utils::save_pool_balance_b(&env, balance_b);
 
     env.events().publish(("swap", "sender"), sender);
     env.events().publish(("swap", "sell_token"), sell_token);
@@ -677,8 +675,8 @@ fn split_deposit_based_on_pool_ratio(
         } = LiquidityPool::simulate_swap(env.clone(), sell_a, mid)?;
 
         // Update final amounts
-        final_offer_amount = dbg!(mid);
-        final_ask_amount = dbg!(ask_amount);
+        final_offer_amount = mid;
+        final_ask_amount = ask_amount;
 
         // Calculate the ratio that would result from swapping `mid` deposit tokens
         let ratio = if sell_a {
@@ -686,8 +684,6 @@ fn split_deposit_based_on_pool_ratio(
         } else {
             Decimal::from_ratio(deposit - mid, ask_amount)
         };
-        dbg!(target_ratio);
-        dbg!(ratio);
 
         // If the resulting ratio is approximately equal (1%) to the target ratio, break the loop
         if assert_approx_ratio(ratio, target_ratio, Decimal::percent(1)) {
@@ -695,24 +691,18 @@ fn split_deposit_based_on_pool_ratio(
         }
         // Update boundaries for the next iteration of the binary search
         if ratio > target_ratio {
-            dbg!("bigger");
             if sell_a {
                 high = mid;
             } else {
                 low = mid;
             }
+        } else if sell_a {
+            low = mid;
         } else {
-            dbg!("smaller");
-            if sell_a {
-                low = mid;
-            } else {
-                high = mid;
-            }
+            high = mid;
         };
-        dbg!(low);
-        dbg!(high);
     }
-    Ok(dbg!((final_offer_amount, final_ask_amount)))
+    Ok((final_offer_amount, final_ask_amount))
 }
 
 /// This function asserts that the slippage does not exceed the provided tolerance.
@@ -825,21 +815,18 @@ pub fn compute_swap(
     offer_amount: i128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    dbg!(offer_pool);
-    dbg!(ask_pool);
-    dbg!(offer_amount);
     // Calculate the cross product of offer_pool and ask_pool
     let cp: i128 = offer_pool * ask_pool;
 
     // Calculate the resulting amount of ask assets after the swap
     // Return amount calculation based on the AMM model's invariant,
     // which ensures the product of the amounts of the two assets remains constant before and after a trade.
-    let return_amount: i128 = dbg!(ask_pool - (cp / (offer_pool + offer_amount)));
+    let return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount));
 
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
     let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - return_amount;
 
-    let commission_amount: i128 = dbg!(return_amount * commission_rate);
+    let commission_amount: i128 = return_amount * commission_rate;
 
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
     let return_amount: i128 = return_amount - commission_amount;
