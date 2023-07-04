@@ -8,10 +8,6 @@ use crate::{
 };
 use decimal::Decimal;
 
-// TODO: add more edge cases
-// - exceed slippage
-// - try to exceed spread during single amount liqudity providing
-
 #[test]
 fn provide_liqudity() {
     let env = Env::default();
@@ -519,4 +515,110 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
         10_000_000 - return_amount * fees
     );
     assert_eq!(token2.balance(&pool.address), 30_100_000);
+}
+
+#[test]
+#[should_panic(expected = "ContractError(11)")]
+fn provide_liqudity_too_high_fees() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let swap_fees = 10_001i64;
+    deploy_liquidity_pool_contract(
+        &env,
+        None,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+        None,
+    );
+}
+
+#[test]
+#[should_panic(expected = "ContractError(13)")]
+fn swap_with_no_amounts() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+        None,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    // providing all amounts as None
+    pool.provide_liquidity(&user1, &None, &None, &None, &None, &None);
+}
+
+#[test]
+#[should_panic(expected = "ContractError(9)")]
+fn withdraw_liqudity_below_min() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        &token1.address,
+        &token2.address,
+        swap_fees,
+        None,
+        None,
+        None,
+    );
+
+    token1.mint(&user1, &100);
+    token2.mint(&user1, &100);
+    pool.provide_liquidity(
+        &user1,
+        &Some(100),
+        &Some(100),
+        &Some(100),
+        &Some(100),
+        &None,
+    );
+
+    let share_amount = 50;
+    // Expecting min_a and/or min_b as huge bigger then available
+    pool.withdraw_liquidity(&user1, &share_amount, &3000, &3000);
 }
