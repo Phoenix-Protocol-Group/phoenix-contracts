@@ -6,10 +6,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Pair: Incorrect division of assets during providing liquidity with single token; solution was to implement binary search approximation algorithm that finds optimal division to keep the pool ratio intact (within 1%) ([#66])
+
 ### Added
 
 - Curve: Add fully functional implementation of distribution curve that handles 3 types (constant, linear and piecewise linear) ([#62])
 - CI: Upload CI results to codecov and implement coverage badge in the readme ([#64])
+- Pair: input parameter validation (>= 0) ([#66])
 
 ### Changed
 
@@ -24,6 +29,7 @@ and this project adheres to
 [#62]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/62
 [#63]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/63
 [#64]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/64
+[#66]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/66
 
 ## [0.3.1] - 2023-06-27
 

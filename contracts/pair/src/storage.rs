@@ -216,35 +216,154 @@ pub mod utils {
             return Ok((desired_a, desired_b));
         }
 
-        let amount_b = desired_a * pool_balance_b / pool_balance_a;
-        if amount_b <= desired_b {
+        if let Some(min_a) = min_a {
+            if min_a > desired_a {
+                return Err(ContractError::IncorrectLiqudityParameters);
+            }
+        }
+        if let Some(min_b) = min_b {
+            if min_b > desired_b {
+                return Err(ContractError::IncorrectLiqudityParameters);
+            }
+        }
+
+        let amount_a = {
+            let mut amount_a = desired_b * pool_balance_a / pool_balance_b;
+            if amount_a > desired_a {
+                // If the amount is within 1% of the desired amount, we accept it
+                if Decimal::from_ratio(amount_a, desired_a) - Decimal::one() <= Decimal::percent(1)
+                {
+                    amount_a = desired_a;
+                } else {
+                    log!(
+                        env,
+                        "Deposit amount for asset A ({}) is invalid. It exceeds the desired amount ({})",
+                        amount_a,
+                        desired_a,
+                    );
+                    return Err(ContractError::DepositAmountExceedsOrBelowMin);
+                }
+            };
+            if let Some(min_a) = min_a {
+                if amount_a < min_a {
+                    log!(
+                        env,
+                        "Deposit amount for asset A ({}) is invalid. It falls below the minimum requirement ({})",
+                        amount_a,
+                        min_a
+                    );
+                    return Err(ContractError::DepositAmountExceedsOrBelowMin);
+                }
+            }
+            amount_a
+        };
+
+        let amount_b = {
+            let mut amount_b = desired_a * pool_balance_b / pool_balance_a;
+            if amount_b > desired_b {
+                // If the amount is within 1% of the desired amount, we accept it
+                if Decimal::from_ratio(amount_b, desired_b) - Decimal::one() <= Decimal::percent(1)
+                {
+                    amount_b = desired_b;
+                } else {
+                    log!(
+                env,
+                "Deposit amount for asset B ({}) is invalid. It exceeds the desired amount ({})",
+                amount_b,
+                desired_b,
+            );
+                    return Err(ContractError::DepositAmountExceedsOrBelowMin);
+                }
+            };
             if let Some(min_b) = min_b {
                 if amount_b < min_b {
                     log!(
-                        env,
-                        "Deposit amount for asset B ({}) is less than the minimum requirement ({})",
-                        amount_b,
-                        min_b
-                    );
-                    return Err(ContractError::DepositAmountBLessThenMin);
+                env,
+                "Deposit amount for asset B ({}) is invalid. It falls below the minimum requirement ({})",
+                amount_b,
+                min_a
+            );
+                    return Err(ContractError::DepositAmountExceedsOrBelowMin);
                 }
             }
-            Ok((desired_a, amount_b))
-        } else {
-            let amount_a = desired_b * pool_balance_a / pool_balance_b;
-            if let Some(min_a) = min_a {
-                if amount_a < min_a || desired_a < min_a {
-                    log!(
-                    env,
-                    "Deposit amount for asset A ({}) is invalid. Either it exceeds the desired amount ({}) or falls below the minimum requirement ({})",
-                    amount_a,
-                    desired_a,
-                    min_a
-                );
-                    return Err(ContractError::DepositAmountAExceedsOrBelowMin);
-                }
-            }
-            Ok((amount_a, desired_b))
-        }
+            amount_b
+        };
+
+        Ok((amount_a, amount_b))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn test_get_admin_failure() {
+        let env = Env::default();
+        let _ = utils::get_admin(&env);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_total_shares_failure() {
+        let env = Env::default();
+        let _ = utils::get_total_shares(&env);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_pool_balance_a_failure() {
+        let env = Env::default();
+        let _ = utils::get_pool_balance_a(&env);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_pool_balance_b_failure() {
+        let env = Env::default();
+        let _ = utils::get_pool_balance_b(&env);
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_pool_balances_zero() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 100, Some(50), 200, Some(50), 0, 0);
+        assert_eq!(result, Ok((100, 200)));
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_amount_b_less_than_desired() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 100, Some(50), 200, Some(50), 200, 100);
+        assert_eq!(result, Err(ContractError::DepositAmountExceedsOrBelowMin));
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_amount_b_less_than_min_b() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 100, Some(50), 200, Some(150), 200, 100);
+        assert_eq!(result, Err(ContractError::DepositAmountExceedsOrBelowMin));
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_amount_a_less_than_desired_and_greater_than_min_a() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 100, Some(50), 200, Some(150), 100, 200);
+        assert_eq!(result, Ok((100, 200)));
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_amount_a_greater_than_desired_and_less_than_min_a() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 50, Some(100), 200, None, 100, 200);
+        assert_eq!(result, Err(ContractError::IncorrectLiqudityParameters));
+    }
+
+    #[test]
+    fn test_get_deposit_amounts_amount_a_less_than_min_a() {
+        let env = Env::default();
+        let result = utils::get_deposit_amounts(&env, 100, Some(200), 200, None, 100, 200);
+        assert_eq!(result, Err(ContractError::IncorrectLiqudityParameters));
     }
 }

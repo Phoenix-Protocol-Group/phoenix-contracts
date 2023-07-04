@@ -168,6 +168,14 @@ impl Decimal {
         // Construct and return the Decimal.
         Ok(Decimal(ratio))
     }
+
+    pub fn abs(&self) -> Self {
+        if self.0 < 0 {
+            Decimal(-self.0)
+        } else {
+            *self
+        }
+    }
 }
 
 impl Add for Decimal {
