@@ -1,5 +1,7 @@
 use soroban_sdk::{Vec, contracttype, Address};
 
+use crate::utils::OptionUint;
+
 #[contracttype]
 pub struct StakedResponse {
     stake: u128
@@ -14,7 +16,7 @@ pub struct AllStakedResponse {
 pub struct AnnualizedRewardsResponse {
     info: Address,
     /// None means contract does not know the value - total_staked or total_power could be 0.
-    amount: Option<u128>,
+    amount: OptionUint,
 }
 
 #[contracttype]
