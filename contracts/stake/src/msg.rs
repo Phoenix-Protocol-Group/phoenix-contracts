@@ -1,10 +1,10 @@
-use soroban_sdk::{Vec, contracttype, Address};
+use soroban_sdk::{contracttype, Address, Vec};
 
 use crate::utils::OptionUint;
 
 #[contracttype]
 pub struct StakedResponse {
-    stake: u128
+    stake: u128,
 }
 
 #[contracttype]
