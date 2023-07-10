@@ -6,6 +6,7 @@ use crate::{
         AllStakedResponse, AnnualizedRewardsResponse, DistributedRewardsResponse, StakedResponse,
         WithdrawableRewardsResponse,
     },
+    storage::get_config,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -27,6 +28,8 @@ pub trait StakingTrait {
         min_bond: u128,
         max_distributions: u32,
     ) -> Result<(), ContractError>;
+
+    fn bond(env: Env, sender: Address, tokens: u128) -> Result<(), ContractError>;
 
     fn unbond(env: Env, tokens: u128) -> Result<(), ContractError>;
 
@@ -73,6 +76,15 @@ impl StakingTrait for Staking {
         _min_bond: u128,
         _max_distributions: u32,
     ) -> Result<(), ContractError> {
+        unimplemented!();
+    }
+
+    fn bond(env: Env, sender: Address, _tokens: u128) -> Result<(), ContractError> {
+        sender.require_auth();
+
+        let config = get_config(&env)?;
+
+
         unimplemented!();
     }
 
