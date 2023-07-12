@@ -6,7 +6,7 @@ use crate::{
         AllStakedResponse, AnnualizedRewardsResponse, DistributedRewardsResponse, StakedResponse,
         WithdrawableRewardsResponse,
     },
-    storage::get_config,
+    storage::{get_config, get_stakes, Stake, BondingInfo, save_stakes},
 };
 
 // Metadata that is added on to the WASM custom section
@@ -79,10 +79,24 @@ impl StakingTrait for Staking {
         unimplemented!();
     }
 
-    fn bond(env: Env, sender: Address, _tokens: u128) -> Result<(), ContractError> {
+    fn bond(env: Env, sender: Address, tokens: u128) -> Result<(), ContractError> {
         sender.require_auth();
 
+        let ledger = env.ledger();
         let config = get_config(&env)?;
+
+        let stakes = get_stakes(&env, &sender)?;
+        let stake = Stake {
+            stake: tokens,
+            stake_timestamp: ledger.timestamp()
+        };
+        // TODO: Add implementation to add stake if another is present in +-24h timestamp to avoid
+        // creating multiple stakes the same day
+
+        stakes.stakes.push_back(stake);
+
+
+
 
 
         unimplemented!();
