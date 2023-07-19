@@ -138,7 +138,11 @@ impl StakingTrait for Staking {
         stakes.stakes.push_back(stake);
         save_stakes(&env, &sender, &stakes);
 
-        unimplemented!();
+        env.events().publish(("bond", "user"), &sender);
+        env.events().publish(("bond", "token"), &config.lp_token);
+        env.events().publish(("bond", "amount"), tokens);
+
+        Ok(())
     }
 
     fn unbond(_env: Env, _tokens: u128) -> Result<(), ContractError> {
