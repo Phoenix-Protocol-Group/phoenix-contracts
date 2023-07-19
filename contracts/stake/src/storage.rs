@@ -6,8 +6,8 @@ use crate::error::ContractError;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
     pub token_a: Address,
-    pub share_token: Address,
-    pub min_bond: u128,
+    pub lp_token: Address,
+    pub min_bond: i128,
 }
 const CONFIG: Symbol = Symbol::short("CONFIG");
 
@@ -26,7 +26,7 @@ pub fn save_config(env: &Env, config: Config) {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Stake {
     /// The amount of staked tokens
-    pub stake: u128,
+    pub stake: i128,
     /// The timestamp when the stake was made
     pub stake_timestamp: u64,
 }

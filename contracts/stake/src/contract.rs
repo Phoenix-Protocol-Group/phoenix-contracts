@@ -7,6 +7,7 @@ use crate::{
         WithdrawableRewardsResponse,
     },
     storage::{get_config, get_stakes, save_stakes, BondingInfo, Stake},
+    token_contract,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -25,11 +26,11 @@ pub trait StakingTrait {
         admin: Address,
         lp_token: Address,
         token_per_power: u128,
-        min_bond: u128,
+        min_bond: i128,
         max_distributions: u32,
     ) -> Result<(), ContractError>;
 
-    fn bond(env: Env, sender: Address, tokens: u128) -> Result<(), ContractError>;
+    fn bond(env: Env, sender: Address, tokens: i128) -> Result<(), ContractError>;
 
     fn unbond(env: Env, tokens: u128) -> Result<(), ContractError>;
 
@@ -73,13 +74,13 @@ impl StakingTrait for Staking {
         _admin: Address,
         _lp_token: Address,
         _token_per_power: u128,
-        _min_bond: u128,
+        _min_bond: i128,
         _max_distributions: u32,
     ) -> Result<(), ContractError> {
         unimplemented!();
     }
 
-    fn bond(env: Env, sender: Address, tokens: u128) -> Result<(), ContractError> {
+    fn bond(env: Env, sender: Address, tokens: i128) -> Result<(), ContractError> {
         sender.require_auth();
 
         let ledger = env.ledger();
