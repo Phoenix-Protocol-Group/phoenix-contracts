@@ -1,13 +1,14 @@
-use soroban_sdk::{contracttype, Address, Env, Map, Symbol, Vec};
+use soroban_sdk::{contracttype, Address, Env, Symbol, Vec};
 
 use crate::error::ContractError;
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
-    pub token_a: Address,
     pub lp_token: Address,
+    pub token_per_power: u128,
     pub min_bond: i128,
+    pub max_distributions: u32,
 }
 const CONFIG: Symbol = Symbol::short("CONFIG");
 
@@ -68,3 +69,33 @@ pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
 //
 // // Then in your execute_distribute_rewards function:
 // let total_rewards = distribution.total_rewards_power(deps.storage, &cfg);
+
+pub mod utils {
+    use super::*;
+
+    use soroban_sdk::{ConversionError, RawVal, TryFromVal};
+
+    #[derive(Clone, Copy)]
+    #[repr(u32)]
+    pub enum DataKey {
+        Admin = 0,
+    }
+
+    impl TryFromVal<Env, DataKey> for RawVal {
+        type Error = ConversionError;
+
+        fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
+            Ok((*v as u32).into())
+        }
+    }
+
+    pub fn save_admin(e: &Env, address: &Address) {
+        e.storage().set(&DataKey::Admin, address)
+    }
+
+    pub fn get_admin(e: &Env) -> Result<Address, ContractError> {
+        e.storage()
+            .get_unchecked(&DataKey::Admin)
+            .map_err(|_| ContractError::FailedToLoadFromStorage)
+    }
+}

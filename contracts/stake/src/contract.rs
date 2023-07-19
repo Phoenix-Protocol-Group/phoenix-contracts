@@ -6,7 +6,7 @@ use crate::{
         AllStakedResponse, AnnualizedRewardsResponse, DistributedRewardsResponse, StakedResponse,
         WithdrawableRewardsResponse,
     },
-    storage::{get_config, get_stakes, save_stakes, BondingInfo, Stake},
+    storage::{get_config, get_stakes, save_config, save_stakes, utils, Config, Stake},
     token_contract,
 };
 
@@ -70,14 +70,42 @@ pub trait StakingTrait {
 #[contractimpl]
 impl StakingTrait for Staking {
     fn initialize(
-        _env: Env,
-        _admin: Address,
-        _lp_token: Address,
-        _token_per_power: u128,
-        _min_bond: i128,
-        _max_distributions: u32,
+        env: Env,
+        admin: Address,
+        lp_token: Address,
+        token_per_power: u128,
+        min_bond: i128,
+        max_distributions: u32,
     ) -> Result<(), ContractError> {
-        unimplemented!();
+        if min_bond <= 0 {
+            log!(
+                &env,
+                "Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+            );
+            return Err(ContractError::MinStakeLessOrEqualZero);
+        }
+        if token_per_power == 0 {
+            log!(
+                &env,
+                "Token per power set as 0 - this would break staking rewards!"
+            );
+            return Err(ContractError::TokenPerPowerCannotBeZero);
+        }
+
+        env.events()
+            .publish(("initialize", "LP Share token staking contract"), &lp_token);
+
+        let config = Config {
+            lp_token,
+            token_per_power,
+            min_bond,
+            max_distributions,
+        };
+        save_config(&env, config);
+
+        utils::save_admin(&env, &admin);
+
+        Ok(())
     }
 
     fn bond(env: Env, sender: Address, tokens: i128) -> Result<(), ContractError> {
@@ -108,6 +136,7 @@ impl StakingTrait for Staking {
         // creating multiple stakes the same day
 
         stakes.stakes.push_back(stake);
+        save_stakes(&env, &sender, &stakes);
 
         unimplemented!();
     }
