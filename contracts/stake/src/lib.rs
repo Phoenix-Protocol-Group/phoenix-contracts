@@ -2,5 +2,5 @@
 mod contract;
 mod error;
 mod msg;
-mod utils;
 mod storage;
+mod utils;

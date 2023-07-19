@@ -1,7 +1,4 @@
-use soroban_sdk::{
-    contracttype, Address, Env, Symbol,
-    Map, Vec
-};
+use soroban_sdk::{contracttype, Address, Env, Map, Symbol, Vec};
 
 use crate::error::ContractError;
 
@@ -10,6 +7,7 @@ use crate::error::ContractError;
 pub struct Config {
     pub token_a: Address,
     pub share_token: Address,
+    pub min_bond: u128,
 }
 const CONFIG: Symbol = Symbol::short("CONFIG");
 
@@ -28,9 +26,9 @@ pub fn save_config(env: &Env, config: Config) {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Stake {
     /// The amount of staked tokens
-    stake: u128,
+    pub stake: u128,
     /// The timestamp when the stake was made
-    stake_timestamp: u64,
+    pub stake_timestamp: u64,
 }
 
 #[contracttype]

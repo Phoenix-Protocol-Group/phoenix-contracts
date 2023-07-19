@@ -1,4 +1,4 @@
-use soroban_sdk::{contractimpl, contractmeta, Address, Env};
+use soroban_sdk::{contractimpl, contractmeta, log, Address, Env};
 
 use crate::{
     error::ContractError,
@@ -6,7 +6,7 @@ use crate::{
         AllStakedResponse, AnnualizedRewardsResponse, DistributedRewardsResponse, StakedResponse,
         WithdrawableRewardsResponse,
     },
-    storage::{get_config, get_stakes, Stake, BondingInfo, save_stakes},
+    storage::{get_config, get_stakes, save_stakes, BondingInfo, Stake},
 };
 
 // Metadata that is added on to the WASM custom section
@@ -85,19 +85,28 @@ impl StakingTrait for Staking {
         let ledger = env.ledger();
         let config = get_config(&env)?;
 
-        let stakes = get_stakes(&env, &sender)?;
+        if tokens < config.min_bond {
+            log!(
+                &env,
+                "Trying to bond {} which is less then minimum {} required!",
+                tokens,
+                config.min_bond
+            );
+            return Err(ContractError::StakeLessThenMinBond);
+        }
+
+        let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
+        lp_token_client.transfer(&sender, &env.current_contract_address(), &tokens);
+
+        let mut stakes = get_stakes(&env, &sender)?;
         let stake = Stake {
             stake: tokens,
-            stake_timestamp: ledger.timestamp()
+            stake_timestamp: ledger.timestamp(),
         };
-        // TODO: Add implementation to add stake if another is present in +-24h timestamp to avoid
+        // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
         // creating multiple stakes the same day
 
         stakes.stakes.push_back(stake);
-
-
-
-
 
         unimplemented!();
     }

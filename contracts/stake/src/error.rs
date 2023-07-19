@@ -5,6 +5,7 @@ use soroban_sdk::contracterror;
 #[repr(u32)]
 pub enum ContractError {
     Unauthorized = 0,
+    StakeLessThenMinBond = 1,
     ConfigNotSet = 4,
     StakeNotFound = 5,
     FailedToLoadFromStorage = 6,
