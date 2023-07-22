@@ -3,8 +3,8 @@ use soroban_sdk::{contractimpl, contractmeta, log, Address, Env};
 use crate::{
     error::ContractError,
     msg::{
-        AllStakedResponse, AnnualizedRewardsResponse, DistributedRewardsResponse, StakedResponse,
-        WithdrawableRewardsResponse,
+        AllStakedResponse, AnnualizedRewardsResponse, ConfigResponse, DistributedRewardsResponse,
+        StakedResponse, WithdrawableRewardsResponse,
     },
     storage::{get_config, get_stakes, save_config, save_stakes, utils, Config, Stake},
     token_contract,
@@ -52,6 +52,8 @@ pub trait StakingTrait {
     ) -> Result<(), ContractError>;
 
     // QUERIES
+
+    fn query_config(env: Env) -> Result<ConfigResponse, ContractError>;
 
     fn query_staked(env: Env, address: Address) -> Result<StakedResponse, ContractError>;
 
@@ -175,6 +177,12 @@ impl StakingTrait for Staking {
     }
 
     // QUERIES
+
+    fn query_config(env: Env) -> Result<ConfigResponse, ContractError> {
+        Ok(ConfigResponse {
+            config: get_config(&env)?,
+        })
+    }
 
     fn query_staked(_env: Env, _address: Address) -> Result<StakedResponse, ContractError> {
         unimplemented!();
