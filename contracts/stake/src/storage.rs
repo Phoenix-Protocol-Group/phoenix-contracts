@@ -42,7 +42,9 @@ pub struct BondingInfo {
 pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError> {
     match env.storage().get(&key) {
         Some(stake) => stake.map_err(|_| ContractError::FailedToLoadFromStorage),
-        None => Err(ContractError::StakeNotFound),
+        None => Ok(BondingInfo {
+            stakes: Vec::new(env),
+        }),
     }
 }
 

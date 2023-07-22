@@ -1,6 +1,9 @@
 use soroban_sdk::{contracttype, Address, Vec};
 
-use crate::{storage::{Stake, Config}, utils::OptionUint};
+use crate::{
+    storage::{Config, Stake},
+    utils::OptionUint,
+};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -9,8 +12,9 @@ pub struct ConfigResponse {
 }
 
 #[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StakedResponse {
-    stakes: Vec<Stake>,
+    pub stakes: Vec<Stake>,
 }
 
 #[contracttype]

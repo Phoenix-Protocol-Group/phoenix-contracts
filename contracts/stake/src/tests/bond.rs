@@ -1,7 +1,11 @@
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
-use crate::{msg::ConfigResponse, storage::Config};
+
+use crate::{
+    msg::ConfigResponse,
+    storage::{Config, Stake},
+};
 
 #[test]
 fn initializa_staking_contract() {
@@ -60,4 +64,32 @@ fn bond_not_having_tokens() {
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
 
     staking.bond(&user, &10_000);
+}
+
+#[test]
+fn bond_simple() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let user = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    lp_token.mint(&user, &10_000);
+
+    staking.bond(&user, &10_000);
+
+    let bonds = staking.query_staked(&user).stakes;
+    assert_eq!(
+        bonds,
+        vec![
+            &env,
+            Stake {
+                stake: 10_000,
+                stake_timestamp: 0,
+            }
+        ]
+    );
 }
