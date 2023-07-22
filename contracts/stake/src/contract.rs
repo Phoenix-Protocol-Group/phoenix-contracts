@@ -6,7 +6,11 @@ use crate::{
         AllStakedResponse, AnnualizedRewardsResponse, ConfigResponse, DistributedRewardsResponse,
         StakedResponse, WithdrawableRewardsResponse,
     },
-    storage::{get_config, get_stakes, save_config, save_stakes, utils, Config, Stake},
+    storage::{
+        get_config, get_stakes, save_config, save_stakes,
+        utils::{self, get_admin},
+        Config, Stake,
+    },
     token_contract,
 };
 
@@ -54,6 +58,8 @@ pub trait StakingTrait {
     // QUERIES
 
     fn query_config(env: Env) -> Result<ConfigResponse, ContractError>;
+
+    fn query_admin(env: Env) -> Result<Address, ContractError>;
 
     fn query_staked(env: Env, address: Address) -> Result<StakedResponse, ContractError>;
 
@@ -182,6 +188,10 @@ impl StakingTrait for Staking {
         Ok(ConfigResponse {
             config: get_config(&env)?,
         })
+    }
+
+    fn query_admin(env: Env) -> Result<Address, ContractError> {
+        get_admin(&env)
     }
 
     fn query_staked(_env: Env, _address: Address) -> Result<StakedResponse, ContractError> {

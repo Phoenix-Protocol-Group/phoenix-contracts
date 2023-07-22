@@ -24,7 +24,7 @@ pub fn deploy_staking_contract<'a>(
 
     staking.initialize(
         &admin,
-        &lp_token,
+        lp_token,
         &TOKEN_PER_POWER,
         &MIN_BOND,
         &MAX_DISTRIBUTIONS,
