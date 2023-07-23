@@ -95,6 +95,8 @@ fn bond_simple() {
             }
         ]
     );
+    assert_eq!(lp_token.balance(&user), 0);
+    assert_eq!(lp_token.balance(&staking.address), 10_000);
 }
 
 #[test]
@@ -104,11 +106,13 @@ fn unbond_simple() {
 
     let admin = Address::random(&env);
     let user = Address::random(&env);
+    let user2 = Address::random(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
 
-    lp_token.mint(&user, &45_000);
+    lp_token.mint(&user, &35_000);
+    lp_token.mint(&user2, &10_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp = 2000;
@@ -118,12 +122,15 @@ fn unbond_simple() {
         li.timestamp = 4000;
     });
     staking.bond(&user, &10_000);
+    staking.bond(&user2, &10_000);
     env.ledger().with_mut(|li| {
         li.timestamp = 4000;
     });
     staking.bond(&user, &15_000);
 
     assert_eq!(staking.query_staked(&user).stakes.len(), 3);
+    assert_eq!(lp_token.balance(&user), 0);
+    assert_eq!(lp_token.balance(&staking.address), 45_000);
 
     let stake_timestamp = 4000;
     staking.unbond(&user, &10_000, &stake_timestamp);
@@ -143,4 +150,40 @@ fn unbond_simple() {
             }
         ]
     );
+    assert_eq!(lp_token.balance(&user), 10_000);
+    assert_eq!(lp_token.balance(&user2), 0);
+    assert_eq!(lp_token.balance(&staking.address), 35_000);
+}
+
+#[test]
+#[should_panic = "ContractError(5)"] // stake not found
+fn unbond_wrong_user_stake_not_found() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let user = Address::random(&env);
+    let user2 = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    lp_token.mint(&user, &35_000);
+    lp_token.mint(&user2, &10_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_000;
+    });
+    staking.bond(&user, &10_000);
+    env.ledger().with_mut(|li| {
+        li.timestamp = 4_000;
+    });
+    staking.bond(&user, &10_000);
+    staking.bond(&user2, &10_000);
+
+    assert_eq!(lp_token.balance(&user), 15_000);
+    assert_eq!(lp_token.balance(&user2), 0);
+    assert_eq!(lp_token.balance(&staking.address), 30_000);
+
+    staking.unbond(&user2, &10_000, &2_000);
 }
