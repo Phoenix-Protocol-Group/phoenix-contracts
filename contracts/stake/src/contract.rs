@@ -1,4 +1,4 @@
-use soroban_sdk::{contractimpl, contractmeta, log, Address, Env};
+use soroban_sdk::{contractimpl, contractmeta, log, Address, Env, Vec};
 
 use crate::{
     error::ContractError,
@@ -36,7 +36,12 @@ pub trait StakingTrait {
 
     fn bond(env: Env, sender: Address, tokens: i128) -> Result<(), ContractError>;
 
-    fn unbond(env: Env, tokens: u128) -> Result<(), ContractError>;
+    fn unbond(
+        env: Env,
+        sender: Address,
+        stake_amount: i128,
+        stake_timestamp: u64,
+    ) -> Result<(), ContractError>;
 
     fn create_distribution_flow(
         env: Env,
@@ -151,8 +156,45 @@ impl StakingTrait for Staking {
         Ok(())
     }
 
-    fn unbond(_env: Env, _tokens: u128) -> Result<(), ContractError> {
-        unimplemented!();
+    fn unbond(
+        env: Env,
+        sender: Address,
+        stake_amount: i128,
+        stake_timestamp: u64,
+    ) -> Result<(), ContractError> {
+        sender.require_auth();
+
+        let ledger = env.ledger();
+        let config = get_config(&env)?;
+
+        let mut stakes = get_stakes(&env, &sender)?;
+        stakes.stakes.iter().find(|stake| {
+            let stake = stake.as_ref().unwrap();
+            stake
+                == &Stake {
+                    stake: stake_amount,
+                    stake_timestamp,
+                }
+        });
+
+        let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
+        lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
+
+        let stake = Stake {
+            stake: stake_amount,
+            stake_timestamp: ledger.timestamp(),
+        };
+        // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
+        // creating multiple stakes the same day
+
+        stakes.stakes.push_back(stake);
+        save_stakes(&env, &sender, &stakes);
+
+        env.events().publish(("bond", "user"), &sender);
+        env.events().publish(("bond", "token"), &config.lp_token);
+        env.events().publish(("bond", "amount"), stake_amount);
+
+        Ok(())
     }
 
     fn create_distribution_flow(
@@ -211,5 +253,25 @@ impl StakingTrait for Staking {
 
     fn query_distributed_rewards(_env: Env) -> Result<DistributedRewardsResponse, ContractError> {
         unimplemented!();
+    }
+}
+
+// Function to remove a stake from the vector
+fn remove_stake(
+    stakes: &mut Vec<Stake>,
+    stake: i128,
+    stake_timestamp: u64,
+) -> Result<(), ContractError> {
+    // Find the index of the stake that matches the given stake and stake_timestamp
+    if let Some(index) = stakes.iter().position(|s| {
+        let fstake = s.as_ref().unwrap();
+        fstake.stake == stake && fstake.stake_timestamp == stake_timestamp
+    }) {
+        // Remove the stake at the found index
+        stakes.remove(index as u32);
+        Ok(())
+    } else {
+        // Stake not found, return an error
+        Err(ContractError::Unauthorized)
     }
 }
