@@ -1,15 +1,20 @@
 use soroban_sdk::{contracttype, Address, Vec};
 
-use crate::utils::OptionUint;
+use crate::{
+    storage::{Config, Stake},
+    utils::OptionUint,
+};
 
 #[contracttype]
-pub struct StakedResponse {
-    stake: u128,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ConfigResponse {
+    pub config: Config,
 }
 
 #[contracttype]
-pub struct AllStakedResponse {
-    stakes: Vec<(Address, StakedResponse)>,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StakedResponse {
+    pub stakes: Vec<Stake>,
 }
 
 #[contracttype]

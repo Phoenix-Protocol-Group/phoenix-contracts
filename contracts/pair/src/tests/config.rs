@@ -197,7 +197,7 @@ fn update_config_too_high_fees() {
         &token1.address,
         &token2.address,
         swap_fees,
-        user1.clone(),
+        user1,
         500,
         200,
     );
