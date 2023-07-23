@@ -31,6 +31,7 @@ and this project adheres to
 - Curve: Add fully functional implementation of distribution curve that handles 3 types (constant, linear and piecewise linear) ([#62])
 - CI: Upload CI results to codecov and implement coverage badge in the readme ([#64])
 - Pair: input parameter validation (>= 0) ([#66])
+- Stake: Implement bonding and unbonding ([#78] [#79])
 
 ### Changed
 
@@ -46,6 +47,8 @@ and this project adheres to
 [#63]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/63
 [#64]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/64
 [#66]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/66
+[#78]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/78
+[#79]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/79
 
 ## [0.3.1] - 2023-06-27
 
