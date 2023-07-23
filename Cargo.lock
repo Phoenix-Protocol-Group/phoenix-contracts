@@ -716,6 +716,7 @@ dependencies = [
 name = "phoenix-stake"
 version = "0.5.0"
 dependencies = [
+ "curve",
  "decimal",
  "soroban-sdk",
 ]

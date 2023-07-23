@@ -14,6 +14,7 @@ testutils = ["soroban-sdk/testutils"]
 
 [dependencies]
 decimal = { workspace = true }
+curve = { workspace = true }
 soroban-sdk = { workspace = true }
 
 [dev_dependencies]

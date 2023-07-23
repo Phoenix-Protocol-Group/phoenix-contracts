@@ -1,6 +1,7 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
 
 use crate::{
+    distribution::{save_reward_curve, StorageCurve},
     error::ContractError,
     msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse},
     storage::{
@@ -10,6 +11,8 @@ use crate::{
     },
     token_contract,
 };
+
+use curve::Curve;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -30,6 +33,7 @@ pub trait StakingTrait {
         token_per_power: u128,
         min_bond: i128,
         max_distributions: u32,
+        min_reward: i128,
     ) -> Result<(), ContractError>;
 
     fn bond(env: Env, sender: Address, tokens: i128) -> Result<(), ContractError>;
@@ -43,8 +47,11 @@ pub trait StakingTrait {
 
     fn create_distribution_flow(
         env: Env,
+        sender: Address,
         manager: Address,
         asset: Address,
+        amount: i128,
+        distribution_length: u64,
     ) -> Result<(), ContractError>;
 
     fn distribute_rewards(env: Env) -> Result<(), ContractError>;
@@ -82,6 +89,7 @@ impl StakingTrait for Staking {
         token_per_power: u128,
         min_bond: i128,
         max_distributions: u32,
+        min_reward: i128,
     ) -> Result<(), ContractError> {
         if min_bond <= 0 {
             log!(
@@ -97,6 +105,10 @@ impl StakingTrait for Staking {
             );
             return Err(ContractError::TokenPerPowerCannotBeZero);
         }
+        if min_reward <= 0 {
+            log!(&env, "min_reward must be bigger then 0!");
+            return Err(ContractError::MinRewardTooSmall);
+        }
 
         env.events()
             .publish(("initialize", "LP Share token staking contract"), &lp_token);
@@ -106,6 +118,7 @@ impl StakingTrait for Staking {
             token_per_power,
             min_bond,
             max_distributions,
+            min_reward,
         };
         save_config(&env, config);
 
@@ -177,10 +190,36 @@ impl StakingTrait for Staking {
     }
 
     fn create_distribution_flow(
-        _env: Env,
-        _manager: Address,
-        _asset: Address,
+        env: Env,
+        sender: Address,
+        manager: Address,
+        asset: Address,
+        amount: i128,
+        distribution_length: u64,
     ) -> Result<(), ContractError> {
+        sender.require_auth();
+
+        let config = get_config(&env)?;
+
+        if config.min_reward < amount {
+            log!(
+                &env,
+                "Trying to create distribution flow with reward not reaching minimum amount: {}",
+                config.min_reward
+            );
+            return Err(ContractError::MinRewardNotReached);
+        }
+        let current_time = env.ledger().timestamp();
+        let curve = StorageCurve {
+            manager,
+            start_timestamp: current_time,
+            stop_timestamp: current_time + distribution_length,
+            amount_to_distribute: amount as u128,
+        };
+        save_reward_curve(&env, &asset, &curve);
+
+        let reward_token_client = token_contract::Client::new(&env, &asset);
+        reward_token_client.transfer(&sender, &env.current_contract_address(), &amount);
         unimplemented!();
     }
 

@@ -9,6 +9,7 @@ pub struct Config {
     pub token_per_power: u128,
     pub min_bond: i128,
     pub max_distributions: u32,
+    pub min_reward: i128,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 

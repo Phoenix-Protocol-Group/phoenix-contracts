@@ -12,6 +12,7 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 const TOKEN_PER_POWER: u128 = 1;
 const MIN_BOND: i128 = 1000;
 const MAX_DISTRIBUTIONS: u32 = 7;
+const MIN_REWARD: i128 = 1000;
 
 #[allow(clippy::too_many_arguments)]
 pub fn deploy_staking_contract<'a>(
@@ -28,6 +29,7 @@ pub fn deploy_staking_contract<'a>(
         &TOKEN_PER_POWER,
         &MIN_BOND,
         &MAX_DISTRIBUTIONS,
+        &MIN_REWARD,
     );
     staking
 }
