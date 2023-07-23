@@ -275,3 +275,100 @@ fn remove_stake(
         Err(ContractError::Unauthorized)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use soroban_sdk::vec;
+
+    #[test]
+    fn test_remove_stake_success() {
+        let env = Env::default();
+        let mut stakes = vec![
+            &env,
+            Stake {
+                stake: 100,
+                stake_timestamp: 1,
+            },
+            Stake {
+                stake: 200,
+                stake_timestamp: 2,
+            },
+            Stake {
+                stake: 150,
+                stake_timestamp: 3,
+            },
+        ];
+
+        let stake_to_remove = 200;
+        let stake_timestamp_to_remove = 2;
+
+        // Check that the stake is removed successfully
+        let result = remove_stake(&mut stakes, stake_to_remove, stake_timestamp_to_remove);
+        assert!(result.is_ok());
+
+        // Check that the stake is no longer in the vector
+        assert_eq!(
+            stakes,
+            vec![
+                &env,
+                Stake {
+                    stake: 100,
+                    stake_timestamp: 1
+                },
+                Stake {
+                    stake: 150,
+                    stake_timestamp: 3
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn test_remove_stake_not_found() {
+        let env = Env::default();
+        let mut stakes = vec![
+            &env,
+            Stake {
+                stake: 100,
+                stake_timestamp: 1,
+            },
+            Stake {
+                stake: 200,
+                stake_timestamp: 2,
+            },
+            Stake {
+                stake: 150,
+                stake_timestamp: 3,
+            },
+        ];
+
+        // Check that the stake is not found and returns an error
+        let result = remove_stake(&mut stakes, 100, 2);
+        assert!(result.is_err());
+        let result = remove_stake(&mut stakes, 200, 1);
+        assert!(result.is_err());
+        let result = remove_stake(&mut stakes, 150, 1);
+        assert!(result.is_err());
+
+        // Check that the vector remains unchanged
+        assert_eq!(
+            stakes,
+            vec![
+                &env,
+                Stake {
+                    stake: 100,
+                    stake_timestamp: 1
+                },
+                Stake {
+                    stake: 200,
+                    stake_timestamp: 2
+                },
+                Stake {
+                    stake: 150,
+                    stake_timestamp: 3
+                },
+            ]
+        );
+    }
+}
