@@ -164,33 +164,17 @@ impl StakingTrait for Staking {
     ) -> Result<(), ContractError> {
         sender.require_auth();
 
-        let ledger = env.ledger();
         let config = get_config(&env)?;
 
         let mut stakes = get_stakes(&env, &sender)?;
-        stakes.stakes.iter().find(|stake| {
-            let stake = stake.as_ref().unwrap();
-            stake
-                == &Stake {
-                    stake: stake_amount,
-                    stake_timestamp,
-                }
-        });
+        remove_stake(&mut stakes.stakes, stake_amount, stake_timestamp)?;
 
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
 
-        let stake = Stake {
-            stake: stake_amount,
-            stake_timestamp: ledger.timestamp(),
-        };
-        // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
-        // creating multiple stakes the same day
-
-        stakes.stakes.push_back(stake);
         save_stakes(&env, &sender, &stakes);
 
-        env.events().publish(("bond", "user"), &sender);
+        env.events().publish(("unbond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
         env.events().publish(("bond", "amount"), stake_amount);
 
@@ -272,7 +256,7 @@ fn remove_stake(
         Ok(())
     } else {
         // Stake not found, return an error
-        Err(ContractError::Unauthorized)
+        Err(ContractError::StakeNotFound)
     }
 }
 
