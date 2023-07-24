@@ -1,20 +1,16 @@
-default: all
+default: build
 
-all: lint build test
+all: test
 
-test:
+test: build
 	cargo test
 
 build:
-	cargo build --target wasm32-unknown-unknown --release
-
-lint: fmt clippy
+	soroban contract build
+	@ls -l target/wasm32-unknown-unknown/release/*.wasm
 
 fmt:
 	cargo fmt --all
-
-clippy:
-	cargo clippy --all-targets -- -D warnings
 
 clean:
 	cargo clean
