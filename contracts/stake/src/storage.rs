@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 use crate::error::ContractError;
 
@@ -10,17 +10,17 @@ pub struct Config {
     pub min_bond: i128,
     pub max_distributions: u32,
 }
-const CONFIG: Symbol = Symbol::short("CONFIG");
+const CONFIG: Symbol = symbol_short!("CONFIG");
 
 pub fn get_config(env: &Env) -> Result<Config, ContractError> {
-    match env.storage().get(&CONFIG) {
-        Some(config) => config.map_err(|_| ContractError::FailedToLoadFromStorage),
-        None => Err(ContractError::ConfigNotSet),
-    }
+    env.storage()
+        .instance()
+        .get(&CONFIG)
+        .ok_or(ContractError::ConfigNotSet)
 }
 
 pub fn save_config(env: &Env, config: Config) {
-    env.storage().set(&CONFIG, &config);
+    env.storage().instance().set(&CONFIG, &config);
 }
 
 #[contracttype]
@@ -40,8 +40,8 @@ pub struct BondingInfo {
 }
 
 pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError> {
-    match env.storage().get(&key) {
-        Some(stake) => stake.map_err(|_| ContractError::FailedToLoadFromStorage),
+    match env.storage().instance().get(&key) {
+        Some(stake) => stake,
         None => Ok(BondingInfo {
             stakes: Vec::new(env),
         }),
@@ -49,7 +49,7 @@ pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError
 }
 
 pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
-    env.storage().set(key, bonding_info);
+    env.storage().instance().set(key, bonding_info);
 }
 
 // pub fn total_rewards_power(&self, storage: &dyn Storage, cfg: &Config, staker: &Addr) -> StdResult<Uint128> {
@@ -75,7 +75,7 @@ pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
 pub mod utils {
     use super::*;
 
-    use soroban_sdk::{ConversionError, RawVal, TryFromVal};
+    use soroban_sdk::{ConversionError, TryFromVal, Val};
 
     #[derive(Clone, Copy)]
     #[repr(u32)]
@@ -83,7 +83,7 @@ pub mod utils {
         Admin = 0,
     }
 
-    impl TryFromVal<Env, DataKey> for RawVal {
+    impl TryFromVal<Env, DataKey> for Val {
         type Error = ConversionError;
 
         fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
@@ -92,12 +92,13 @@ pub mod utils {
     }
 
     pub fn save_admin(e: &Env, address: &Address) {
-        e.storage().set(&DataKey::Admin, address)
+        e.storage().instance().set(&DataKey::Admin, address)
     }
 
     pub fn get_admin(e: &Env) -> Result<Address, ContractError> {
         e.storage()
-            .get_unchecked(&DataKey::Admin)
-            .map_err(|_| ContractError::FailedToLoadFromStorage)
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(ContractError::FailedToLoadFromStorage)
     }
 }
