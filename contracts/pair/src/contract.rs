@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Bytes, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Bytes, BytesN, Env, String};
 
 use num_integer::Roots;
 
@@ -132,8 +132,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
     ) -> Result<(), ContractError> {
-        validate_int_parameters!(share_token_decimals as i128)?;
-
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
             log!(&env, "token_a must be less than token_b");
@@ -154,9 +152,9 @@ impl LiquidityPoolTrait for LiquidityPool {
             // number of decimals on the share token
             &share_token_decimals,
             // name
-            &Bytes::from_slice(&env, b"Pool Share Token"),
+            &String::from_slice(&env, "Pool Share Token"),
             // symbol
-            &Bytes::from_slice(&env, b"POOL"),
+            &String::from_slice(&env, "POOL"),
         );
 
         let config = Config {
