@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, String};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal};
 
 use num_integer::Roots;
 
@@ -152,9 +152,9 @@ impl LiquidityPoolTrait for LiquidityPool {
             // number of decimals on the share token
             &share_token_decimals,
             // name
-            &String::from_slice(&env, "Pool Share Token"),
+            &"Pool Share Token".into_val(&env),
             // symbol
-            &String::from_slice(&env, "POOL"),
+            &"POOL".into_val(&env),
         );
 
         let config = Config {
