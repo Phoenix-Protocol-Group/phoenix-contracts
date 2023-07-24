@@ -1,6 +1,6 @@
 use soroban_sdk::{
-    contracttype, log, xdr::ToXdr, Address, Bytes, BytesN, ConversionError, Env, RawVal, Symbol,
-    TryFromVal,
+    contracttype, log, symbol_short, xdr::ToXdr, Address, Bytes, BytesN, ConversionError, Env,
+    Symbol, TryFromVal, Val,
 };
 
 use crate::{error::ContractError, token_contract};
@@ -15,7 +15,7 @@ pub enum DataKey {
     Admin = 3,
 }
 
-impl TryFromVal<Env, DataKey> for RawVal {
+impl TryFromVal<Env, DataKey> for Val {
     type Error = ConversionError;
 
     fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
@@ -46,7 +46,7 @@ pub struct Config {
     /// The maximum amount of spread (in bps) that is tolerated during swap
     pub max_allowed_spread_bps: i64,
 }
-const CONFIG: Symbol = Symbol::short("CONFIG");
+const CONFIG: Symbol = symbol_short!("CONFIG");
 
 const MAX_TOTAL_FEE_BPS: i64 = 10_000;
 
@@ -70,14 +70,14 @@ impl Config {
 }
 
 pub fn get_config(env: &Env) -> Result<Config, ContractError> {
-    match env.storage().get(&CONFIG) {
-        Some(config) => config.map_err(|_| ContractError::FailedToLoadFromStorage),
-        None => Err(ContractError::ConfigNotSet),
-    }
+    env.storage()
+        .instance()
+        .get(&CONFIG)
+        .ok_or(ContractError::ConfigNotSet)
 }
 
 pub fn save_config(env: &Env, config: Config) {
-    env.storage().set(&CONFIG, &config);
+    env.storage().instance().set(&CONFIG, &config);
 }
 
 #[contracttype]
@@ -123,7 +123,7 @@ pub mod utils {
 
     pub fn deploy_token_contract(
         e: &Env,
-        token_wasm_hash: &BytesN<32>,
+        token_wasm_hash: BytesN<32>,
         token_a: &Address,
         token_b: &Address,
     ) -> Address {
@@ -132,24 +132,24 @@ pub mod utils {
         salt.append(&token_b.to_xdr(e));
         let salt = e.crypto().sha256(&salt);
         e.deployer()
-            .with_current_contract(&salt)
+            .with_current_contract(salt)
             .deploy(token_wasm_hash)
     }
 
     pub fn save_admin(e: &Env, address: Address) {
-        e.storage().set(&DataKey::Admin, &address)
+        e.storage().instance().set(&DataKey::Admin, &address)
     }
 
     pub fn save_total_shares(e: &Env, amount: i128) {
-        e.storage().set(&DataKey::TotalShares, &amount)
+        e.storage().instance().set(&DataKey::TotalShares, &amount)
     }
 
     pub fn save_pool_balance_a(e: &Env, amount: i128) {
-        e.storage().set(&DataKey::ReserveA, &amount)
+        e.storage().instance().set(&DataKey::ReserveA, &amount)
     }
 
     pub fn save_pool_balance_b(e: &Env, amount: i128) {
-        e.storage().set(&DataKey::ReserveB, &amount)
+        e.storage().instance().set(&DataKey::ReserveB, &amount)
     }
 
     pub fn mint_shares(
@@ -178,25 +178,29 @@ pub mod utils {
     // queries
     pub fn get_admin(e: &Env) -> Result<Address, ContractError> {
         e.storage()
-            .get_unchecked(&DataKey::Admin)
-            .map_err(|_| ContractError::FailedToLoadFromStorage)
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(ContractError::FailedToLoadFromStorage)
     }
 
     pub fn get_total_shares(e: &Env) -> Result<i128, ContractError> {
         e.storage()
-            .get_unchecked(&DataKey::TotalShares)
-            .map_err(|_| ContractError::FailedToLoadFromStorage)
+            .instance()
+            .get(&DataKey::TotalShares)
+            .ok_or(ContractError::FailedToLoadFromStorage)
     }
     pub fn get_pool_balance_a(e: &Env) -> Result<i128, ContractError> {
         e.storage()
-            .get_unchecked(&DataKey::ReserveA)
-            .map_err(|_| ContractError::FailedToLoadFromStorage)
+            .instance()
+            .get(&DataKey::ReserveA)
+            .ok_or(ContractError::FailedToLoadFromStorage)
     }
 
     pub fn get_pool_balance_b(e: &Env) -> Result<i128, ContractError> {
         e.storage()
-            .get_unchecked(&DataKey::ReserveB)
-            .map_err(|_| ContractError::FailedToLoadFromStorage)
+            .instance()
+            .get(&DataKey::ReserveB)
+            .ok_or(ContractError::FailedToLoadFromStorage)
     }
 
     pub fn get_balance(e: &Env, contract: &Address) -> i128 {

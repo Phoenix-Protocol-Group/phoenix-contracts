@@ -1,4 +1,4 @@
-use soroban_sdk::{contractimpl, contractmeta, log, Address, Bytes, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Bytes, BytesN, Env};
 
 use num_integer::Roots;
 
@@ -20,6 +20,7 @@ contractmeta!(
     val = "Phoenix Protocol XYK Liquidity Pool"
 );
 
+#[contract]
 pub struct LiquidityPool;
 
 pub trait LiquidityPoolTrait {
@@ -146,7 +147,7 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         // deploy token contract
         let share_token_address =
-            utils::deploy_token_contract(&env, &token_wasm_hash, &token_a, &token_b);
+            utils::deploy_token_contract(&env, token_wasm_hash, &token_a, &token_b);
         token_contract::Client::new(&env, &share_token_address).initialize(
             // admin
             &env.current_contract_address(),
@@ -441,7 +442,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let admin: Address = utils::get_admin(&env)?;
         admin.require_auth();
 
-        env.update_current_contract_wasm(&new_wasm_hash);
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
         Ok(())
     }
 

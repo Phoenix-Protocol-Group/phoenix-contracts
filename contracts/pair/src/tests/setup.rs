@@ -13,7 +13,7 @@ fn install_token_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
     );
-    env.install_contract_wasm(WASM)
+    env.deployer().upload_contract_wasm(WASM)
 }
 
 #[allow(clippy::too_many_arguments)]
