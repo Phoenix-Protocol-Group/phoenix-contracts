@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Bytes, BytesN, Env, String};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, String};
 
 use num_integer::Roots;
 

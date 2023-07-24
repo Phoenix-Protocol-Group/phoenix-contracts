@@ -131,10 +131,10 @@ fn test() {
             }
         )]
     );
-    assert_eq!(token.authorized(&user2), false);
+    assert!(!token.authorized(&user2));
 
     token.set_authorized(&user3, &true);
-    assert_eq!(token.authorized(&user3), true);
+    assert!(token.authorized(&user3));
 
     token.clawback(&user3, &100);
     assert_eq!(
