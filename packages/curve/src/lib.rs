@@ -149,7 +149,7 @@ impl Curve {
                 let mut new_steps = soroban_sdk::Vec::new(env);
 
                 for i in 0..pl.steps.len() {
-                    let (x, y) = pl.steps.get(i).unwrap().unwrap();
+                    let (x, y) = pl.steps.get(i).unwrap();
                     new_steps.push_back((x, const_y + y));
                 }
                 Curve::PiecewiseLinear(PiecewiseLinear { steps: new_steps })
@@ -280,14 +280,14 @@ impl PiecewiseLinear {
 
         let mut prev: Option<(u64, u128)> = None;
         let mut next = match iter.next() {
-            Some(Ok(val)) => val,
+            Some(val) => val,
             _ => panic!("Steps are empty or error in reading steps"),
         };
 
         for step_result in iter {
             if x >= next.0 {
                 prev = Some(next);
-                next = step_result.unwrap();
+                next = step_result;
             } else {
                 break;
             }
@@ -319,7 +319,7 @@ impl PiecewiseLinear {
         }
         self.steps.iter().fold(Ok(0u64), |acc, step_result| {
             acc.and_then(|last| {
-                let (x, _) = step_result.unwrap();
+                let (x, _) = step_result;
                 if x > last {
                     Ok(x)
                 } else {
@@ -353,9 +353,9 @@ impl PiecewiseLinear {
     // Gives monotonic info. Requires there be at least one item in steps
     fn classify_curve(&self) -> Shape {
         let mut iter = self.steps.iter();
-        let (_, first) = iter.next().unwrap().unwrap();
+        let (_, first) = iter.next().unwrap();
         let (_, shape) = iter.fold((first, Shape::Constant), |(last, shape), step_result| {
-            let (_, y) = step_result.unwrap();
+            let (_, y) = step_result;
             let shape = match (shape, y.cmp(&last)) {
                 (Shape::NotMonotonic, _) => Shape::NotMonotonic,
                 (Shape::MonotonicDecreasing, Ordering::Greater) => Shape::NotMonotonic,
@@ -377,7 +377,7 @@ impl PiecewiseLinear {
             .steps
             .iter()
             .map(|step_result| {
-                let (_, y) = step_result.unwrap();
+                let (_, y) = step_result;
                 y
             })
             .min()
@@ -386,7 +386,7 @@ impl PiecewiseLinear {
             .steps
             .iter()
             .map(|step_result| {
-                let (_, y) = step_result.unwrap();
+                let (_, y) = step_result;
                 y
             })
             .max()
@@ -399,7 +399,7 @@ impl PiecewiseLinear {
         // collect x-coordinates for combined curve
         let mut x = soroban_sdk::Vec::new(env);
         for step_result in self.steps.iter().chain(other.steps.iter()) {
-            let (x_val, _) = step_result.unwrap();
+            let (x_val, _) = step_result;
             x.push_back(x_val);
         }
 
@@ -408,12 +408,12 @@ impl PiecewiseLinear {
         let len = x.len();
         for i in 0..len {
             for j in 0..len - i - 1 {
-                let val_j = x.get(j).unwrap().unwrap();
-                let val_next = x.get(j + 1).unwrap().unwrap();
+                let val_j = x.get(j).unwrap();
+                let val_next = x.get(j + 1).unwrap();
                 if val_j > val_next {
                     // use a temporary variable for swapping
-                    let tmp = x.get(j).unwrap().unwrap();
-                    x.set(j, x.get(j + 1).unwrap().unwrap());
+                    let tmp = x.get(j).unwrap();
+                    x.set(j, x.get(j + 1).unwrap());
                     x.set(j + 1, tmp);
                 }
             }
@@ -422,8 +422,8 @@ impl PiecewiseLinear {
         // deduplication
         let mut i = 0;
         while i < x.len() - 1 {
-            let val_i = x.get_unchecked(i).unwrap();
-            let val_next = x.get_unchecked(i + 1).unwrap();
+            let val_i = x.get_unchecked(i);
+            let val_next = x.get_unchecked(i + 1);
             if val_i == val_next {
                 x.remove(i);
             } else {
@@ -434,7 +434,7 @@ impl PiecewiseLinear {
         // map to full coordinates
         let mut steps = soroban_sdk::Vec::new(env);
         for x_val in x {
-            let x_val = x_val.unwrap();
+            let x_val = x_val;
             steps.push_back((x_val, self.value(x_val) + other.value(x_val)));
         }
 
