@@ -7,7 +7,7 @@ test: build
 
 build:
 	$(MAKE) -C ../token build || break;
-	soroban contract build
+	cargo build --target wasm32-unknown-unknown --release
 
 lint: fmt clippy
 
