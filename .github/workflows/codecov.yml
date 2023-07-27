@@ -22,6 +22,11 @@ jobs:
           toolchain: 1.71.0
           target: wasm32-unknown-unknown
           override: true
+      - name: Install soroban-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --locked --version 0.9.4 soroban-cli
       - name: Install tarpaulin
         uses: actions-rs/cargo@v1
         with:
