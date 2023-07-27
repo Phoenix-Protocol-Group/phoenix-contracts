@@ -7,7 +7,7 @@ test: build # because of token dependency
 
 build:
 	$(MAKE) -C ../token build || break;
-	cargo build --target wasm32-unknown-unknown --release
+	soroban contract build
 
 lint: fmt clippy
 

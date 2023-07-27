@@ -6,7 +6,7 @@ test:
 	cargo test
 
 build:
-	cargo build --target wasm32-unknown-unknown --release
+	soroban contract build
 
 lint: fmt clippy
 
