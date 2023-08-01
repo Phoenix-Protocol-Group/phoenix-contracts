@@ -10,6 +10,7 @@ use core::{
 
 extern crate alloc;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 enum Error {
     Overflow,

@@ -152,7 +152,6 @@ fn withdraw_liquidity() {
     let share_amount = 50;
     let min_a = 50;
     let min_b = 50;
-    dbg!("first withdraw");
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
     // assert_eq!(
     //     env.auths(),
@@ -197,6 +196,9 @@ fn withdraw_liquidity() {
             }
         }
     );
+
+    // Reset Budget for next call to not exceed allowed amount of calls within one context
+    env.budget().reset_default();
 
     // clear the pool
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
