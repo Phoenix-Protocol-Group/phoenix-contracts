@@ -1,11 +1,8 @@
-use soroban_sdk::{contractimpl, contractmeta, log, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
 
 use crate::{
     error::ContractError,
-    msg::{
-        AnnualizedRewardsResponse, ConfigResponse, DistributedRewardsResponse, StakedResponse,
-        WithdrawableRewardsResponse,
-    },
+    msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse},
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{self, get_admin},
@@ -20,6 +17,7 @@ contractmeta!(
     val = "Phoenix Protocol LP Share token staking"
 );
 
+#[contract]
 pub struct Staking;
 
 pub trait StakingTrait {
@@ -70,12 +68,9 @@ pub trait StakingTrait {
 
     fn query_annualized_rewards(env: Env) -> Result<AnnualizedRewardsResponse, ContractError>;
 
-    fn query_withdrawable_rewards(
-        env: Env,
-        address: Address,
-    ) -> Result<WithdrawableRewardsResponse, ContractError>;
+    fn query_withdrawable_rewards(env: Env, address: Address) -> Result<(), ContractError>;
 
-    fn query_distributed_rewards(env: Env) -> Result<DistributedRewardsResponse, ContractError>;
+    fn query_distributed_rewards(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -228,14 +223,11 @@ impl StakingTrait for Staking {
         unimplemented!();
     }
 
-    fn query_withdrawable_rewards(
-        _env: Env,
-        _address: Address,
-    ) -> Result<WithdrawableRewardsResponse, ContractError> {
+    fn query_withdrawable_rewards(_env: Env, _address: Address) -> Result<(), ContractError> {
         unimplemented!();
     }
 
-    fn query_distributed_rewards(_env: Env) -> Result<DistributedRewardsResponse, ContractError> {
+    fn query_distributed_rewards(_env: Env) -> Result<(), ContractError> {
         unimplemented!();
     }
 }
@@ -247,10 +239,10 @@ fn remove_stake(
     stake_timestamp: u64,
 ) -> Result<(), ContractError> {
     // Find the index of the stake that matches the given stake and stake_timestamp
-    if let Some(index) = stakes.iter().position(|s| {
-        let fstake = s.as_ref().unwrap();
-        fstake.stake == stake && fstake.stake_timestamp == stake_timestamp
-    }) {
+    if let Some(index) = stakes
+        .iter()
+        .position(|s| s.stake == stake && s.stake_timestamp == stake_timestamp)
+    {
         // Remove the stake at the found index
         stakes.remove(index as u32);
         Ok(())

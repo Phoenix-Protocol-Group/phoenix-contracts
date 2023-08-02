@@ -1,4 +1,4 @@
-use soroban_sdk::{contractimpl, contractmeta, log, Address, Bytes, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal};
 
 use num_integer::Roots;
 
@@ -20,6 +20,7 @@ contractmeta!(
     val = "Phoenix Protocol XYK Liquidity Pool"
 );
 
+#[contract]
 pub struct LiquidityPool;
 
 pub trait LiquidityPoolTrait {
@@ -131,8 +132,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
     ) -> Result<(), ContractError> {
-        validate_int_parameters!(share_token_decimals as i128)?;
-
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
             log!(&env, "token_a must be less than token_b");
@@ -146,16 +145,16 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         // deploy token contract
         let share_token_address =
-            utils::deploy_token_contract(&env, &token_wasm_hash, &token_a, &token_b);
+            utils::deploy_token_contract(&env, token_wasm_hash, &token_a, &token_b);
         token_contract::Client::new(&env, &share_token_address).initialize(
             // admin
             &env.current_contract_address(),
             // number of decimals on the share token
             &share_token_decimals,
             // name
-            &Bytes::from_slice(&env, b"Pool Share Token"),
+            &"Pool Share Token".into_val(&env),
             // symbol
-            &Bytes::from_slice(&env, b"POOL"),
+            &"POOL".into_val(&env),
         );
 
         let config = Config {
@@ -441,7 +440,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let admin: Address = utils::get_admin(&env)?;
         admin.require_auth();
 
-        env.update_current_contract_wasm(&new_wasm_hash);
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
         Ok(())
     }
 

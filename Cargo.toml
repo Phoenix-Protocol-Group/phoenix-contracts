@@ -11,8 +11,8 @@ repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
 [workspace.dependencies]
 decimal = { path = "./packages/decimal"}
 num-integer = { version = "0.1.45", default-features = false, features = ["i128"] }
-soroban-sdk = "0.8.4"
-soroban-token-sdk = "0.8.4"
+soroban-sdk = "0.9.2"
+soroban-token-sdk = "0.9.2"
 test-case = "3.1"
 
 [profile.release]

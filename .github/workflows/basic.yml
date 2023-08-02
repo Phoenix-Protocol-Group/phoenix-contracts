@@ -3,20 +3,34 @@ on: [pull_request]
 name: Basic
 
 jobs:
-
   build:
     name: Build binaries
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-version: [1.71.0]
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo
+            target
+          key: ${{ runner.os }}-rust-${{ matrix.rust-version }}-${{ hashFiles('**/Cargo.lock') }}
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.70.0
+          toolchain: ${{ matrix.rust-version }}
           target: wasm32-unknown-unknown
           override: true
+      - name: Install soroban-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --locked --version 0.9.4 soroban-cli
       - name: Build
         run: make build
 
@@ -31,9 +45,14 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.70.0
+          toolchain: 1.71.0
           target: wasm32-unknown-unknown
           override: true
+      - name: Install soroban-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --locked --version 0.9.4 soroban-cli
       - name: Run tests
         run: make test
 
@@ -49,9 +68,14 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.70.0
+          toolchain: 1.71.0
           override: true
           target: wasm32-unknown-unknown
           components: rustfmt, clippy
+      - name: Install soroban-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --locked --version 0.9.4 soroban-cli
       - name: Run lints
         run: make lints
