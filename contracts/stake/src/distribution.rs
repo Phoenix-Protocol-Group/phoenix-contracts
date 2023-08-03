@@ -31,3 +31,21 @@ pub fn get_reward_curve(env: &Env, asset: &Address) -> Result<Curve, ContractErr
         None => Err(ContractError::NoRewardsForThisAsset),
     }
 }
+
+#[contracttype]
+pub struct Distribution {
+    /// How many shares is single point worth
+    pub shares_per_point: u128,
+    /// Shares which were not fully distributed on previous distributions, and should be redistributed
+    pub shares_leftover: u64,
+    /// Total rewards distributed by this contract.
+    pub distributed_total: Uint128,
+    /// Total rewards not yet withdrawn.
+    pub withdrawable_total: Uint128,
+    /// The manager of this distribution
+    pub manager: Addr,
+    /// Max bonus for staking after 60 days
+    pub max_bonus: Decimal,
+    /// Bonus per staking day
+    pub bonus_per_day: Decimal,
+}
