@@ -6,6 +6,20 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.5.0] - 2023-08-04
+
+## Added
+
+- Stake: Implement bonding and unbonding ([#78] [#79])
+
+## Changed
+
+- Update soroban-sdk from v0.8.4 to v0.9.2 ([#81])
+
+[#78]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/78
+[#79]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/79
+[#81]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/81
+
 ## [0.4.0] - 2023-07-04
 
 ### Fixed
@@ -89,7 +103,8 @@ and this project adheres to
 [#19]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/19
 [#24]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/24
 
-[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.4.0...HEAD
+[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.7...v0.3.1
 [0.2.7]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.0...v0.2.7
