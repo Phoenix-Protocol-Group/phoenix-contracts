@@ -16,22 +16,18 @@ pub struct StorageCurve {
 
 // one reward distribution curve over one denom
 pub fn save_reward_curve(env: &Env, asset: &Address, distribution_curve: &StorageCurve) {
-    env.storage().set(&asset, distribution_curve);
+    env.storage().persistent().set(&asset, distribution_curve);
 }
 
 pub fn get_reward_curve(env: &Env, asset: &Address) -> Result<Curve, ContractError> {
-    match env.storage().get(asset) {
-        Some(reward_curve) => {
-            let storage_curve: StorageCurve =
-                reward_curve.map_err(|_| ContractError::FailedToLoadFromStorage)?;
-            Ok(Curve::saturating_linear(
-                (
-                    storage_curve.start_timestamp,
-                    storage_curve.amount_to_distribute,
-                ),
-                (storage_curve.stop_timestamp, 0),
-            ))
-        }
+    match env.storage().persistent().get::<_, StorageCurve>(asset) {
+        Some(reward_curve) => Ok(Curve::saturating_linear(
+            (
+                reward_curve.start_timestamp,
+                reward_curve.amount_to_distribute,
+            ),
+            (reward_curve.stop_timestamp, 0),
+        )),
         None => Err(ContractError::NoRewardsForThisAsset),
     }
 }
