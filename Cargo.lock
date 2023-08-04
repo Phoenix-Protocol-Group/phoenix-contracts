@@ -225,7 +225,7 @@ dependencies = [
 
 [[package]]
 name = "curve"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "soroban-sdk",
  "test-case",
@@ -281,7 +281,7 @@ dependencies = [
 
 [[package]]
 name = "decimal"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "soroban-sdk",
 ]
@@ -705,7 +705,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "phoenix-pair"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "decimal",
  "num-integer",
@@ -714,7 +714,7 @@ dependencies = [
 
 [[package]]
 name = "phoenix-stake"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "decimal",
  "soroban-sdk",

@@ -18,7 +18,8 @@ jobs:
           path: |
             ~/.cargo
             target
-          key: ${{ runner.os }}-rust-${{ matrix.rust-version }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-rust-${{ matrix.rust-version }}
+          restore-keys: ${{ runner.os }}-rust-${{ matrix.rust-version }}-
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -38,14 +39,25 @@ jobs:
     needs: build
     name: Test Suite
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-version: [1.71.0]
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo
+            target
+          key: ${{ runner.os }}-rust-${{ matrix.rust-version }}
+          restore-keys: ${{ runner.os }}-rust-${{ matrix.rust-version }}-
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.71.0
+          toolchain: ${{ matrix.rust-version }}
           target: wasm32-unknown-unknown
           override: true
       - name: Install soroban-cli
@@ -60,15 +72,25 @@ jobs:
     needs: build
     name: Lints
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust-version: [1.71.0]
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
-
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo
+            target
+          key: ${{ runner.os }}-rust-${{ matrix.rust-version }}
+          restore-keys: ${{ runner.os }}-rust-${{ matrix.rust-version }}-
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.71.0
+          toolchain: ${{ matrix.rust-version }}
           override: true
           target: wasm32-unknown-unknown
           components: rustfmt, clippy
