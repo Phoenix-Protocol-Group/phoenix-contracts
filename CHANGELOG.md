@@ -39,7 +39,6 @@ and this project adheres to
 - Pair: modify swap signature to accept spread as BPS instead of plain number translated to percentage ([#56])
 - Pair: implement update_config message ([#58])
 - Decimal: Replace [wee-alloc](https://github.com/rustwasm/wee_alloc) in favor of soroban allo features ([#63])
-- Update soroban-sdk from v0.8.4 to v0.9.2 ([#81])
 
 [#55]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/55
 [#56]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/56
@@ -50,7 +49,6 @@ and this project adheres to
 [#66]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/66
 [#78]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/78
 [#79]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/79
-[#81]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/81
 
 ## [0.3.1] - 2023-06-27
 
