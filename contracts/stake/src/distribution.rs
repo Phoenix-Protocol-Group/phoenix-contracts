@@ -2,6 +2,7 @@ use soroban_sdk::storage::Storage;
 use soroban_sdk::{contracttype, Address, Env, Symbol, TryFromVal, Vec};
 
 use curve::Curve;
+use decimal::Decimal;
 
 use crate::error::ContractError;
 use crate::token_contract::Contract;
@@ -39,13 +40,13 @@ pub struct Distribution {
     /// Shares which were not fully distributed on previous distributions, and should be redistributed
     pub shares_leftover: u64,
     /// Total rewards distributed by this contract.
-    pub distributed_total: Uint128,
+    pub distributed_total: u128,
     /// Total rewards not yet withdrawn.
-    pub withdrawable_total: Uint128,
+    pub withdrawable_total: u128,
     /// The manager of this distribution
-    pub manager: Addr,
+    pub manager: Address,
     /// Max bonus for staking after 60 days
-    pub max_bonus: Decimal,
+    pub max_bonus_bps: u64,
     /// Bonus per staking day
-    pub bonus_per_day: Decimal,
+    pub bonus_per_bps: u64,
 }
