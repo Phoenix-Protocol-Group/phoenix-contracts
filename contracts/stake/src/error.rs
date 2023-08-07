@@ -11,4 +11,7 @@ pub enum ContractError {
     ConfigNotSet = 4,
     StakeNotFound = 5,
     FailedToLoadFromStorage = 6,
+    MinRewardTooSmall = 7,
+    MinRewardNotReached = 8,
+    NoRewardsForThisAsset = 9,
 }

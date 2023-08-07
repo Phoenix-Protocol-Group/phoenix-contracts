@@ -6,6 +6,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## Added
+
+- Stake: Create new distribution structure for staking rewards flow ([#83])
+
+[#83]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/83
+
 ## [0.5.0] - 2023-08-04
 
 ## Added

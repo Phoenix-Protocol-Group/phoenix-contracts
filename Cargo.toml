@@ -9,6 +9,7 @@ license = "GPL 3.0"
 repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
 
 [workspace.dependencies]
+curve = { path = "./packages/curve"}
 decimal = { path = "./packages/decimal"}
 num-integer = { version = "0.1.45", default-features = false, features = ["i128"] }
 soroban-sdk = "0.9.2"

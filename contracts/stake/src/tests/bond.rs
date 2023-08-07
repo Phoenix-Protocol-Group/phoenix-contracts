@@ -28,7 +28,8 @@ fn initializa_staking_contract() {
                 lp_token: lp_token.address,
                 token_per_power: 1u128,
                 min_bond: 1_000i128,
-                max_distributions: 7u32
+                max_distributions: 7u32,
+                min_reward: 1_000i128
             }
         }
     );

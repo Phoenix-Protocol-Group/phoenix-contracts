@@ -9,6 +9,7 @@ pub struct Config {
     pub token_per_power: u128,
     pub min_bond: i128,
     pub max_distributions: u32,
+    pub min_reward: i128,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
@@ -37,6 +38,13 @@ pub struct Stake {
 pub struct BondingInfo {
     /// Vec of stakes sorted by stake timestamp
     pub stakes: Vec<Stake>,
+    /// The rewards debt is a mechanism to determine how much a user has already been credited in terms of staking rewards.
+    /// Whenever a user deposits or withdraws staked tokens to the pool, the rewards for the user is updated based on the
+    /// accumulated rewards per share, and the difference is stored as reward debt. When claiming rewards, this reward debt
+    /// is used to determine how much rewards a user can actually claim.
+    pub reward_debt: u128,
+    /// Last time when user has claimed rewards
+    pub last_reward_time: u64,
 }
 
 pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError> {
@@ -44,6 +52,8 @@ pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError
         Some(stake) => stake,
         None => Ok(BondingInfo {
             stakes: Vec::new(env),
+            reward_debt: 0u128,
+            last_reward_time: 0u64,
         }),
     }
 }
