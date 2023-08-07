@@ -1,11 +1,8 @@
-use soroban_sdk::storage::Storage;
-use soroban_sdk::{contracttype, Address, Env, Symbol, TryFromVal, Vec};
+use soroban_sdk::{contracttype, Address, Env};
 
 use curve::Curve;
-use decimal::Decimal;
 
 use crate::error::ContractError;
-use crate::token_contract::Contract;
 
 #[contracttype]
 pub struct StorageCurve {
@@ -20,6 +17,7 @@ pub fn save_reward_curve(env: &Env, asset: &Address, distribution_curve: &Storag
     env.storage().persistent().set(&asset, distribution_curve);
 }
 
+#[allow(dead_code)]
 pub fn get_reward_curve(env: &Env, asset: &Address) -> Result<Curve, ContractError> {
     match env.storage().persistent().get::<_, StorageCurve>(asset) {
         Some(reward_curve) => Ok(Curve::saturating_linear(

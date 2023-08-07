@@ -12,8 +12,6 @@ use crate::{
     token_contract,
 };
 
-use curve::Curve;
-
 // Metadata that is added on to the WASM custom section
 contractmeta!(
     key = "Description",
