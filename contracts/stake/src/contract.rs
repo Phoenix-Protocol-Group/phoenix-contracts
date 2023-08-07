@@ -1,7 +1,7 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
 
 use crate::{
-    distribution::{save_reward_curve, StorageCurve},
+    distribution::{save_distribution, save_reward_curve, Distribution, StorageCurve},
     error::ContractError,
     msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse},
     storage::{
@@ -211,7 +211,7 @@ impl StakingTrait for Staking {
         }
         let current_time = env.ledger().timestamp();
         let curve = StorageCurve {
-            manager,
+            manager: manager.clone(),
             start_timestamp: current_time,
             stop_timestamp: current_time + distribution_length,
             amount_to_distribute: amount as u128,
@@ -220,7 +220,25 @@ impl StakingTrait for Staking {
 
         let reward_token_client = token_contract::Client::new(&env, &asset);
         reward_token_client.transfer(&sender, &env.current_contract_address(), &amount);
-        unimplemented!();
+
+        let distribution = Distribution {
+            shares_per_point: 1u128,
+            shares_leftover: 0u64,
+            distributed_total: 0u128,
+            withdrawable_total: 0u128,
+            manager,
+            // TODO: Add bonus rewards multiplier
+            max_bonus_bps: 0u64,
+            bonus_per_day_bps: 0u64,
+        };
+        save_distribution(&env, &reward_token_client.address, &distribution);
+
+        env.events().publish(
+            ("create_distribution_flow", "asset"),
+            &reward_token_client.address,
+        );
+
+        Ok(())
     }
 
     fn distribute_rewards(_env: Env) -> Result<(), ContractError> {

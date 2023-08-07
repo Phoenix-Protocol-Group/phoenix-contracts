@@ -48,5 +48,9 @@ pub struct Distribution {
     /// Max bonus for staking after 60 days
     pub max_bonus_bps: u64,
     /// Bonus per staking day
-    pub bonus_per_bps: u64,
+    pub bonus_per_day_bps: u64,
+}
+
+pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution) {
+    env.storage().persistent().set(asset, distribution);
 }
