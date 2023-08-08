@@ -5,7 +5,7 @@
 
 use core::cmp::Ordering;
 
-use soroban_sdk::{vec, Env, Vec};
+use soroban_sdk::{vec, Env, Vec, contracttype};
 
 /// Handle Contract Errors
 #[derive(Debug, Eq, PartialEq)]
@@ -38,13 +38,11 @@ pub enum CurveError {
 }
 
 /// Curve types
+#[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Curve {
     /// Constan curve, it will always have the same value
-    Constant {
-        /// Contanst value y
-        y: u128,
-    },
+    Constant (u128),
     /// Linear curve that grow linearly but later
     /// tends to a constant saturated value.
     SaturatingLinear(SaturatingLinear),
@@ -66,7 +64,7 @@ impl Curve {
 
     /// Ctor for constant curve
     pub fn constant(y: u128) -> Self {
-        Curve::Constant { y }
+        Curve::Constant ( y )
     }
 }
 
@@ -74,7 +72,7 @@ impl Curve {
     /// provides y = f(x) evaluation
     pub fn value(&self, x: u64) -> u128 {
         match self {
-            Curve::Constant { y } => *y,
+            Curve::Constant ( y ) => *y,
             Curve::SaturatingLinear(s) => s.value(x),
             Curve::PiecewiseLinear(p) => p.value(x),
         }
@@ -83,7 +81,7 @@ impl Curve {
     /// returns the number of steps in the curve
     pub fn size(&self) -> u32 {
         match self {
-            Curve::Constant { .. } => 1,
+            Curve::Constant (_) => 1,
             Curve::SaturatingLinear(_) => 2,
             Curve::PiecewiseLinear(pl) => pl.steps.len(),
         }
@@ -93,7 +91,7 @@ impl Curve {
     /// these checks should be included by the validate_monotonic_* functions
     pub fn validate(&self) -> Result<(), CurveError> {
         match self {
-            Curve::Constant { .. } => Ok(()),
+            Curve::Constant (_) => Ok(()),
             Curve::SaturatingLinear(s) => s.validate(),
             Curve::PiecewiseLinear(p) => p.validate(),
         }
@@ -102,7 +100,7 @@ impl Curve {
     /// returns an error if there is ever x2 > x1 such that value(x2) < value(x1)
     pub fn validate_monotonic_increasing(&self) -> Result<(), CurveError> {
         match self {
-            Curve::Constant { .. } => Ok(()),
+            Curve::Constant (_) => Ok(()),
             Curve::SaturatingLinear(s) => s.validate_monotonic_increasing(),
             Curve::PiecewiseLinear(p) => p.validate_monotonic_increasing(),
         }
@@ -111,7 +109,7 @@ impl Curve {
     /// returns an error if there is ever x2 > x1 such that value(x1) < value(x2)
     pub fn validate_monotonic_decreasing(&self) -> Result<(), CurveError> {
         match self {
-            Curve::Constant { .. } => Ok(()),
+            Curve::Constant (_) => Ok(()),
             Curve::SaturatingLinear(s) => s.validate_monotonic_decreasing(),
             Curve::PiecewiseLinear(p) => p.validate_monotonic_decreasing(),
         }
@@ -129,7 +127,7 @@ impl Curve {
     /// return (min, max) that can ever be returned from value. These could potentially be u128::MIN and u128::MAX
     pub fn range(&self) -> (u128, u128) {
         match self {
-            Curve::Constant { y } => (*y, *y),
+            Curve::Constant ( y ) => (*y, *y),
             Curve::SaturatingLinear(sat) => sat.range(),
             Curve::PiecewiseLinear(p) => p.range(),
         }
@@ -138,7 +136,7 @@ impl Curve {
     /// combines a constant with a curve (shifting the curve up)
     fn combine_const(&self, env: &Env, const_y: u128) -> Curve {
         match self {
-            Curve::Constant { y } => Curve::Constant { y: const_y + y },
+            Curve::Constant ( y ) => Curve::Constant ( const_y + y ),
             Curve::SaturatingLinear(sl) => Curve::SaturatingLinear(SaturatingLinear {
                 min_x: sl.min_x,
                 min_y: sl.min_y + const_y,
@@ -161,7 +159,7 @@ impl Curve {
     pub fn combine(&self, env: &Env, other: &Curve) -> Curve {
         match (self, other) {
             // special handling for constant cases:
-            (Curve::Constant { y }, curve) | (curve, Curve::Constant { y }) => {
+            (Curve::Constant ( y ), curve) | (curve, Curve::Constant ( y )) => {
                 curve.combine_const(env, *y)
             }
             // cases that can be converted to piecewise linear:
@@ -192,6 +190,7 @@ impl Curve {
 /// \end{cases}$$
 ///
 /// min_y for all x <= min_x, max_y for all x >= max_x, linear in between
+#[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SaturatingLinear {
     /// time when curve start
@@ -267,6 +266,7 @@ fn interpolate((min_x, min_y): (u64, u128), (max_x, max_y): (u64, u128), x: u64)
 /// Otherwise, it is a linear interpolation between the two closest points.
 /// Vec of length 1 -> [`Constant`](Curve::Constant) .
 /// Vec of length 2 -> [`SaturatingLinear`] .
+#[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PiecewiseLinear {
     /// steps
@@ -796,7 +796,7 @@ mod tests {
     #[test]
     fn test_combine_curves() {
         let env = Env::default();
-        let c = Curve::Constant { y: 10 };
+        let c = Curve::Constant ( 10 );
         let sl = Curve::SaturatingLinear(SaturatingLinear {
             min_x: 10,
             min_y: 10,

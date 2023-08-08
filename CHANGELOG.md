@@ -10,7 +10,12 @@ and this project adheres to
 
 - Stake: Create new distribution structure for staking rewards flow ([#83])
 
+## Changed
+
+- Curve: Modify implementation to not use named fields in Curve enum, since they are not allowed currently in soroban-sdk ([#86])
+
 [#83]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/83
+[#86]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/86
 
 ## [0.5.0] - 2023-08-04
 
