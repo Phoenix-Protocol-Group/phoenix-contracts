@@ -58,9 +58,11 @@ pub trait StakingTrait {
 
     fn fund_distribution(
         env: Env,
+        sender: Address,
         start_time: u64,
         distribution_duration: u64,
-        amount: u128,
+        token_address: Address,
+        token_amount: u128,
     ) -> Result<(), ContractError>;
 
     // QUERIES
@@ -253,11 +255,26 @@ impl StakingTrait for Staking {
     }
 
     fn fund_distribution(
-        _env: Env,
-        _start_time: u64,
-        _distribution_duration: u64,
-        _amount: u128,
+        env: Env,
+        sender: Address,
+        start_time: u64,
+        distribution_duration: u64,
+        token_address: Address,
+        token_amount: u128,
     ) -> Result<(), ContractError> {
+        sender.require_auth();
+
+        let current_time = env.ledger().timestamp();
+        if start_time < current_time {
+            log!(
+                &env,
+                "Trying to fund distribution flow with start timestamp: {} which is earlier then the current one: {}",
+                start_time,
+                current_time
+            );
+            return Err(ContractError::FundDistributionStartTimeTooEarly);
+        }
+
         unimplemented!();
     }
 
