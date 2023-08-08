@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Env};
+use soroban_sdk::{contracttype, Address, Env, Vec};
 
 use curve::Curve;
 
@@ -51,4 +51,26 @@ pub struct Distribution {
 
 pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution) {
     env.storage().persistent().set(asset, distribution);
+}
+
+#[contracttype]
+pub struct WithdrawAdjustment {
+    /// Represents a correction to the reward points for the user. This can be positive or negative.
+    /// A positive value indicates that the user should receive additional points (e.g., from a bonus or an error correction),
+    /// while a negative value signifies a reduction (e.g., due to a penalty or an adjustment for past over-allocations).
+    pub shared_correction: i128,
+    /// Represents the total amount of rewards that the user has withdrawn so far.
+    /// This value ensures that a user doesn't withdraw more than they are owed and is used to
+    /// calculate the net rewards a user can withdraw at any given time.
+    pub withdrawn_rewards: u128,
+}
+
+/// Save the withdraw adjustment for a user for a given asset using the user's address as the key
+/// and asset's address as the subkey.
+pub fn save_withdraw_adjustment(
+    env: &Env,
+    user: &Address,
+    adjustments: &Vec<(Address, WithdrawAdjustment)>,
+) {
+    env.storage().persistent().set(user, adjustments);
 }
