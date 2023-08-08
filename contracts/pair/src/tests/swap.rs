@@ -1,6 +1,7 @@
 extern crate std;
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
+use pretty_assertions::assert_eq;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
@@ -51,18 +52,17 @@ fn simple_swap() {
     assert_eq!(
         env.auths(),
         [(
-            //todo fix the order of the invocation and sub_invocations
-            pool.address.clone(),
+            user1.clone(),
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
-                    user1.clone(),
+                    pool.address.clone(),
                     symbol_short!("swap"),
-                    (&user1, true, 1_i128, None::<i64>, spread).into_val(&env)
+                    (user1.clone(), true, 1_i128, None::<i64>, spread).into_val(&env)
                 )),
                 sub_invocations: std::vec![
                     (AuthorizedInvocation {
                         function: AuthorizedFunction::Contract((
-                            user1.clone(),
+                            token1.address.clone(),
                             symbol_short!("transfer"),
                             (&user1, &pool.address, 1_i128).into_val(&env)
                         )),
