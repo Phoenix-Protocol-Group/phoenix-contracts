@@ -4,29 +4,15 @@ use curve::Curve;
 
 use crate::error::ContractError;
 
-#[contracttype]
-pub struct StorageCurve {
-    pub manager: Address,
-    pub start_timestamp: u64,
-    pub stop_timestamp: u64,
-    pub amount_to_distribute: u128,
-}
-
 // one reward distribution curve over one denom
-pub fn save_reward_curve(env: &Env, asset: &Address, distribution_curve: &StorageCurve) {
+pub fn save_reward_curve(env: &Env, asset: &Address, distribution_curve: &Curve) {
     env.storage().persistent().set(&asset, distribution_curve);
 }
 
 #[allow(dead_code)]
 pub fn get_reward_curve(env: &Env, asset: &Address) -> Result<Curve, ContractError> {
-    match env.storage().persistent().get::<_, StorageCurve>(asset) {
-        Some(reward_curve) => Ok(Curve::saturating_linear(
-            (
-                reward_curve.start_timestamp,
-                reward_curve.amount_to_distribute,
-            ),
-            (reward_curve.stop_timestamp, 0),
-        )),
+    match env.storage().persistent().get(asset) {
+        Some(reward_curve) => Ok(reward_curve),
         None => Err(ContractError::NoRewardsForThisAsset),
     }
 }
@@ -53,6 +39,13 @@ pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution
     env.storage().persistent().set(asset, distribution);
 }
 
+pub fn get_distribution(env: &Env, asset: &Address) -> Result<Distribution, ContractError> {
+    match env.storage().persistent().get(asset) {
+        Some(distribution) => Ok(distribution),
+        None => Err(ContractError::NoRewardsForThisAsset),
+    }
+}
+
 #[contracttype]
 pub struct WithdrawAdjustment {
     /// Represents a correction to the reward points for the user. This can be positive or negative.
@@ -67,6 +60,7 @@ pub struct WithdrawAdjustment {
 
 /// Save the withdraw adjustment for a user for a given asset using the user's address as the key
 /// and asset's address as the subkey.
+#[allow(dead_code)]
 pub fn save_withdraw_adjustment(
     env: &Env,
     user: &Address,

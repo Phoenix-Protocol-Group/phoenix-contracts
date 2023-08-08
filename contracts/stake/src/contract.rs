@@ -1,7 +1,7 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
 
 use crate::{
-    distribution::{save_distribution, save_reward_curve, Distribution, StorageCurve},
+    distribution::{get_reward_curve, save_distribution, save_reward_curve, Distribution},
     error::ContractError,
     msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse},
     storage::{
@@ -11,6 +11,7 @@ use crate::{
     },
     token_contract,
 };
+use curve::Curve;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -48,8 +49,6 @@ pub trait StakingTrait {
         sender: Address,
         manager: Address,
         asset: Address,
-        amount: i128,
-        distribution_length: u64,
     ) -> Result<(), ContractError>;
 
     fn distribute_rewards(env: Env) -> Result<(), ContractError>;
@@ -62,7 +61,7 @@ pub trait StakingTrait {
         start_time: u64,
         distribution_duration: u64,
         token_address: Address,
-        token_amount: u128,
+        token_amount: i128,
     ) -> Result<(), ContractError>;
 
     // QUERIES
@@ -199,32 +198,8 @@ impl StakingTrait for Staking {
         sender: Address,
         manager: Address,
         asset: Address,
-        amount: i128,
-        distribution_length: u64,
     ) -> Result<(), ContractError> {
         sender.require_auth();
-
-        let config = get_config(&env)?;
-
-        if config.min_reward < amount {
-            log!(
-                &env,
-                "Trying to create distribution flow with reward not reaching minimum amount: {}",
-                config.min_reward
-            );
-            return Err(ContractError::MinRewardNotReached);
-        }
-        let current_time = env.ledger().timestamp();
-        let curve = StorageCurve {
-            manager: manager.clone(),
-            start_timestamp: current_time,
-            stop_timestamp: current_time + distribution_length,
-            amount_to_distribute: amount as u128,
-        };
-        save_reward_curve(&env, &asset, &curve);
-
-        let reward_token_client = token_contract::Client::new(&env, &asset);
-        reward_token_client.transfer(&sender, &env.current_contract_address(), &amount);
 
         let distribution = Distribution {
             shares_per_point: 1u128,
@@ -236,7 +211,11 @@ impl StakingTrait for Staking {
             max_bonus_bps: 0u64,
             bonus_per_day_bps: 0u64,
         };
+
+        let reward_token_client = token_contract::Client::new(&env, &asset);
         save_distribution(&env, &reward_token_client.address, &distribution);
+        // Create the default reward distribution curve which is just a flat 0 const
+        save_reward_curve(&env, &asset, &Curve::Constant(0));
 
         env.events().publish(
             ("create_distribution_flow", "asset"),
@@ -260,9 +239,13 @@ impl StakingTrait for Staking {
         start_time: u64,
         distribution_duration: u64,
         token_address: Address,
-        token_amount: u128,
+        token_amount: i128,
     ) -> Result<(), ContractError> {
         sender.require_auth();
+
+        // Load previous reward curve; it must exist if the distribution exists
+        // In case of first time funding, it will be a constant 0 curve
+        let previous_reward_curve = get_reward_curve(&env, &token_address)?;
 
         let current_time = env.ledger().timestamp();
         if start_time < current_time {
@@ -275,7 +258,52 @@ impl StakingTrait for Staking {
             return Err(ContractError::FundDistributionStartTimeTooEarly);
         }
 
-        unimplemented!();
+        let config = get_config(&env)?;
+
+        if config.min_reward < token_amount {
+            log!(
+                &env,
+                "Trying to create distribution flow with reward not reaching minimum amount: {}",
+                config.min_reward
+            );
+            return Err(ContractError::MinRewardNotReached);
+        }
+
+        // transfer tokens to fund distribution
+        let reward_token_client = token_contract::Client::new(&env, &token_address);
+        reward_token_client.transfer(&sender, &env.current_contract_address(), &token_amount);
+
+        let end_time = current_time + distribution_duration;
+        // define a distribution curve starting at start_time with token_amount of tokens
+        // and ending at end_time with 0 tokens
+        let new_reward_distribution =
+            Curve::saturating_linear((start_time, token_amount as u128), (end_time, 0));
+
+        // Validate the the curve locks at most the amount provided and
+        // also fully unlocks all rewards sent
+        let (min, max) = new_reward_distribution.range();
+        if min != 0 || max > token_amount as u128 {
+            log!(
+                &env,
+                "Trying to create reward distribution which either doesn't end with empty balance or exceeds provided amount"
+            );
+            return Err(ContractError::RewardsValidationFailed);
+        }
+
+        // now combine old distribution with the new schedule
+        let new_reward_curve = previous_reward_curve.combine(&env, &new_reward_distribution);
+        save_reward_curve(&env, &token_address, &new_reward_curve);
+
+        env.events()
+            .publish(("fund_reward_distribution", "asset"), &token_address);
+        env.events()
+            .publish(("fund_reward_distribution", "amount"), token_amount);
+        env.events()
+            .publish(("fund_reward_distribution", "start_time"), start_time);
+        env.events()
+            .publish(("fund_reward_distribution", "end_time"), end_time);
+
+        Ok(())
     }
 
     // QUERIES
