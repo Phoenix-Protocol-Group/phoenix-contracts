@@ -1,7 +1,8 @@
 extern crate std;
+
+use pretty_assertions::assert_eq;
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
-use pretty_assertions::assert_eq;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
@@ -57,7 +58,7 @@ fn simple_swap() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     symbol_short!("swap"),
-                    (user1.clone(), true, 1_i128, None::<i64>, spread).into_val(&env)
+                    (&user1, true, 1_i128, None::<i64>, spread).into_val(&env)
                 )),
                 sub_invocations: std::vec![
                     (AuthorizedInvocation {
@@ -80,16 +81,16 @@ fn simple_swap() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 1_000_001i128
+                amount: 1_000_001i128,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 999_999i128
+                amount: 999_999i128,
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 1_000_000i128
-            }
+                amount: 1_000_000i128,
+            },
         }
     );
     assert_eq!(token1.balance(&user1), 999); // -1 from the swap
@@ -108,12 +109,12 @@ fn simple_swap() {
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 999_999 + 1000
+                amount: 999_999 + 1000,
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 1_000_000i128 // this has not changed
-            }
+                amount: 1_000_000i128, // this has not changed
+            },
         }
     );
     assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
@@ -178,7 +179,7 @@ fn swap_with_high_fee() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: initial_liquidity + 100_000i128
+                amount: initial_liquidity + 100_000i128,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
@@ -186,8 +187,8 @@ fn swap_with_high_fee() {
             },
             asset_lp_share: Asset {
                 address: pool.query_share_token_address(),
-                amount: 1_000_000i128
-            }
+                amount: 1_000_000i128,
+            },
         }
     );
     // 10% fees are deducted from the swap result and sent to fee recipient address
@@ -249,7 +250,7 @@ fn swap_simulation_even_pool() {
             // spread_amount: Decimal::from_ratio(100_000, 1_000_000) * output_amount, // since it's 10% of the pool
             spread_amount: 9090, // rounding error, one less then ^
             commission_amount: fees,
-            total_return: offer_amount
+            total_return: offer_amount,
         }
     );
 
@@ -277,7 +278,7 @@ fn swap_simulation_even_pool() {
             spread_amount: 9090, // spread amount is basically 10%, since it's basically 10% of the
             // first token
             commission_amount: fees,
-            total_return: offer_amount
+            total_return: offer_amount,
         }
     );
 
@@ -348,7 +349,7 @@ fn swap_simulation_one_third_pool() {
             ask_amount: output_amount - fees,
             spread_amount: Decimal::from_ratio(offer_amount, 1_000_000) * output_amount, // since it's 10% of the pool
             commission_amount: fees,
-            total_return: 300_000
+            total_return: 300_000,
         }
     );
 
@@ -378,7 +379,7 @@ fn swap_simulation_one_third_pool() {
             // spread_amount: Decimal::from_ratio(100_000i128, 3_000_000i128) * output_amount,
             spread_amount: 1074, // rounding error, one less then ^
             commission_amount: fees,
-            total_return: 33_333
+            total_return: 33_333,
         }
     );
 
