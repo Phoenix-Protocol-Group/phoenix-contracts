@@ -35,6 +35,10 @@ pub struct Distribution {
     pub bonus_per_day_bps: u64,
 }
 
+impl Distribution {
+    pub fn calculate_rewards_power(&self, env: &Env, staker: &Address, )
+}
+
 pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution) {
     env.storage().persistent().set(asset, distribution);
 }

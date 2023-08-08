@@ -259,7 +259,6 @@ impl StakingTrait for Staking {
         }
 
         let config = get_config(&env)?;
-
         if config.min_reward < token_amount {
             log!(
                 &env,
