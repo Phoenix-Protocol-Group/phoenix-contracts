@@ -1,8 +1,5 @@
 use pretty_assertions::assert_eq;
-use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    vec, Address, Env, Error, Val,
-};
+use soroban_sdk::{testutils::{Address as _, Ledger}, vec, Address, Env, Error, Val, assert_with_error};
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
@@ -68,7 +65,12 @@ fn bond_not_having_tokens() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
 
-    staking.bond(&user, &10_000);
+    // assert_with_error!(&env, staking.bond(&user, &10_000), StakeLessThenMinBond);
+    // 👆
+    // fails with error[E0600]: cannot apply unary operator `!` to type `()`; not sure if fixing this
+    // won't be too hacky
+
+
     // assert_eq!(staking.try_bond(&user, &10_000i128), Err(Err(Error(Val::default()))))
     // 👆
     // fails with error[E0423]: cannot initialize a tuple struct which contains private fields
@@ -77,6 +79,7 @@ fn bond_not_having_tokens() {
     //
     // For now I'm leaving it with should_panic macro
 
+    staking.bond(&user, &10_000);
 }
 
 #[test]
