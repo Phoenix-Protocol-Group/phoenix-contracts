@@ -9,6 +9,7 @@ use crate::{
     msg::ConfigResponse,
     storage::{Config, Stake},
 };
+use crate::error::ContractError;
 
 #[test]
 fn initializa_staking_contract() {
@@ -39,7 +40,7 @@ fn initializa_staking_contract() {
 }
 
 #[test]
-#[should_panic/* = "Trying to bond I128(999) which is less then minimum I128(1000) required!"*/]
+#[should_panic = "Trying to bond I128(999) which is less then minimum I128(1000) required!"]
 fn bond_too_few() {
     let env = Env::default();
     env.mock_all_auths();
@@ -56,7 +57,6 @@ fn bond_too_few() {
 }
 
 #[test]
-#[should_panic/* = "balance is not sufficient to spend: 0 < I128(10000)"*/]
 fn bond_not_having_tokens() {
     let env = Env::default();
     env.mock_all_auths();
@@ -67,7 +67,8 @@ fn bond_not_having_tokens() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
 
-    staking.bond(&user, &10_000);
+    // staking.bond(&user, &10_000);
+    assert_eq!(staking.try_bond(&user, &10_000i128), Err(Ok(ContractError::StakeLessThenMinBond)))
 }
 
 #[test]
@@ -157,7 +158,7 @@ fn unbond_simple() {
 }
 
 #[test]
-#[should_panic/* = "ContractError(5)"*/] // stake not found
+#[should_panic = "ContractError(5)"] // stake not found
 fn unbond_wrong_user_stake_not_found() {
     let env = Env::default();
     env.mock_all_auths();
