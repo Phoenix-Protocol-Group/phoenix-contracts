@@ -1,5 +1,5 @@
 use pretty_assertions::assert_eq;
-use soroban_sdk::{testutils::{Address as _, Ledger}, vec, Address, Env, Error, Val, assert_with_error};
+use soroban_sdk::{testutils::{Address as _, Ledger}, vec, Address, Env};
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
