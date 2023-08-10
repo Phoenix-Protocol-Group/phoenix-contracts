@@ -751,6 +751,7 @@ version = "0.5.0"
 dependencies = [
  "curve",
  "decimal",
+ "pretty_assertions",
  "soroban-sdk",
 ]
 
@@ -1216,6 +1217,7 @@ dependencies = [
 name = "soroban-token-contract"
 version = "0.0.6"
 dependencies = [
+ "pretty_assertions",
  "soroban-sdk",
  "soroban-token-sdk",
 ]
