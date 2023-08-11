@@ -65,20 +65,16 @@ fn bond_not_having_tokens() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
 
-    // assert_with_error!(&env, staking.bond(&user, &10_000), StakeLessThenMinBond);
-    // 👆
     // fails with error[E0600]: cannot apply unary operator `!` to type `()`; not sure if fixing this
     // won't be too hacky
+    // assert_with_error!(&env, staking.bond(&user, &10_000), StakeLessThenMinBond);
 
-
-    // assert_eq!(staking.try_bond(&user, &10_000i128), Err(Err(Error(Val::default()))))
-    // 👆
     // fails with error[E0423]: cannot initialize a tuple struct which contains private fields
     // the way it is commented now; Basically I'm not sure for the correct import of `Error`
     // tried all the variants and this one hit closest to home.
-    //
-    // For now I'm leaving it with should_panic macro
+    // assert_eq!(staking.try_bond(&user, &10_000i128), Err(Err(Error(Val::default()))))
 
+    // For now I'm leaving it with should_panic macro
     staking.bond(&user, &10_000);
 }
 
