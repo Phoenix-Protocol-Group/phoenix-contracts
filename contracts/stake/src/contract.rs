@@ -6,7 +6,7 @@ use crate::{
     msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse},
     storage::{
         get_config, get_stakes, save_config, save_stakes,
-        utils::{self, get_admin, get_total_staked_counter},
+        utils::{self, add_distribution, get_admin, get_distributions, get_total_staked_counter},
         Config, Stake,
     },
     token_contract,
@@ -203,6 +203,8 @@ impl StakingTrait for Staking {
         };
 
         let reward_token_client = token_contract::Client::new(&env, &asset);
+        // add distribution to the vector of distributions
+        add_distribution(&env, &reward_token_client.address)?;
         save_distribution(&env, &reward_token_client.address, &distribution);
         // Create the default reward distribution curve which is just a flat 0 const
         save_reward_curve(&env, &asset, &Curve::Constant(0));
@@ -321,8 +323,10 @@ impl StakingTrait for Staking {
         unimplemented!();
     }
 
-    fn query_withdrawable_rewards(_env: Env, _address: Address) -> Result<(), ContractError> {
-        unimplemented!();
+    fn query_withdrawable_rewards(env: Env, address: Address) -> Result<(), ContractError> {
+        let distributions = get_distributions(&env);
+
+        Ok(())
     }
 
     fn query_distributed_rewards(_env: Env) -> Result<(), ContractError> {

@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, symbol_short, vec, Address, Env, Symbol, Vec};
 
 use crate::error::ContractError;
 
@@ -71,6 +71,7 @@ pub mod utils {
     pub enum DataKey {
         Admin = 0,
         TotalStaked = 1,
+        Distributions = 2,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -119,5 +120,23 @@ pub mod utils {
             Some(val) => val,
             None => Err(ContractError::TotalStakedCannotBeZeroOrLess),
         }
+    }
+
+    // Keep track of all distributions to be able to iterate over them
+    pub fn add_distribution(e: &Env, asset: &Address) -> Result<(), ContractError> {
+        let mut distributions = get_distributions(e);
+        if distributions.contains(asset) {
+            return Err(ContractError::DistributionAlreadyAdded);
+        }
+        distributions.push_back(asset.clone());
+        e.storage().instance().set(&DataKey::Distributions, asset);
+        Ok(())
+    }
+
+    pub fn get_distributions(e: &Env) -> Vec<Address> {
+        e.storage()
+            .instance()
+            .get(&DataKey::Distributions)
+            .unwrap_or_else(|| vec![&e])
     }
 }
