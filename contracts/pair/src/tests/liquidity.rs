@@ -1,5 +1,9 @@
 extern crate std;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+
+use pretty_assertions::assert_eq;
+
+use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, Symbol};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
@@ -52,29 +56,46 @@ fn provide_liqudity() {
         &Some(100),
         &None,
     );
-    // assert_eq!(
-    //     env.auths(),
-    //     [
-    //         (
-    //             user1.clone(),
-    //             pool.address.clone(),
-    //             Symbol::new(&env, "provide_liquidity"),
-    //             (&user1, 100_i128, 100_i128, 100_i128, 100_i128, None::<i64>).into_val(&env)
-    //         ),
-    //         (
-    //             user1.clone(),
-    //             token1.address.clone(),
-    //             Symbol::short("transfer"),
-    //             (&user1, &pool.address, 100_i128).into_val(&env)
-    //         ),
-    //         (
-    //             user1.clone(),
-    //             token2.address.clone(),
-    //             Symbol::short("transfer"),
-    //             (&user1, &pool.address, 100_i128).into_val(&env)
-    //         ),
-    //     ]
-    // );
+
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    Symbol::new(&env, "provide_liquidity"),
+                    (
+                        &user1,
+                        Some(100i128),
+                        Some(100i128),
+                        Some(100i128),
+                        Some(100i128),
+                        None::<i64>
+                    )
+                        .into_val(&env),
+                )),
+                sub_invocations: std::vec![
+                    AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            token1.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user1, &pool.address, 100_i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    },
+                    AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            token2.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user1, &pool.address, 100_i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    },
+                ],
+            }
+        ),]
+    );
 
     assert_eq!(token_share.balance(&user1), 100);
     assert_eq!(token_share.balance(&pool.address), 0);
@@ -184,16 +205,16 @@ fn withdraw_liquidity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 50i128
+                amount: 50i128,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 50i128
+                amount: 50i128,
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 50i128
-            }
+                amount: 50i128,
+            },
         }
     );
 

@@ -19,3 +19,4 @@ soroban-sdk = { workspace = true }
 
 [dev_dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+pretty_assertions = { workspace = true }
