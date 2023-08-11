@@ -1,9 +1,13 @@
 use pretty_assertions::assert_eq;
-use soroban_sdk::{testutils::{Address as _, Ledger}, vec, Address, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger},
+    vec, Address, Env,
+};
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
 use crate::error::ContractError::{StakeLessThenMinBond, StakeNotFound};
+use crate::storage::utils::DataKey;
 use crate::{
     msg::ConfigResponse,
     storage::{Config, Stake},
