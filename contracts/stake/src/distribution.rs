@@ -2,7 +2,7 @@ use soroban_sdk::{contracttype, Address, Env, Vec};
 
 use curve::Curve;
 
-use crate::error::ContractError;
+use crate::{error::ContractError, storage::get_stakes};
 
 // one reward distribution curve over one denom
 pub fn save_reward_curve(env: &Env, asset: &Address, distribution_curve: &Curve) {
@@ -36,8 +36,17 @@ pub struct Distribution {
 }
 
 impl Distribution {
-    pub fn calculate_rewards_power(&self, env: &Env, staker: &Address) -> u128 {
-        unimplemented!()
+    pub fn calculate_rewards_power(
+        &self,
+        env: &Env,
+        staker: &Address,
+    ) -> Result<u128, ContractError> {
+        let bonding_info = get_stakes(env, staker)?;
+        let mut total_staked = 0;
+        for stake in bonding_info.stakes {
+            total_staked += stake.stake;
+        }
+        Ok(total_staked as u128 / self.shares_per_point)
     }
 }
 
