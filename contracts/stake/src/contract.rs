@@ -205,9 +205,9 @@ impl StakingTrait for Staking {
         let reward_token_client = token_contract::Client::new(&env, &asset);
         // add distribution to the vector of distributions
         add_distribution(&env, &reward_token_client.address)?;
-        save_distribution(&env, &reward_token_client.address, &distribution);
+        save_distribution(&env, reward_token_client.address.clone(), &distribution);
         // Create the default reward distribution curve which is just a flat 0 const
-        save_reward_curve(&env, &asset, &Curve::Constant(0));
+        save_reward_curve(&env, asset, &Curve::Constant(0));
 
         env.events().publish(
             ("create_distribution_flow", "asset"),
@@ -237,7 +237,7 @@ impl StakingTrait for Staking {
 
         // Load previous reward curve; it must exist if the distribution exists
         // In case of first time funding, it will be a constant 0 curve
-        let previous_reward_curve = get_reward_curve(&env, &token_address)?;
+        let previous_reward_curve = get_reward_curve(&env, token_address.clone())?;
 
         let current_time = env.ledger().timestamp();
         if start_time < current_time {
@@ -283,7 +283,7 @@ impl StakingTrait for Staking {
 
         // now combine old distribution with the new schedule
         let new_reward_curve = previous_reward_curve.combine(&env, &new_reward_distribution);
-        save_reward_curve(&env, &token_address, &new_reward_curve);
+        save_reward_curve(&env, token_address.clone(), &new_reward_curve);
 
         env.events()
             .publish(("fund_reward_distribution", "asset"), &token_address);

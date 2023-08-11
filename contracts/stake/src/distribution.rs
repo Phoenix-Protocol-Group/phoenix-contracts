@@ -4,14 +4,28 @@ use curve::Curve;
 
 use crate::{error::ContractError, storage::get_stakes};
 
+#[derive(Clone)]
+#[contracttype]
+pub enum DistributionDataKey {
+    Curve(Address),
+    Distribution(Address),
+    WithdrawAdjustment(Address),
+}
+
 // one reward distribution curve over one denom
-pub fn save_reward_curve(env: &Env, asset: &Address, distribution_curve: &Curve) {
-    env.storage().persistent().set(&asset, distribution_curve);
+pub fn save_reward_curve(env: &Env, asset: Address, distribution_curve: &Curve) {
+    env.storage()
+        .persistent()
+        .set(&DistributionDataKey::Curve(asset), distribution_curve);
 }
 
 #[allow(dead_code)]
-pub fn get_reward_curve(env: &Env, asset: &Address) -> Result<Curve, ContractError> {
-    match env.storage().persistent().get(asset) {
+pub fn get_reward_curve(env: &Env, asset: Address) -> Result<Curve, ContractError> {
+    match env
+        .storage()
+        .persistent()
+        .get(&DistributionDataKey::Curve(asset))
+    {
         Some(reward_curve) => Ok(reward_curve),
         None => Err(ContractError::NoRewardsForThisAsset),
     }
@@ -50,12 +64,18 @@ impl Distribution {
     }
 }
 
-pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution) {
-    env.storage().persistent().set(asset, distribution);
+pub fn save_distribution(env: &Env, asset: Address, distribution: &Distribution) {
+    env.storage()
+        .persistent()
+        .set(&DistributionDataKey::Distribution(asset), distribution);
 }
 
-pub fn get_distribution(env: &Env, asset: &Address) -> Result<Distribution, ContractError> {
-    match env.storage().persistent().get(asset) {
+pub fn get_distribution(env: &Env, asset: Address) -> Result<Distribution, ContractError> {
+    match env
+        .storage()
+        .persistent()
+        .get(&DistributionDataKey::Distribution(asset))
+    {
         Some(distribution) => Ok(distribution),
         None => Err(ContractError::NoRewardsForThisAsset),
     }
@@ -78,8 +98,10 @@ pub struct WithdrawAdjustment {
 #[allow(dead_code)]
 pub fn save_withdraw_adjustment(
     env: &Env,
-    user: &Address,
+    user: Address,
     adjustments: &Vec<(Address, WithdrawAdjustment)>,
 ) {
-    env.storage().persistent().set(user, adjustments);
+    env.storage()
+        .persistent()
+        .set(&DistributionDataKey::WithdrawAdjustment(user), adjustments);
 }
