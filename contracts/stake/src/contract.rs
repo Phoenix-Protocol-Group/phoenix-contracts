@@ -121,6 +121,11 @@ impl StakingTrait for Staking {
         save_config(&env, config);
 
         utils::save_admin(&env, &admin);
+        log!(&env, "Im here");
+
+        utils::init_staked(&env);
+        log!(&env, "Maybe I fail");
+
 
         Ok(())
     }
@@ -154,6 +159,7 @@ impl StakingTrait for Staking {
 
         stakes.stakes.push_back(stake);
         save_stakes(&env, &sender, &stakes);
+        utils::increase_staked(&env, &tokens);
 
         env.events().publish(("bond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
@@ -179,6 +185,7 @@ impl StakingTrait for Staking {
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
 
         save_stakes(&env, &sender, &stakes);
+        utils::decrease_staked(&env, &stake_amount);
 
         env.events().publish(("unbond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);

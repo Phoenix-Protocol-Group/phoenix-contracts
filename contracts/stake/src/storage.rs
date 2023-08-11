@@ -85,12 +85,13 @@ pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
 pub mod utils {
     use super::*;
 
-    use soroban_sdk::{ConversionError, TryFromVal, Val};
+    use soroban_sdk::{ConversionError, Error, TryFromVal, Val};
 
     #[derive(Clone, Copy)]
     #[repr(u32)]
     pub enum DataKey {
         Admin = 0,
+        TotalStaked = 1,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -110,5 +111,37 @@ pub mod utils {
             .instance()
             .get(&DataKey::Admin)
             .ok_or(ContractError::FailedToLoadFromStorage)
+    }
+
+    pub fn init_staked(e: &Env) {
+        e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
+    }
+
+    pub fn increase_staked(e: &Env, amount: &i128) {
+        let mut count = get_total_staked_counter(e);
+
+        count += amount;
+
+        e.storage().persistent().set(&DataKey::TotalStaked, &count);
+    }
+
+    // there's some annoying code duplication happening above and below this comment line
+    // I know I can use something like change_staked(e: &Env, amount: i128, increase: bool)
+    // but that just feels wrong for me to increase/decrease based on a boolean value
+    // keeping it as is now.. for the moment
+
+    pub fn decrease_staked(e: &Env, amount: &i128) {
+        let mut count = get_total_staked_counter(e);
+
+        count -= amount;
+
+        e.storage().persistent().set(&DataKey::TotalStaked, &count);
+    }
+
+    fn get_total_staked_counter(env: &Env) -> i128 {
+        match env.storage().persistent().get(&DataKey::TotalStaked) {
+            Some(val) => val,
+            None => 0
+        }
     }
 }

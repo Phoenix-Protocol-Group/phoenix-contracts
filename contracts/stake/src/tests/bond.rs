@@ -109,6 +109,30 @@ fn bond_simple() {
 }
 
 #[test]
+fn bond_to_increase_stake_counter() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let user = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    lp_token.mint(&user, &10_000);
+
+    staking.bond(&user, &10_000);
+
+    let staked_count: i128 = env
+        .storage()
+        .persistent()
+        .get(&DataKey::TotalStaked)
+        .unwrap();
+
+    assert_eq!(staked_count, 10_0000)
+}
+
+#[test]
 fn unbond_simple() {
     let env = Env::default();
     env.mock_all_auths();
@@ -165,6 +189,39 @@ fn unbond_simple() {
 }
 
 #[test]
+fn unbond_to_decrease_stake_counter() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let user = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    lp_token.mint(&user, &10_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2000;
+    });
+    staking.bond(&user, &10_000);
+    env.ledger().with_mut(|li| {
+        li.timestamp = 4000;
+    });
+
+    staking.unbond(&user, &5_000, &4000);
+
+    let staked_count: i128 = env
+        .storage()
+        .persistent()
+        .get(&DataKey::TotalStaked)
+        .unwrap();
+
+    assert_eq!(staked_count, 5_000)
+}
+
+#[test]
+#[should_panic/* = "ContractError(5)"*/] // stake not found
 fn unbond_wrong_user_stake_not_found() {
     let env = Env::default();
     env.mock_all_auths();
