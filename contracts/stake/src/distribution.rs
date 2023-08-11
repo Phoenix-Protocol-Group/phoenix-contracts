@@ -36,7 +36,9 @@ pub struct Distribution {
 }
 
 impl Distribution {
-    pub fn calculate_rewards_power(&self, env: &Env, staker: &Address, )
+    pub fn calculate_rewards_power(&self, env: &Env, staker: &Address) -> u128 {
+        unimplemented!()
+    }
 }
 
 pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution) {

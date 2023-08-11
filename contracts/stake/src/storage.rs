@@ -6,7 +6,6 @@ use crate::error::ContractError;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
     pub lp_token: Address,
-    pub token_per_power: u128,
     pub min_bond: i128,
     pub max_distributions: u32,
     pub min_reward: i128,
@@ -61,26 +60,6 @@ pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError
 pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
     env.storage().instance().set(key, bonding_info);
 }
-
-// pub fn total_rewards_power(&self, storage: &dyn Storage, cfg: &Config, staker: &Addr) -> StdResult<Uint128> {
-//     let mut power = Uint128::zero();
-//     let bonding_info = STAKE.load(storage, staker)?.unwrap_or_default();
-//     for stake in bonding_info.stakes.iter() {
-//         let multiplier = self.rewards_multiplier(stake.stake_timestamp);
-//         power += calc_power(cfg, stake.stake, multiplier);
-//     }
-//     Ok(power)
-// }
-//
-// pub fn rewards_multiplier(&self, stake_timestamp: u64) -> Decimal {
-//     let days_staked = (env::block_time() - stake_timestamp) / (24 * 60 * 60);
-//     let increase = Decimal::percent(0.5) * Decimal::from(days_staked);
-//     let capped_increase = std::cmp::min(increase, Decimal::percent(30));
-//     Decimal::one() + capped_increase
-// }
-//
-// // Then in your execute_distribute_rewards function:
-// let total_rewards = distribution.total_rewards_power(deps.storage, &cfg);
 
 pub mod utils {
     use super::*;

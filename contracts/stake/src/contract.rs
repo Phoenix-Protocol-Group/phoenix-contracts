@@ -29,7 +29,6 @@ pub trait StakingTrait {
         env: Env,
         admin: Address,
         lp_token: Address,
-        token_per_power: u128,
         min_bond: i128,
         max_distributions: u32,
         min_reward: i128,
@@ -87,7 +86,6 @@ impl StakingTrait for Staking {
         env: Env,
         admin: Address,
         lp_token: Address,
-        token_per_power: u128,
         min_bond: i128,
         max_distributions: u32,
         min_reward: i128,
@@ -99,13 +97,6 @@ impl StakingTrait for Staking {
             );
             return Err(ContractError::MinStakeLessOrEqualZero);
         }
-        if token_per_power == 0 {
-            log!(
-                &env,
-                "Token per power set as 0 - this would break staking rewards!"
-            );
-            return Err(ContractError::TokenPerPowerCannotBeZero);
-        }
         if min_reward <= 0 {
             log!(&env, "min_reward must be bigger then 0!");
             return Err(ContractError::MinRewardTooSmall);
@@ -116,7 +107,6 @@ impl StakingTrait for Staking {
 
         let config = Config {
             lp_token,
-            token_per_power,
             min_bond,
             max_distributions,
             min_reward,
