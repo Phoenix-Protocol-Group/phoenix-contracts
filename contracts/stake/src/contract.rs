@@ -283,7 +283,6 @@ impl StakingTrait for Staking {
         get_total_staked_counter(&env)
     }
 
-
     fn query_annualized_rewards(_env: Env) -> Result<AnnualizedRewardsResponse, ContractError> {
         unimplemented!();
     }

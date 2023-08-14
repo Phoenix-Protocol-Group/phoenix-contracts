@@ -119,14 +119,18 @@ pub mod utils {
 
     pub fn increase_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
         let count = get_total_staked_counter(e)?;
-        e.storage().persistent().set(&DataKey::TotalStaked, &(count + amount));
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalStaked, &(count + amount));
 
         Ok(())
     }
 
     pub fn decrease_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
         let count = get_total_staked_counter(e)?;
-        e.storage().persistent().set(&DataKey::TotalStaked, &(count - amount));
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalStaked, &(count - amount));
 
         Ok(())
     }
@@ -134,7 +138,7 @@ pub mod utils {
     pub fn get_total_staked_counter(env: &Env) -> Result<i128, ContractError> {
         match env.storage().persistent().get(&DataKey::TotalStaked) {
             Some(val) => val,
-            None => return Err(ContractError::TotalStakedCannotBeZeroOrLess),
+            None => Err(ContractError::TotalStakedCannotBeZeroOrLess),
         }
     }
 }
