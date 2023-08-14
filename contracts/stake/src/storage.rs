@@ -113,11 +113,11 @@ pub mod utils {
             .ok_or(ContractError::FailedToLoadFromStorage)
     }
 
-    pub fn init_staked(e: &Env) {
+    pub fn init_total_staked(e: &Env) {
         e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
     }
 
-    pub fn increase_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+    pub fn increase_total_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
         let count = get_total_staked_counter(e)?;
         e.storage()
             .persistent()
@@ -126,7 +126,7 @@ pub mod utils {
         Ok(())
     }
 
-    pub fn decrease_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+    pub fn decrease_total_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
         let count = get_total_staked_counter(e)?;
         e.storage()
             .persistent()
