@@ -1,5 +1,8 @@
 use pretty_assertions::assert_eq;
-use soroban_sdk::{testutils::{Address as _, Ledger}, vec, Address, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger},
+    vec, Address, Env,
+};
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
@@ -104,6 +107,8 @@ fn bond_simple() {
             }
         ]
     );
+    assert_eq!(staking.query_total_staked(), 10_000);
+
     assert_eq!(lp_token.balance(&user), 0);
     assert_eq!(lp_token.balance(&staking.address), 10_000);
 }
@@ -159,9 +164,24 @@ fn unbond_simple() {
             }
         ]
     );
+    assert_eq!(staking.query_total_staked(), 35_000);
+
     assert_eq!(lp_token.balance(&user), 10_000);
     assert_eq!(lp_token.balance(&user2), 0);
     assert_eq!(lp_token.balance(&staking.address), 35_000);
+}
+
+#[test]
+fn initializing_contract_sets_total_staked_var() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    assert_eq!(staking.query_total_staked(), 0);
 }
 
 #[test]

@@ -91,6 +91,7 @@ pub mod utils {
     #[repr(u32)]
     pub enum DataKey {
         Admin = 0,
+        TotalStaked = 1,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -110,5 +111,34 @@ pub mod utils {
             .instance()
             .get(&DataKey::Admin)
             .ok_or(ContractError::FailedToLoadFromStorage)
+    }
+
+    pub fn init_total_staked(e: &Env) {
+        e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
+    }
+
+    pub fn increase_total_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+        let count = get_total_staked_counter(e)?;
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalStaked, &(count + amount));
+
+        Ok(())
+    }
+
+    pub fn decrease_total_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+        let count = get_total_staked_counter(e)?;
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalStaked, &(count - amount));
+
+        Ok(())
+    }
+
+    pub fn get_total_staked_counter(env: &Env) -> Result<i128, ContractError> {
+        match env.storage().persistent().get(&DataKey::TotalStaked) {
+            Some(val) => val,
+            None => Err(ContractError::TotalStakedCannotBeZeroOrLess),
+        }
     }
 }

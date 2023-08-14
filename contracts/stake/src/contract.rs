@@ -6,7 +6,7 @@ use crate::{
     msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse},
     storage::{
         get_config, get_stakes, save_config, save_stakes,
-        utils::{self, get_admin},
+        utils::{self, get_admin, get_total_staked_counter},
         Config, Stake,
     },
     token_contract,
@@ -71,6 +71,8 @@ pub trait StakingTrait {
 
     fn query_staked(env: Env, address: Address) -> Result<StakedResponse, ContractError>;
 
+    fn query_total_staked(env: Env) -> Result<i128, ContractError>;
+
     fn query_annualized_rewards(env: Env) -> Result<AnnualizedRewardsResponse, ContractError>;
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> Result<(), ContractError>;
@@ -121,6 +123,7 @@ impl StakingTrait for Staking {
         save_config(&env, config);
 
         utils::save_admin(&env, &admin);
+        utils::init_total_staked(&env);
 
         Ok(())
     }
@@ -154,6 +157,7 @@ impl StakingTrait for Staking {
 
         stakes.stakes.push_back(stake);
         save_stakes(&env, &sender, &stakes);
+        utils::increase_total_staked(&env, &tokens)?;
 
         env.events().publish(("bond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
@@ -179,6 +183,7 @@ impl StakingTrait for Staking {
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
 
         save_stakes(&env, &sender, &stakes);
+        utils::decrease_total_staked(&env, &stake_amount)?;
 
         env.events().publish(("unbond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
@@ -272,6 +277,10 @@ impl StakingTrait for Staking {
         Ok(StakedResponse {
             stakes: get_stakes(&env, &address)?.stakes,
         })
+    }
+
+    fn query_total_staked(env: Env) -> Result<i128, ContractError> {
+        get_total_staked_counter(&env)
     }
 
     fn query_annualized_rewards(_env: Env) -> Result<AnnualizedRewardsResponse, ContractError> {
