@@ -3,19 +3,26 @@ use soroban_sdk::contracterror;
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
+pub enum SwapError {
+    SlippageToleranceExceeded = 1,
+    SlippageToleranceViolated = 2,
+    SpreadExceedsMaxAllowed = 3,
+}
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
 pub enum ContractError {
     FirstTokenMustBeSmallerThenSecond = 1,
-    SlippageToleranceExceeded = 2,
-    SlippageToleranceViolated = 3,
-    SpreadExceedsMaxAllowed = 4,
-    ConfigNotSet = 5,
-    FailedToLoadFromStorage = 6,
-    IncorrectLiqudityParameters = 7,
-    DepositAmountExceedsOrBelowMin = 8,
-    WithdrawMinNotSatisfied = 9,
-    InvalidFeeBps = 11,
-    EmptyPoolBalance = 12,
-    InvalidAmounts = 13,
-    Unauthorized = 14,
-    ArgumentsInvalidLessOrEqualZero = 15,
+    Swapage(SwapError) = 2,
+    ConfigNotSet = 3,
+    FailedToLoadFromStorage = 4,
+    IncorrectLiqudityParameters = 5,
+    DepositAmountExceedsOrBelowMin = 6,
+    WithdrawMinNotSatisfied = 7,
+    InvalidFeeBps = 8,
+    EmptyPoolBalance = 9,
+    InvalidAmounts = 10,
+    Unauthorized = 11,
+    ArgumentsInvalidLessOrEqualZero = 12,
 }
