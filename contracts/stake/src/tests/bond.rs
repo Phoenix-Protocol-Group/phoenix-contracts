@@ -1,9 +1,6 @@
 use pretty_assertions::assert_eq;
 use soroban_sdk::arbitrary::std::dbg;
-use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    vec, Address, Env,
-};
+use soroban_sdk::{testutils::{Address as _, Ledger}, vec, Address, Env, Vec};
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
@@ -108,35 +105,10 @@ fn bond_simple() {
             }
         ]
     );
+    assert_eq!(staking.query_total_staked(), 10_000);
+
     assert_eq!(lp_token.balance(&user), 0);
     assert_eq!(lp_token.balance(&staking.address), 10_000);
-}
-
-#[test]
-fn bond_to_increase_stake_counter() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
-    let lp_token = deploy_token_contract(&env, &admin);
-
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
-
-    lp_token.mint(&user, &10_000);
-
-    staking.bond(&user, &10_000);
-
-    assert_eq!(
-        staking.query_staked(&user).stakes,
-        vec!(
-            &env,
-            Stake {
-                stake: 10_000,
-                stake_timestamp: 0,
-            }
-        )
-    );
 }
 
 #[test]
@@ -190,53 +162,24 @@ fn unbond_simple() {
             }
         ]
     );
+    assert_eq!(staking.query_total_staked(), 35_000);
+
     assert_eq!(lp_token.balance(&user), 10_000);
     assert_eq!(lp_token.balance(&user2), 0);
     assert_eq!(lp_token.balance(&staking.address), 35_000);
 }
 
 #[test]
-fn unbond_to_decrease_stake_counter() {
+fn initializing_contract_sets_total_staked_var() {
     let env = Env::default();
     env.mock_all_auths();
 
     let admin = Address::random(&env);
-    let user = Address::random(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
 
-    lp_token.mint(&user, &35_000);
-
-    env.ledger().with_mut(|li| {
-        li.timestamp = 2000;
-    });
-    staking.bond(&user, &10_000);
-    env.ledger().with_mut(|li| {
-        li.timestamp = 4000;
-    });
-    staking.bond(&user, &10_000);
-    env.ledger().with_mut(|li| {
-        li.timestamp = 4000;
-    });
-    staking.bond(&user, &15_000);
-
-    staking.unbond(&user, &10_000, &4000_u64);
-
-    assert_eq!(
-        staking.query_staked(&user).stakes,
-        vec!(
-            &env,
-            Stake {
-                stake: 10_000,
-                stake_timestamp: 2_000,
-            },
-            Stake {
-                stake: 15_000,
-                stake_timestamp: 4_000,
-            }
-        )
-    );
+    assert_eq!(staking.query_total_staked(), 0);
 }
 
 #[test]

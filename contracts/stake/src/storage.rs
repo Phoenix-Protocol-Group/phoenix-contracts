@@ -117,35 +117,18 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
     }
 
-    pub fn increase_staked(e: &Env, amount: &i128) {
-        let count = get_total_staked_counter(e);
+    pub fn increase_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+        let count = get_total_staked_counter(e)?;
+        e.storage().persistent().set(&DataKey::TotalStaked, &(count + amount));
 
-        match count {
-            Ok(mut c) => {
-                c += amount;
-
-                e.storage().persistent().set(&DataKey::TotalStaked, &c);
-            }
-            Err(_) => {}
-        };
+        Ok(())
     }
 
-    // there's some annoying code duplication happening above and below this comment line
-    // I know I can use something like change_staked(e: &Env, amount: i128, increase: bool)
-    // but that just feels wrong for me to increase/decrease based on a boolean value
-    // keeping it as is now.. for the moment
+    pub fn decrease_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+        let count = get_total_staked_counter(e)?;
+        e.storage().persistent().set(&DataKey::TotalStaked, &(count - amount));
 
-    pub fn decrease_staked(e: &Env, amount: &i128) {
-        let count = get_total_staked_counter(e);
-
-        match count {
-            Ok(mut c) => {
-                c -= amount;
-
-                e.storage().persistent().set(&DataKey::TotalStaked, &c);
-            }
-            Err(_) => {}
-        };
+        Ok(())
     }
 
     pub fn get_total_staked_counter(env: &Env) -> Result<i128, ContractError> {
