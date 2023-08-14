@@ -126,7 +126,6 @@ impl StakingTrait for Staking {
         utils::init_staked(&env);
         log!(&env, "Maybe I fail");
 
-
         Ok(())
     }
 

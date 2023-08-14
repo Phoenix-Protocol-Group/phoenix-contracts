@@ -1,4 +1,5 @@
 use pretty_assertions::assert_eq;
+use soroban_sdk::arbitrary::std::dbg;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env,
@@ -7,7 +8,6 @@ use soroban_sdk::{
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
 use crate::error::ContractError::{StakeLessThenMinBond, StakeNotFound};
-use crate::storage::utils::DataKey;
 use crate::{
     msg::ConfigResponse,
     storage::{Config, Stake},
@@ -127,13 +127,16 @@ fn bond_to_increase_stake_counter() {
 
     staking.bond(&user, &10_000);
 
-    let staked_count: i128 = env
-        .storage()
-        .persistent()
-        .get(&DataKey::TotalStaked)
-        .unwrap();
-
-    assert_eq!(staked_count, 10_0000)
+    assert_eq!(
+        staking.query_staked(&user).stakes,
+        vec!(
+            &env,
+            Stake {
+                stake: 10_000,
+                stake_timestamp: 0,
+            }
+        )
+    );
 }
 
 #[test]
@@ -203,7 +206,7 @@ fn unbond_to_decrease_stake_counter() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
 
-    lp_token.mint(&user, &10_000);
+    lp_token.mint(&user, &35_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp = 2000;
@@ -212,20 +215,31 @@ fn unbond_to_decrease_stake_counter() {
     env.ledger().with_mut(|li| {
         li.timestamp = 4000;
     });
+    staking.bond(&user, &10_000);
+    env.ledger().with_mut(|li| {
+        li.timestamp = 4000;
+    });
+    staking.bond(&user, &15_000);
 
-    staking.unbond(&user, &5_000, &4000);
+    staking.unbond(&user, &10_000, &4000_u64);
 
-    let staked_count: i128 = env
-        .storage()
-        .persistent()
-        .get(&DataKey::TotalStaked)
-        .unwrap();
-
-    assert_eq!(staked_count, 5_000)
+    assert_eq!(
+        staking.query_staked(&user).stakes,
+        vec!(
+            &env,
+            Stake {
+                stake: 10_000,
+                stake_timestamp: 2_000,
+            },
+            Stake {
+                stake: 15_000,
+                stake_timestamp: 4_000,
+            }
+        )
+    );
 }
 
 #[test]
-#[should_panic/* = "ContractError(5)"*/] // stake not found
 fn unbond_wrong_user_stake_not_found() {
     let env = Env::default();
     env.mock_all_auths();

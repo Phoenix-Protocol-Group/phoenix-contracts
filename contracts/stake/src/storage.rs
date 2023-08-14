@@ -85,7 +85,7 @@ pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
 pub mod utils {
     use super::*;
 
-    use soroban_sdk::{ConversionError, Error, TryFromVal, Val};
+    use soroban_sdk::{ConversionError, TryFromVal, Val};
 
     #[derive(Clone, Copy)]
     #[repr(u32)]
@@ -118,11 +118,16 @@ pub mod utils {
     }
 
     pub fn increase_staked(e: &Env, amount: &i128) {
-        let mut count = get_total_staked_counter(e);
+        let count = get_total_staked_counter(e);
 
-        count += amount;
+        match count {
+            Ok(mut c) => {
+                c += amount;
 
-        e.storage().persistent().set(&DataKey::TotalStaked, &count);
+                e.storage().persistent().set(&DataKey::TotalStaked, &c);
+            }
+            Err(_) => {}
+        };
     }
 
     // there's some annoying code duplication happening above and below this comment line
@@ -131,17 +136,22 @@ pub mod utils {
     // keeping it as is now.. for the moment
 
     pub fn decrease_staked(e: &Env, amount: &i128) {
-        let mut count = get_total_staked_counter(e);
+        let count = get_total_staked_counter(e);
 
-        count -= amount;
+        match count {
+            Ok(mut c) => {
+                c -= amount;
 
-        e.storage().persistent().set(&DataKey::TotalStaked, &count);
+                e.storage().persistent().set(&DataKey::TotalStaked, &c);
+            }
+            Err(_) => {}
+        };
     }
 
-    fn get_total_staked_counter(env: &Env) -> i128 {
+    pub fn get_total_staked_counter(env: &Env) -> Result<i128, ContractError> {
         match env.storage().persistent().get(&DataKey::TotalStaked) {
             Some(val) => val,
-            None => 0
+            None => return Err(ContractError::TotalStakedCannotBeZeroOrLess),
         }
     }
 }

@@ -14,4 +14,5 @@ pub enum ContractError {
     MinRewardTooSmall = 7,
     MinRewardNotReached = 8,
     NoRewardsForThisAsset = 9,
+    TotalStakedCannotBeZeroOrLess = 10,
 }
