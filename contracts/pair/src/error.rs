@@ -4,27 +4,35 @@ use soroban_sdk::contracterror;
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum ContractError {
-    /// Swap errors
-    SlippageToleranceExceeded = 2,
-    SlippageToleranceViolated = 3,
-    SpreadExceedsMaxAllowed = 4,
-    EmptyPoolBalance = 11,
-
     /// Initialization errors
     FirstTokenMustBeSmallerThenSecond = 1,
-    InvalidFeeBps = 10,
+    InvalidFeeBps = 2,
+
+    /// Swap errors
+    SlippageToleranceExceeded = 3,
+    SlippageToleranceViolated = 4,
+    SpreadExceedsMaxAllowed = 5,
+    EmptyPoolBalance = 6,
 
     // Storage errors
-    ConfigNotSet = 5,
-    FailedToLoadFromStorage = 6,
-    IncorrectLiqudityParameters = 7,
-    DepositAmountExceedsOrBelowMin = 8,
+    ConfigNotSet = 7,
+    FailedToLoadFromStorage = 8,
+    IncorrectLiquidityParametersForA = 9,
+    IncorrectLiquidityParametersForB = 10,
+    FailedToGetAdminAddrFromStorage = 11,
+    FailedToGetTotalSharesFromStorage = 12,
+    FailedToGetPoolBalanceAFromStorage = 13,
+    FailedToGetPoolBalanceBFromStorage = 14,
+    DepositAmountAExceedsDesired = 15,
+    DepositAmountBelowMinA = 16,
+    DepositAmountBExceedsDesired = 17,
+    DepositAmountBelowMinB = 18,
 
     /// Liquidity errors
-    WithdrawMinNotSatisfied = 9,
-    InvalidAmounts = 12,
+    WithdrawMinNotSatisfied = 19,
+    InvalidAmounts = 20,
 
     /// Other errors
-    Unauthorized = 13,
-    ArgumentsInvalidLessOrEqualZero = 14,
+    Unauthorized = 21,
+    ArgumentsInvalidLessOrEqualZero = 22,
 }

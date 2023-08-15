@@ -110,7 +110,7 @@ pub mod utils {
         e.storage()
             .instance()
             .get(&DataKey::Admin)
-            .ok_or(ContractError::FailedToLoadFromStorage)
+            .ok_or(ContractError::FailedToGetAdminAddrFromStorage)
     }
 
     pub fn init_total_staked(e: &Env) {
