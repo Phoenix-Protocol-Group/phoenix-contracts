@@ -37,7 +37,7 @@ pub fn write_allowance(
     }
 
     let key = DataKey::Allowance(AllowanceDataKey { from, spender });
-    e.storage().temporary().set(&key.clone(), &allowance);
+    e.storage().temporary().set(&key, &allowance);
 
     if amount > 0 {
         e.storage().temporary().bump(

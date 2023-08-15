@@ -140,7 +140,7 @@ fn test() {
     assert_eq!(
         e.auths(),
         std::vec![(
-            admin2.clone(),
+            admin2,
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     token.address.clone(),
