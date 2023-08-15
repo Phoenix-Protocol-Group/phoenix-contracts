@@ -4,9 +4,6 @@ use soroban_sdk::contracterror;
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum ContractError {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     /// Initialization errors
     TokenPerPowerCannotBeZero = 1,
 
@@ -17,6 +14,7 @@ pub enum ContractError {
     FundDistributionStartTimeTooEarly = 12,
     RewardsValidationFailed = 13,
     DistributionAlreadyAdded = 14,
+    WithdrawAdjustmentMissing = 15,
 
     /// Stake errros
     MinStakeLessOrEqualZero = 5,

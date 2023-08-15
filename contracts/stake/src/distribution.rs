@@ -105,3 +105,14 @@ pub fn save_withdraw_adjustment(
         .persistent()
         .set(&DistributionDataKey::WithdrawAdjustment(user), adjustments);
 }
+
+pub fn get_withdraw_adjustment(env: &Env, user: Address) -> Result<Distribution, ContractError> {
+    match env
+        .storage()
+        .persistent()
+        .get(&DistributionDataKey::WithdrawAdjustment(user))
+    {
+        Some(adjustments) => Ok(adjustments),
+        None => Err(ContractError::WithdrawAdjustmentMissing),
+    }
+}
