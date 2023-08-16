@@ -199,7 +199,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
 
-        // Check if custom_slippage_bps is less than max_allowed_slippage
+        // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
             if custom_slippage > config.max_allowed_slippage_bps {
                 return Err(ContractError::SlippageToleranceViolated)
