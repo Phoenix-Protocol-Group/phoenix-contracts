@@ -195,8 +195,16 @@ impl LiquidityPoolTrait for LiquidityPool {
         // sender needs to authorize the deposit
         sender.require_auth();
 
+        let config = get_config(&env)?;
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
+
+        // Check if custom_slippage_bps is less than max_allowed_slippage
+        if let Some(custom_slippage) = custom_slippage_bps {
+            if custom_slippage > config.max_allowed_slippage_bps {
+                return Err(ContractError::SlippageToleranceViolated)
+            }
+        }
 
         // Check if both tokens are provided, one token is provided, or none are provided
         let amounts = match (desired_a, desired_b) {
@@ -248,8 +256,6 @@ impl LiquidityPoolTrait for LiquidityPool {
                 return Err(ContractError::InvalidAmounts);
             }
         };
-
-        let config = get_config(&env)?;
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
