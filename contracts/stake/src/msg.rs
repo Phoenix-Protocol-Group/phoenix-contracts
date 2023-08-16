@@ -24,12 +24,12 @@ pub struct AnnualizedRewardsResponse {
     amount: OptionUint,
 }
 
-// #[contracttype]
-// pub struct WithdrawableRewardsResponse {
-//     /// Amount of rewards assigned for withdrawal from the given address.
-//     rewards: Vec<(Address, u128)>,
-// }
-//
+#[contracttype]
+pub struct WithdrawableRewardsResponse {
+    /// Amount of rewards assigned for withdrawal from the given address.
+    pub rewards: Vec<(Address, u128)>,
+}
+
 // #[contracttype]
 // pub struct DistributedRewardsResponse {
 //     /// Total number of tokens sent to the contract over all time.

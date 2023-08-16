@@ -1,9 +1,12 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, Vec};
 
 use crate::{
-    distribution::{get_reward_curve, save_distribution, save_reward_curve, Distribution},
+    distribution::{
+        get_distribution, get_reward_curve, get_withdraw_adjustment, get_withdraw_adjustments,
+        save_distribution, save_reward_curve, withdrawable_rewards, Distribution,
+    },
     error::ContractError,
-    msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse},
+    msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse, WithdrawableRewardsResponse},
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{self, add_distribution, get_admin, get_distributions, get_total_staked_counter},
@@ -75,7 +78,10 @@ pub trait StakingTrait {
 
     fn query_annualized_rewards(env: Env) -> Result<AnnualizedRewardsResponse, ContractError>;
 
-    fn query_withdrawable_rewards(env: Env, address: Address) -> Result<(), ContractError>;
+    fn query_withdrawable_rewards(
+        env: Env,
+        address: Address,
+    ) -> Result<WithdrawableRewardsResponse, ContractError>;
 
     fn query_distributed_rewards(env: Env) -> Result<(), ContractError>;
 }
@@ -323,10 +329,28 @@ impl StakingTrait for Staking {
         unimplemented!();
     }
 
-    fn query_withdrawable_rewards(env: Env, address: Address) -> Result<(), ContractError> {
-        let distributions = get_distributions(&env);
+    fn query_withdrawable_rewards(
+        env: Env,
+        user: Address,
+    ) -> Result<WithdrawableRewardsResponse, ContractError> {
+        // get withdraw adjustments for all distributions
+        let withdraw_adjustments = get_withdraw_adjustments(&env, user.clone())?;
+        // iterate over all distributions and calculate withdrawable rewards
+        let mut rewards = vec![&env];
+        for distribution_address in get_distributions(&env) {
+            // get distribution data for the given reward
+            let distribution = get_distribution(&env, distribution_address.clone())?;
+            // get withdraw adjustment for the given distribution
+            let withdraw_adjustment =
+                get_withdraw_adjustment(&withdraw_adjustments, &distribution_address);
+            // calculate current reward amount given the distribution and subtracting withdraw
+            // adjustments
+            let reward_amount =
+                withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment)?;
+            rewards.push_back((distribution_address, reward_amount));
+        }
 
-        Ok(())
+        Ok(WithdrawableRewardsResponse { rewards })
     }
 
     fn query_distributed_rewards(_env: Env) -> Result<(), ContractError> {

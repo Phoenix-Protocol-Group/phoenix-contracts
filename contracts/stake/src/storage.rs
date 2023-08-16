@@ -44,6 +44,8 @@ pub struct BondingInfo {
     pub reward_debt: u128,
     /// Last time when user has claimed rewards
     pub last_reward_time: u64,
+    /// Total amount of staked tokens
+    pub total_stake: u128,
 }
 
 pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError> {
@@ -53,6 +55,7 @@ pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError
             stakes: Vec::new(env),
             reward_debt: 0u128,
             last_reward_time: 0u64,
+            total_stake: 0u128,
         }),
     }
 }

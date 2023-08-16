@@ -4,6 +4,16 @@ use curve::Curve;
 
 use crate::{error::ContractError, storage::get_stakes};
 
+/// How much points is the worth of single token in rewards distribution.
+/// The scaling is performed to have better precision of fixed point division.
+/// This value is not actually the scaling itself, but how much bits value should be shifted
+/// (for way more efficient division).
+///
+/// 32, to have those 32 bits, but it reduces how much tokens may be handled by this contract
+/// (it is now 96-bit integer instead of 128). In original ERC2222 it is handled by 256-bit
+/// calculations, but I256 is missing and it is required for this.
+pub const SHARES_SHIFT: u8 = 32;
+
 #[derive(Clone)]
 #[contracttype]
 pub enum DistributionDataKey {
@@ -82,6 +92,7 @@ pub fn get_distribution(env: &Env, asset: Address) -> Result<Distribution, Contr
 }
 
 #[contracttype]
+#[derive(Default, Clone)]
 pub struct WithdrawAdjustment {
     /// Represents a correction to the reward points for the user. This can be positive or negative.
     /// A positive value indicates that the user should receive additional points (e.g., from a bonus or an error correction),
@@ -106,7 +117,10 @@ pub fn save_withdraw_adjustment(
         .set(&DistributionDataKey::WithdrawAdjustment(user), adjustments);
 }
 
-pub fn get_withdraw_adjustment(env: &Env, user: Address) -> Result<Distribution, ContractError> {
+pub fn get_withdraw_adjustments(
+    env: &Env,
+    user: Address,
+) -> Result<Vec<(Address, WithdrawAdjustment)>, ContractError> {
     match env
         .storage()
         .persistent()
@@ -115,4 +129,34 @@ pub fn get_withdraw_adjustment(env: &Env, user: Address) -> Result<Distribution,
         Some(adjustments) => Ok(adjustments),
         None => Err(ContractError::WithdrawAdjustmentMissing),
     }
+}
+
+pub fn get_withdraw_adjustment(
+    withdraw_adjustments: &Vec<(Address, WithdrawAdjustment)>,
+    distribution: &Address,
+) -> WithdrawAdjustment {
+    withdraw_adjustments
+        .iter()
+        .find(|(asset, _)| asset == distribution)
+        .map(|(_, adjustment)| adjustment)
+        .unwrap_or_default()
+}
+
+pub fn withdrawable_rewards(
+    env: &Env,
+    owner: &Address,
+    distribution: &Distribution,
+    adjustment: &WithdrawAdjustment,
+) -> Result<u128, ContractError> {
+    let ppw = distribution.shares_per_point;
+
+    let points = get_stakes(env, owner)?.total_stake;
+    let points = (ppw * points) as i128;
+
+    let correction = adjustment.shared_correction;
+    let points = points + correction;
+    let amount = points as u128 >> SHARES_SHIFT;
+    let amount = amount - adjustment.withdrawn_rewards;
+
+    Ok(amount)
 }
