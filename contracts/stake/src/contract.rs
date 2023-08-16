@@ -84,9 +84,9 @@ pub trait StakingTrait {
         address: Address,
     ) -> Result<WithdrawableRewardsResponse, ContractError>;
 
-    fn query_distributed_rewards(env: Env) -> Result<(), ContractError>;
+    fn query_distributed_rewards(env: Env, asset: Address) -> Result<u128, ContractError>;
 
-    fn query_undistributed_rewards(env: Env, asset: Address) -> i128;
+    fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
 }
 
 #[contractimpl]
@@ -449,14 +449,15 @@ impl StakingTrait for Staking {
         Ok(WithdrawableRewardsResponse { rewards })
     }
 
-    fn query_distributed_rewards(_env: Env) -> Result<(), ContractError> {
-        unimplemented!();
+    fn query_distributed_rewards(env: Env, asset: Address) -> Result<u128, ContractError> {
+        let mut distribution = get_distribution(&env, &asset)?;
+        Ok(distribution.distributed_total)
     }
 
-    fn query_undistributed_rewards(env: Env, asset: Address) -> i128 {
+    fn query_undistributed_rewards(env: Env, asset: Address) -> u128 {
         let reward_token_client = token_contract::Client::new(&env, &asset);
         // Undistributed rewards are simply all tokens left on the contract
-        reward_token_client.balance(&env.current_contract_address())
+        reward_token_client.balance(&env.current_contract_address()) as u128
     }
 }
 
