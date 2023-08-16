@@ -251,14 +251,6 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let config = get_config(&env)?;
 
-        assert_slippage_tolerance(
-            &env,
-            custom_slippage_bps,
-            &[amounts.0, amounts.1],
-            &[pool_balance_a, pool_balance_b],
-            config.max_allowed_slippage(),
-        )?;
-
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
