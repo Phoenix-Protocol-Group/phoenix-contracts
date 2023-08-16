@@ -74,10 +74,11 @@ impl Distribution {
     }
 }
 
-pub fn save_distribution(env: &Env, asset: Address, distribution: &Distribution) {
-    env.storage()
-        .persistent()
-        .set(&DistributionDataKey::Distribution(asset), distribution);
+pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution) {
+    env.storage().persistent().set(
+        &DistributionDataKey::Distribution(asset.clone()),
+        distribution,
+    );
 }
 
 pub fn get_distribution(env: &Env, asset: &Address) -> Result<Distribution, ContractError> {
@@ -106,15 +107,15 @@ pub struct WithdrawAdjustment {
 
 /// Save the withdraw adjustment for a user for a given asset using the user's address as the key
 /// and asset's address as the subkey.
-#[allow(dead_code)]
-pub fn save_withdraw_adjustment(
+pub fn save_withdraw_adjustments(
     env: &Env,
-    user: Address,
+    user: &Address,
     adjustments: &Vec<(Address, WithdrawAdjustment)>,
 ) {
-    env.storage()
-        .persistent()
-        .set(&DistributionDataKey::WithdrawAdjustment(user), adjustments);
+    env.storage().persistent().set(
+        &DistributionDataKey::WithdrawAdjustment(user.clone()),
+        adjustments,
+    );
 }
 
 pub fn get_withdraw_adjustments(

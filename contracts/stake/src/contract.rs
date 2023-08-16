@@ -3,7 +3,8 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, 
 use crate::{
     distribution::{
         get_distribution, get_reward_curve, get_withdraw_adjustment, get_withdraw_adjustments,
-        save_distribution, save_reward_curve, withdrawable_rewards, Distribution,
+        save_distribution, save_reward_curve, save_withdraw_adjustments, withdrawable_rewards,
+        Distribution,
     },
     error::ContractError,
     msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse, WithdrawableRewardsResponse},
@@ -55,7 +56,7 @@ pub trait StakingTrait {
 
     fn distribute_rewards(env: Env) -> Result<(), ContractError>;
 
-    fn withdraw_rewards(env: Env, receiver: Option<Address>) -> Result<(), ContractError>;
+    fn withdraw_rewards(env: Env, sender: Address) -> Result<(), ContractError>;
 
     fn fund_distribution(
         env: Env,
@@ -211,7 +212,7 @@ impl StakingTrait for Staking {
         let reward_token_client = token_contract::Client::new(&env, &asset);
         // add distribution to the vector of distributions
         add_distribution(&env, &reward_token_client.address)?;
-        save_distribution(&env, reward_token_client.address.clone(), &distribution);
+        save_distribution(&env, &reward_token_client.address, &distribution);
         // Create the default reward distribution curve which is just a flat 0 const
         save_reward_curve(&env, asset, &Curve::Constant(0));
 
@@ -227,8 +228,53 @@ impl StakingTrait for Staking {
         unimplemented!();
     }
 
-    fn withdraw_rewards(_env: Env, _receiver: Option<Address>) -> Result<(), ContractError> {
-        unimplemented!();
+    fn withdraw_rewards(env: Env, sender: Address) -> Result<(), ContractError> {
+        let withdraw_adjustments = get_withdraw_adjustments(&env, &sender)?;
+
+        let mut updated_withdraw_adjustments = vec![&env];
+
+        env.events().publish(("withdraw_rewards", "user"), &sender);
+
+        for distribution_address in get_distributions(&env) {
+            // get distribution data for the given reward
+            let mut distribution = get_distribution(&env, &distribution_address)?;
+            // get withdraw adjustment for the given distribution
+            let mut withdraw_adjustment =
+                get_withdraw_adjustment(&withdraw_adjustments, &distribution_address);
+            // calculate current reward amount given the distribution and subtracting withdraw
+            // adjustments
+            let reward_amount =
+                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment)?;
+
+            if reward_amount == 0 {
+                continue;
+            }
+
+            withdraw_adjustment.withdrawn_rewards += reward_amount;
+            distribution.withdrawable_total -= reward_amount;
+
+            save_distribution(&env, &distribution_address, &distribution);
+            updated_withdraw_adjustments
+                .push_back((distribution_address.clone(), withdraw_adjustment));
+
+            let reward_token_client = token_contract::Client::new(&env, &distribution_address);
+            reward_token_client.transfer(
+                &env.current_contract_address(),
+                &sender,
+                &(reward_amount as i128),
+            );
+
+            env.events().publish(
+                ("withdraw_rewards", "reward_token"),
+                &reward_token_client.address,
+            );
+            env.events()
+                .publish(("withdraw_rewards", "reward_amount"), reward_amount as i128);
+        }
+
+        save_withdraw_adjustments(&env, &sender, &updated_withdraw_adjustments);
+
+        Ok(())
     }
 
     fn fund_distribution(
