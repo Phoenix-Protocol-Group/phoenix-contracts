@@ -202,7 +202,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
             if custom_slippage > config.max_allowed_slippage_bps {
-                return Err(ContractError::SlippageToleranceViolated)
+                return Err(ContractError::SlippageToleranceViolated);
             }
         }
 
@@ -219,6 +219,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     min_b,
                     pool_balance_a,
                     pool_balance_b,
+                    Decimal::bps(custom_slippage_bps.unwrap_or(1)),
                 )?
             }
             // Only token A is provided
