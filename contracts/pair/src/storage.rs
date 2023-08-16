@@ -346,7 +346,7 @@ mod tests {
     #[test]
     fn test_get_deposit_amounts_amount_b_less_than_min_b() {
         let env = Env::default();
-        let result = utils::get_deposit_amounts(&env, 100, Some(50), 200, Some(150), 200, 100);
+        let result = utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1);
         assert_eq!(result, Err(ContractError::DepositAmountBelowMinB));
     }
 
