@@ -712,7 +712,6 @@ fn split_deposit_based_on_pool_ratio(
 /// # Returns
 /// * An error if the slippage exceeds the tolerance or if the tolerance itself exceeds the maximum allowed,
 ///   otherwise Ok.
-#[allow(dead_code)]
 fn assert_slippage_tolerance(
     env: &Env,
     slippage_tolerance: Option<i64>,
