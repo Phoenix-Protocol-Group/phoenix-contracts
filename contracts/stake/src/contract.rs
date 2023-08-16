@@ -243,7 +243,7 @@ impl StakingTrait for Staking {
 
         // Load previous reward curve; it must exist if the distribution exists
         // In case of first time funding, it will be a constant 0 curve
-        let previous_reward_curve = get_reward_curve(&env, token_address.clone())?;
+        let previous_reward_curve = get_reward_curve(&env, &token_address)?;
 
         let current_time = env.ledger().timestamp();
         if start_time < current_time {
@@ -334,12 +334,12 @@ impl StakingTrait for Staking {
         user: Address,
     ) -> Result<WithdrawableRewardsResponse, ContractError> {
         // get withdraw adjustments for all distributions
-        let withdraw_adjustments = get_withdraw_adjustments(&env, user.clone())?;
+        let withdraw_adjustments = get_withdraw_adjustments(&env, &user)?;
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
         for distribution_address in get_distributions(&env) {
             // get distribution data for the given reward
-            let distribution = get_distribution(&env, distribution_address.clone())?;
+            let distribution = get_distribution(&env, &distribution_address)?;
             // get withdraw adjustment for the given distribution
             let withdraw_adjustment =
                 get_withdraw_adjustment(&withdraw_adjustments, &distribution_address);

@@ -30,11 +30,11 @@ pub fn save_reward_curve(env: &Env, asset: Address, distribution_curve: &Curve) 
 }
 
 #[allow(dead_code)]
-pub fn get_reward_curve(env: &Env, asset: Address) -> Result<Curve, ContractError> {
+pub fn get_reward_curve(env: &Env, asset: &Address) -> Result<Curve, ContractError> {
     match env
         .storage()
         .persistent()
-        .get(&DistributionDataKey::Curve(asset))
+        .get(&DistributionDataKey::Curve(asset.clone()))
     {
         Some(reward_curve) => Ok(reward_curve),
         None => Err(ContractError::NoRewardsForThisAsset),
@@ -80,11 +80,11 @@ pub fn save_distribution(env: &Env, asset: Address, distribution: &Distribution)
         .set(&DistributionDataKey::Distribution(asset), distribution);
 }
 
-pub fn get_distribution(env: &Env, asset: Address) -> Result<Distribution, ContractError> {
+pub fn get_distribution(env: &Env, asset: &Address) -> Result<Distribution, ContractError> {
     match env
         .storage()
         .persistent()
-        .get(&DistributionDataKey::Distribution(asset))
+        .get(&DistributionDataKey::Distribution(asset.clone()))
     {
         Some(distribution) => Ok(distribution),
         None => Err(ContractError::NoRewardsForThisAsset),
@@ -119,12 +119,12 @@ pub fn save_withdraw_adjustment(
 
 pub fn get_withdraw_adjustments(
     env: &Env,
-    user: Address,
+    user: &Address,
 ) -> Result<Vec<(Address, WithdrawAdjustment)>, ContractError> {
     match env
         .storage()
         .persistent()
-        .get(&DistributionDataKey::WithdrawAdjustment(user))
+        .get(&DistributionDataKey::WithdrawAdjustment(user.clone()))
     {
         Some(adjustments) => Ok(adjustments),
         None => Err(ContractError::WithdrawAdjustmentMissing),
