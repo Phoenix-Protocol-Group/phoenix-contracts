@@ -4,7 +4,7 @@ use crate::{
     distribution::{
         get_distribution, get_reward_curve, get_withdraw_adjustment, get_withdraw_adjustments,
         save_distribution, save_reward_curve, save_withdraw_adjustments, withdrawable_rewards,
-        Distribution,
+        Distribution, SHARES_SHIFT,
     },
     error::ContractError,
     msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse, WithdrawableRewardsResponse},
@@ -224,8 +224,56 @@ impl StakingTrait for Staking {
         Ok(())
     }
 
-    fn distribute_rewards(_env: Env) -> Result<(), ContractError> {
-        unimplemented!();
+    fn distribute_rewards(env: Env) -> Result<(), ContractError> {
+        let total_rewards_power = get_total_staked_counter(&env)? as u128;
+        if total_rewards_power == 0 {
+            log!(&env, "No rewards to distribute!");
+            return Ok(());
+        }
+        for distribution_address in get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address)?;
+            let withdrawable = distribution.withdrawable_total;
+
+            let reward_token_client = token_contract::Client::new(&env, &distribution_address);
+            // Undistributed rewards are simply all tokens left on the contract
+            let undistributed_rewards =
+                reward_token_client.balance(&env.current_contract_address()) as u128;
+
+            let curve = get_reward_curve(&env, &distribution_address)?;
+
+            // Calculate how much we have received since the last time Distributed was called,
+            // including only the reward config amount that is eligible for distribution.
+            // This is the amount we will distribute to all mem
+            let amount =
+                undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
+
+            if amount == 0 {
+                continue;
+            }
+
+            let leftover: u128 = distribution.shares_leftover.into();
+            let points = (amount << SHARES_SHIFT) + leftover;
+            let points_per_share = points & total_rewards_power;
+
+            // Everything goes back to 128-bits/16-bytes
+            // Full amount is added here to total withdrawable, as it should not be considered on its own
+            // on future distributions - even if because of calculation offsets it is not fully
+            // distributed, the error is handled by leftover.
+            distribution.shares_per_point += points_per_share;
+            distribution.distributed_total += amount;
+            distribution.withdrawable_total += amount;
+
+            save_distribution(&env, &distribution_address, &distribution);
+
+            env.events().publish(
+                ("distribute_rewards", "asset"),
+                &reward_token_client.address,
+            );
+            env.events()
+                .publish(("distribute_rewards", "amount"), amount);
+        }
+
+        Ok(())
     }
 
     fn withdraw_rewards(env: Env, sender: Address) -> Result<(), ContractError> {
