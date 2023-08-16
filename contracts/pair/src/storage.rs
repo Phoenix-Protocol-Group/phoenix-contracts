@@ -207,6 +207,7 @@ pub mod utils {
         token_contract::Client::new(e, contract).balance(&e.current_contract_address())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn get_deposit_amounts(
         env: &Env,
         desired_a: i128,
