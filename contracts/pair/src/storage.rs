@@ -337,18 +337,17 @@ mod tests {
         assert_eq!(result, Ok((100, 200)));
     }
 
-    #[ignore] // ignored until PR #96 is merged / issue #93 is fixed
     #[test]
     fn test_get_deposit_amounts_amount_b_less_than_desired() {
         let env = Env::default();
         let result = utils::get_deposit_amounts(
             &env,
-            100,
-            Some(50),
-            200,
-            Some(50),
-            200,
-            100,
+            1000,
+            None,
+            1005,
+            Some(1001),
+            1,
+            1,
             Decimal::bps(100),
         );
         assert_eq!(result, Err(ContractError::DepositAmountBelowMinB));
