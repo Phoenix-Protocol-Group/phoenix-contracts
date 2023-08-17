@@ -7,7 +7,10 @@ use crate::{
         Distribution, SHARES_SHIFT,
     },
     error::ContractError,
-    msg::{AnnualizedRewardsResponse, ConfigResponse, StakedResponse, WithdrawableRewardsResponse},
+    msg::{
+        AnnualizedRewardsResponse, ConfigResponse, StakedResponse, WithdrawableReward,
+        WithdrawableRewardsResponse,
+    },
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{self, add_distribution, get_admin, get_distributions, get_total_staked_counter},
@@ -443,7 +446,10 @@ impl StakingTrait for Staking {
             // adjustments
             let reward_amount =
                 withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment)?;
-            rewards.push_back((distribution_address, reward_amount));
+            rewards.push_back(WithdrawableReward {
+                reward_address: distribution_address,
+                reward_amount,
+            });
         }
 
         Ok(WithdrawableRewardsResponse { rewards })

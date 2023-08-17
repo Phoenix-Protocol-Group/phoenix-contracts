@@ -25,9 +25,15 @@ pub struct AnnualizedRewardsResponse {
 }
 
 #[contracttype]
+pub struct WithdrawableReward {
+    pub reward_address: Address,
+    pub reward_amount: u128,
+}
+
+#[contracttype]
 pub struct WithdrawableRewardsResponse {
     /// Amount of rewards assigned for withdrawal from the given address.
-    pub rewards: Vec<(Address, u128)>,
+    pub rewards: Vec<WithdrawableReward>,
 }
 
 // #[contracttype]
