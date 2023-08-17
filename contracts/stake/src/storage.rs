@@ -14,13 +14,13 @@ const CONFIG: Symbol = symbol_short!("CONFIG");
 
 pub fn get_config(env: &Env) -> Result<Config, ContractError> {
     env.storage()
-        .instance()
+        .persistent()
         .get(&CONFIG)
         .ok_or(ContractError::ConfigNotSet)
 }
 
 pub fn save_config(env: &Env, config: Config) {
-    env.storage().instance().set(&CONFIG, &config);
+    env.storage().persistent().set(&CONFIG, &config);
 }
 
 #[contracttype]
@@ -49,7 +49,7 @@ pub struct BondingInfo {
 }
 
 pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError> {
-    match env.storage().instance().get(&key) {
+    match env.storage().persistent().get(&key) {
         Some(stake) => stake,
         None => Ok(BondingInfo {
             stakes: Vec::new(env),
@@ -61,7 +61,7 @@ pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError
 }
 
 pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
-    env.storage().instance().set(key, bonding_info);
+    env.storage().persistent().set(key, bonding_info);
 }
 
 pub mod utils {
@@ -86,12 +86,12 @@ pub mod utils {
     }
 
     pub fn save_admin(e: &Env, address: &Address) {
-        e.storage().instance().set(&DataKey::Admin, address)
+        e.storage().persistent().set(&DataKey::Admin, address)
     }
 
     pub fn get_admin(e: &Env) -> Result<Address, ContractError> {
         e.storage()
-            .instance()
+            .persistent()
             .get(&DataKey::Admin)
             .ok_or(ContractError::FailedToGetAdminAddrFromStorage)
     }
@@ -132,13 +132,13 @@ pub mod utils {
             return Err(ContractError::DistributionAlreadyAdded);
         }
         distributions.push_back(asset.clone());
-        e.storage().instance().set(&DataKey::Distributions, asset);
+        e.storage().persistent().set(&DataKey::Distributions, &distributions);
         Ok(())
     }
 
     pub fn get_distributions(e: &Env) -> Vec<Address> {
         e.storage()
-            .instance()
+            .persistent()
             .get(&DataKey::Distributions)
             .unwrap_or_else(|| vec![&e])
     }
