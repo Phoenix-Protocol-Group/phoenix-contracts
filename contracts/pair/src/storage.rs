@@ -121,9 +121,11 @@ pub struct SimulateReverseSwapResponse {
 pub mod utils {
     use super::*;
 
+    // todo remove comment
+    // is it okay if we make this function more generic and reuse it for both token and stake contract deployment?
     pub fn deploy_token_contract(
-        e: &Env,
-        token_wasm_hash: BytesN<32>,
+        e: &Env,                     // todo remove comment
+        token_wasm_hash: BytesN<32>, // here, instead of token_wasm_hash we just use contract_wasm_hash and just swap it with token_wasm_hash / stake_wasm_hash params from initialize()
         token_a: &Address,
         token_b: &Address,
     ) -> Address {

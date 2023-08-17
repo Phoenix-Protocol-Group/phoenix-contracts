@@ -17,6 +17,8 @@ fn install_token_wasm(env: &Env) -> BytesN<32> {
 }
 
 fn install_stake_wasm(env: &Env) -> BytesN<32> {
+    // todo remove comment
+    // Err is: the trait bound `(u64, u128): SorobanArbitrary` is not satisfied [E0277] Help: the trait `SorobanArbitrary` is implemented for `()` Note: required for `soroban_sdk::Vec<(u64, u128)>` to implement `SorobanArbitrary` Note: required because it appears within the type `ArbitraryPiecewiseLinear`
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
