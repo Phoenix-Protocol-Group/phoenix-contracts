@@ -93,7 +93,7 @@ pub fn get_distribution(env: &Env, asset: &Address) -> Result<Distribution, Cont
 }
 
 #[contracttype]
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct WithdrawAdjustment {
     /// Represents a correction to the reward points for the user. This can be positive or negative.
     /// A positive value indicates that the user should receive additional points (e.g., from a bonus or an error correction),
@@ -122,14 +122,11 @@ pub fn get_withdraw_adjustments(
     env: &Env,
     user: &Address,
 ) -> Result<Vec<(Address, WithdrawAdjustment)>, ContractError> {
-    match env
+    Ok(env
         .storage()
         .persistent()
         .get(&DistributionDataKey::WithdrawAdjustment(user.clone()))
-    {
-        Some(adjustments) => Ok(adjustments),
-        None => Err(ContractError::WithdrawAdjustmentMissing),
-    }
+        .unwrap_or_else(|| soroban_sdk::vec![&env]))
 }
 
 pub fn get_withdraw_adjustment(

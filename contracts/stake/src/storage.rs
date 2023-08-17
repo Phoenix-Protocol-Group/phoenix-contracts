@@ -132,7 +132,9 @@ pub mod utils {
             return Err(ContractError::DistributionAlreadyAdded);
         }
         distributions.push_back(asset.clone());
-        e.storage().persistent().set(&DataKey::Distributions, &distributions);
+        e.storage()
+            .persistent()
+            .set(&DataKey::Distributions, &distributions);
         Ok(())
     }
 
@@ -140,6 +142,6 @@ pub mod utils {
         e.storage()
             .persistent()
             .get(&DataKey::Distributions)
-            .unwrap_or_else(|| vec![&e])
+            .unwrap_or_else(|| soroban_sdk::vec![&e])
     }
 }

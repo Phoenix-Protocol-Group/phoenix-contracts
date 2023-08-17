@@ -260,7 +260,8 @@ impl StakingTrait for Staking {
 
             let leftover: u128 = distribution.shares_leftover.into();
             let points = (amount << SHARES_SHIFT) + leftover;
-            let points_per_share = points & total_rewards_power;
+            let points_per_share = points / total_rewards_power;
+            distribution.shares_leftover = (points % total_rewards_power) as u64;
 
             // Everything goes back to 128-bits/16-bytes
             // Full amount is added here to total withdrawable, as it should not be considered on its own
@@ -284,7 +285,8 @@ impl StakingTrait for Staking {
     }
 
     fn withdraw_rewards(env: Env, sender: Address) -> Result<(), ContractError> {
-        let withdraw_adjustments = get_withdraw_adjustments(&env, &sender).map_err(|_| ContractError::RewardsNotDistributedOrDistributionNotCreated)?;
+        let withdraw_adjustments = get_withdraw_adjustments(&env, &sender)
+            .map_err(|_| ContractError::RewardsNotDistributedOrDistributionNotCreated)?;
 
         let mut updated_withdraw_adjustments = vec![&env];
 
@@ -344,7 +346,8 @@ impl StakingTrait for Staking {
 
         // Load previous reward curve; it must exist if the distribution exists
         // In case of first time funding, it will be a constant 0 curve
-        let previous_reward_curve = get_reward_curve(&env, &token_address).map_err(|_| ContractError::DistributionNotFound)?;
+        let previous_reward_curve = get_reward_curve(&env, &token_address)
+            .map_err(|_| ContractError::DistributionNotFound)?;
 
         let current_time = env.ledger().timestamp();
         if start_time < current_time {
@@ -436,6 +439,7 @@ impl StakingTrait for Staking {
     ) -> Result<WithdrawableRewardsResponse, ContractError> {
         // get withdraw adjustments for all distributions
         let withdraw_adjustments = get_withdraw_adjustments(&env, &user)?;
+
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
         for distribution_address in get_distributions(&env) {
