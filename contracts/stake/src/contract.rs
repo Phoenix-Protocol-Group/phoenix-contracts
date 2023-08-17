@@ -155,6 +155,7 @@ impl StakingTrait for Staking {
             stake: tokens,
             stake_timestamp: ledger.timestamp(),
         };
+        stakes.total_stake += tokens as u128;
         // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
         // creating multiple stakes the same day
 
@@ -181,6 +182,7 @@ impl StakingTrait for Staking {
 
         let mut stakes = get_stakes(&env, &sender)?;
         remove_stake(&mut stakes.stakes, stake_amount, stake_timestamp)?;
+        stakes.total_stake -= stake_amount as u128;
 
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
