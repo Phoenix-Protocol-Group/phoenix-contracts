@@ -195,8 +195,16 @@ impl LiquidityPoolTrait for LiquidityPool {
         // sender needs to authorize the deposit
         sender.require_auth();
 
+        let config = get_config(&env)?;
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
+
+        // Check if custom_slippage_bps is more than max_allowed_slippage
+        if let Some(custom_slippage) = custom_slippage_bps {
+            if custom_slippage > config.max_allowed_slippage_bps {
+                return Err(ContractError::SlippageToleranceViolated);
+            }
+        }
 
         // Check if both tokens are provided, one token is provided, or none are provided
         let amounts = match (desired_a, desired_b) {
@@ -211,6 +219,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     min_b,
                     pool_balance_a,
                     pool_balance_b,
+                    Decimal::bps(custom_slippage_bps.unwrap_or(100)),
                 )?
             }
             // Only token A is provided
@@ -248,16 +257,6 @@ impl LiquidityPoolTrait for LiquidityPool {
                 return Err(ContractError::InvalidAmounts);
             }
         };
-
-        let config = get_config(&env)?;
-
-        assert_slippage_tolerance(
-            &env,
-            custom_slippage_bps,
-            &[amounts.0, amounts.1],
-            &[pool_balance_a, pool_balance_b],
-            config.max_allowed_slippage(),
-        )?;
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
@@ -713,6 +712,7 @@ fn split_deposit_based_on_pool_ratio(
 /// # Returns
 /// * An error if the slippage exceeds the tolerance or if the tolerance itself exceeds the maximum allowed,
 ///   otherwise Ok.
+#[allow(dead_code)]
 fn assert_slippage_tolerance(
     env: &Env,
     slippage_tolerance: Option<i64>,
