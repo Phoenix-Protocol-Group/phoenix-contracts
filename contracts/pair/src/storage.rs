@@ -236,7 +236,7 @@ pub mod utils {
         let amount_a = {
             let mut amount_a = desired_b * pool_balance_a / pool_balance_b;
             if amount_a > desired_a {
-                // If the amount is within 1% of the desired amount, we accept it
+                // If the amount is within the desired amount of slippage, we accept it
                 if Decimal::from_ratio(amount_a, desired_a) - Decimal::one() <= allowed_slippage {
                     amount_a = desired_a;
                 } else {
@@ -448,7 +448,6 @@ mod tests {
         );
     }
 
-    #[ignore] // ignored until PR #96 is merged / issue #93 is fixed
     #[test]
     fn test_get_deposit_amounts_below_min_a() {
         let env = Env::default();
@@ -456,29 +455,28 @@ mod tests {
             &env,
             5000,
             Some(2000),
-            2000,
+            200,
             None,
-            10000,
-            5000,
-            Decimal::bps(100),
+            1000,
+            500,
+            Decimal::bps(1000),
         );
         // The calculated deposit for asset A is below the minimum requirement
         assert_eq!(result.unwrap_err(), ContractError::DepositAmountBelowMinA);
     }
 
-    #[ignore] // ignored until PR #96 is merged / issue #93 is fixed
     #[test]
     fn test_get_deposit_amounts_below_min_b() {
         let env = Env::default();
         let result = utils::get_deposit_amounts(
             &env,
-            5000,
+            200,
             None,
             5000,
-            Some(1000),
-            5000,
-            10000,
-            Decimal::bps(100),
+            Some(2000),
+            500,
+            1000,
+            Decimal::bps(120000),
         );
         // The calculated deposit for asset B is below the minimum requirement
         assert_eq!(result.unwrap_err(), ContractError::DepositAmountBelowMinB);
