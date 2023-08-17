@@ -16,6 +16,13 @@ fn install_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+fn install_stake_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
+    );
+    env.deployer().upload_contract_wasm(WASM)
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn deploy_liquidity_pool_contract<'a>(
     env: &Env,
@@ -30,6 +37,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
     let admin = admin.into().unwrap_or(Address::random(env));
     let pool = LiquidityPoolClient::new(env, &env.register_contract(None, LiquidityPool {}));
     let token_wasm_hash = install_token_wasm(env);
+    let stake_wasm_hash = install_stake_wasm(env);
     let fee_recipient = fee_recipient.into().unwrap_or_else(|| Address::random(env));
     let max_allowed_slippage = max_allowed_slippage_bps.into().unwrap_or(5_000); // 50% if not specified
     let max_allowed_spread = max_allowed_spread_bps.into().unwrap_or(500); // 5% if not specified
@@ -37,6 +45,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
     pool.initialize(
         &admin,
         &token_wasm_hash,
+        &stake_wasm_hash,
         token_a,
         token_b,
         &share_token_decimals,
