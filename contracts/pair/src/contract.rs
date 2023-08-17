@@ -219,7 +219,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     min_b,
                     pool_balance_a,
                     pool_balance_b,
-                    Decimal::bps(custom_slippage_bps.unwrap_or(1)),
+                    Decimal::bps(custom_slippage_bps.unwrap_or(100)),
                 )?
             }
             // Only token A is provided

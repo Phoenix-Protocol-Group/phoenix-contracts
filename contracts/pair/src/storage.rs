@@ -333,7 +333,7 @@ mod tests {
     fn test_get_deposit_amounts_pool_balances_zero() {
         let env = Env::default();
         let result =
-            utils::get_deposit_amounts(&env, 100, Some(50), 200, Some(50), 0, 0, Decimal::one());
+            utils::get_deposit_amounts(&env, 100, Some(50), 200, Some(50), 0, 0, Decimal::bps(100));
         assert_eq!(result, Ok((100, 200)));
     }
 
@@ -348,7 +348,7 @@ mod tests {
             Some(50),
             200,
             100,
-            Decimal::one(),
+            Decimal::bps(100),
         );
         assert_eq!(result, Err(ContractError::DepositAmountExceedsOrBelowMin));
     }
@@ -364,7 +364,7 @@ mod tests {
             Some(150),
             200,
             100,
-            Decimal::one(),
+            Decimal::bps(100),
         );
         assert_eq!(result, Err(ContractError::DepositAmountExceedsOrBelowMin));
     }
@@ -380,7 +380,7 @@ mod tests {
             Some(150),
             100,
             200,
-            Decimal::one(),
+            Decimal::bps(100),
         );
         assert_eq!(result, Ok((100, 200)));
     }
@@ -389,7 +389,7 @@ mod tests {
     fn test_get_deposit_amounts_amount_a_greater_than_desired_and_less_than_min_a() {
         let env = Env::default();
         let result =
-            utils::get_deposit_amounts(&env, 50, Some(100), 200, None, 100, 200, Decimal::one());
+            utils::get_deposit_amounts(&env, 50, Some(100), 200, None, 100, 200, Decimal::bps(100));
         assert_eq!(result, Err(ContractError::IncorrectLiqudityParameters));
     }
 
@@ -404,7 +404,7 @@ mod tests {
             Some(300),
             100,
             200,
-            Decimal::one(),
+            Decimal::bps(100),
         );
         assert_eq!(result, Err(ContractError::IncorrectLiqudityParameters));
     }
@@ -413,7 +413,7 @@ mod tests {
     fn test_get_deposit_amounts_amount_a_less_than_min_a() {
         let env = Env::default();
         let result =
-            utils::get_deposit_amounts(&env, 100, Some(200), 200, None, 100, 200, Decimal::one());
+            utils::get_deposit_amounts(&env, 100, Some(200), 200, None, 100, 200, Decimal::bps(100));
         assert_eq!(result, Err(ContractError::IncorrectLiqudityParameters));
     }
 
@@ -421,7 +421,7 @@ mod tests {
     fn test_get_deposit_amounts_ratio() {
         let env = Env::default();
         let (amount_a, amount_b) =
-            utils::get_deposit_amounts(&env, 1000, None, 2000, None, 5000, 10000, Decimal::one())
+            utils::get_deposit_amounts(&env, 1000, None, 2000, None, 5000, 10000, Decimal::bps(100))
                 .unwrap();
         // The desired ratio is within 1% of the current pool ratio, so the desired amounts are returned
         assert_eq!(amount_a, 1000);
@@ -432,7 +432,7 @@ mod tests {
     fn test_get_deposit_amounts_exceeds_desired() {
         let env = Env::default();
         let result =
-            utils::get_deposit_amounts(&env, 1000, None, 2000, None, 10000, 5000, Decimal::one());
+            utils::get_deposit_amounts(&env, 1000, None, 2000, None, 10000, 5000, Decimal::bps(100));
         // The calculated deposit for asset A exceeds the desired amount and is not within 1% tolerance
         assert_eq!(
             result.unwrap_err(),
@@ -451,7 +451,7 @@ mod tests {
             None,
             10000,
             5000,
-            Decimal::bps(1),
+            Decimal::bps(100),
         );
         // The calculated deposit for asset A is below the minimum requirement
         assert_eq!(
@@ -471,7 +471,7 @@ mod tests {
             Some(1000),
             5000,
             10000,
-            Decimal::bps(1),
+            Decimal::bps(100),
         );
         // The calculated deposit for asset B is below the minimum requirement
         assert_eq!(
@@ -486,7 +486,7 @@ mod tests {
         // Set up the inputs so that amount_a = (1010 * 1000 / 1000) = 1010, which is > desired_a (1000),
         // but the ratio is exactly 1.01, which is within the 1% tolerance
         let result =
-            utils::get_deposit_amounts(&env, 1000, None, 1010, None, 1000, 1000, Decimal::one())
+            utils::get_deposit_amounts(&env, 1000, None, 1010, None, 1000, 1000, Decimal::bps(100))
                 .unwrap();
         assert_eq!(result, (1000, 1000));
     }
@@ -495,7 +495,7 @@ mod tests {
     fn test_get_deposit_amounts_accept_b_within_1_percent() {
         let env = Env::default();
         let result =
-            utils::get_deposit_amounts(&env, 1010, None, 1000, None, 1000, 1000, Decimal::one())
+            utils::get_deposit_amounts(&env, 1010, None, 1000, None, 1000, 1000, Decimal::bps(100))
                 .unwrap();
         assert_eq!(result, (1000, 1000));
     }
