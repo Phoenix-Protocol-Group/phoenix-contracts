@@ -9,6 +9,7 @@ and this project adheres to
 ## Added
 
 - Stake: Create new distribution structure for staking rewards flow ([#83])
+- DEX deployment script ([#97])
 
 ## Changed
 
@@ -16,6 +17,7 @@ and this project adheres to
 
 [#83]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/83
 [#86]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/86
+[#97]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/97
 
 ## [0.5.0] - 2023-08-04
 
