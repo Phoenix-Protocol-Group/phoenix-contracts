@@ -15,6 +15,8 @@ pub enum ContractError {
     RewardsValidationFailed = 13,
     DistributionAlreadyAdded = 14,
     WithdrawAdjustmentMissing = 15,
+    DistributionNotFound = 16,
+    RewardsNotDistributedOrDistributionNotCreated = 17,
 
     /// Stake errros
     MinStakeLessOrEqualZero = 5,

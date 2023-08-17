@@ -9,7 +9,6 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
     token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
 }
 
-const TOKEN_PER_POWER: u128 = 1;
 const MIN_BOND: i128 = 1000;
 const MAX_DISTRIBUTIONS: u32 = 7;
 const MIN_REWARD: i128 = 1000;
@@ -26,7 +25,6 @@ pub fn deploy_staking_contract<'a>(
     staking.initialize(
         &admin,
         lp_token,
-        &TOKEN_PER_POWER,
         &MIN_BOND,
         &MAX_DISTRIBUTIONS,
         &MIN_REWARD,
