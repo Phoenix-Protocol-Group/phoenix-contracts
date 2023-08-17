@@ -4,15 +4,24 @@ use soroban_sdk::contracterror;
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum ContractError {
-    Unauthorized = 0,
-    MinStakeLessOrEqualZero = 1,
-    StakeLessThenMinBond = 2,
-    TokenPerPowerCannotBeZero = 3,
-    ConfigNotSet = 4,
-    StakeNotFound = 5,
-    FailedToLoadFromStorage = 6,
-    MinRewardTooSmall = 7,
-    MinRewardNotReached = 8,
-    NoRewardsForThisAsset = 9,
-    TotalStakedCannotBeZeroOrLess = 10,
+    /// Initialization errors
+    TokenPerPowerCannotBeZero = 1,
+
+    /// Reward errors
+    MinRewardTooSmall = 2,
+    MinRewardNotReached = 3,
+    NoRewardsForThisAsset = 4,
+
+    /// Stake errros
+    MinStakeLessOrEqualZero = 5,
+    StakeLessThenMinBond = 6,
+    StakeNotFound = 7,
+    TotalStakedCannotBeZeroOrLess = 8,
+
+    /// Storage errors
+    ConfigNotSet = 9,
+    FailedToGetAdminAddrFromStorage = 10,
+
+    /// Other errors
+    Unauthorized = 11,
 }
