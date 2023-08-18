@@ -184,7 +184,7 @@ impl Curve {
         }
     }
 
-    fn end(&self) -> Option<u64> {
+    pub fn end(&self) -> Option<u64> {
         match self {
             Curve::Constant { .. } => None,
             Curve::SaturatingLinear(sl) => sl.end(),

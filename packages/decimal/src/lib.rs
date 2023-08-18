@@ -399,6 +399,36 @@ mod tests {
         assert_eq!(Decimal::from_atomics(2000000000000000000i128, 18), two);
         assert_eq!(Decimal::from_atomics(20000000000000000000i128, 19), two);
         assert_eq!(Decimal::from_atomics(200000000000000000000i128, 20), two);
+
+        // Cuts decimal digits (20 provided but only 18 can be stored)
+        assert_eq!(
+            Decimal::from_atomics(4321i128, 20),
+            Decimal::from_str("0.000000000000000043").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(6789i128, 20),
+            Decimal::from_str("0.000000000000000067").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 38),
+            Decimal::from_str("1.701411834604692317").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 39),
+            Decimal::from_str("0.170141183460469231").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 45),
+            Decimal::from_str("0.000000170141183460").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 51),
+            Decimal::from_str("0.000000000000170141").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 56),
+            Decimal::from_str("0.000000000000000001").unwrap()
+        );
     }
 
     #[test]
