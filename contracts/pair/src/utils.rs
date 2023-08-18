@@ -1,4 +1,5 @@
 use decimal::Decimal;
+use soroban_sdk::{contracttype, Address, BytesN};
 
 // Validate if int value is bigger then 0
 #[macro_export]
@@ -22,6 +23,60 @@ macro_rules! validate_int_parameters {
 pub fn assert_approx_ratio(a: Decimal, b: Decimal, tolerance: Decimal) -> bool {
     let diff = (a - b).abs();
     diff <= tolerance
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TokenInitInfo {
+    pub token_wasm_hash: BytesN<32>,
+    pub token_a: Address,
+    pub token_b: Address,
+}
+
+impl TokenInitInfo {
+    pub fn get_token_wasm_hash(&self) -> BytesN<32> {
+        self.token_wasm_hash.clone()
+    }
+
+    pub fn get_token_a(&self) -> Address {
+        self.token_a.clone()
+    }
+
+    pub fn get_token_b(&self) -> Address {
+        self.token_b.clone()
+    }
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StakeInitInfo {
+    pub stake_wasm_hash: BytesN<32>,
+    pub token_per_power: u128,
+    pub min_bond: i128,
+    pub max_distributions: u32,
+    pub min_reward: i128,
+}
+
+impl StakeInitInfo {
+    pub fn get_stake_wasm_hash(&self) -> BytesN<32> {
+        self.stake_wasm_hash.clone()
+    }
+
+    pub fn get_token_per_power(&self) -> u128 {
+        self.token_per_power
+    }
+
+    pub fn get_min_bond(&self) -> i128 {
+        self.min_bond
+    }
+
+    pub fn get_max_distributions(&self) -> u32 {
+        self.max_distributions
+    }
+
+    pub fn get_min_reward(&self) -> i128 {
+        self.min_reward
+    }
 }
 
 #[cfg(test)]

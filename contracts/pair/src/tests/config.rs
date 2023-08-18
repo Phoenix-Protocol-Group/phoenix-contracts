@@ -32,6 +32,7 @@ fn update_config() {
     );
 
     let share_token_address = pool.query_share_token_address();
+    let stake_token_address = pool.query_stake_token_address();
 
     assert_eq!(
         pool.query_config(),
@@ -39,6 +40,7 @@ fn update_config() {
             token_a: token1.address.clone(),
             token_b: token2.address.clone(),
             share_token: share_token_address.clone(),
+            stake_token: stake_token_address.clone(),
             pair_type: PairType::Xyk,
             total_fee_bps: 0,
             fee_recipient: user1,
@@ -62,6 +64,7 @@ fn update_config() {
             token_a: token1.address.clone(),
             token_b: token2.address.clone(),
             share_token: share_token_address.clone(),
+            stake_token: stake_token_address.clone(),
             pair_type: PairType::Xyk,
             total_fee_bps: 500,
             fee_recipient: admin2.clone(),
@@ -78,6 +81,7 @@ fn update_config() {
             token_a: token1.address.clone(),
             token_b: token2.address,
             share_token: share_token_address,
+            stake_token: stake_token_address,
             pair_type: PairType::Xyk,
             total_fee_bps: 500,
             fee_recipient: admin2,
@@ -157,6 +161,7 @@ fn update_config_update_admin() {
     pool.update_config(&admin1, &Some(admin2.clone()), &None, &None, &None, &None);
 
     let share_token_address = pool.query_share_token_address();
+    let stake_token_address = pool.query_stake_token_address();
 
     // now update succeeds
     pool.update_config(&admin2, &None, &None, &None, &None, &Some(3_000_000));
@@ -166,6 +171,7 @@ fn update_config_update_admin() {
             token_a: token1.address.clone(),
             token_b: token2.address,
             share_token: share_token_address,
+            stake_token: stake_token_address,
             pair_type: PairType::Xyk,
             total_fee_bps: 0,
             fee_recipient: user1,

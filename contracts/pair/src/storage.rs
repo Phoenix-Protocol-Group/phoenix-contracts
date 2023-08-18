@@ -36,6 +36,7 @@ pub struct Config {
     pub token_a: Address,
     pub token_b: Address,
     pub share_token: Address,
+    pub stake_token: Address,
     pub pair_type: PairType,
     /// The total fees (in bps) charged by a pair of this type.
     /// In relation to the returned amount of tokens
@@ -121,11 +122,9 @@ pub struct SimulateReverseSwapResponse {
 pub mod utils {
     use super::*;
 
-    // todo remove comment
-    // is it okay if we make this function more generic and reuse it for both token and stake contract deployment?
     pub fn deploy_token_contract(
-        e: &Env,                     // todo remove comment
-        token_wasm_hash: BytesN<32>, // here, instead of token_wasm_hash we just use contract_wasm_hash and just swap it with token_wasm_hash / stake_wasm_hash params from initialize()
+        e: &Env,
+        token_wasm_hash: BytesN<32>,
         token_a: &Address,
         token_b: &Address,
     ) -> Address {
@@ -136,6 +135,21 @@ pub mod utils {
         e.deployer()
             .with_current_contract(salt)
             .deploy(token_wasm_hash)
+    }
+
+    pub fn deploy_stake_contract(e: &Env, stake_wasm_hash: BytesN<32>) -> Address {
+        let deployer = e.current_contract_address();
+
+        if deployer != e.current_contract_address() {
+            deployer.require_auth();
+        }
+
+        let salt = Bytes::new(e);
+        let salt = e.crypto().sha256(&salt);
+
+        e.deployer()
+            .with_address(deployer, salt)
+            .deploy(stake_wasm_hash)
     }
 
     pub fn save_admin(e: &Env, address: Address) {

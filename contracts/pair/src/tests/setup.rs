@@ -1,5 +1,6 @@
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
+use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
     token_contract,
@@ -17,8 +18,6 @@ fn install_token_wasm(env: &Env) -> BytesN<32> {
 }
 
 fn install_stake_wasm(env: &Env) -> BytesN<32> {
-    // todo remove comment
-    // Err is: the trait bound `(u64, u128): SorobanArbitrary` is not satisfied [E0277] Help: the trait `SorobanArbitrary` is implemented for `()` Note: required for `soroban_sdk::Vec<(u64, u128)>` to implement `SorobanArbitrary` Note: required because it appears within the type `ArbitraryPiecewiseLinear`
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
@@ -29,8 +28,8 @@ fn install_stake_wasm(env: &Env) -> BytesN<32> {
 pub fn deploy_liquidity_pool_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,
-    token_a: &Address,
-    token_b: &Address,
+    token_a_b: (&Address, &Address),
+    stake_power_bond_distrib_reward: (u128, i128, u32, i128),
     swap_fees: i64,
     fee_recipient: impl Into<Option<Address>>,
     max_allowed_slippage_bps: impl Into<Option<i64>>,
@@ -44,17 +43,29 @@ pub fn deploy_liquidity_pool_contract<'a>(
     let max_allowed_slippage = max_allowed_slippage_bps.into().unwrap_or(5_000); // 50% if not specified
     let max_allowed_spread = max_allowed_spread_bps.into().unwrap_or(500); // 5% if not specified
     let share_token_decimals = 7u32;
+
+    let token_init_info = TokenInitInfo {
+        token_wasm_hash,
+        token_a: token_a_b.0.clone(),
+        token_b: token_a_b.1.clone(),
+    };
+    let stake_init_info = StakeInitInfo {
+        stake_wasm_hash,
+        token_per_power: stake_power_bond_distrib_reward.0,
+        min_bond: stake_power_bond_distrib_reward.1,
+        max_distributions: stake_power_bond_distrib_reward.2,
+        min_reward: stake_power_bond_distrib_reward.3,
+    };
+
     pool.initialize(
         &admin,
-        &token_wasm_hash,
-        &stake_wasm_hash,
-        token_a,
-        token_b,
         &share_token_decimals,
         &swap_fees,
         &fee_recipient,
         &max_allowed_slippage,
         &max_allowed_spread,
+        &token_init_info,
+        &stake_init_info,
     );
     pool
 }

@@ -1,7 +1,10 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val,
+};
 
 use num_integer::Roots;
 
+use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
     error::ContractError,
     storage::{
@@ -30,15 +33,13 @@ pub trait LiquidityPoolTrait {
     fn initialize(
         env: Env,
         admin: Address,
-        token_wasm_hash: BytesN<32>,
-        stake_wasm_hash: BytesN<32>,
-        token_a: Address,
-        token_b: Address,
         share_token_decimals: u32,
         swap_fee_bps: i64,
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        token_init_info: TokenInitInfo,
+        stake_contract_info: StakeInitInfo,
     ) -> Result<(), ContractError>;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -100,6 +101,9 @@ pub trait LiquidityPoolTrait {
     // Returns the address for the pool share token
     fn query_share_token_address(env: Env) -> Result<Address, ContractError>;
 
+    // Returns the address for the pool stake contract
+    fn query_stake_token_address(env: Env) -> Result<Address, ContractError>;
+
     // Returns  the total amount of LP tokens and assets in a specific pool
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
 
@@ -124,16 +128,25 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn initialize(
         env: Env,
         admin: Address,
-        token_wasm_hash: BytesN<32>,
-        stake_wasm_hash: BytesN<32>,
-        token_a: Address,
-        token_b: Address,
         share_token_decimals: u32,
         swap_fee_bps: i64,
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        token_init_info: TokenInitInfo,
+        stake_init_info: StakeInitInfo,
     ) -> Result<(), ContractError> {
+        // Token info
+        let token_a = token_init_info.get_token_a();
+        let token_b = token_init_info.get_token_b();
+        let token_wasm_hash = token_init_info.get_token_wasm_hash();
+        // Contract info
+        let stake_wasm_hash = stake_init_info.get_stake_wasm_hash();
+        let token_per_power = stake_init_info.get_token_per_power();
+        let min_bond = stake_init_info.get_min_bond();
+        let max_distributions = stake_init_info.get_max_distributions();
+        let min_reward = stake_init_info.get_min_reward();
+
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
             log!(&env, "token_a must be less than token_b");
@@ -159,10 +172,31 @@ impl LiquidityPoolTrait for LiquidityPool {
             &"POOL".into_val(&env),
         );
 
+        let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);
+
+        let stake_args = (
+            // admin
+            &admin,
+            // lp_token
+            &env.current_contract_address(),
+            token_per_power,
+            min_bond,
+            max_distributions,
+            min_reward,
+        )
+            .into_val(&env);
+
+        let _init_result: Val = env.invoke_contract(
+            &stake_contract_address,
+            &Symbol::new(&env, "initialize"),
+            stake_args,
+        );
+
         let config = Config {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
             share_token: share_token_address,
+            stake_token: stake_contract_address,
             pair_type: PairType::Xyk,
             total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
             fee_recipient,
@@ -455,6 +489,9 @@ impl LiquidityPoolTrait for LiquidityPool {
         Ok(get_config(&env)?.share_token)
     }
 
+    fn query_stake_token_address(env: Env) -> Result<Address, ContractError> {
+        Ok(get_config(&env)?.stake_token)
+    }
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError> {
         let config = get_config(&env)?;
 
