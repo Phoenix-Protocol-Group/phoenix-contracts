@@ -11,6 +11,12 @@ pub enum ContractError {
     MinRewardTooSmall = 2,
     MinRewardNotReached = 3,
     NoRewardsForThisAsset = 4,
+    FundDistributionStartTimeTooEarly = 12,
+    RewardsValidationFailed = 13,
+    DistributionAlreadyAdded = 14,
+    WithdrawAdjustmentMissing = 15,
+    DistributionNotFound = 16,
+    RewardsNotDistributedOrDistributionNotCreated = 17,
 
     /// Stake errros
     MinStakeLessOrEqualZero = 5,

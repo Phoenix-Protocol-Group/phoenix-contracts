@@ -25,17 +25,26 @@ echo "Contracts optimized..."
 ADMIN_ADDRESS=$(soroban config identity address $IDENTITY_STRING)
 
 # Deploy the soroban_token_contract and capture its contract ID hash
-TOKEN_ID1=$(soroban contract deploy \
+TOKEN_ADDR1=$(soroban contract deploy \
     --wasm soroban_token_contract.optimized.wasm \
     --source $IDENTITY_STRING \
     --network futurenet)
 
-TOKEN_ID2=$(soroban contract deploy \
+TOKEN_ADDR2=$(soroban contract deploy \
     --wasm soroban_token_contract.optimized.wasm \
     --source $IDENTITY_STRING \
     --network futurenet)
 
 echo "Tokens deployed..."
+
+# Sort the token addresses alphabetically
+if [[ "$TOKEN_ADDR1" < "$TOKEN_ADDR2" ]]; then
+    TOKEN_ID1=$TOKEN_ADDR1
+    TOKEN_ID2=$TOKEN_ADDR2
+else
+    TOKEN_ID1=$TOKEN_ADDR2
+    TOKEN_ID2=$TOKEN_ADDR1
+fi
 
 # Initialize the contracts
 soroban contract invoke \

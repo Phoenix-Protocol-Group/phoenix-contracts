@@ -6,7 +6,6 @@ use crate::error::ContractError;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
     pub lp_token: Address,
-    pub token_per_power: u128,
     pub min_bond: i128,
     pub max_distributions: u32,
     pub min_reward: i128,
@@ -15,13 +14,13 @@ const CONFIG: Symbol = symbol_short!("CONFIG");
 
 pub fn get_config(env: &Env) -> Result<Config, ContractError> {
     env.storage()
-        .instance()
+        .persistent()
         .get(&CONFIG)
         .ok_or(ContractError::ConfigNotSet)
 }
 
 pub fn save_config(env: &Env, config: Config) {
-    env.storage().instance().set(&CONFIG, &config);
+    env.storage().persistent().set(&CONFIG, &config);
 }
 
 #[contracttype]
@@ -45,42 +44,25 @@ pub struct BondingInfo {
     pub reward_debt: u128,
     /// Last time when user has claimed rewards
     pub last_reward_time: u64,
+    /// Total amount of staked tokens
+    pub total_stake: u128,
 }
 
 pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError> {
-    match env.storage().instance().get(&key) {
+    match env.storage().persistent().get(&key) {
         Some(stake) => stake,
         None => Ok(BondingInfo {
             stakes: Vec::new(env),
             reward_debt: 0u128,
             last_reward_time: 0u64,
+            total_stake: 0u128,
         }),
     }
 }
 
 pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
-    env.storage().instance().set(key, bonding_info);
+    env.storage().persistent().set(key, bonding_info);
 }
-
-// pub fn total_rewards_power(&self, storage: &dyn Storage, cfg: &Config, staker: &Addr) -> StdResult<Uint128> {
-//     let mut power = Uint128::zero();
-//     let bonding_info = STAKE.load(storage, staker)?.unwrap_or_default();
-//     for stake in bonding_info.stakes.iter() {
-//         let multiplier = self.rewards_multiplier(stake.stake_timestamp);
-//         power += calc_power(cfg, stake.stake, multiplier);
-//     }
-//     Ok(power)
-// }
-//
-// pub fn rewards_multiplier(&self, stake_timestamp: u64) -> Decimal {
-//     let days_staked = (env::block_time() - stake_timestamp) / (24 * 60 * 60);
-//     let increase = Decimal::percent(0.5) * Decimal::from(days_staked);
-//     let capped_increase = std::cmp::min(increase, Decimal::percent(30));
-//     Decimal::one() + capped_increase
-// }
-//
-// // Then in your execute_distribute_rewards function:
-// let total_rewards = distribution.total_rewards_power(deps.storage, &cfg);
 
 pub mod utils {
     use super::*;
@@ -92,6 +74,7 @@ pub mod utils {
     pub enum DataKey {
         Admin = 0,
         TotalStaked = 1,
+        Distributions = 2,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -103,12 +86,12 @@ pub mod utils {
     }
 
     pub fn save_admin(e: &Env, address: &Address) {
-        e.storage().instance().set(&DataKey::Admin, address)
+        e.storage().persistent().set(&DataKey::Admin, address)
     }
 
     pub fn get_admin(e: &Env) -> Result<Address, ContractError> {
         e.storage()
-            .instance()
+            .persistent()
             .get(&DataKey::Admin)
             .ok_or(ContractError::FailedToGetAdminAddrFromStorage)
     }
@@ -140,5 +123,25 @@ pub mod utils {
             Some(val) => val,
             None => Err(ContractError::TotalStakedCannotBeZeroOrLess),
         }
+    }
+
+    // Keep track of all distributions to be able to iterate over them
+    pub fn add_distribution(e: &Env, asset: &Address) -> Result<(), ContractError> {
+        let mut distributions = get_distributions(e);
+        if distributions.contains(asset) {
+            return Err(ContractError::DistributionAlreadyAdded);
+        }
+        distributions.push_back(asset.clone());
+        e.storage()
+            .persistent()
+            .set(&DataKey::Distributions, &distributions);
+        Ok(())
+    }
+
+    pub fn get_distributions(e: &Env) -> Vec<Address> {
+        e.storage()
+            .persistent()
+            .get(&DataKey::Distributions)
+            .unwrap_or_else(|| soroban_sdk::vec![e])
     }
 }
