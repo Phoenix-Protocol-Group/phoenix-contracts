@@ -14,10 +14,12 @@ and this project adheres to
 ## Changed
 
 - Curve: Modify implementation to not use named fields in Curve enum, since they are not allowed currently in soroban-sdk ([#86])
+- Curve: Modify implementation of PiecewiseLinear type to avoid using tuple due to soroban-sdk limitations ([#100])
 
 [#83]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/83
 [#86]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/86
 [#97]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/97
+[#100]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/100
 
 ## [0.5.0] - 2023-08-04
 
