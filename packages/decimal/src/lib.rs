@@ -5,7 +5,9 @@
 
 use core::{
     cmp::{Ordering, PartialEq, PartialOrd},
+    fmt,
     ops::{Add, Div, Mul, Sub},
+    str::FromStr,
 };
 
 extern crate alloc;
@@ -297,6 +299,52 @@ impl Mul<Decimal> for i128 {
     }
 }
 
+impl FromStr for Decimal {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        let mut parts_iter = input.split('.');
+
+        let whole_part = parts_iter.next().expect("Unexpected input format");
+        let whole: i128 = whole_part.parse().expect("Error parsing whole");
+        let mut atomics = whole * Self::DECIMAL_FRACTIONAL;
+
+        if let Some(fractional_part) = parts_iter.next() {
+            let fractional: i128 = fractional_part.parse().expect("Error parsing fractional");
+            let exp = Self::DECIMAL_PLACES - fractional_part.len() as i32;
+            assert!(exp <= Self::DECIMAL_PLACES, "Too many fractional digits");
+            let fractional_factor = 10i128.pow(exp as u32);
+            atomics += fractional * fractional_factor;
+        }
+
+        assert!(parts_iter.next().is_none(), "Unexpected number of dots");
+
+        Ok(Decimal(atomics))
+    }
+}
+
+impl fmt::Display for Decimal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let whole = self.0 / Self::DECIMAL_FRACTIONAL;
+        let fractional = self.0 % Self::DECIMAL_FRACTIONAL;
+
+        if fractional == 0 {
+            write!(f, "{}", whole)
+        } else {
+            let fractional_string = alloc::format!(
+                "{:0>padding$}",
+                fractional,
+                padding = Self::DECIMAL_PLACES as usize
+            );
+            f.write_fmt(format_args!(
+                "{}.{}",
+                whole,
+                fractional_string.trim_end_matches('0')
+            ))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -428,6 +476,40 @@ mod tests {
         assert_eq!(half.decimal_places(), 18);
         assert_eq!(two.decimal_places(), 18);
         assert_eq!(max.decimal_places(), 18);
+    }
+
+    #[test]
+    fn decimal_from_str_works() {
+        // Integers
+        assert_eq!(Decimal::from_str("0").unwrap(), Decimal::percent(0));
+        assert_eq!(Decimal::from_str("1").unwrap(), Decimal::percent(100));
+        assert_eq!(Decimal::from_str("5").unwrap(), Decimal::percent(500));
+        assert_eq!(Decimal::from_str("42").unwrap(), Decimal::percent(4200));
+        assert_eq!(Decimal::from_str("000").unwrap(), Decimal::percent(0));
+        assert_eq!(Decimal::from_str("001").unwrap(), Decimal::percent(100));
+        assert_eq!(Decimal::from_str("005").unwrap(), Decimal::percent(500));
+        assert_eq!(Decimal::from_str("0042").unwrap(), Decimal::percent(4200));
+
+        // Decimals
+        assert_eq!(Decimal::from_str("1.0").unwrap(), Decimal::percent(100));
+        assert_eq!(Decimal::from_str("1.5").unwrap(), Decimal::percent(150));
+        assert_eq!(Decimal::from_str("0.5").unwrap(), Decimal::percent(50));
+        assert_eq!(Decimal::from_str("0.123").unwrap(), Decimal::permille(123));
+
+        assert_eq!(Decimal::from_str("40.00").unwrap(), Decimal::percent(4000));
+        assert_eq!(Decimal::from_str("04.00").unwrap(), Decimal::percent(400));
+        assert_eq!(Decimal::from_str("00.40").unwrap(), Decimal::percent(40));
+        assert_eq!(Decimal::from_str("00.04").unwrap(), Decimal::percent(4));
+
+        // Can handle DECIMAL_PLACES fractional digits
+        assert_eq!(
+            Decimal::from_str("7.123456789012345678").unwrap(),
+            Decimal(7123456789012345678i128)
+        );
+        assert_eq!(
+            Decimal::from_str("7.999999999999999999").unwrap(),
+            Decimal(7999999999999999999i128)
+        );
     }
 
     #[test]
