@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, symbol_short, vec, Address, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 use crate::error::ContractError;
 
@@ -142,6 +142,6 @@ pub mod utils {
         e.storage()
             .persistent()
             .get(&DataKey::Distributions)
-            .unwrap_or_else(|| soroban_sdk::vec![&e])
+            .unwrap_or_else(|| soroban_sdk::vec![e])
     }
 }

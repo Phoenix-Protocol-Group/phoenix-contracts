@@ -1,4 +1,3 @@
-use pretty_assertions::assert_eq;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env,
@@ -6,11 +5,8 @@ use soroban_sdk::{
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
-use crate::error::ContractError::{StakeLessThenMinBond, StakeNotFound};
-use crate::{
-    msg::{WithdrawableReward, WithdrawableRewardsResponse},
-    storage::{Config, Stake},
-};
+use crate::error::ContractError;
+use crate::msg::{WithdrawableReward, WithdrawableRewardsResponse};
 
 #[test]
 fn add_distribution_and_distribute_reward() {
@@ -306,4 +302,24 @@ fn four_users_with_different_stakes() {
     assert_eq!(reward_token.balance(&user3), 30_000);
     staking.withdraw_rewards(&user4);
     assert_eq!(reward_token.balance(&user4), 40_000);
+}
+
+#[test]
+fn fund_rewards_without_establishing_distribution() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    reward_token.mint(&admin, &1000);
+
+    assert_eq!(
+        staking.try_fund_distribution(&admin, &2_000, &600, &reward_token.address, &1000,),
+        Err(Ok(ContractError::NoRewardsForThisAsset))
+    );
 }

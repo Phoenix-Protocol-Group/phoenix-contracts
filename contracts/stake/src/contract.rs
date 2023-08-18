@@ -346,8 +346,7 @@ impl StakingTrait for Staking {
 
         // Load previous reward curve; it must exist if the distribution exists
         // In case of first time funding, it will be a constant 0 curve
-        let previous_reward_curve = get_reward_curve(&env, &token_address)
-            .map_err(|_| ContractError::DistributionNotFound)?;
+        let previous_reward_curve = get_reward_curve(&env, &token_address)?;
 
         let current_time = env.ledger().timestamp();
         if start_time < current_time {

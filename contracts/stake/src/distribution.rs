@@ -29,7 +29,6 @@ pub fn save_reward_curve(env: &Env, asset: Address, distribution_curve: &Curve) 
         .set(&DistributionDataKey::Curve(asset), distribution_curve);
 }
 
-#[allow(dead_code)]
 pub fn get_reward_curve(env: &Env, asset: &Address) -> Result<Curve, ContractError> {
     match env
         .storage()
@@ -126,7 +125,7 @@ pub fn get_withdraw_adjustments(
         .storage()
         .persistent()
         .get(&DistributionDataKey::WithdrawAdjustment(user.clone()))
-        .unwrap_or_else(|| soroban_sdk::vec![&env]))
+        .unwrap_or_else(|| soroban_sdk::vec![env]))
 }
 
 pub fn get_withdraw_adjustment(
