@@ -3,6 +3,8 @@
 
 #![no_std]
 
+use soroban_sdk::{Env, String};
+
 use core::{
     cmp::{Ordering, PartialEq, PartialOrd},
     fmt,
@@ -214,6 +216,10 @@ impl Decimal {
         } else {
             *self
         }
+    }
+
+    pub fn to_string(&self, env: &Env) -> String {
+        String::from_slice(&env, alloc::format!("{}", self).as_str())
     }
 }
 
