@@ -37,11 +37,3 @@ pub struct WithdrawableRewardsResponse {
     /// Amount of rewards assigned for withdrawal from the given address.
     pub rewards: Vec<WithdrawableReward>,
 }
-
-// #[contracttype]
-// pub struct DistributedRewardsResponse {
-//     /// Total number of tokens sent to the contract over all time.
-//     distributed: Vec<(Address, u128)>,
-//     /// Total number of tokens available to be withdrawn.
-//     withdrawable: Vec<(Address, u128)>,
-// }
