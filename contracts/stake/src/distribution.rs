@@ -1,6 +1,7 @@
 use soroban_sdk::{contracttype, Address, Env};
 
 use curve::Curve;
+use decimal::Decimal;
 
 use crate::{error::ContractError, storage::get_stakes};
 
@@ -13,6 +14,8 @@ use crate::{error::ContractError, storage::get_stakes};
 /// (it is now 96-bit integer instead of 128). In original ERC2222 it is handled by 256-bit
 /// calculations, but I256 is missing and it is required for this.
 pub const SHARES_SHIFT: u8 = 32;
+
+const SECONDS_PER_YEAR: u64 = 365 * 24 * 60 * 60;
 
 #[derive(Clone)]
 #[contracttype]
@@ -179,4 +182,50 @@ pub fn withdrawable_rewards(
     let amount = amount - adjustment.withdrawn_rewards;
 
     Ok(amount)
+}
+
+pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {
+    match reward_curve {
+        Some(c) => {
+            // look at the last timestamp in the rewards curve and extrapolate
+            match c.end() {
+                Some(last_timestamp) => {
+                    if last_timestamp <= now {
+                        return Decimal::zero();
+                    }
+                    let time_diff = last_timestamp - now;
+                    if time_diff >= SECONDS_PER_YEAR {
+                        // if the last timestamp is more than a year in the future,
+                        // we can just calculate the rewards for the whole year directly
+
+                        // formula: `(locked_now - locked_end)`
+                        Decimal::from_atomics(
+                            (c.value(now) - c.value(now + SECONDS_PER_YEAR)) as i128,
+                            0,
+                        )
+                    } else {
+                        // if the last timestamp is less than a year in the future,
+                        // we want to extrapolate the rewards for the whole year
+
+                        // formula: `(locked_now - locked_end) / time_diff * SECONDS_PER_YEAR`
+                        // `locked_now - locked_end` are the tokens freed up over the `time_diff`.
+                        // Dividing by that diff, gives us the rate of tokens per second,
+                        // which is then extrapolated to a whole year.
+                        // Because of the constraints put on `c` when setting it,
+                        // we know that `locked_end` is always 0, so we don't need to subtract it.
+                        Decimal::from_ratio(
+                            (c.value(now) * SECONDS_PER_YEAR as u128) as i128,
+                            time_diff,
+                        )
+                    }
+                }
+                None => {
+                    // this case should only happen if the reward curve is freshly initialized
+                    // (i.e. no rewards have been scheduled yet)
+                    Decimal::zero()
+                }
+            }
+        }
+        None => Decimal::zero(),
+    }
 }
