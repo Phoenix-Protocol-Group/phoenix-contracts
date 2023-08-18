@@ -15,12 +15,14 @@ pub struct StakedResponse {
 }
 
 #[contracttype]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct AnnualizedReward {
     pub asset: Address,
     pub amount: String,
 }
 
 #[contracttype]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct AnnualizedRewardsResponse {
     pub rewards: Vec<AnnualizedReward>,
 }

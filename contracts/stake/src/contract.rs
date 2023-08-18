@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, Vec, String};
 
 use crate::{
     distribution::{
@@ -435,10 +435,18 @@ impl StakingTrait for Staking {
 
     fn query_annualized_rewards(env: Env) -> Result<AnnualizedRewardsResponse, ContractError> {
         let now = env.ledger().timestamp();
+        let mut aprs = vec![&env];
         let total_rewards_power = get_total_staked_counter(&env)? as u128;
 
-        let mut aprs = vec![&env];
         for distribution_address in get_distributions(&env) {
+            if total_rewards_power == 0 {
+                aprs.push_back(AnnualizedReward {
+                    asset: distribution_address.clone(),
+                    amount: String::from_slice(&env, "0"),
+                });
+                continue;
+            }
+
             // get distribution data for the given reward
             let distribution = get_distribution(&env, &distribution_address)?;
             let curve = get_reward_curve(&env, &distribution_address).ok();
