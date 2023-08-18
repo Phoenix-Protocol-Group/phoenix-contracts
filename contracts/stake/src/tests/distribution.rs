@@ -138,7 +138,7 @@ fn two_distributions() {
                 },
                 WithdrawableReward {
                     reward_address: reward_token_2.address.clone(),
-                    reward_amount: reward_amount
+                    reward_amount
                 }
             ]
         }
@@ -183,7 +183,7 @@ fn two_distributions() {
                 },
                 WithdrawableReward {
                     reward_address: reward_token_2.address.clone(),
-                    reward_amount: reward_amount
+                    reward_amount
                 }
             ]
         }
