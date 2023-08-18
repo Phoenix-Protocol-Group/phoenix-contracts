@@ -147,8 +147,11 @@ impl Curve {
                 let mut new_steps = soroban_sdk::Vec::new(env);
 
                 for i in 0..pl.steps.len() {
-                    let (x, y) = pl.steps.get(i).unwrap();
-                    new_steps.push_back((x, const_y + y));
+                    let Step { time: x, value: y } = pl.steps.get(i).unwrap();
+                    new_steps.push_back(Step {
+                        time: x,
+                        value: const_y + y,
+                    });
                 }
                 Curve::PiecewiseLinear(PiecewiseLinear { steps: new_steps })
             }
@@ -268,9 +271,16 @@ fn interpolate((min_x, min_y): (u64, u128), (max_x, max_y): (u64, u128), x: u64)
 /// Vec of length 2 -> [`SaturatingLinear`] .
 #[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Step {
+    time: u64,
+    value: u128,
+}
+
+#[contracttype]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct PiecewiseLinear {
     /// steps
-    pub steps: Vec<(u64, u128)>,
+    pub steps: Vec<Step>,
 }
 
 impl PiecewiseLinear {
@@ -278,14 +288,14 @@ impl PiecewiseLinear {
     pub fn value(&self, x: u64) -> u128 {
         let mut iter = self.steps.iter();
 
-        let mut prev: Option<(u64, u128)> = None;
+        let mut prev: Option<Step> = None;
         let mut next = match iter.next() {
             Some(val) => val,
             _ => panic!("Steps are empty or error in reading steps"),
         };
 
         for step_result in iter {
-            if x >= next.0 {
+            if x >= next.time {
                 prev = Some(next);
                 next = step_result;
             } else {
@@ -299,15 +309,15 @@ impl PiecewiseLinear {
         // x may be greater than next (if higher than last item)
         // OR x may be between prev and next (interpolate)
         if let Some(last) = prev {
-            if x == last.0 {
-                last.1
-            } else if x >= next.0 {
-                next.1
+            if x == last.time {
+                last.value
+            } else if x >= next.time {
+                next.value
             } else {
-                interpolate(last, next, x)
+                interpolate((last.time, last.value), (next.time, next.value), x)
             }
         } else {
-            next.1
+            next.value
         }
     }
 
@@ -319,9 +329,9 @@ impl PiecewiseLinear {
         }
         self.steps.iter().fold(Ok(0u64), |acc, step_result| {
             acc.and_then(|last| {
-                let (x, _) = step_result;
-                if x > last {
-                    Ok(x)
+                let Step { time, value: _ } = step_result;
+                if time > last {
+                    Ok(time)
                 } else {
                     Err(CurveError::PointsOutOfOrder)
                 }
@@ -353,9 +363,12 @@ impl PiecewiseLinear {
     // Gives monotonic info. Requires there be at least one item in steps
     fn classify_curve(&self) -> Shape {
         let mut iter = self.steps.iter();
-        let (_, first) = iter.next().unwrap();
+        let Step {
+            time: _,
+            value: first,
+        } = iter.next().unwrap();
         let (_, shape) = iter.fold((first, Shape::Constant), |(last, shape), step_result| {
-            let (_, y) = step_result;
+            let Step { time: _, value: y } = step_result;
             let shape = match (shape, y.cmp(&last)) {
                 (Shape::NotMonotonic, _) => Shape::NotMonotonic,
                 (Shape::MonotonicDecreasing, Ordering::Greater) => Shape::NotMonotonic,
@@ -377,7 +390,7 @@ impl PiecewiseLinear {
             .steps
             .iter()
             .map(|step_result| {
-                let (_, y) = step_result;
+                let Step { time: _, value: y } = step_result;
                 y
             })
             .min()
@@ -386,7 +399,7 @@ impl PiecewiseLinear {
             .steps
             .iter()
             .map(|step_result| {
-                let (_, y) = step_result;
+                let Step { time: _, value: y } = step_result;
                 y
             })
             .max()
@@ -399,7 +412,10 @@ impl PiecewiseLinear {
         // collect x-coordinates for combined curve
         let mut x = soroban_sdk::Vec::new(env);
         for step_result in self.steps.iter().chain(other.steps.iter()) {
-            let (x_val, _) = step_result;
+            let Step {
+                time: x_val,
+                value: _,
+            } = step_result;
             x.push_back(x_val);
         }
 
@@ -435,7 +451,10 @@ impl PiecewiseLinear {
         let mut steps = soroban_sdk::Vec::new(env);
         for x_val in x {
             let x_val = x_val;
-            steps.push_back((x_val, self.value(x_val) + other.value(x_val)));
+            steps.push_back(Step {
+                time: x_val,
+                value: self.value(x_val) + other.value(x_val),
+            });
         }
 
         PiecewiseLinear { steps }
@@ -444,7 +463,17 @@ impl PiecewiseLinear {
 
 pub fn from_saturating_linear(env: &Env, sl: &SaturatingLinear) -> PiecewiseLinear {
     PiecewiseLinear {
-        steps: vec![env, (sl.min_x, sl.min_y), (sl.max_x, sl.max_y)],
+        steps: vec![
+            env,
+            Step {
+                time: sl.min_x,
+                value: sl.min_y,
+            },
+            Step {
+                time: sl.max_x,
+                value: sl.max_y,
+            },
+        ],
     }
 }
 
@@ -542,7 +571,13 @@ mod tests {
     fn test_piecewise_one_step(y: u128) {
         let env = Env::default();
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {
-            steps: vec![&env, (12345, y)],
+            steps: vec![
+                &env,
+                Step {
+                    time: 12345,
+                    value: y,
+                },
+            ],
         });
 
         // always valid
@@ -560,9 +595,17 @@ mod tests {
 
     #[test_case((100u64,0),(200u64,50); "test piecewise two point increasing, should not fail")]
     fn test_piecewise_two_point_increasing(low: (u64, u128), high: (u64, u128)) {
+        let low = Step {
+            time: low.0,
+            value: low.1,
+        };
+        let high = Step {
+            time: high.0,
+            value: high.1,
+        };
         let env = Env::default();
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {
-            steps: vec![&env, low, high],
+            steps: vec![&env, low.clone(), high.clone()],
         });
 
         // validly increasing
@@ -573,25 +616,33 @@ mod tests {
         assert_eq!(err, CurveError::MonotonicIncreasing);
 
         // check extremes
-        assert_eq!(curve.value(1), low.1);
-        assert_eq!(curve.value(1000000), high.1);
+        assert_eq!(curve.value(1), low.value);
+        assert_eq!(curve.value(1000000), high.value);
         // check linear portion
         assert_eq!(curve.value(150), 25);
         // and rounding
         assert_eq!(curve.value(103), 1);
         // check both edges
-        assert_eq!(curve.value(low.0), low.1);
-        assert_eq!(curve.value(high.0), high.1);
+        assert_eq!(curve.value(low.time), low.value);
+        assert_eq!(curve.value(high.time), high.value);
 
         // range is min to max
-        assert_eq!(curve.range(), (low.1, high.1));
+        assert_eq!(curve.range(), (low.value, high.value));
     }
 
     #[test_case((1700u64,500),(2000u64,200); "test piecewise two point decreasing, should not fail")]
     fn test_piecewise_two_point_decreasing(low: (u64, u128), high: (u64, u128)) {
+        let low = Step {
+            time: low.0,
+            value: low.1,
+        };
+        let high = Step {
+            time: high.0,
+            value: high.1,
+        };
         let env = Env::default();
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {
-            steps: vec![&env, low, high],
+            steps: vec![&env, low.clone(), high.clone()],
         });
 
         // validly decreasing
@@ -602,17 +653,17 @@ mod tests {
         assert_eq!(err, CurveError::MonotonicDecreasing);
 
         // check extremes
-        assert_eq!(curve.value(low.0 - 5), low.1);
-        assert_eq!(curve.value(high.0 + 5), high.1);
+        assert_eq!(curve.value(low.time - 5), low.value);
+        assert_eq!(curve.value(high.time + 5), high.value);
         // check linear portion
         assert_eq!(curve.value(1800), 400);
         assert_eq!(curve.value(1997), 203);
         // check edge matches
-        assert_eq!(curve.value(low.0), low.1);
-        assert_eq!(curve.value(high.0), high.1);
+        assert_eq!(curve.value(low.time), low.value);
+        assert_eq!(curve.value(high.time), high.value);
 
         // range is min to max
-        assert_eq!(curve.range(), (high.1, low.1));
+        assert_eq!(curve.range(), (high.value, low.value));
     }
 
     #[test_case((15000u64,100u128),(12000u64,200u128); "test piecewise two point invalid, should fail")]
@@ -634,9 +685,21 @@ mod tests {
         mid: (u64, u128),
         high: (u64, u128),
     ) {
+        let low = Step {
+            time: low.0,
+            value: low.1,
+        };
+        let mid = Step {
+            time: mid.0,
+            value: mid.1,
+        };
+        let high = Step {
+            time: high.0,
+            value: high.1,
+        };
         let env = Env::default();
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {
-            steps: vec![&env, low, mid, high],
+            steps: vec![&env, low.clone(), mid.clone(), high.clone()],
         });
 
         // validly increasing
@@ -647,8 +710,8 @@ mod tests {
         assert_eq!(err, CurveError::MonotonicIncreasing);
 
         // check extremes
-        assert_eq!(curve.value(1), low.1);
-        assert_eq!(curve.value(1000000), high.1);
+        assert_eq!(curve.value(1), low.value);
+        assert_eq!(curve.value(1000000), high.value);
 
         // check first portion
         assert_eq!(curve.value(172), 72);
@@ -656,12 +719,12 @@ mod tests {
         assert_eq!(curve.value(240), 220);
 
         // check all exact matches
-        assert_eq!(curve.value(low.0), low.1);
-        assert_eq!(curve.value(mid.0), mid.1);
-        assert_eq!(curve.value(high.0), high.1);
+        assert_eq!(curve.value(low.time), low.value);
+        assert_eq!(curve.value(mid.time), mid.value);
+        assert_eq!(curve.value(high.time), high.value);
 
         // range is min to max
-        assert_eq!(curve.range(), (low.1, high.1));
+        assert_eq!(curve.range(), (low.value, high.value));
     }
 
     #[test_case((100,400),(200,100),(300,0); "test piecewise three point decreasing, should not fail")]
@@ -670,9 +733,21 @@ mod tests {
         mid: (u64, u128),
         high: (u64, u128),
     ) {
+        let low = Step {
+            time: low.0,
+            value: low.1,
+        };
+        let mid = Step {
+            time: mid.0,
+            value: mid.1,
+        };
+        let high = Step {
+            time: high.0,
+            value: high.1,
+        };
         let env = Env::default();
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {
-            steps: vec![&env, low, mid, high],
+            steps: vec![&env, low.clone(), mid.clone(), high.clone()],
         });
 
         // validly decreasing
@@ -683,8 +758,8 @@ mod tests {
         assert_eq!(err, CurveError::MonotonicDecreasing);
 
         // check extremes
-        assert_eq!(curve.value(1), low.1);
-        assert_eq!(curve.value(1000000), high.1);
+        assert_eq!(curve.value(1), low.value);
+        assert_eq!(curve.value(1000000), high.value);
 
         // check first portion (400 - 72 * 3 = 184)
         assert_eq!(curve.value(172), 184);
@@ -692,12 +767,12 @@ mod tests {
         assert_eq!(curve.value(245), 55);
 
         // check all exact matches
-        assert_eq!(curve.value(low.0), low.1);
-        assert_eq!(curve.value(mid.0), mid.1);
-        assert_eq!(curve.value(high.0), high.1);
+        assert_eq!(curve.value(low.time), low.value);
+        assert_eq!(curve.value(mid.time), mid.value);
+        assert_eq!(curve.value(high.time), high.value);
 
         // range is min to max
-        assert_eq!(curve.range(), (high.1, low.1));
+        assert_eq!(curve.range(), (high.value, low.value));
     }
 
     #[test_case((100,400),(200,100),(300,300); "test piecewise three point invalid not monotonic, should fail")]
@@ -706,6 +781,18 @@ mod tests {
         mid: (u64, u128),
         high: (u64, u128),
     ) {
+        let low = Step {
+            time: low.0,
+            value: low.1,
+        };
+        let mid = Step {
+            time: mid.0,
+            value: mid.1,
+        };
+        let high = Step {
+            time: high.0,
+            value: high.1,
+        };
         let env = Env::default();
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {
             steps: vec![&env, low, mid, high],
@@ -728,6 +815,18 @@ mod tests {
         mid: (u64, u128),
         high: (u64, u128),
     ) {
+        let low = Step {
+            time: low.0,
+            value: low.1,
+        };
+        let mid = Step {
+            time: mid.0,
+            value: mid.1,
+        };
+        let high = Step {
+            time: high.0,
+            value: high.1,
+        };
         let env = Env::default();
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {
             steps: vec![&env, low, high, mid],
@@ -756,7 +855,14 @@ mod tests {
         };
         let env = Env::default();
         let pw = PiecewiseLinear {
-            steps: vec![&env, (15, 1), (60, 120)],
+            steps: vec![
+                &env,
+                Step { time: 15, value: 1 },
+                Step {
+                    time: 60,
+                    value: 120,
+                },
+            ],
         };
 
         let converted = from_saturating_linear(&env, &sl);
@@ -804,7 +910,21 @@ mod tests {
             max_y: 210,
         });
         let pl = Curve::PiecewiseLinear(PiecewiseLinear {
-            steps: vec![&env, (10, 50), (20, 70), (30, 100)],
+            steps: vec![
+                &env,
+                Step {
+                    time: 10,
+                    value: 50,
+                },
+                Step {
+                    time: 20,
+                    value: 70,
+                },
+                Step {
+                    time: 30,
+                    value: 100,
+                },
+            ],
         });
 
         test_combine(&sl, &c, [0, 10, 20, 50, 100, 110, 120], 2);
@@ -837,7 +957,18 @@ mod tests {
         curve.validate_complexity(2).unwrap();
 
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {
-            steps: vec![&env, (0, 0), (10, 10), (20, 20)],
+            steps: vec![
+                &env,
+                Step { time: 0, value: 0 },
+                Step {
+                    time: 10,
+                    value: 10,
+                },
+                Step {
+                    time: 20,
+                    value: 20,
+                },
+            ],
         });
 
         assert_eq!(
