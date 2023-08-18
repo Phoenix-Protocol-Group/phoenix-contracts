@@ -60,6 +60,10 @@ fn add_distribution_and_distribute_reward() {
         staking.query_undistributed_rewards(&reward_token.address),
         0
     );
+    assert_eq!(
+        staking.query_distributed_rewards(&reward_token.address),
+        reward_amount
+    );
 
     assert_eq!(
         staking.query_withdrawable_rewards(&user),
@@ -76,4 +80,93 @@ fn add_distribution_and_distribute_reward() {
 
     staking.withdraw_rewards(&user);
     assert_eq!(reward_token.balance(&user), reward_amount as i128);
+}
+
+#[test]
+fn two_distributions() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let user = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+    let reward_token_2 = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    staking.create_distribution_flow(&admin, &admin, &reward_token.address);
+    staking.create_distribution_flow(&admin, &admin, &reward_token_2.address);
+
+    let reward_amount: u128 = 100_000;
+    reward_token.mint(&admin, &(reward_amount as i128));
+    reward_token_2.mint(&admin, &((reward_amount * 2) as i128));
+
+    // bond tokens for user to enable distribution for him
+    lp_token.mint(&user, &1000);
+    staking.bond(&user, &1000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_000;
+    });
+
+    let reward_duration = 600;
+    staking.fund_distribution(
+        &admin,
+        &2_000,
+        &reward_duration,
+        &reward_token.address,
+        &(reward_amount as i128),
+    );
+    staking.fund_distribution(
+        &admin,
+        &2_000,
+        &reward_duration,
+        &reward_token_2.address,
+        &((reward_amount * 2) as i128),
+    );
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_600;
+    });
+    staking.distribute_rewards();
+    // first reward token
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        0
+    );
+    assert_eq!(
+        staking.query_distributed_rewards(&reward_token.address),
+        reward_amount
+    );
+    // second reward token
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token_2.address),
+        0
+    );
+    assert_eq!(
+        staking.query_distributed_rewards(&reward_token_2.address),
+        reward_amount * 2
+    );
+
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount
+                },
+                WithdrawableReward {
+                    reward_address: reward_token_2.address.clone(),
+                    reward_amount: reward_amount * 2
+                }
+            ]
+        }
+    );
+
+    staking.withdraw_rewards(&user);
+    assert_eq!(reward_token.balance(&user), reward_amount as i128);
+    assert_eq!(reward_token_2.balance(&user), (reward_amount * 2) as i128);
 }
