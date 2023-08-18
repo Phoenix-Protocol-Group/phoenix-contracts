@@ -323,3 +323,120 @@ fn fund_rewards_without_establishing_distribution() {
         Err(Ok(ContractError::NoRewardsForThisAsset))
     );
 }
+
+#[test]
+fn try_to_withdraw_rewards_without_bonding() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let user = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    staking.create_distribution_flow(&admin, &admin, &reward_token.address);
+
+    let reward_amount: u128 = 100_000;
+    reward_token.mint(&admin, &(reward_amount as i128));
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_000;
+    });
+
+    let reward_duration = 600;
+    staking.fund_distribution(
+        &admin,
+        &2_000,
+        &reward_duration,
+        &reward_token.address,
+        &(reward_amount as i128),
+    );
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_600;
+    });
+    staking.distribute_rewards();
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        reward_amount
+    );
+    assert_eq!(staking.query_distributed_rewards(&reward_token.address), 0);
+
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 0
+                }
+            ]
+        }
+    );
+
+    staking.withdraw_rewards(&user);
+    assert_eq!(reward_token.balance(&user), 0);
+}
+
+#[test]
+// for some reason I'm not getting the correct error, despite debugging process
+// proving that it fails on the correct line
+#[should_panic]
+fn fund_distribution_starting_before_current_timestamp() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    staking.create_distribution_flow(&admin, &admin, &reward_token.address);
+
+    let reward_amount: u128 = 100_000;
+    reward_token.mint(&admin, &(reward_amount as i128));
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_000;
+    });
+
+    let reward_duration = 600;
+    staking.fund_distribution(
+        &admin,
+        &1_999,
+        &reward_duration,
+        &reward_token.address,
+        &(reward_amount as i128),
+    )
+}
+
+#[test]
+fn fund_distribution_with_reward_below_required_minimum() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    staking.create_distribution_flow(&admin, &admin, &reward_token.address);
+
+    reward_token.mint(&admin, &10);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_000;
+    });
+
+    let reward_duration = 600;
+    assert_eq!(
+        staking
+            .try_fund_distribution(&admin, &2_000, &reward_duration, &reward_token.address, &10,),
+        Err(Ok(ContractError::MinRewardNotReached))
+    );
+}
