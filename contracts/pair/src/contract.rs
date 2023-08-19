@@ -3,6 +3,7 @@ use soroban_sdk::{
 };
 
 use num_integer::Roots;
+use soroban_sdk::arbitrary::std::dbg;
 
 use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
@@ -186,11 +187,15 @@ impl LiquidityPoolTrait for LiquidityPool {
         )
             .into_val(&env);
 
+        dbg!("before");
+        // fixme doesn't go to after
         env.invoke_contract::<Val>(
             &stake_contract_address,
             &Symbol::new(&env, "initialize"),
             stake_args,
         );
+        dbg!("after");
+
 
         let config = Config {
             token_a: token_a.clone(),
