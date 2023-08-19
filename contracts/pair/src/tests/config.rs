@@ -23,8 +23,8 @@ fn update_config() {
     let pool = deploy_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
+        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         user1.clone(),
         500,
@@ -112,8 +112,8 @@ fn update_config_unauthorized() {
     let pool = deploy_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
+        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         user1,
         500,
@@ -149,8 +149,8 @@ fn update_config_update_admin() {
     let pool = deploy_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
+        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         user1.clone(),
         500,
@@ -202,8 +202,8 @@ fn update_config_too_high_fees() {
     let pool = deploy_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
+        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         user1,
         500,

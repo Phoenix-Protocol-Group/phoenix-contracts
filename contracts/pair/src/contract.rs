@@ -186,7 +186,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         )
             .into_val(&env);
 
-        let _init_result: Val = env.invoke_contract(
+        env.invoke_contract::<Val>(
             &stake_contract_address,
             &Symbol::new(&env, "initialize"),
             stake_args,
