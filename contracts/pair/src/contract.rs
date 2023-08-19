@@ -3,7 +3,6 @@ use soroban_sdk::{
 };
 
 use num_integer::Roots;
-use soroban_sdk::arbitrary::std::dbg;
 
 use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
@@ -143,7 +142,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let token_wasm_hash = token_init_info.get_token_wasm_hash();
         // Contract info
         let stake_wasm_hash = stake_init_info.get_stake_wasm_hash();
-        let token_per_power = stake_init_info.get_token_per_power();
+        let _token_per_power = stake_init_info.get_token_per_power();
         let min_bond = stake_init_info.get_min_bond();
         let max_distributions = stake_init_info.get_max_distributions();
         let min_reward = stake_init_info.get_min_reward();
@@ -180,22 +179,20 @@ impl LiquidityPoolTrait for LiquidityPool {
             &admin,
             // lp_token
             &env.current_contract_address(),
-            token_per_power,
+            // token_per_power,
             min_bond,
             max_distributions,
             min_reward,
         )
             .into_val(&env);
 
-        dbg!("before");
         // fixme doesn't go to after; check if deploy_stake_contract() from above is also okay
+        // token_per_power?
         env.invoke_contract::<Val>(
             &stake_contract_address,
             &Symbol::new(&env, "initialize"),
             stake_args,
         );
-        dbg!("after");
-
 
         let config = Config {
             token_a: token_a.clone(),
