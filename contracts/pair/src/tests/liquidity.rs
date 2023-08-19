@@ -48,6 +48,8 @@ fn provide_liqudity() {
     token2.mint(&user1, &1000);
     assert_eq!(token2.balance(&user1), 1000);
 
+    env.budget().reset_default();
+
     pool.provide_liquidity(
         &user1,
         &Some(100),
@@ -169,6 +171,8 @@ fn withdraw_liquidity() {
     assert_eq!(token1.balance(&pool.address), 100);
     assert_eq!(token2.balance(&user1), 0);
     assert_eq!(token2.balance(&pool.address), 100);
+
+    env.budget().reset_default();
 
     let share_amount = 50;
     let min_a = 50;
@@ -316,6 +320,7 @@ fn provide_liqudity_single_asset_equal() {
     assert_eq!(token2.balance(&pool.address), 10_000_000);
 
     token1.mint(&user1, &100_000);
+    env.budget().reset_default();
     // Providing 100k of token1 to 1:1 pool will perform swap which will create imbalance
     pool.provide_liquidity(
         &user1,
@@ -370,6 +375,8 @@ fn provide_liqudity_single_asset_equal_with_fees() {
     let initial_pool_liquidity = 10_000_000;
     token1.mint(&user1, &initial_pool_liquidity);
     token2.mint(&user1, &initial_pool_liquidity);
+
+    env.budget().reset_default();
 
     // providing liquidity with single asset is not allowed on an empty pool
     pool.provide_liquidity(
@@ -447,6 +454,8 @@ fn provide_liqudity_single_asset_one_third() {
     token1.mint(&user1, &10_000_000);
     token2.mint(&user1, &30_000_000);
 
+    env.budget().reset_default();
+
     // providing liquidity with single asset is not allowed on an empty pool
     pool.provide_liquidity(
         &user1,
@@ -510,6 +519,8 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
 
     token1.mint(&user1, &10_000_000);
     token2.mint(&user1, &30_000_000);
+
+    env.budget().reset_default();
 
     // providing liquidity with single asset is not allowed on an empty pool
     pool.provide_liquidity(
