@@ -188,7 +188,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             .into_val(&env);
 
         dbg!("before");
-        // fixme doesn't go to after
+        // fixme doesn't go to after; check if deploy_stake_contract() from above is also okay
         env.invoke_contract::<Val>(
             &stake_contract_address,
             &Symbol::new(&env, "initialize"),
