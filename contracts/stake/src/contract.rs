@@ -270,7 +270,7 @@ impl StakingTrait for Staking {
             // including only the reward config amount that is eligible for distribution.
             // This is the amount we will distribute to all mem
             let amount =
-                undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
+                dbg!(undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp()));
 
             if amount == 0 {
                 continue;
@@ -278,16 +278,18 @@ impl StakingTrait for Staking {
 
             let leftover: u128 = distribution.shares_leftover.into();
             let points = (amount << SHARES_SHIFT) + leftover;
-            let points_per_share = points / total_rewards_power;
+            let points_per_share = dbg!(dbg!(points) / dbg!(total_rewards_power));
             distribution.shares_leftover = (points % total_rewards_power) as u64;
 
             // Everything goes back to 128-bits/16-bytes
             // Full amount is added here to total withdrawable, as it should not be considered on its own
             // on future distributions - even if because of calculation offsets it is not fully
             // distributed, the error is handled by leftover.
+            dbg!(distribution.shares_per_point);
             distribution.shares_per_point += points_per_share;
             distribution.distributed_total += amount;
             distribution.withdrawable_total += amount;
+            dbg!(distribution.shares_per_point);
 
             save_distribution(&env, &distribution_address, &distribution);
 
@@ -314,7 +316,7 @@ impl StakingTrait for Staking {
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
-                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment)?;
+                dbg!(withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment)?);
 
             if reward_amount == 0 {
                 continue;

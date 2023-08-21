@@ -12,6 +12,8 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 const MIN_BOND: i128 = 1000;
 const MAX_DISTRIBUTIONS: u32 = 7;
 const MIN_REWARD: i128 = 1000;
+const MAX_BONUS_BPS: i64 = 30_000; // 30%
+const BONUS_PER_DAY_BPS: i64 = 500; // 5%
 
 #[allow(clippy::too_many_arguments)]
 pub fn deploy_staking_contract<'a>(
@@ -22,6 +24,6 @@ pub fn deploy_staking_contract<'a>(
     let admin = admin.into().unwrap_or(Address::random(env));
     let staking = StakingClient::new(env, &env.register_contract(None, Staking {}));
 
-    staking.initialize(&admin, lp_token, &MIN_BOND, &MAX_DISTRIBUTIONS, &MIN_REWARD);
+    staking.initialize(&admin, lp_token, &MIN_BOND, &MAX_DISTRIBUTIONS, &MIN_REWARD, &BONUS_PER_DAY_BPS, &MAX_BONUS_BPS);
     staking
 }

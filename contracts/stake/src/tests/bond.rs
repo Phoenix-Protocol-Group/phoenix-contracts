@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[test]
-fn initializa_staking_contract() {
+fn initialize_staking_contract() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -30,7 +30,9 @@ fn initializa_staking_contract() {
                 lp_token: lp_token.address,
                 min_bond: 1_000i128,
                 max_distributions: 7u32,
-                min_reward: 1_000i128
+                min_reward: 1_000i128,
+                bonus_per_day_bps: 500i64,
+                max_bonus_bps: 30_000i64,
             }
         }
     );

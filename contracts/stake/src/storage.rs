@@ -92,6 +92,8 @@ pub fn update_stakes_rewards(env: &Env, key: &Address) -> Result<(), ContractErr
         let reward_stake_points =
             bonding_info.total_stake as i128 * Decimal::bps(bonding_info.current_rewards_bps);
         bonding_info.total_stake += reward_stake_points as u128;
+        // Important - also increase total staked counter, otherwise there would be a gap
+        utils::increase_total_staked(env, &reward_stake_points)?;
 
         save_stakes(env, key, &bonding_info);
     }
