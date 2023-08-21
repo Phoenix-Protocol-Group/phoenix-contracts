@@ -12,7 +12,7 @@ use crate::{
         WithdrawableRewardsResponse,
     },
     storage::{
-        get_config, get_stakes, save_config, save_stakes,
+        get_config, get_stakes, save_config, save_stakes, update_stakes_rewards,
         utils::{self, add_distribution, get_admin, get_distributions, get_total_staked_counter},
         Config, Stake,
     },
@@ -32,6 +32,7 @@ pub struct Staking;
 pub trait StakingTrait {
     // Sets the token contract addresses for this pool
     // epoch: Number of seconds between payments
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
@@ -39,6 +40,8 @@ pub trait StakingTrait {
         min_bond: i128,
         max_distributions: u32,
         min_reward: i128,
+        bonus_per_day_bps: i64,
+        max_bonus_bps: i64,
     ) -> Result<(), ContractError>;
 
     fn bond(env: Env, sender: Address, tokens: i128) -> Result<(), ContractError>;
@@ -94,6 +97,7 @@ pub trait StakingTrait {
 
 #[contractimpl]
 impl StakingTrait for Staking {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
@@ -101,6 +105,8 @@ impl StakingTrait for Staking {
         min_bond: i128,
         max_distributions: u32,
         min_reward: i128,
+        bonus_per_day_bps: i64,
+        max_bonus_bps: i64,
     ) -> Result<(), ContractError> {
         if min_bond <= 0 {
             log!(
@@ -122,6 +128,8 @@ impl StakingTrait for Staking {
             min_bond,
             max_distributions,
             min_reward,
+            bonus_per_day_bps,
+            max_bonus_bps,
         };
         save_config(&env, config);
 
@@ -224,9 +232,6 @@ impl StakingTrait for Staking {
             distributed_total: 0u128,
             withdrawable_total: 0u128,
             manager,
-            // TODO: Add bonus rewards multiplier
-            max_bonus_bps: 0u64,
-            bonus_per_day_bps: 0u64,
         };
 
         let reward_token_client = token_contract::Client::new(&env, &asset);
@@ -335,6 +340,9 @@ impl StakingTrait for Staking {
             env.events()
                 .publish(("withdraw_rewards", "reward_amount"), reward_amount as i128);
         }
+
+        save_withdraw_adjustments(&env, &sender, &updated_withdraw_adjustments);
+        update_stakes_rewards(&env, &sender)?;
 
         Ok(())
     }
