@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, Vec, String};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, String, Vec};
 
 use crate::{
     distribution::{

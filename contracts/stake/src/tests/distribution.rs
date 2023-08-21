@@ -1,6 +1,6 @@
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
-    vec, Address, Env, String
+    vec, Address, Env, String,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
@@ -681,10 +681,11 @@ fn calculate_apr() {
     reward_token.mint(&admin, &(reward_amount as i128));
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
+        li.timestamp = 0;
     });
 
-    let reward_duration = 600;
+    // whole year of distribution
+    let reward_duration = 60 * 60 * 24 * 365;
     staking.fund_distribution(
         &admin,
         &2_000,
@@ -711,6 +712,7 @@ fn calculate_apr() {
     lp_token.mint(&user, &1000);
     staking.bond(&user, &1000);
 
+    // 100k rewards distributed for the whole year gives 100% APR
     assert_eq!(
         staking.query_annualized_rewards(),
         AnnualizedRewardsResponse {
@@ -718,38 +720,34 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_slice(&env, "3")
+                    amount: String::from_slice(&env, "100")
                 }
             ]
         }
     );
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = 2_600;
-    });
-    staking.distribute_rewards();
-    assert_eq!(
-        staking.query_undistributed_rewards(&reward_token.address),
-        0
-    );
-    assert_eq!(
-        staking.query_distributed_rewards(&reward_token.address),
-        reward_amount
+    let reward_amount: u128 = 50_000;
+    reward_token.mint(&admin, &(reward_amount as i128));
+
+    staking.fund_distribution(
+        &admin,
+        &2_000,
+        &reward_duration,
+        &reward_token.address,
+        &(reward_amount as i128),
     );
 
+    // having another 50k in rewards increases APR
     assert_eq!(
-        staking.query_withdrawable_rewards(&user),
-        WithdrawableRewardsResponse {
+        staking.query_annualized_rewards(),
+        AnnualizedRewardsResponse {
             rewards: vec![
                 &env,
-                WithdrawableReward {
-                    reward_address: reward_token.address.clone(),
-                    reward_amount
+                AnnualizedReward {
+                    asset: reward_token.address.clone(),
+                    amount: String::from_slice(&env, "150")
                 }
             ]
         }
     );
-
-    staking.withdraw_rewards(&user);
-    assert_eq!(reward_token.balance(&user), reward_amount as i128);
 }
