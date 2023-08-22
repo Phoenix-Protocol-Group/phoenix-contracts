@@ -3,7 +3,6 @@ use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Config, PairType};
-use soroban_sdk::arbitrary::std::dbg;
 
 #[test]
 fn update_config() {
