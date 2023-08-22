@@ -29,7 +29,6 @@ pub fn deploy_liquidity_pool_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,
     token_a_b: (&Address, &Address),
-    stake_power_bond_distrib_reward: (u128, i128, u32, i128),
     swap_fees: i64,
     fee_recipient: impl Into<Option<Address>>,
     max_allowed_slippage_bps: impl Into<Option<i64>>,
@@ -51,10 +50,9 @@ pub fn deploy_liquidity_pool_contract<'a>(
     };
     let stake_init_info = StakeInitInfo {
         stake_wasm_hash,
-        token_per_power: stake_power_bond_distrib_reward.0,
-        min_bond: stake_power_bond_distrib_reward.1,
-        max_distributions: stake_power_bond_distrib_reward.2,
-        min_reward: stake_power_bond_distrib_reward.3,
+        min_bond: 10i128,
+        max_distributions: 10u32,
+        min_reward: 5i128,
     };
 
     pool.initialize(

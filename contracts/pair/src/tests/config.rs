@@ -8,6 +8,7 @@ use crate::storage::{Config, PairType};
 fn update_config() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -24,7 +25,6 @@ fn update_config() {
         &env,
         Some(admin1.clone()),
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         user1.clone(),
         500,
@@ -113,7 +113,6 @@ fn update_config_unauthorized() {
         &env,
         Some(admin1.clone()),
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         user1,
         500,
@@ -134,6 +133,7 @@ fn update_config_unauthorized() {
 fn update_config_update_admin() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -150,7 +150,6 @@ fn update_config_update_admin() {
         &env,
         Some(admin1.clone()),
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         user1.clone(),
         500,
@@ -203,7 +202,6 @@ fn update_config_too_high_fees() {
         &env,
         Some(admin1.clone()),
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         user1,
         500,

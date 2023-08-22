@@ -13,5 +13,11 @@ pub mod token_contract {
     );
 }
 
+pub mod stake_contract {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
+    );
+}
+
 #[cfg(test)]
 mod tests;

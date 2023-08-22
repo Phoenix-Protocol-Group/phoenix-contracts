@@ -7,6 +7,7 @@ use num_integer::Roots;
 use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
     error::ContractError,
+    stake_contract,
     storage::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
@@ -136,16 +137,16 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_init_info: TokenInitInfo,
         stake_init_info: StakeInitInfo,
     ) -> Result<(), ContractError> {
+        // todo add tests to check if the staking contract is inited properly
         // Token info
-        let token_a = token_init_info.get_token_a();
-        let token_b = token_init_info.get_token_b();
-        let token_wasm_hash = token_init_info.get_token_wasm_hash();
+        let token_a = token_init_info.token_a; // fix this
+        let token_b = token_init_info.token_b;
+        let token_wasm_hash = token_init_info.token_wasm_hash;
         // Contract info
-        let stake_wasm_hash = stake_init_info.get_stake_wasm_hash();
-        let _token_per_power = stake_init_info.get_token_per_power();
-        let min_bond = stake_init_info.get_min_bond();
-        let max_distributions = stake_init_info.get_max_distributions();
-        let min_reward = stake_init_info.get_min_reward();
+        let stake_wasm_hash = stake_init_info.stake_wasm_hash;
+        let min_bond = stake_init_info.min_bond;
+        let max_distributions = stake_init_info.max_distributions;
+        let min_reward = stake_init_info.min_reward;
 
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
@@ -173,21 +174,25 @@ impl LiquidityPoolTrait for LiquidityPool {
         );
 
         let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);
+        stake_contract::Client::new(&env, &stake_contract_address).initialize(
+            &admin,
+            &share_token_address,
+            &min_bond,
+            &max_distributions,
+            &min_reward,
+        );
 
         let stake_args = (
             // admin
             &admin,
             // lp_token
-            &env.current_contract_address(),
-            // token_per_power,
+            &share_token_address,
             min_bond,
             max_distributions,
             min_reward,
         )
             .into_val(&env);
 
-        // fixme doesn't go to after; check if deploy_stake_contract() from above is also okay
-        // token_per_power?
         env.invoke_contract::<Val>(
             &stake_contract_address,
             &Symbol::new(&env, "initialize"),

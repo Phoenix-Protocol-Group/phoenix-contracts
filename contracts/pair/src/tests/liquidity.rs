@@ -16,6 +16,7 @@ use decimal::Decimal;
 fn provide_liqudity() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -32,7 +33,6 @@ fn provide_liqudity() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
@@ -47,8 +47,6 @@ fn provide_liqudity() {
 
     token2.mint(&user1, &1000);
     assert_eq!(token2.balance(&user1), 1000);
-
-    env.budget().reset_default();
 
     pool.provide_liquidity(
         &user1,
@@ -130,6 +128,7 @@ fn provide_liqudity() {
 fn withdraw_liquidity() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -146,7 +145,6 @@ fn withdraw_liquidity() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
@@ -171,8 +169,6 @@ fn withdraw_liquidity() {
     assert_eq!(token1.balance(&pool.address), 100);
     assert_eq!(token2.balance(&user1), 0);
     assert_eq!(token2.balance(&pool.address), 100);
-
-    env.budget().reset_default();
 
     let share_amount = 50;
     let min_a = 50;
@@ -222,9 +218,6 @@ fn withdraw_liquidity() {
         }
     );
 
-    // Reset Budget for next call to not exceed allowed amount of calls within one context
-    env.budget().reset_default();
-
     // clear the pool
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
     assert_eq!(token_share.balance(&user1), 0);
@@ -257,7 +250,6 @@ fn provide_liqudity_single_asset_on_empty_pool() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
@@ -281,6 +273,7 @@ fn provide_liqudity_single_asset_on_empty_pool() {
 fn provide_liqudity_single_asset_equal() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -297,7 +290,6 @@ fn provide_liqudity_single_asset_equal() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
@@ -320,7 +312,7 @@ fn provide_liqudity_single_asset_equal() {
     assert_eq!(token2.balance(&pool.address), 10_000_000);
 
     token1.mint(&user1, &100_000);
-    env.budget().reset_default();
+
     // Providing 100k of token1 to 1:1 pool will perform swap which will create imbalance
     pool.provide_liquidity(
         &user1,
@@ -349,6 +341,7 @@ fn provide_liqudity_single_asset_equal() {
 fn provide_liqudity_single_asset_equal_with_fees() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -365,7 +358,6 @@ fn provide_liqudity_single_asset_equal_with_fees() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
@@ -375,8 +367,6 @@ fn provide_liqudity_single_asset_equal_with_fees() {
     let initial_pool_liquidity = 10_000_000;
     token1.mint(&user1, &initial_pool_liquidity);
     token2.mint(&user1, &initial_pool_liquidity);
-
-    env.budget().reset_default();
 
     // providing liquidity with single asset is not allowed on an empty pool
     pool.provide_liquidity(
@@ -428,6 +418,7 @@ fn provide_liqudity_single_asset_equal_with_fees() {
 fn provide_liqudity_single_asset_one_third() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -444,7 +435,6 @@ fn provide_liqudity_single_asset_one_third() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
@@ -453,8 +443,6 @@ fn provide_liqudity_single_asset_one_third() {
 
     token1.mint(&user1, &10_000_000);
     token2.mint(&user1, &30_000_000);
-
-    env.budget().reset_default();
 
     // providing liquidity with single asset is not allowed on an empty pool
     pool.provide_liquidity(
@@ -494,6 +482,7 @@ fn provide_liqudity_single_asset_one_third() {
 fn provide_liqudity_single_asset_one_third_with_fees() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -510,7 +499,6 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
@@ -519,8 +507,6 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
 
     token1.mint(&user1, &10_000_000);
     token2.mint(&user1, &30_000_000);
-
-    env.budget().reset_default();
 
     // providing liquidity with single asset is not allowed on an empty pool
     pool.provide_liquidity(
@@ -574,7 +560,6 @@ fn provide_liqudity_too_high_fees() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
@@ -604,7 +589,6 @@ fn swap_with_no_amounts() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
@@ -639,7 +623,6 @@ fn withdraw_liqudity_below_min() {
         &env,
         None,
         (&token1.address, &token2.address),
-        (10_u128, 10i128, 10u32, 5i128),
         swap_fees,
         None,
         None,
