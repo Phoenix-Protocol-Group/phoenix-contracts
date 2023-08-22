@@ -114,6 +114,13 @@ fn two_distributions() {
         &reward_token.address,
         &(reward_amount as i128),
     );
+    staking.fund_distribution(
+        &admin,
+        &2_000,
+        &reward_duration,
+        &reward_token_2.address,
+        &((reward_amount * 2) as i128),
+    );
 
     // distribute rewards during half time
     env.ledger().with_mut(|li| {
@@ -131,13 +138,14 @@ fn two_distributions() {
                 },
                 WithdrawableReward {
                     reward_address: reward_token_2.address.clone(),
-                    reward_amount: 0
+                    reward_amount
                 },
             ]
         }
     );
     staking.withdraw_rewards(&user);
     assert_eq!(reward_token.balance(&user), (reward_amount / 2) as i128);
+    assert_eq!(reward_token_2.balance(&user), reward_amount as i128);
 
     env.ledger().with_mut(|li| {
         li.timestamp = 2_600;
@@ -152,6 +160,15 @@ fn two_distributions() {
         staking.query_distributed_rewards(&reward_token.address),
         reward_amount
     );
+    // second reward token
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token_2.address),
+        0
+    );
+    assert_eq!(
+        staking.query_distributed_rewards(&reward_token_2.address),
+        reward_amount * 2
+    );
 
     // since half of rewards were already distributed, after full distirubtion
     // round another half is ready
@@ -164,6 +181,10 @@ fn two_distributions() {
                     reward_address: reward_token.address.clone(),
                     reward_amount: reward_amount / 2
                 },
+                WithdrawableReward {
+                    reward_address: reward_token_2.address.clone(),
+                    reward_amount
+                }
             ]
         }
     );

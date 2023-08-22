@@ -94,6 +94,7 @@ pub fn update_stakes_rewards(env: &Env, key: &Address) -> Result<(), ContractErr
         bonding_info.total_stake += reward_stake_points as u128;
         // Important - also increase total staked counter, otherwise there would be a gap
         utils::increase_total_staked(env, &reward_stake_points)?;
+        utils::increase_stake_increases(env);
 
         save_stakes(env, key, &bonding_info);
     }
@@ -111,6 +112,7 @@ pub mod utils {
         Admin = 0,
         TotalStaked = 1,
         Distributions = 2,
+        StakeIncreases = 3,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -179,5 +181,25 @@ pub mod utils {
             .persistent()
             .get(&DataKey::Distributions)
             .unwrap_or_else(|| soroban_sdk::vec![e])
+    }
+
+    pub fn increase_stake_increases(e: &Env) {
+        let count = get_stake_increases(e);
+        e.storage()
+            .persistent()
+            .set(&DataKey::StakeIncreases, &(count + 1i128));
+    }
+
+    pub fn reset_stake_increases(e: &Env) {
+        e.storage()
+            .persistent()
+            .set(&DataKey::StakeIncreases, &0i128);
+    }
+
+    pub fn get_stake_increases(env: &Env) -> i128 {
+        env.storage()
+            .persistent()
+            .get(&DataKey::StakeIncreases)
+            .unwrap_or(0i128)
     }
 }

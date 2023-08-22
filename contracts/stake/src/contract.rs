@@ -13,12 +13,16 @@ use crate::{
     },
     storage::{
         get_config, get_stakes, save_config, save_stakes, update_stakes_rewards,
-        utils::{self, add_distribution, get_admin, get_distributions, get_total_staked_counter},
+        utils::{
+            self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
+            reset_stake_increases,
+        },
         Config, Stake,
     },
     token_contract,
 };
 use curve::Curve;
+use decimal::Decimal;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -255,6 +259,9 @@ impl StakingTrait for Staking {
             log!(&env, "No rewards to distribute!");
             return Ok(());
         }
+
+        let config = get_config(&env)?;
+
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address)?;
             let withdrawable = distribution.withdrawable_total;
@@ -270,7 +277,7 @@ impl StakingTrait for Staking {
             // including only the reward config amount that is eligible for distribution.
             // This is the amount we will distribute to all mem
             let amount =
-                dbg!(undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp()));
+                undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
 
             if amount == 0 {
                 continue;
@@ -278,18 +285,26 @@ impl StakingTrait for Staking {
 
             let leftover: u128 = distribution.shares_leftover.into();
             let points = (amount << SHARES_SHIFT) + leftover;
-            let points_per_share = dbg!(dbg!(points) / dbg!(total_rewards_power));
+
+            // One line that separates my life from being an unfeeling ghost after spending days on
+            // debugging the issue - why the stake rewards increased after increasing user stakes;
+            // the answer is - total number of points needs to be increased by percentage of global
+            // stake increase caused by rewards withdrawals
+            let stake_increase = Decimal::one()
+                - Decimal::bps(config.bonus_per_day_bps)
+                    * Decimal::from_ratio(utils::get_stake_increases(&env), 1);
+
+            let points = (points as i128 * stake_increase) as u128;
+            let points_per_share = points / total_rewards_power;
             distribution.shares_leftover = (points % total_rewards_power) as u64;
 
             // Everything goes back to 128-bits/16-bytes
             // Full amount is added here to total withdrawable, as it should not be considered on its own
             // on future distributions - even if because of calculation offsets it is not fully
             // distributed, the error is handled by leftover.
-            dbg!(distribution.shares_per_point);
             distribution.shares_per_point += points_per_share;
             distribution.distributed_total += amount;
             distribution.withdrawable_total += amount;
-            dbg!(distribution.shares_per_point);
 
             save_distribution(&env, &distribution_address, &distribution);
 
@@ -300,6 +315,9 @@ impl StakingTrait for Staking {
             env.events()
                 .publish(("distribute_rewards", "amount"), amount);
         }
+
+        // reset counter of total stake increase due to bonus rewards added during withdrawals
+        reset_stake_increases(&env);
 
         Ok(())
     }
@@ -316,7 +334,7 @@ impl StakingTrait for Staking {
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
-                dbg!(withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment)?);
+                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment)?;
 
             if reward_amount == 0 {
                 continue;
