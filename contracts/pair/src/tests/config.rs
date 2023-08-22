@@ -3,6 +3,7 @@ use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Config, PairType};
+use soroban_sdk::arbitrary::std::dbg;
 
 #[test]
 fn update_config() {
@@ -217,4 +218,30 @@ fn update_config_too_high_fees() {
         &None,
         &None,
     );
+}
+
+#[test]
+fn initialize_pair_contract_initializes_stake_contract() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut token1 = deploy_token_contract(&env, &Address::random(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::random(&env));
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let swap_fees = 500i64; // 5% bps
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        Address::random(&env),
+        None,
+        None,
+    );
+
+    assert!(!pool.query_config().stake_token.to_object().as_ref().is_void())
 }
