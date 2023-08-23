@@ -59,6 +59,8 @@ pub struct Distribution {
     pub withdrawable_total: u128,
     /// The manager of this distribution
     pub manager: Address,
+    /// The total amount of distribution points; required for proper reward calculation
+    pub total_points: u128,
 }
 
 pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution) {

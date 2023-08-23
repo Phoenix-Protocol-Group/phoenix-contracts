@@ -245,6 +245,7 @@ impl StakingTrait for Staking {
             shares_leftover: 0u64,
             distributed_total: 0u128,
             withdrawable_total: 0u128,
+            total_points: 0u128,
             manager,
         };
 
@@ -265,7 +266,7 @@ impl StakingTrait for Staking {
 
     fn distribute_rewards(env: Env) -> Result<(), ContractError> {
         // get total_virtual_staked, meaning all staked tokens plus increases coming from rewards
-        let total_rewards_power = get_total_virtual_staked_counter(&env)? as u128;
+        let total_rewards_power = dbg!(get_total_virtual_staked_counter(&env)? as u128);
         if total_rewards_power == 0 {
             log!(&env, "No rewards to distribute!");
             return Ok(());
@@ -301,12 +302,15 @@ impl StakingTrait for Staking {
             // debugging the issue - why the stake rewards increased after increasing user stakes;
             // the answer is - total number of points needs to be increased by percentage of global
             // stake increase caused by rewards withdrawals
-            let stake_increase = Decimal::one()
-                - Decimal::bps(config.bonus_per_day_bps)
-                    * Decimal::from_ratio(utils::get_stake_increase_counter(&env), 1);
+            // let stake_increase = Decimal::one()
+            //     - Decimal::bps(config.bonus_per_day_bps)
+            //         * Decimal::from_ratio(utils::get_stake_increase_counter(&env), 1);
 
-            let points = (points as i128 * stake_increase) as u128;
+            // let points = (points as i128 * stake_increase) as u128;
+            distribution.total_points = points;
             let points_per_share = points / total_rewards_power;
+            dbg!(points);
+            dbg!(points_per_share);
             distribution.shares_leftover = (points % total_rewards_power) as u64;
 
             // Everything goes back to 128-bits/16-bytes
@@ -314,6 +318,7 @@ impl StakingTrait for Staking {
             // on future distributions - even if because of calculation offsets it is not fully
             // distributed, the error is handled by leftover.
             distribution.shares_per_point += points_per_share;
+            dbg!(distribution.shares_per_point);
             distribution.distributed_total += amount;
             distribution.withdrawable_total += amount;
 

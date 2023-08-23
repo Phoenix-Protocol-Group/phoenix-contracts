@@ -16,7 +16,7 @@ pub struct ConfigResponse {
 pub struct StakedResponse {
     pub stakes: Vec<Stake>,
     pub current_rewards_bps: i64,
-    pub total_stake: u128
+    pub total_stake: u128,
 }
 
 #[contracttype]

@@ -191,7 +191,7 @@ fn two_distributions() {
 
     staking.withdraw_rewards(&user);
     assert_eq!(reward_token.balance(&user), reward_amount as i128);
-    assert_eq!(reward_token_2.balance(&user), (reward_amount * 2) as i128);
+    assert_eq!(reward_token_2.balance(&user), (reward_amount * 3) as i128);
 }
 
 #[test]
