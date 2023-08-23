@@ -15,7 +15,7 @@ use crate::{
         get_config, get_stakes, save_config, save_stakes, update_stakes_rewards,
         utils::{
             self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
-            reset_stake_increases,
+            reset_stake_increase_counter,
         },
         Config, Stake,
     },
@@ -168,6 +168,7 @@ impl StakingTrait for Staking {
             stake_timestamp: ledger.timestamp(),
         };
         stakes.total_stake += tokens as u128;
+        stakes.virtual_stake += tokens as u128;
         // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
         // creating multiple stakes the same day
 
@@ -292,7 +293,7 @@ impl StakingTrait for Staking {
             // stake increase caused by rewards withdrawals
             let stake_increase = Decimal::one()
                 - Decimal::bps(config.bonus_per_day_bps)
-                    * Decimal::from_ratio(utils::get_stake_increases(&env), 1);
+                    * Decimal::from_ratio(utils::get_stake_increase_counter(&env), 1);
 
             let points = (points as i128 * stake_increase) as u128;
             let points_per_share = points / total_rewards_power;
@@ -317,7 +318,7 @@ impl StakingTrait for Staking {
         }
 
         // reset counter of total stake increase due to bonus rewards added during withdrawals
-        reset_stake_increases(&env);
+        reset_stake_increase_counter(&env);
 
         Ok(())
     }

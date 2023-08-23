@@ -48,10 +48,12 @@ pub struct BondingInfo {
     /// User can withdraw rewards as often as they want, but this parameter resets
     /// only after 24h when reward percentage is bumped
     pub last_reward_time: u64,
-    /// Total amount of staked tokens plus rewards
+    /// Total amount of staked tokens
     pub total_stake: u128,
     /// Current rewards percentage in bps
     pub current_rewards_bps: i64,
+    /// Total amount of staked tokens plus rewards
+    pub virtual_stake: u128,
 }
 
 pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError> {
@@ -62,6 +64,7 @@ pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError
             last_reward_time: 0u64,
             total_stake: 0u128,
             current_rewards_bps: 0i64,
+            virtual_stake: 0u128,
         }),
     }
 }
@@ -91,10 +94,10 @@ pub fn update_stakes_rewards(env: &Env, key: &Address) -> Result<(), ContractErr
         // calculate bonus staking points
         let reward_stake_points =
             bonding_info.total_stake as i128 * Decimal::bps(bonding_info.current_rewards_bps);
-        bonding_info.total_stake += reward_stake_points as u128;
+        bonding_info.virtual_stake = bonding_info.total_stake + reward_stake_points as u128;
         // Important - also increase total staked counter, otherwise there would be a gap
         utils::increase_total_staked(env, &reward_stake_points)?;
-        utils::increase_stake_increases(env);
+        utils::increment_stake_increase_counter(env);
 
         save_stakes(env, key, &bonding_info);
     }
@@ -112,7 +115,7 @@ pub mod utils {
         Admin = 0,
         TotalStaked = 1,
         Distributions = 2,
-        StakeIncreases = 3,
+        StakeIncreaseCounter = 3,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -183,23 +186,23 @@ pub mod utils {
             .unwrap_or_else(|| soroban_sdk::vec![e])
     }
 
-    pub fn increase_stake_increases(e: &Env) {
-        let count = get_stake_increases(e);
+    pub fn increment_stake_increase_counter(e: &Env) {
+        let counter = get_stake_increase_counter(e);
         e.storage()
             .persistent()
-            .set(&DataKey::StakeIncreases, &(count + 1i128));
+            .set(&DataKey::StakeIncreaseCounter, &(counter + 1i128));
     }
 
-    pub fn reset_stake_increases(e: &Env) {
+    pub fn reset_stake_increase_counter(e: &Env) {
         e.storage()
             .persistent()
-            .set(&DataKey::StakeIncreases, &0i128);
+            .set(&DataKey::StakeIncreaseCounter, &0i128);
     }
 
-    pub fn get_stake_increases(env: &Env) -> i128 {
+    pub fn get_stake_increase_counter(env: &Env) -> i128 {
         env.storage()
             .persistent()
-            .get(&DataKey::StakeIncreases)
+            .get(&DataKey::StakeIncreaseCounter)
             .unwrap_or(0i128)
     }
 }

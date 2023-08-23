@@ -166,7 +166,7 @@ pub fn withdrawable_rewards(
 ) -> Result<u128, ContractError> {
     let ppw = distribution.shares_per_point;
 
-    let points = get_stakes(env, owner)?.total_stake;
+    let points = get_stakes(env, owner)?.virtual_stake;
     let points = (ppw * points) as i128;
 
     let correction = adjustment.shares_correction;
