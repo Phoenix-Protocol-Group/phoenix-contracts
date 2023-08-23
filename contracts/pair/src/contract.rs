@@ -137,7 +137,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_init_info: TokenInitInfo,
         stake_init_info: StakeInitInfo,
     ) -> Result<(), ContractError> {
-        // todo add tests to check if the staking contract is inited properly
         // Token info
         let token_a = token_init_info.token_a; // fix this
         let token_b = token_init_info.token_b;

@@ -242,5 +242,10 @@ fn initialize_pair_contract_initializes_stake_contract() {
         None,
     );
 
-    assert!(!pool.query_config().stake_token.to_object().as_ref().is_void())
+    assert!(!pool
+        .query_config()
+        .stake_token
+        .to_object()
+        .as_ref()
+        .is_void())
 }
