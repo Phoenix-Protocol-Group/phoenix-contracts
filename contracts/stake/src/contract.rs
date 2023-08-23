@@ -15,7 +15,7 @@ use crate::{
         get_config, get_stakes, save_config, save_stakes, update_stakes_rewards,
         utils::{
             self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
-            reset_stake_increase_counter,
+            get_total_virtual_staked_counter, reset_stake_increase_counter,
         },
         Config, Stake,
     },
@@ -188,6 +188,7 @@ impl StakingTrait for Staking {
         stakes.stakes.push_back(stake);
         save_stakes(&env, &sender, &stakes);
         utils::increase_total_staked(&env, &tokens)?;
+        utils::increase_total_virtual_staked(&env, &tokens)?;
 
         env.events().publish(("bond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
@@ -210,11 +211,19 @@ impl StakingTrait for Staking {
         remove_stake(&mut stakes.stakes, stake_amount, stake_timestamp)?;
         stakes.total_stake -= stake_amount as u128;
 
+        // calculate new virtual stake amount necessary for correct reward calculation
+        let virtual_stake_difference = stakes.virtual_stake - stakes.total_stake;
+        // withdrawing any stake will reset the virtual stake to the current stake amount,
+        // effectively discarding the bonus
+        stakes.virtual_stake = stakes.total_stake;
+        stakes.current_rewards_bps = 0i64;
+
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
 
         save_stakes(&env, &sender, &stakes);
         utils::decrease_total_staked(&env, &stake_amount)?;
+        utils::decrease_total_virtual_staked(&env, &(virtual_stake_difference as i128))?;
 
         env.events().publish(("unbond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
@@ -255,7 +264,8 @@ impl StakingTrait for Staking {
     }
 
     fn distribute_rewards(env: Env) -> Result<(), ContractError> {
-        let total_rewards_power = get_total_staked_counter(&env)? as u128;
+        // get total_virtual_staked, meaning all staked tokens plus increases coming from rewards
+        let total_rewards_power = get_total_virtual_staked_counter(&env)? as u128;
         if total_rewards_power == 0 {
             log!(&env, "No rewards to distribute!");
             return Ok(());

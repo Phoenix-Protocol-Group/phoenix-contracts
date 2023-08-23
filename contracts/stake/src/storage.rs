@@ -96,7 +96,7 @@ pub fn update_stakes_rewards(env: &Env, key: &Address) -> Result<(), ContractErr
             bonding_info.total_stake as i128 * Decimal::bps(bonding_info.current_rewards_bps);
         bonding_info.virtual_stake = bonding_info.total_stake + reward_stake_points as u128;
         // Important - also increase total staked counter, otherwise there would be a gap
-        utils::increase_total_staked(env, &reward_stake_points)?;
+        utils::increase_total_virtual_staked(env, &reward_stake_points)?;
         utils::increment_stake_increase_counter(env);
 
         save_stakes(env, key, &bonding_info);
@@ -114,8 +114,9 @@ pub mod utils {
     pub enum DataKey {
         Admin = 0,
         TotalStaked = 1,
-        Distributions = 2,
-        StakeIncreaseCounter = 3,
+        TotalVirtualStaked = 2,
+        Distributions = 3,
+        StakeIncreaseCounter = 4,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -139,6 +140,9 @@ pub mod utils {
 
     pub fn init_total_staked(e: &Env) {
         e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalVirtualStaked, &0i128);
     }
 
     pub fn increase_total_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
@@ -146,7 +150,6 @@ pub mod utils {
         e.storage()
             .persistent()
             .set(&DataKey::TotalStaked, &(count + amount));
-
         Ok(())
     }
 
@@ -155,12 +158,35 @@ pub mod utils {
         e.storage()
             .persistent()
             .set(&DataKey::TotalStaked, &(count - amount));
-
         Ok(())
     }
 
     pub fn get_total_staked_counter(env: &Env) -> Result<i128, ContractError> {
         match env.storage().persistent().get(&DataKey::TotalStaked) {
+            Some(val) => val,
+            None => Err(ContractError::TotalStakedCannotBeZeroOrLess),
+        }
+    }
+
+    // Virtual stakes representing total staked amount plus all reward stakes from withdrawing
+    pub fn increase_total_virtual_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+        let count = get_total_virtual_staked_counter(e)?;
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalVirtualStaked, &(count + amount));
+        Ok(())
+    }
+
+    pub fn decrease_total_virtual_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+        let count = get_total_virtual_staked_counter(e)?;
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalVirtualStaked, &(count - amount));
+        Ok(())
+    }
+
+    pub fn get_total_virtual_staked_counter(env: &Env) -> Result<i128, ContractError> {
+        match env.storage().persistent().get(&DataKey::TotalVirtualStaked) {
             Some(val) => val,
             None => Err(ContractError::TotalStakedCannotBeZeroOrLess),
         }
