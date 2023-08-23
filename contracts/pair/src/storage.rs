@@ -36,7 +36,7 @@ pub struct Config {
     pub token_a: Address,
     pub token_b: Address,
     pub share_token: Address,
-    pub stake_token: Address,
+    pub stake_contract: Address,
     pub pair_type: PairType,
     /// The total fees (in bps) charged by a pair of this type.
     /// In relation to the returned amount of tokens

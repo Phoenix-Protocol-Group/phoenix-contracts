@@ -1,6 +1,4 @@
-use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val,
-};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal};
 
 use num_integer::Roots;
 
@@ -103,7 +101,7 @@ pub trait LiquidityPoolTrait {
     fn query_share_token_address(env: Env) -> Result<Address, ContractError>;
 
     // Returns the address for the pool stake contract
-    fn query_stake_token_address(env: Env) -> Result<Address, ContractError>;
+    fn query_stake_contract_address(env: Env) -> Result<Address, ContractError>;
 
     // Returns  the total amount of LP tokens and assets in a specific pool
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
@@ -138,7 +136,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         stake_init_info: StakeInitInfo,
     ) -> Result<(), ContractError> {
         // Token info
-        let token_a = token_init_info.token_a; // fix this
+        let token_a = token_init_info.token_a;
         let token_b = token_init_info.token_b;
         let token_wasm_hash = token_init_info.token_wasm_hash;
         // Contract info
@@ -181,28 +179,11 @@ impl LiquidityPoolTrait for LiquidityPool {
             &min_reward,
         );
 
-        let stake_args = (
-            // admin
-            &admin,
-            // lp_token
-            &share_token_address,
-            min_bond,
-            max_distributions,
-            min_reward,
-        )
-            .into_val(&env);
-
-        env.invoke_contract::<Val>(
-            &stake_contract_address,
-            &Symbol::new(&env, "initialize"),
-            stake_args,
-        );
-
         let config = Config {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
             share_token: share_token_address,
-            stake_token: stake_contract_address,
+            stake_contract: stake_contract_address,
             pair_type: PairType::Xyk,
             total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
             fee_recipient,
@@ -495,9 +476,10 @@ impl LiquidityPoolTrait for LiquidityPool {
         Ok(get_config(&env)?.share_token)
     }
 
-    fn query_stake_token_address(env: Env) -> Result<Address, ContractError> {
-        Ok(get_config(&env)?.stake_token)
+    fn query_stake_contract_address(env: Env) -> Result<Address, ContractError> {
+        Ok(get_config(&env)?.stake_contract)
     }
+
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError> {
         let config = get_config(&env)?;
 
