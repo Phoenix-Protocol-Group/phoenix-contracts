@@ -15,6 +15,8 @@ pub struct ConfigResponse {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StakedResponse {
     pub stakes: Vec<Stake>,
+    pub current_rewards_bps: i64,
+    pub total_stake: u128
 }
 
 #[contracttype]

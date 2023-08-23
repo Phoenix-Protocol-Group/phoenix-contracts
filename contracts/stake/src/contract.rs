@@ -463,8 +463,11 @@ impl StakingTrait for Staking {
     }
 
     fn query_staked(env: Env, address: Address) -> Result<StakedResponse, ContractError> {
+        let bonding_info = get_stakes(&env, &address)?;
         Ok(StakedResponse {
-            stakes: get_stakes(&env, &address)?.stakes,
+            stakes: bonding_info.stakes,
+            current_rewards_bps: bonding_info.current_rewards_bps,
+            total_stake: bonding_info.total_stake,
         })
     }
 
