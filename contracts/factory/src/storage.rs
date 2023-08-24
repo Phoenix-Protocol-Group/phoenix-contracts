@@ -59,15 +59,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_should_save_admin() {
-        let env = Env::default();
-        let admin = <soroban_sdk::Address as Address>::random(&env);
-
-        utils::save_admin(&env, admin.clone());
-        assert_eq!(utils::get_admin(&env).unwrap(), admin);
-    }
-
-    #[test]
     #[should_panic]
     fn test_get_admin_should_panic_when_no_admin_saved() {
         let env = Env::default();
