@@ -753,6 +753,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "phoenix-pair-stable"
+version = "0.5.0"
+dependencies = [
+ "decimal",
+ "num-integer",
+ "pretty_assertions",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "phoenix-stake"
 version = "0.5.0"
 dependencies = [
