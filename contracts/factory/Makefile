@@ -7,6 +7,8 @@ test: build # because of token dependency
 
 build:
 	$(MAKE) -C ../token build || break;
+	$(MAKE) -C ../stake build || break;
+	$(MAKE) -C ../pair build || break;
 	cargo build --target wasm32-unknown-unknown --release
 
 lint: fmt clippy
