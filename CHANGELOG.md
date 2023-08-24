@@ -12,15 +12,26 @@ and this project adheres to
 - DEX deployment script ([#97])
 - Stake: Implement full distribution mechanism for static rewards ([#88])
 - Stable pair: Initialize contract ([#108])
+- Stake: Added new variable TotalStaked in storage ([#94])
+- Pair: Deployment of Stake contract during initialization ([#98])
 
 ## Changed
 
 - Curve: Modify implementation to not use named fields in Curve enum, since they are not allowed currently in soroban-sdk ([#86])
 - Curve: Modify implementation of PiecewiseLinear type to avoid using tuple due to soroban-sdk limitations ([#100])
+- Pair: Removes redundant slippage check ([#96])
+- All: more granular error handling ([#95])
+- All: changed the test for auths() and panic! ([#90])
 
 [#83]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/83
 [#86]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/86
+[#88]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/88
+[#90]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/90
+[#94]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/94
+[#95]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/95
+[#96]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/96
 [#97]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/97
+[#98]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/98
 [#100]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/100
 [#88]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/88
 [#108]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/108
