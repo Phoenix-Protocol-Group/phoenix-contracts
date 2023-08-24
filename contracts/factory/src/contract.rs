@@ -1,6 +1,7 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use crate::error::ContractError;
+use crate::storage::utils;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
@@ -18,8 +19,10 @@ pub trait FactoryTrait {
 
 #[contractimpl]
 impl FactoryTrait for Factory {
-    fn initialize(_env: Env, _admin: Address) -> Result<(), ContractError> {
-        unimplemented!();
+    fn initialize(env: Env, admin: Address) -> Result<(), ContractError> {
+        utils::save_admin(&env, admin);
+
+        Ok(())
     }
 
     fn create_liquidity_pool(_env: Env) -> Result<(), ContractError> {
