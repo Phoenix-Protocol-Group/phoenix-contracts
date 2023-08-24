@@ -1,8 +1,7 @@
 extern crate std;
-use soroban_sdk::arbitrary::std::dbg;
 use soroban_sdk::{testutils::Address as _, Address, Env};
 
-use super::setup::{deploy_liquidity_pool_contract, deploy_stake_contract, deploy_token_contract};
+use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Config, PairType};
 
 #[test]
@@ -218,21 +217,4 @@ fn update_config_too_high_fees() {
         &None,
         &None,
     );
-}
-
-#[test]
-#[ignore]
-fn test_stake_contract_init() {
-    let env = Env::default();
-    env.mock_all_auths();
-    let stake_client = deploy_stake_contract(&env);
-
-    stake_client.initialize(
-        &Address::random(&env),
-        &Address::random(&env),
-        &100i128,
-        &500u32,
-        &20i128,
-    );
-    dbg!(stake_client.query_config());
 }

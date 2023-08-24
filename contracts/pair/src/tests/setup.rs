@@ -3,18 +3,11 @@ use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
-    stake_contract, token_contract,
+    token_contract,
 };
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
     token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
-}
-
-pub fn deploy_stake_contract<'a>(env: &Env) -> stake_contract::Client<'a> {
-    // why is this working only with
-    // contract::LiquidityPool and
-    // soroban_sdk::testutils::MockAuthContract
-    stake_contract::Client::new(env, &env.register_contract(None, LiquidityPool))
 }
 
 fn install_token_wasm(env: &Env) -> BytesN<32> {
