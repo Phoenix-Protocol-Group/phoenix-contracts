@@ -11,6 +11,7 @@ and this project adheres to
 - Stake: Create new distribution structure for staking rewards flow ([#83])
 - DEX deployment script ([#97])
 - Stake: Implement full distribution mechanism for static rewards ([#88])
+- Stable pair: Initialize contract ([#108])
 
 ## Changed
 
@@ -22,6 +23,7 @@ and this project adheres to
 [#97]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/97
 [#100]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/100
 [#88]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/88
+[#108]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/108
 
 ## [0.5.0] - 2023-08-04
 

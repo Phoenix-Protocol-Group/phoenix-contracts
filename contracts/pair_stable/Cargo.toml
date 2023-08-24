@@ -1,0 +1,22 @@
+[package]
+name = "phoenix-pair-stable"
+version = { workspace = true }
+authors = ["Jakub <jakub@moonbite.space>"]
+repository = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+testutils = ["soroban-sdk/testutils"]
+
+[dependencies]
+decimal = { workspace = true }
+num-integer = { workspace = true }
+soroban-sdk = { workspace = true }
+
+[dev_dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+pretty_assertions = { workspace = true }
