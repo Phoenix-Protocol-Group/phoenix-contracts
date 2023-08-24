@@ -1,5 +1,7 @@
 use crate::error::ContractError;
-use soroban_sdk::{contracttype, symbol_short, Address, ConversionError, Env, Symbol, TryFromVal, Val, Vec};
+use soroban_sdk::{
+    contracttype, symbol_short, Address, BytesN, ConversionError, Env, Symbol, TryFromVal, Val,
+};
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -17,8 +19,37 @@ impl TryFromVal<Env, DataKey> for Val {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LiquidityPoolInitInfo {
+    admin: Address,
+    lp_wasm_hash: BytesN<32>,
+    share_token_decimals: u32,
+    swap_fee_bps: i64,
+    fee_recipient: Address,
+    max_allowed_slippage_bps: i64,
+    max_allowed_spread_bps: i64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TokenInitInfo {
+    pub token_wasm_hash: BytesN<32>,
+    pub token_a: Address,
+    pub token_b: Address,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StakeInitInfo {
+    pub stake_wasm_hash: BytesN<32>,
+    pub min_bond: i128,
+    pub max_distributions: u32,
+    pub min_reward: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
-    pub lp_tokens: Vec<Address>,
+    pub quiet_please: i32, // to satisfy the compiler
 }
 
 const CONFIG: Symbol = symbol_short!("CONFIG");
@@ -55,8 +86,8 @@ pub mod utils {
 
 #[cfg(test)]
 mod tests {
-    use soroban_sdk::testutils::Address;
     use super::*;
+    use soroban_sdk::testutils::Address;
 
     #[test]
     #[should_panic]

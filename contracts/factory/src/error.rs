@@ -7,4 +7,5 @@ pub enum ContractError {
     Unauthorized = 0,
     ConfigNotSet = 1,
     FailedToGetAdminAddrFromStorage = 2,
+    FirstTokenMustBeSmallerThenSecond = 3,
 }
