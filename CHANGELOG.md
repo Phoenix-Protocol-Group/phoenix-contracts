@@ -33,7 +33,6 @@ and this project adheres to
 [#97]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/97
 [#98]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/98
 [#100]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/100
-[#88]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/88
 [#108]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/108
 
 ## [0.5.0] - 2023-08-04
