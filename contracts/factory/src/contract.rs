@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal};
+use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use crate::error::ContractError;
 
@@ -8,7 +8,7 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
 #[contract]
 pub struct Factory;
 
-pub trait Factory {
+pub trait FactoryTrait {
     fn initialize(env: Env, admin: Address) -> Result<(), ContractError>;
 
     fn create_liquidity_pool(env: Env) -> Result<(), ContractError>;
@@ -18,15 +18,15 @@ pub trait Factory {
 
 #[contractimpl]
 impl FactoryTrait for Factory {
-    fn initialize(env: Env, admin: Address) -> Result<(), ContractError> {
+    fn initialize(_env: Env, _admin: Address) -> Result<(), ContractError> {
         unimplemented!();
     }
 
-    fn create_liquidity_pool(env: Env) -> Result<(), ContractError> {
+    fn create_liquidity_pool(_env: Env) -> Result<(), ContractError> {
         unimplemented!();
     }
 
-    fn query_pools(env: Env) -> Result<Vec<Address>, ContractError> {
+    fn query_pools(_env: Env) -> Result<Vec<Address>, ContractError> {
         unimplemented!();
     }
 }
