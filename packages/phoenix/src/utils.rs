@@ -42,6 +42,18 @@ pub struct StakeInitInfo {
     pub min_reward: i128,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LiquidityPoolInitInfo {
+    pub admin: Address,
+    pub lp_wasm_hash: BytesN<32>,
+    pub share_token_decimals: u32,
+    pub swap_fee_bps: i64,
+    pub fee_recipient: Address,
+    pub max_allowed_slippage_bps: i64,
+    pub max_allowed_spread_bps: i64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
