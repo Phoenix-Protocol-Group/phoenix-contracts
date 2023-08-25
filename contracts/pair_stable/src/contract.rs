@@ -4,10 +4,10 @@ use num_integer::Roots;
 
 use crate::{
     error::ContractError,
-    math::AMP_PRECISION,
+    math::{compute_current_amp, AMP_PRECISION},
     storage::{
-        get_config, save_amp, save_config, utils, validate_fee_bps, AmplifierParameters, Asset,
-        Config, PairType, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
+        get_amp, get_config, save_amp, save_config, utils, validate_fee_bps, AmplifierParameters,
+        Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
@@ -218,6 +218,10 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 return Err(ContractError::SlippageToleranceViolated);
             }
         }
+
+        let amp_parameters = get_amp(&env).unwrap(); // FIXME: This is minor, but add some
+                                                     // validation to AMP parameters
+        let amp = compute_current_amp(&env, &amp_parameters);
 
         // Check if both tokens are provided, one token is provided, or none are provided
         let amounts = match (desired_a, desired_b) {
