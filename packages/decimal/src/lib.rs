@@ -215,6 +215,10 @@ impl Decimal {
             *self
         }
     }
+
+    pub const fn abs_diff(self, other: Self) -> Self {
+        Self(self.0.abs_diff(other.0) as i128)
+    }
 }
 
 impl Add for Decimal {
