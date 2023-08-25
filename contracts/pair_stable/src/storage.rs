@@ -13,6 +13,7 @@ pub enum DataKey {
     ReserveA = 1,
     ReserveB = 2,
     Admin = 3,
+    Amp = 4,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -78,6 +79,23 @@ pub fn get_config(env: &Env) -> Result<Config, ContractError> {
 
 pub fn save_config(env: &Env, config: Config) {
     env.storage().instance().set(&CONFIG, &config);
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AmplifierParameters {
+    pub init_amp: u64,
+    pub init_amp_time: u64,
+    pub next_amp: u64,
+    pub next_amp_time: u64,
+}
+
+pub fn get_amp(env: &Env) -> Option<AmplifierParameters> {
+    env.storage().instance().get(&DataKey::Amp)
+}
+
+pub fn save_amp(env: &Env, amp: AmplifierParameters) {
+    env.storage().instance().set(&DataKey::Amp, &amp);
 }
 
 #[contracttype]

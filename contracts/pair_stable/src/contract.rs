@@ -4,9 +4,10 @@ use num_integer::Roots;
 
 use crate::{
     error::ContractError,
+    math::AMP_PRECISION,
     storage::{
-        get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse,
+        get_config, save_amp, save_config, utils, validate_fee_bps, AmplifierParameters, Asset,
+        Config, PairType, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
@@ -38,6 +39,7 @@ pub trait StableLiquidityPoolTrait {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        amp: u64,
     ) -> Result<(), ContractError>;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -131,6 +133,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        amp: u64,
     ) -> Result<(), ContractError> {
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
@@ -168,6 +171,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             max_allowed_spread_bps,
         };
         save_config(&env, config);
+        let current_time = env.ledger().timestamp();
+        save_amp(
+            &env,
+            AmplifierParameters {
+                init_amp: amp * AMP_PRECISION,
+                init_amp_time: current_time,
+                next_amp: amp * AMP_PRECISION,
+                next_amp_time: current_time,
+            },
+        );
         utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
