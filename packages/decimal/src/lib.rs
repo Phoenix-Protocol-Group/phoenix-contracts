@@ -128,7 +128,7 @@ impl Decimal {
     /// ## Examples
     ///
     /// ```
-    /// # use your_crate_name::Decimal;  // <-- Adjust to your actual crate name or module path
+    /// # use decimal::Decimal;  // <-- Adjust to your actual crate name or module path
     /// let a = Decimal::from_atomics(1234, 3);
     /// assert_eq!(a.to_string(), "1.234");
     ///
@@ -154,6 +154,35 @@ impl Decimal {
                 Self(atomics / factor)
             }
         }
+    }
+
+    /// Raises a value to the power of `exp`, panicking if an overflow occurs.
+    pub fn pow(self, exp: u32) -> Self {
+        // This uses the exponentiation by squaring algorithm:
+        // https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Basic_method
+
+        fn inner(mut x: Decimal, mut n: u32) -> Decimal {
+            if n == 0 {
+                return Decimal::one();
+            }
+
+            let mut y = Decimal::one();
+
+            while n > 1 {
+                if n % 2 == 0 {
+                    x = x * x; // Regular multiplication
+                    n /= 2;
+                } else {
+                    y = x * y; // Regular multiplication
+                    x = x * x; // Regular multiplication
+                    n = (n - 1) / 2;
+                }
+            }
+
+            x * y
+        }
+
+        inner(self, exp)
     }
 
     /// Returns the multiplicative inverse `1/d` for decimal `d`.
@@ -801,5 +830,17 @@ mod tests {
         let left = Decimal::percent(150); // 1.5
         let right = 0i128;
         let _result = left / right;
+    }
+
+    #[test]
+    fn decimal_pow_works() {
+        assert_eq!(Decimal::percent(200).pow(2), Decimal::percent(400));
+        assert_eq!(Decimal::percent(100).pow(10), Decimal::percent(100));
+    }
+
+    #[test]
+    #[should_panic]
+    fn decimal_pow_overflow_panics() {
+        _ = Decimal::MAX.pow(2u32);
     }
 }
