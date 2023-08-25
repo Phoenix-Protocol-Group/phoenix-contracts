@@ -14,6 +14,8 @@ and this project adheres to
 - Stable pair: Initialize contract ([#108])
 - Stake: Added new variable TotalStaked in storage ([#94])
 - Pair: Deployment of Stake contract during initialization ([#98])
+- Decimal: Implement `from_atomics` and `to_string` ([#115])
+- Curve: Implement `end` helper ([#115])
 
 ## Changed
 
@@ -34,6 +36,7 @@ and this project adheres to
 [#98]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/98
 [#100]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/100
 [#108]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/108
+[#115]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/115
 
 ## [0.5.0] - 2023-08-04
 
