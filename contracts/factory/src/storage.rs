@@ -20,13 +20,13 @@ impl TryFromVal<Env, DataKey> for Val {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LiquidityPoolInitInfo {
-    admin: Address,
-    lp_wasm_hash: BytesN<32>,
-    share_token_decimals: u32,
-    swap_fee_bps: i64,
-    fee_recipient: Address,
-    max_allowed_slippage_bps: i64,
-    max_allowed_spread_bps: i64,
+    pub admin: Address,
+    pub lp_wasm_hash: BytesN<32>,
+    pub share_token_decimals: u32,
+    pub swap_fee_bps: i64,
+    pub fee_recipient: Address,
+    pub max_allowed_slippage_bps: i64,
+    pub max_allowed_spread_bps: i64,
 }
 
 #[contracttype]
@@ -67,10 +67,31 @@ pub fn save_config(env: &Env, config: Config) {
 
 pub mod utils {
     use super::*;
-    use soroban_sdk::BytesN;
-    pub fn deploy_lp_contract(_env: &Env, _lp_wasm_hash: BytesN<32>) {
-        unimplemented!();
+    use soroban_sdk::{Address, Bytes, BytesN, Env};
+    use soroban_sdk::xdr::ToXdr;
+
+    pub fn deploy_lp_contract(
+        env: &Env,
+        lp_wasm_hash: BytesN<32>,
+        share_token_decimals: u32,
+        swap_fee_bps: i64,
+        fee_recipient: Address,
+        max_allowed_slippage_bps: i64,
+        max_allowed_spread_bps: i64,
+    ) -> Address {
+        let mut salt = Bytes::new(env);
+        salt.append(&share_token_decimals.to_xdr(env));
+        salt.append(&swap_fee_bps.to_xdr(env));
+        salt.append(&fee_recipient.to_xdr(env));
+        salt.append(&max_allowed_slippage_bps.to_xdr(env));
+        salt.append(&max_allowed_spread_bps.to_xdr(env));
+
+        let salt = env.crypto().sha256(&salt);
+        env.deployer()
+            .with_current_contract(salt)
+            .deploy(lp_wasm_hash)
     }
+
 
     pub fn save_admin(env: &Env, address: Address) {
         env.storage().instance().set(&DataKey::Admin, &address);
