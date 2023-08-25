@@ -2,8 +2,10 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, En
 
 use num_integer::Roots;
 
+use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
     error::ContractError,
+    stake_contract,
     storage::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
@@ -30,14 +32,13 @@ pub trait LiquidityPoolTrait {
     fn initialize(
         env: Env,
         admin: Address,
-        token_wasm_hash: BytesN<32>,
-        token_a: Address,
-        token_b: Address,
         share_token_decimals: u32,
         swap_fee_bps: i64,
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        token_init_info: TokenInitInfo,
+        stake_contract_info: StakeInitInfo,
     ) -> Result<(), ContractError>;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -99,6 +100,9 @@ pub trait LiquidityPoolTrait {
     // Returns the address for the pool share token
     fn query_share_token_address(env: Env) -> Result<Address, ContractError>;
 
+    // Returns the address for the pool stake contract
+    fn query_stake_contract_address(env: Env) -> Result<Address, ContractError>;
+
     // Returns  the total amount of LP tokens and assets in a specific pool
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
 
@@ -123,15 +127,24 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn initialize(
         env: Env,
         admin: Address,
-        token_wasm_hash: BytesN<32>,
-        token_a: Address,
-        token_b: Address,
         share_token_decimals: u32,
         swap_fee_bps: i64,
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        token_init_info: TokenInitInfo,
+        stake_init_info: StakeInitInfo,
     ) -> Result<(), ContractError> {
+        // Token info
+        let token_a = token_init_info.token_a;
+        let token_b = token_init_info.token_b;
+        let token_wasm_hash = token_init_info.token_wasm_hash;
+        // Contract info
+        let stake_wasm_hash = stake_init_info.stake_wasm_hash;
+        let min_bond = stake_init_info.min_bond;
+        let max_distributions = stake_init_info.max_distributions;
+        let min_reward = stake_init_info.min_reward;
+
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
             log!(&env, "token_a must be less than token_b");
@@ -157,10 +170,20 @@ impl LiquidityPoolTrait for LiquidityPool {
             &"POOL".into_val(&env),
         );
 
+        let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);
+        stake_contract::Client::new(&env, &stake_contract_address).initialize(
+            &admin,
+            &share_token_address,
+            &min_bond,
+            &max_distributions,
+            &min_reward,
+        );
+
         let config = Config {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
             share_token: share_token_address,
+            stake_contract: stake_contract_address,
             pair_type: PairType::Xyk,
             total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
             fee_recipient,
@@ -451,6 +474,10 @@ impl LiquidityPoolTrait for LiquidityPool {
 
     fn query_share_token_address(env: Env) -> Result<Address, ContractError> {
         Ok(get_config(&env)?.share_token)
+    }
+
+    fn query_stake_contract_address(env: Env) -> Result<Address, ContractError> {
+        Ok(get_config(&env)?.stake_contract)
     }
 
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError> {

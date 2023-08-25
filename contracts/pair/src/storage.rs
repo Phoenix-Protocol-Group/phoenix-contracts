@@ -36,6 +36,7 @@ pub struct Config {
     pub token_a: Address,
     pub token_b: Address,
     pub share_token: Address,
+    pub stake_contract: Address,
     pub pair_type: PairType,
     /// The total fees (in bps) charged by a pair of this type.
     /// In relation to the returned amount of tokens
@@ -134,6 +135,21 @@ pub mod utils {
         e.deployer()
             .with_current_contract(salt)
             .deploy(token_wasm_hash)
+    }
+
+    pub fn deploy_stake_contract(e: &Env, stake_wasm_hash: BytesN<32>) -> Address {
+        let deployer = e.current_contract_address();
+
+        if deployer != e.current_contract_address() {
+            deployer.require_auth();
+        }
+
+        let salt = Bytes::new(e);
+        let salt = e.crypto().sha256(&salt);
+
+        e.deployer()
+            .with_address(deployer, salt)
+            .deploy(stake_wasm_hash)
     }
 
     pub fn save_admin(e: &Env, address: Address) {

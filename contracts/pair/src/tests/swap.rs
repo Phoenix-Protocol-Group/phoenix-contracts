@@ -12,6 +12,7 @@ use decimal::Decimal;
 fn simple_swap() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -27,8 +28,7 @@ fn simple_swap() {
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -125,6 +125,7 @@ fn simple_swap() {
 fn swap_with_high_fee() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -142,8 +143,7 @@ fn swap_with_high_fee() {
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         fee_recipient.clone(),
         None,
@@ -201,6 +201,7 @@ fn swap_with_high_fee() {
 fn swap_simulation_even_pool() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::random(&env));
     let mut token2 = deploy_token_contract(&env, &Address::random(&env));
@@ -212,8 +213,7 @@ fn swap_simulation_even_pool() {
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         Address::random(&env),
         None,
@@ -301,6 +301,7 @@ fn swap_simulation_even_pool() {
 fn swap_simulation_one_third_pool() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::random(&env));
     let mut token2 = deploy_token_contract(&env, &Address::random(&env));
@@ -312,8 +313,7 @@ fn swap_simulation_one_third_pool() {
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         Address::random(&env),
         None,
