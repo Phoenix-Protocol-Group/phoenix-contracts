@@ -1,0 +1,15 @@
+[package]
+name = "phoenix"
+description = "A library used to share tools, utilities and code between our contracts"
+version = { workspace = true }
+authors = ["Jakub <jakub@moonbite.space>"]
+repository = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+
+[dependencies]
+soroban-sdk = { workspace = true }
+decimal = { workspace = true }
+
+[dev-dependencies]
+test-case = { workspace = true }
