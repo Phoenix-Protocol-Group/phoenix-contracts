@@ -7,9 +7,13 @@ repository = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
 
+[features]
+testutils = ["soroban-sdk/testutils"]
+
 [dependencies]
 soroban-sdk = { workspace = true }
 decimal = { workspace = true }
 
-[dev-dependencies]
+[dev_dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
 test-case = { workspace = true }
