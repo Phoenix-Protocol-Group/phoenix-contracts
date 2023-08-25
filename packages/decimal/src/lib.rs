@@ -4,8 +4,10 @@
 #![no_std]
 
 use core::{
-    cmp::{PartialEq, PartialOrd},
+    cmp::{Ordering, PartialEq, PartialOrd},
+    fmt,
     ops::{Add, Div, Mul, Sub},
+    str::FromStr,
 };
 
 extern crate alloc;
@@ -26,7 +28,7 @@ impl Decimal {
     const DECIMAL_FRACTIONAL_SQUARED: i128 = 1_000_000_000_000_000_000_000_000_000_000_000_000i128; // (1*10**18)**2 = 1*10**36
     /// The number of decimal places. Since decimal types are fixed-point rather than
     /// floating-point, this is a constant.
-    pub const DECIMAL_PLACES: u32 = 18;
+    pub const DECIMAL_PLACES: i32 = 18;
     /// The largest value that can be represented by this decimal type.
     pub const MAX: Self = Self(i128::MAX);
     /// The smallest value that can be represented by this decimal type.
@@ -73,7 +75,7 @@ impl Decimal {
     /// See also [`Decimal::atomics()`].
     #[must_use]
     #[inline]
-    pub const fn decimal_places(&self) -> u32 {
+    pub const fn decimal_places(&self) -> i32 {
         Self::DECIMAL_PLACES
     }
 
@@ -113,6 +115,45 @@ impl Decimal {
     #[inline]
     pub const fn atomics(&self) -> i128 {
         self.0
+    }
+
+    /// Creates a decimal from a number of atomic units and the number
+    /// of decimal places. The inputs will be converted internally to form
+    /// a decimal with 18 decimal places. So the input 123 and 2 will create
+    /// the decimal 1.23.
+    ///
+    /// Using 18 decimal places is slightly more efficient than other values
+    /// as no internal conversion is necessary.
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// # use your_crate_name::Decimal;  // <-- Adjust to your actual crate name or module path
+    /// let a = Decimal::from_atomics(1234, 3);
+    /// assert_eq!(a.to_string(), "1.234");
+    ///
+    /// let a = Decimal::from_atomics(1234, 0);
+    /// assert_eq!(a.to_string(), "1234");
+    ///
+    /// let a = Decimal::from_atomics(1, 18);
+    /// assert_eq!(a.to_string(), "0.000000000000000001");
+    /// ```
+    pub fn from_atomics(atomics: i128, decimal_places: i32) -> Self {
+        const TEN: i128 = 10;
+        match decimal_places.cmp(&Self::DECIMAL_PLACES) {
+            Ordering::Less => {
+                let digits = Self::DECIMAL_PLACES - decimal_places;
+                let factor = TEN.pow(digits as u32);
+                Self(atomics * factor)
+            }
+            Ordering::Equal => Self(atomics),
+            Ordering::Greater => {
+                let digits = decimal_places - Self::DECIMAL_PLACES;
+                let factor = TEN.pow(digits as u32);
+                // Since factor cannot be zero, the division is safe.
+                Self(atomics / factor)
+            }
+        }
     }
 
     /// Returns the multiplicative inverse `1/d` for decimal `d`.
@@ -258,6 +299,52 @@ impl Mul<Decimal> for i128 {
     }
 }
 
+impl FromStr for Decimal {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        let mut parts_iter = input.split('.');
+
+        let whole_part = parts_iter.next().expect("Unexpected input format");
+        let whole: i128 = whole_part.parse().expect("Error parsing whole");
+        let mut atomics = whole * Self::DECIMAL_FRACTIONAL;
+
+        if let Some(fractional_part) = parts_iter.next() {
+            let fractional: i128 = fractional_part.parse().expect("Error parsing fractional");
+            let exp = Self::DECIMAL_PLACES - fractional_part.len() as i32;
+            assert!(exp <= Self::DECIMAL_PLACES, "Too many fractional digits");
+            let fractional_factor = 10i128.pow(exp as u32);
+            atomics += fractional * fractional_factor;
+        }
+
+        assert!(parts_iter.next().is_none(), "Unexpected number of dots");
+
+        Ok(Decimal(atomics))
+    }
+}
+
+impl fmt::Display for Decimal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let whole = self.0 / Self::DECIMAL_FRACTIONAL;
+        let fractional = self.0 % Self::DECIMAL_FRACTIONAL;
+
+        if fractional == 0 {
+            write!(f, "{}", whole)
+        } else {
+            let fractional_string = alloc::format!(
+                "{:0>padding$}",
+                fractional,
+                padding = Self::DECIMAL_PLACES as usize
+            );
+            f.write_fmt(format_args!(
+                "{}.{}",
+                whole,
+                fractional_string.trim_end_matches('0')
+            ))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -290,6 +377,58 @@ mod tests {
     fn decimal_percent() {
         let value = Decimal::percent(50);
         assert_eq!(value.0, Decimal::DECIMAL_FRACTIONAL / 2i128);
+    }
+
+    #[test]
+    fn decimal_from_atomics_works() {
+        let one = Decimal::one();
+        let two = one + one;
+
+        assert_eq!(Decimal::from_atomics(1i128, 0), one);
+        assert_eq!(Decimal::from_atomics(10i128, 1), one);
+        assert_eq!(Decimal::from_atomics(100i128, 2), one);
+        assert_eq!(Decimal::from_atomics(1000i128, 3), one);
+        assert_eq!(Decimal::from_atomics(1000000000000000000i128, 18), one);
+        assert_eq!(Decimal::from_atomics(10000000000000000000i128, 19), one);
+        assert_eq!(Decimal::from_atomics(100000000000000000000i128, 20), one);
+
+        assert_eq!(Decimal::from_atomics(2i128, 0), two);
+        assert_eq!(Decimal::from_atomics(20i128, 1), two);
+        assert_eq!(Decimal::from_atomics(200i128, 2), two);
+        assert_eq!(Decimal::from_atomics(2000i128, 3), two);
+        assert_eq!(Decimal::from_atomics(2000000000000000000i128, 18), two);
+        assert_eq!(Decimal::from_atomics(20000000000000000000i128, 19), two);
+        assert_eq!(Decimal::from_atomics(200000000000000000000i128, 20), two);
+
+        // Cuts decimal digits (20 provided but only 18 can be stored)
+        assert_eq!(
+            Decimal::from_atomics(4321i128, 20),
+            Decimal::from_str("0.000000000000000043").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(6789i128, 20),
+            Decimal::from_str("0.000000000000000067").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 38),
+            Decimal::from_str("1.701411834604692317").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 39),
+            Decimal::from_str("0.170141183460469231").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 45),
+            Decimal::from_str("0.000000170141183460").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 51),
+            Decimal::from_str("0.000000000000170141").unwrap()
+        );
+        assert_eq!(
+            Decimal::from_atomics(i128::MAX, 56),
+            Decimal::from_str("0.000000000000000001").unwrap()
+        );
     }
 
     #[test]
@@ -367,6 +506,40 @@ mod tests {
         assert_eq!(half.decimal_places(), 18);
         assert_eq!(two.decimal_places(), 18);
         assert_eq!(max.decimal_places(), 18);
+    }
+
+    #[test]
+    fn decimal_from_str_works() {
+        // Integers
+        assert_eq!(Decimal::from_str("0").unwrap(), Decimal::percent(0));
+        assert_eq!(Decimal::from_str("1").unwrap(), Decimal::percent(100));
+        assert_eq!(Decimal::from_str("5").unwrap(), Decimal::percent(500));
+        assert_eq!(Decimal::from_str("42").unwrap(), Decimal::percent(4200));
+        assert_eq!(Decimal::from_str("000").unwrap(), Decimal::percent(0));
+        assert_eq!(Decimal::from_str("001").unwrap(), Decimal::percent(100));
+        assert_eq!(Decimal::from_str("005").unwrap(), Decimal::percent(500));
+        assert_eq!(Decimal::from_str("0042").unwrap(), Decimal::percent(4200));
+
+        // Decimals
+        assert_eq!(Decimal::from_str("1.0").unwrap(), Decimal::percent(100));
+        assert_eq!(Decimal::from_str("1.5").unwrap(), Decimal::percent(150));
+        assert_eq!(Decimal::from_str("0.5").unwrap(), Decimal::percent(50));
+        assert_eq!(Decimal::from_str("0.123").unwrap(), Decimal::permille(123));
+
+        assert_eq!(Decimal::from_str("40.00").unwrap(), Decimal::percent(4000));
+        assert_eq!(Decimal::from_str("04.00").unwrap(), Decimal::percent(400));
+        assert_eq!(Decimal::from_str("00.40").unwrap(), Decimal::percent(40));
+        assert_eq!(Decimal::from_str("00.04").unwrap(), Decimal::percent(4));
+
+        // Can handle DECIMAL_PLACES fractional digits
+        assert_eq!(
+            Decimal::from_str("7.123456789012345678").unwrap(),
+            Decimal(7123456789012345678i128)
+        );
+        assert_eq!(
+            Decimal::from_str("7.999999999999999999").unwrap(),
+            Decimal(7999999999999999999i128)
+        );
     }
 
     #[test]

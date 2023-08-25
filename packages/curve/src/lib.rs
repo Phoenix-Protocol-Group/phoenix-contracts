@@ -183,6 +183,14 @@ impl Curve {
             }
         }
     }
+
+    pub fn end(&self) -> Option<u64> {
+        match self {
+            Curve::Constant { .. } => None,
+            Curve::SaturatingLinear(sl) => sl.end(),
+            Curve::PiecewiseLinear(pl) => pl.end(),
+        }
+    }
 }
 
 /// Saturating Linear
@@ -252,6 +260,10 @@ impl SaturatingLinear {
         } else {
             (self.max_y, self.min_y)
         }
+    }
+
+    fn end(&self) -> Option<u64> {
+        Some(self.max_x)
     }
 }
 
@@ -458,6 +470,10 @@ impl PiecewiseLinear {
         }
 
         PiecewiseLinear { steps }
+    }
+
+    fn end(&self) -> Option<u64> {
+        self.steps.last().map(|Step { time, value: _ }| time)
     }
 }
 
