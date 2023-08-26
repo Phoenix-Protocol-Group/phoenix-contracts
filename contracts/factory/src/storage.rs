@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use soroban_sdk::{
-    contracttype, symbol_short, Address, BytesN, ConversionError, Env, Symbol, TryFromVal, Val,
+    contracttype, symbol_short, Address, ConversionError, Env, Symbol, TryFromVal, Val,
 };
 
 #[derive(Clone, Copy)]
