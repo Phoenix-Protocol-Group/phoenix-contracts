@@ -25,22 +25,22 @@ pub fn assert_approx_ratio(a: Decimal, b: Decimal, tolerance: Decimal) -> bool {
     diff <= tolerance
 }
 
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct TokenInitInfo {
-    pub token_wasm_hash: BytesN<32>,
-    pub token_a: Address,
-    pub token_b: Address,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct StakeInitInfo {
-    pub stake_wasm_hash: BytesN<32>,
-    pub min_bond: i128,
-    pub max_distributions: u32,
-    pub min_reward: i128,
-}
+// #[contracttype]
+// #[derive(Clone, Debug, Eq, PartialEq)]
+// pub struct TokenInitInfo {
+//     pub token_wasm_hash: BytesN<32>,
+//     pub token_a: Address,
+//     pub token_b: Address,
+// }
+//
+// #[contracttype]
+// #[derive(Clone, Debug, Eq, PartialEq)]
+// pub struct StakeInitInfo {
+//     pub stake_wasm_hash: BytesN<32>,
+//     pub min_bond: i128,
+//     pub max_distributions: u32,
+//     pub min_reward: i128,
+// }
 
 #[cfg(test)]
 mod tests {
