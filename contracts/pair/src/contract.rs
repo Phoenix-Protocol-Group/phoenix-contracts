@@ -2,7 +2,6 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, En
 
 use num_integer::Roots;
 
-
 use crate::{
     error::ContractError,
     stake_contract,
@@ -15,7 +14,7 @@ use crate::{
     validate_int_parameters,
 };
 use decimal::Decimal;
-use phoenix::utils::{TokenInitInfo, StakeInitInfo};
+use phoenix::utils::{StakeInitInfo, TokenInitInfo};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
