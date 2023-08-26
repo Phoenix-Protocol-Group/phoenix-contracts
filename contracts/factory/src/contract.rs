@@ -1,15 +1,9 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
 
-use crate::{
-    error::ContractError,
-    storage::{save_admin},
-    utils::deploy_lp_contract,
-};
+use crate::{error::ContractError, lp_contract, storage::save_admin};
 
-use phoenix::{
-    utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo},
-    lp_contract,
-};
+use crate::utils::deploy_lp_contract;
+use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
@@ -23,8 +17,8 @@ pub trait FactoryTrait {
     fn create_liquidity_pool(
         env: Env,
         lp_init_info: LiquidityPoolInitInfo,
-        token_init_info: TokenInitInfo,
-        stake_init_info: StakeInitInfo,
+        token_init_info: lp_contract::TokenInitInfo,
+        stake_init_info: lp_contract::StakeInitInfo,
     ) -> Result<(), ContractError>;
 
     fn query_pools(env: Env) -> Result<Vec<Address>, ContractError>;
@@ -43,8 +37,8 @@ impl FactoryTrait for Factory {
     fn create_liquidity_pool(
         env: Env,
         lp_init_info: LiquidityPoolInitInfo,
-        token_init_info: TokenInitInfo,
-        stake_init_info: StakeInitInfo,
+        token_init_info: lp_contract::TokenInitInfo,
+        stake_init_info: lp_contract::StakeInitInfo,
     ) -> Result<(), ContractError> {
         validate_token_info(&env, &token_init_info)?;
 
@@ -70,7 +64,10 @@ impl FactoryTrait for Factory {
     }
 }
 
-fn validate_token_info(env: &Env, token_init_info: &TokenInitInfo) -> Result<(), ContractError> {
+fn validate_token_info(
+    env: &Env,
+    token_init_info: &lp_contract::TokenInitInfo,
+) -> Result<(), ContractError> {
     let token_a = &token_init_info.token_a;
     let token_b = &token_init_info.token_b;
 

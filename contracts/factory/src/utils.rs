@@ -1,9 +1,6 @@
 use soroban_sdk::{Address, Bytes, BytesN, Env};
 
-pub fn deploy_lp_contract(
-    env: &Env,
-    lp_wasm_hash: BytesN<32>,
-) -> Address {
+pub fn deploy_lp_contract(env: &Env, lp_wasm_hash: BytesN<32>) -> Address {
     let deployer = env.current_contract_address();
 
     if deployer != env.current_contract_address() {
