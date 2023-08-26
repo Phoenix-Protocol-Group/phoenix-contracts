@@ -52,6 +52,8 @@ pub struct LiquidityPoolInitInfo {
     pub fee_recipient: Address,
     pub max_allowed_slippage_bps: i64,
     pub max_allowed_spread_bps: i64,
+    pub token_init_info: TokenInitInfo,
+    pub stake_init_info: StakeInitInfo,
 }
 
 #[cfg(test)]
