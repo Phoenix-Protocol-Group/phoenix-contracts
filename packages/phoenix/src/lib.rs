@@ -1,8 +1,8 @@
 #![no_std]
 
-mod utils;
+pub mod utils;
 
-mod error;
+pub mod error;
 
 pub mod token_contract {
     soroban_sdk::contractimport!(

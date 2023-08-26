@@ -748,6 +748,7 @@ dependencies = [
 name = "phoenix-factory"
 version = "0.5.0"
 dependencies = [
+ "phoenix",
  "soroban-sdk",
 ]
 
@@ -757,6 +758,7 @@ version = "0.5.0"
 dependencies = [
  "decimal",
  "num-integer",
+ "phoenix",
  "pretty_assertions",
  "soroban-sdk",
 ]
