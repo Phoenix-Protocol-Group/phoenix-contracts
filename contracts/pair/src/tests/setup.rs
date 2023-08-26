@@ -1,10 +1,12 @@
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
-use crate::utils::{StakeInitInfo, TokenInitInfo};
+// use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
     token_contract,
 };
+
+use phoenix::utils::{StakeInitInfo, TokenInitInfo};
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
     token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
