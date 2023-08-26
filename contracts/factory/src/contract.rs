@@ -2,8 +2,12 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
 
 use crate::{
     error::ContractError,
+    storage::{utils},
+};
+
+use phoenix::{
     lp_contract,
-    storage::{utils, LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo},
+    utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo},
 };
 
 // Metadata that is added on to the WASM custom section

@@ -19,35 +19,6 @@ impl TryFromVal<Env, DataKey> for Val {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LiquidityPoolInitInfo {
-    pub admin: Address,
-    pub lp_wasm_hash: BytesN<32>,
-    pub share_token_decimals: u32,
-    pub swap_fee_bps: i64,
-    pub fee_recipient: Address,
-    pub max_allowed_slippage_bps: i64,
-    pub max_allowed_spread_bps: i64,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct TokenInitInfo {
-    pub token_wasm_hash: BytesN<32>,
-    pub token_a: Address,
-    pub token_b: Address,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct StakeInitInfo {
-    pub stake_wasm_hash: BytesN<32>,
-    pub min_bond: i128,
-    pub max_distributions: u32,
-    pub min_reward: i128,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
     pub quiet_please: i32, // to satisfy the compiler
 }
