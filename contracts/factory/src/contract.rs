@@ -1,9 +1,13 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
 
-use crate::{error::ContractError, lp_contract, storage::save_admin};
+use crate::{
+    error::ContractError,
+    lp_contract,
+    storage::{get_admin, get_lp_vec, save_admin, save_config, save_lp_vec, Config},
+    utils::deploy_lp_contract,
+};
 
-use crate::utils::deploy_lp_contract;
-use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use phoenix::utils::LiquidityPoolInitInfo;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
@@ -29,6 +33,12 @@ impl FactoryTrait for Factory {
     fn initialize(env: Env, admin: Address) -> Result<(), ContractError> {
         save_admin(&env, admin.clone());
 
+        let config = Config {
+            liquidity_pools: Vec::new(&env),
+        };
+
+        save_config(&env, config);
+
         env.events()
             .publish(("initialize", "LP factory contract"), admin);
         Ok(())
@@ -42,11 +52,9 @@ impl FactoryTrait for Factory {
     ) -> Result<(), ContractError> {
         validate_token_info(&env, &token_init_info)?;
 
-        //deploy lp contract
         let lp_contract_address = deploy_lp_contract(&env, lp_init_info.lp_wasm_hash);
-        //init lp contract
         lp_contract::Client::new(&env, &lp_contract_address).initialize(
-            &env.current_contract_address(),
+            &get_admin(&env)?,
             &lp_init_info.share_token_decimals,
             &lp_init_info.swap_fee_bps,
             &lp_init_info.fee_recipient,
@@ -56,11 +64,15 @@ impl FactoryTrait for Factory {
             &stake_init_info,
         );
 
+        let mut lp_vec = get_lp_vec(&env)?;
+        lp_vec.push_back(lp_contract_address);
+        save_lp_vec(&env, lp_vec);
+
         Ok(())
     }
 
-    fn query_pools(_env: Env) -> Result<Vec<Address>, ContractError> {
-        unimplemented!();
+    fn query_pools(env: Env) -> Result<Vec<Address>, ContractError> {
+        get_lp_vec(&env)
     }
 }
 
@@ -72,7 +84,7 @@ fn validate_token_info(
     let token_b = &token_init_info.token_b;
 
     if token_a >= token_b {
-        log!(&env, "token_a must be less than token_b");
+        log!(env, "token_a must be less than token_b");
         return Err(ContractError::FirstTokenMustBeSmallerThenSecond);
     }
 
