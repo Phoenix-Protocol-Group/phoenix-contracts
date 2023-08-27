@@ -88,9 +88,9 @@ fn validate_token_info(
 
     if stake_init_info.min_bond <= 0 {
         log!(
-                env,
-                "Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
-            );
+            env,
+            "Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+        );
         return Err(ContractError::MinStakeLessOrEqualZero);
     }
 
