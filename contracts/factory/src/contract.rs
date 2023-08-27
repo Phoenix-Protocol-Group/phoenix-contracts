@@ -50,7 +50,7 @@ impl FactoryTrait for Factory {
         token_init_info: lp_contract::TokenInitInfo,
         stake_init_info: lp_contract::StakeInitInfo,
     ) -> Result<(), ContractError> {
-        validate_token_info(&env, &token_init_info)?;
+        validate_token_info(&env, &token_init_info, &stake_init_info)?;
 
         let lp_contract_address = deploy_lp_contract(&env, lp_init_info.lp_wasm_hash);
         lp_contract::Client::new(&env, &lp_contract_address).initialize(
@@ -79,16 +79,25 @@ impl FactoryTrait for Factory {
 fn validate_token_info(
     env: &Env,
     token_init_info: &lp_contract::TokenInitInfo,
+    stake_init_info: &lp_contract::StakeInitInfo,
 ) -> Result<(), ContractError> {
-    let token_a = &token_init_info.token_a;
-    let token_b = &token_init_info.token_b;
-
-    if token_a >= token_b {
+    if token_init_info.token_a >= token_init_info.token_b {
         log!(env, "token_a must be less than token_b");
         return Err(ContractError::FirstTokenMustBeSmallerThenSecond);
     }
 
-    //todo add MinStakeLessOrEqualZero and MinRewardTooSmall checks here to fail early
+    if stake_init_info.min_bond <= 0 {
+        log!(
+                &env,
+                "Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+            );
+        return Err(ContractError::MinStakeLessOrEqualZero);
+    }
+
+    if stake_init_info.min_reward <= 0 {
+        log!(&env, "min_reward must be bigger then 0!");
+        return Err(ContractError::MinRewardTooSmall);
+    }
 
     Ok(())
 }

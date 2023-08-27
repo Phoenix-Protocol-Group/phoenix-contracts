@@ -9,4 +9,6 @@ pub enum ContractError {
     FailedToGetAdminAddrFromStorage = 2,
     FirstTokenMustBeSmallerThenSecond = 3,
     LiquidityPoolVectorNotFound = 4,
+    MinStakeLessOrEqualZero = 5,
+    MinRewardTooSmall = 6,
 }
