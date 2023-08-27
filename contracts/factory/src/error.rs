@@ -8,4 +8,5 @@ pub enum ContractError {
     ConfigNotSet = 1,
     FailedToGetAdminAddrFromStorage = 2,
     FirstTokenMustBeSmallerThenSecond = 3,
+    LiquidityPoolVectorNotFound = 4,
 }
