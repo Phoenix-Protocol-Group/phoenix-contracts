@@ -1,5 +1,4 @@
 use decimal::Decimal;
-use soroban_sdk::{contracttype, Address, BytesN};
 
 // Validate if int value is bigger then 0
 #[macro_export]
