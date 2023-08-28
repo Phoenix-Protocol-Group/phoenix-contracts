@@ -23,7 +23,7 @@ pub struct Config {
     pub liquidity_pools: Vec<Address>,
 }
 
-#[allow(dead_code)]
+// #[allow(dead_code)]
 pub fn get_config(env: &Env) -> Result<Config, ContractError> {
     env.storage()
         .instance()
