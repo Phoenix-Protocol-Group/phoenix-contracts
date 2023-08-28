@@ -11,3 +11,6 @@ pub mod lp_contract {
         file = "../../target/wasm32-unknown-unknown/release/phoenix_pair.wasm"
     );
 }
+
+#[cfg(test)]
+mod tests;
