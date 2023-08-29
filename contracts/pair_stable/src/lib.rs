@@ -2,7 +2,6 @@
 mod contract;
 mod error;
 mod storage;
-mod utils;
 
 pub mod token_contract {
     // The import will code generate:

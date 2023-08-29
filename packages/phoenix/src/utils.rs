@@ -6,16 +6,14 @@ use soroban_sdk::{contracttype, Address, BytesN};
 macro_rules! validate_int_parameters {
     ($($arg:expr),*) => {
         {
-            let mut res: Result<(), $crate::error::ContractError> = Ok(());
             $(
                 let value: Option<i128> = Into::<Option<_>>::into($arg);
                 if let Some(val) = value {
                     if val <= 0 {
-                        res = Err($crate::error::ContractError::ArgumentsInvalidLessOrEqualZero);
+                        panic!("value cannot be less than or equal zero")
                     }
                 }
             )*
-            res
         }
     };
 }
@@ -63,17 +61,21 @@ mod tests {
     #[test]
     fn test_validate_int_parameters() {
         // The macro should not panic for valid parameters.
-        validate_int_parameters!(1, 2, 3).unwrap();
-        validate_int_parameters!(1, 1, 1).unwrap();
-        validate_int_parameters!(1i128, 2i128, 3i128, Some(4i128), None::<i128>).unwrap();
-        validate_int_parameters!(None::<i128>, None::<i128>).unwrap();
-        validate_int_parameters!(Some(1i128), None::<i128>).unwrap();
+        validate_int_parameters!(1, 2, 3);
+        validate_int_parameters!(1, 1, 1);
+        validate_int_parameters!(1i128, 2i128, 3i128, Some(4i128), None::<i128>);
+        validate_int_parameters!(None::<i128>, None::<i128>);
+        validate_int_parameters!(Some(1i128), None::<i128>);
+    }
 
-        validate_int_parameters!(1, -2, 3).unwrap_err();
-        validate_int_parameters!(0, 1, 3).unwrap_err();
-        validate_int_parameters!(1, 1, 0).unwrap_err();
-        validate_int_parameters!(Some(0i128), None::<i128>).unwrap_err();
-        validate_int_parameters!(Some(-1i128), None::<i128>).unwrap_err();
+    #[test]
+    #[should_panic(expected = "value cannot be less than or equal zero")]
+    fn should_panic_when_value_less_than_or_equal_zero() {
+        validate_int_parameters!(1, -2, 3);
+        validate_int_parameters!(0, 1, 3);
+        validate_int_parameters!(1, 1, 0);
+        validate_int_parameters!(Some(0i128), None::<i128>);
+        validate_int_parameters!(Some(-1i128), None::<i128>);
     }
 
     #[test]
