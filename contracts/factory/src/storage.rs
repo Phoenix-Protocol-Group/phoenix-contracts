@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use soroban_sdk::{contracttype, Address, ConversionError, Env, TryFromVal, Val, Vec};
+use soroban_sdk::{Address, ConversionError, Env, TryFromVal, Val, Vec};
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -15,24 +15,6 @@ impl TryFromVal<Env, DataKey> for Val {
     fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
         Ok((*v as u32).into())
     }
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Config {
-    pub liquidity_pools: Vec<Address>,
-}
-
-// #[allow(dead_code)]
-pub fn get_config(env: &Env) -> Result<Config, ContractError> {
-    env.storage()
-        .instance()
-        .get(&DataKey::Config)
-        .ok_or(ContractError::ConfigNotSet)
-}
-
-pub fn save_config(env: &Env, config: Config) {
-    env.storage().instance().set(&DataKey::Config, &config);
 }
 
 pub fn save_admin(env: &Env, address: Address) {
@@ -62,10 +44,18 @@ mod tests {
     use super::*;
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "HostError: Error(Context, MissingValue)")]
     fn test_get_admin_should_panic_when_no_admin_saved() {
         let env = Env::default();
 
         get_admin(&env).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "HostError: Error(Context, MissingValue)")]
+    fn test_get_lp_vec_should_panic_when_no_vec_saved() {
+        let env = Env::default();
+
+        get_lp_vec(&env).unwrap();
     }
 }

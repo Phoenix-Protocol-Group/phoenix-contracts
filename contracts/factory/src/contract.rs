@@ -3,11 +3,9 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
 use crate::{
     error::ContractError,
     lp_contract,
-    storage::{get_admin, get_lp_vec, save_admin, save_config, save_lp_vec, Config},
+    storage::{get_admin, get_lp_vec, save_admin, save_lp_vec},
     utils::deploy_lp_contract,
 };
-
-use phoenix::utils::LiquidityPoolInitInfo;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
@@ -20,12 +18,14 @@ pub trait FactoryTrait {
 
     fn create_liquidity_pool(
         env: Env,
-        lp_init_info: LiquidityPoolInitInfo,
+        lp_init_info: lp_contract::LiquidityPoolInitInfo,
         token_init_info: lp_contract::TokenInitInfo,
         stake_init_info: lp_contract::StakeInitInfo,
     ) -> Result<(), ContractError>;
 
     fn query_pools(env: Env) -> Result<Vec<Address>, ContractError>;
+
+    fn get_admin(env: Env) -> Result<Address, ContractError>;
 }
 
 #[contractimpl]
@@ -33,11 +33,7 @@ impl FactoryTrait for Factory {
     fn initialize(env: Env, admin: Address) -> Result<(), ContractError> {
         save_admin(&env, admin.clone());
 
-        let config = Config {
-            liquidity_pools: Vec::new(&env),
-        };
-
-        save_config(&env, config);
+        save_lp_vec(&env, Vec::new(&env));
 
         env.events()
             .publish(("initialize", "LP factory contract"), admin);
@@ -46,13 +42,14 @@ impl FactoryTrait for Factory {
 
     fn create_liquidity_pool(
         env: Env,
-        lp_init_info: LiquidityPoolInitInfo,
+        lp_init_info: lp_contract::LiquidityPoolInitInfo,
         token_init_info: lp_contract::TokenInitInfo,
         stake_init_info: lp_contract::StakeInitInfo,
     ) -> Result<(), ContractError> {
         validate_token_info(&env, &token_init_info, &stake_init_info)?;
 
         let lp_contract_address = deploy_lp_contract(&env, lp_init_info.lp_wasm_hash);
+
         lp_contract::Client::new(&env, &lp_contract_address).initialize(
             &get_admin(&env)?,
             &lp_init_info.share_token_decimals,
@@ -65,7 +62,9 @@ impl FactoryTrait for Factory {
         );
 
         let mut lp_vec = get_lp_vec(&env)?;
+
         lp_vec.push_back(lp_contract_address);
+
         save_lp_vec(&env, lp_vec);
 
         Ok(())
@@ -73,6 +72,10 @@ impl FactoryTrait for Factory {
 
     fn query_pools(env: Env) -> Result<Vec<Address>, ContractError> {
         get_lp_vec(&env)
+    }
+
+    fn get_admin(env: Env) -> Result<Address, ContractError> {
+        get_admin(&env)
     }
 }
 
