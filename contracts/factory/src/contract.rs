@@ -63,9 +63,11 @@ impl FactoryTrait for Factory {
 
         let mut lp_vec = get_lp_vec(&env)?;
 
-        lp_vec.push_back(lp_contract_address);
+        lp_vec.push_back(lp_contract_address.clone());
 
         save_lp_vec(&env, lp_vec);
+
+        env.events().publish(("create", "LP"), &lp_contract_address);
 
         Ok(())
     }

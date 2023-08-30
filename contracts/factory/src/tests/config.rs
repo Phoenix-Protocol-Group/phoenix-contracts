@@ -5,6 +5,7 @@ use crate::lp_contract;
 use crate::lp_contract::PairType;
 use crate::tests::setup::deploy_token_contract;
 use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::arbitrary::std;
 
 #[test]
 fn factory_successfully_inits_itself() {
@@ -20,15 +21,20 @@ fn factory_successfully_inits_itself() {
 fn factory_successfully_inits_lp() {
     let env = Env::default();
     let admin = Address::random(&env);
-    let token1_admin = Address::random(&env);
-    let token2_admin = Address::random(&env);
+    let mut token1_admin = Address::random(&env);
+    let mut token2_admin = Address::random(&env);
     let user = Address::random(&env);
 
-    let token1 = deploy_token_contract(&env, &token1_admin);
-    let token2 = deploy_token_contract(&env, &token2_admin);
+    let mut token1 = deploy_token_contract(&env, &token1_admin);
+    let mut token2 = deploy_token_contract(&env, &token2_admin);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut token1_admin, &mut token2_admin);
+    }
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
     assert_eq!(factory.get_admin(), admin);
