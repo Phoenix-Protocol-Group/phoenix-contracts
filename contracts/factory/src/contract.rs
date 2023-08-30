@@ -106,3 +106,99 @@ fn validate_token_info(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use soroban_sdk::BytesN;
+
+    #[test]
+    #[should_panic]
+    fn validate_token_info_should_fail_on_token_a_less_than_token_b() {
+        let env = Env::default();
+
+        let contract1 = BytesN::from_array(&env, &[1u8; 0x20]);
+        let contract2 = BytesN::from_array(&env, &[0u8; 0x20]);
+
+        let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
+        let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
+
+        let token_a = Address::from_contract_id(&contract1);
+        let token_b = Address::from_contract_id(&contract2);
+
+        let token_init_info = lp_contract::TokenInitInfo {
+            token_a,
+            token_b,
+            token_wasm_hash,
+        };
+
+        let stake_init_info = lp_contract::StakeInitInfo {
+            max_distributions: 10,
+            min_bond: 10,
+            min_reward: 10,
+            stake_wasm_hash,
+        };
+
+        validate_token_info(&env, &token_init_info, &stake_init_info).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn validate_token_info_should_fail_on_min_bond_less_than_zero() {
+        let env = Env::default();
+
+        let contract1 = BytesN::from_array(&env, &[0u8; 0x20]);
+        let contract2 = BytesN::from_array(&env, &[1u8; 0x20]);
+
+        let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
+        let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
+
+        let token_a = Address::from_contract_id(&contract1);
+        let token_b = Address::from_contract_id(&contract2);
+
+        let token_init_info = lp_contract::TokenInitInfo {
+            token_a,
+            token_b,
+            token_wasm_hash,
+        };
+
+        let stake_init_info = lp_contract::StakeInitInfo {
+            max_distributions: 10,
+            min_bond: 0,
+            min_reward: 10,
+            stake_wasm_hash,
+        };
+
+        validate_token_info(&env, &token_init_info, &stake_init_info).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn validate_token_info_should_fail_on_min_reward_less_than_zero() {
+        let env = Env::default();
+
+        let contract1 = BytesN::from_array(&env, &[0u8; 0x20]);
+        let contract2 = BytesN::from_array(&env, &[1u8; 0x20]);
+
+        let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
+        let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
+
+        let token_a = Address::from_contract_id(&contract1);
+        let token_b = Address::from_contract_id(&contract2);
+
+        let token_init_info = lp_contract::TokenInitInfo {
+            token_a,
+            token_b,
+            token_wasm_hash,
+        };
+
+        let stake_init_info = lp_contract::StakeInitInfo {
+            max_distributions: 10,
+            min_bond: 10,
+            min_reward: 0,
+            stake_wasm_hash,
+        };
+
+        validate_token_info(&env, &token_init_info, &stake_init_info).unwrap();
+    }
+}

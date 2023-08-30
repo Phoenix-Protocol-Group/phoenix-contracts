@@ -4,8 +4,8 @@ use super::setup::{
 use crate::lp_contract;
 use crate::lp_contract::PairType;
 use crate::tests::setup::deploy_token_contract;
-use soroban_sdk::{testutils::Address as _, Address, Env};
 use soroban_sdk::arbitrary::std;
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 #[test]
 fn factory_successfully_inits_itself() {
