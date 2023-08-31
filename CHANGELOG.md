@@ -16,6 +16,7 @@ and this project adheres to
 - Pair: Deployment of Stake contract during initialization ([#98])
 - Decimal: Implement `from_atomics` and `to_string` ([#115])
 - Curve: Implement `end` helper ([#115])
+- Phoenix: Helper library for commonly used functions, structs, etc... ([#116])
 
 ## Changed
 
@@ -41,6 +42,7 @@ and this project adheres to
 [#100]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/100
 [#108]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/108
 [#115]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/115
+[#116]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/116
 [#118]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/118
 
 ## [0.5.0] - 2023-08-04
