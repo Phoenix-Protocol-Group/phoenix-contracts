@@ -25,6 +25,10 @@ and this project adheres to
 - All: more granular error handling ([#95])
 - All: changed the test for auths() and panic! ([#90])
 
+## Fixed
+
+- Stake: Reward distribution points are now updated when new user bonds ([#118])
+
 [#83]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/83
 [#86]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/86
 [#88]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/88
@@ -37,6 +41,7 @@ and this project adheres to
 [#100]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/100
 [#108]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/108
 [#115]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/115
+[#118]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/118
 
 ## [0.5.0] - 2023-08-04
 
