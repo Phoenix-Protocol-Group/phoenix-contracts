@@ -1,6 +1,9 @@
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
-use crate::{distribution::{get_distribution, save_distribution, SHARES_SHIFT}, error::ContractError};
+use crate::{
+    distribution::{get_distribution, save_distribution, update_rewards, SHARES_SHIFT},
+    error::ContractError,
+};
 use decimal::Decimal;
 
 const DAY_IN_SECONDS: u64 = 60 * 60 * 24;
@@ -97,33 +100,47 @@ pub fn update_stakes_rewards(env: &Env, key: &Address) -> Result<(), ContractErr
         let user_original_virtual_stake = bonding_info.virtual_stake;
         bonding_info.virtual_stake = bonding_info.total_stake + reward_stake_points as u128;
         // Important - also increase total staked counter, otherwise there would be a gap
+        let total_staked = utils::get_total_virtual_staked_counter(&env)?;
         utils::increase_total_virtual_staked(env, &reward_stake_points)?;
         utils::increment_stake_increase_counter(env);
 
         save_stakes(env, key, &bonding_info);
-        let total_rewards_power = dbg!(utils::get_total_virtual_staked_counter(&env)? as u128);
         for distribution_address in utils::get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address)?;
-
-            let user_original_share = Decimal::from_ratio(user_original_virtual_stake as i128, total_rewards_power as i128);
-            let user_original_points = (distribution.total_points - reward_stake_points as u128 ) as i128 * user_original_share;
-
-            let user_new_share = Decimal::from_ratio(bonding_info.virtual_stake as i128, utils::get_total_virtual_staked_counter(env)?);
-            let user_new_points = distribution.total_points as i128 * user_new_share;
-
-            let total_points = distribution.total_points - user_original_points as u128 + user_new_points as u128;
-            let points_per_share = total_points / total_rewards_power;
-            distribution.shares_per_point = points_per_share;
-            dbg!(distribution.total_points);
-            dbg!(distribution.shares_per_point);
-
-            // Update the leftover points
-            distribution.shares_leftover = (distribution.total_points % total_rewards_power) as u64;
-
-            dbg!(points_per_share);
-            // Save the updated distribution back to storage
-            save_distribution(env, &distribution_address, &distribution);
+            update_rewards(
+                &env,
+                &key,
+                &distribution_address,
+                &mut distribution,
+                total_staked,
+                total_staked + reward_stake_points,
+            )
         }
+
+        // save_stakes(env, key, &bonding_info);
+        // let total_rewards_power = dbg!(utils::get_total_virtual_staked_counter(&env)? as u128);
+        // for distribution_address in utils::get_distributions(&env) {
+        //     let mut distribution = get_distribution(&env, &distribution_address)?;
+
+        //     let user_original_share = Decimal::from_ratio(user_original_virtual_stake as i128, total_rewards_power as i128);
+        //     let user_original_points = (distribution.total_points - reward_stake_points as u128 ) as i128 * user_original_share;
+
+        //     let user_new_share = Decimal::from_ratio(bonding_info.virtual_stake as i128, utils::get_total_virtual_staked_counter(env)?);
+        //     let user_new_points = distribution.total_points as i128 * user_new_share;
+
+        //     let total_points = distribution.total_points - user_original_points as u128 + user_new_points as u128;
+        //     let points_per_share = total_points / total_rewards_power;
+        //     distribution.shares_per_point = points_per_share;
+        //     dbg!(distribution.total_points);
+        //     dbg!(distribution.shares_per_point);
+
+        //     // Update the leftover points
+        //     distribution.shares_leftover = (distribution.total_points % total_rewards_power) as u64;
+
+        //     dbg!(points_per_share);
+        //     // Save the updated distribution back to storage
+        //     save_distribution(env, &distribution_address, &distribution);
+        // }
     }
     Ok(())
 }

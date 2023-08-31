@@ -73,7 +73,10 @@ fn four_users_same_stakes_different_multipliers() {
     );
     staking.withdraw_rewards(&user);
     assert_eq!(reward_token.balance(&user), 62_500);
-    assert_eq!(staking.query_distributed_rewards(&reward_token.address), 250_000);
+    assert_eq!(
+        staking.query_distributed_rewards(&reward_token.address),
+        250_000
+    );
     env.ledger().with_mut(|li| {
         li.timestamp = DAY_IN_SECONDS + 1;
     });

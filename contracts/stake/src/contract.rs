@@ -377,7 +377,6 @@ impl StakingTrait for Staking {
                 .publish(("withdraw_rewards", "reward_amount"), reward_amount as i128);
         }
 
-        save_withdraw_adjustments(&env, &sender, &updated_withdraw_adjustments);
         update_stakes_rewards(&env, &sender)?;
 
         Ok(())

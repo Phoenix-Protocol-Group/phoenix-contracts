@@ -31,8 +31,8 @@ fn initialize_staking_contract() {
                 min_bond: 1_000i128,
                 max_distributions: 7u32,
                 min_reward: 1_000i128,
-                bonus_per_day_bps: 500i64,
-                max_bonus_bps: 30_000i64,
+                bonus_per_day_bps: 50i64,
+                max_bonus_bps: 3_000i64,
             }
         }
     );
