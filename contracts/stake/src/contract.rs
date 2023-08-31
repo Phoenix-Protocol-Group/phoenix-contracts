@@ -3,8 +3,8 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, 
 use crate::{
     distribution::{
         get_distribution, get_reward_curve, get_withdraw_adjustment, save_distribution,
-        save_reward_curve, save_withdraw_adjustment, withdrawable_rewards, Distribution,
-        SHARES_SHIFT,
+        save_reward_curve, save_withdraw_adjustment, update_rewards, withdrawable_rewards,
+        Distribution, SHARES_SHIFT,
     },
     error::ContractError,
     msg::{
@@ -159,6 +159,19 @@ impl StakingTrait for Staking {
         // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
         // creating multiple stakes the same day
 
+        let total_staked = utils::get_total_staked_counter(&env)?;
+        for distribution_address in get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address)?;
+            update_rewards(
+                &env,
+                &sender,
+                &distribution_address,
+                &mut distribution,
+                total_staked,
+                total_staked + tokens,
+            )
+        }
+
         stakes.stakes.push_back(stake);
         save_stakes(&env, &sender, &stakes);
         utils::increase_total_staked(&env, &tokens)?;
@@ -251,9 +264,8 @@ impl StakingTrait for Staking {
             // Calculate how much we have received since the last time Distributed was called,
             // including only the reward config amount that is eligible for distribution.
             // This is the amount we will distribute to all mem
-            let amount = dbg!(
-                undistributed_rewards - withdrawable - dbg!(curve.value(env.ledger().timestamp()))
-            );
+            let amount =
+                undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
 
             if amount == 0 {
                 continue;

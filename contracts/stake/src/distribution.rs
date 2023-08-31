@@ -65,21 +65,6 @@ pub struct Distribution {
     pub bonus_per_day_bps: u64,
 }
 
-impl Distribution {
-    pub fn calculate_rewards_power(
-        &self,
-        env: &Env,
-        staker: &Address,
-    ) -> Result<u128, ContractError> {
-        let bonding_info = get_stakes(env, staker)?;
-        let mut total_staked = 0;
-        for stake in bonding_info.stakes {
-            total_staked += stake.stake;
-        }
-        Ok(total_staked as u128 / self.shares_per_point)
-    }
-}
-
 pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution) {
     env.storage().persistent().set(
         &DistributionDataKey::Distribution(asset.clone()),
@@ -98,33 +83,38 @@ pub fn get_distribution(env: &Env, asset: &Address) -> Result<Distribution, Cont
     }
 }
 
-// pub fn update_rewards(distribution: &mut Distribution, old_rewards_power: u128, new_rewards_power: u128) {
-//     if old_rewards_power == new_rewards_power {
-//         return;
-//     }
-//     let ppw = distribution.shared.shares_per_point;
-//     let diff = new_rewards_power - old_rewards_power;
-//
-// }
-//
-// /// Applies points correction for given address.
-// /// `shares_per_point` is current value from `SHARES_PER_POINT` - not loaded in function, to
-// /// avoid multiple queries on bulk updates.
-// /// `diff` is the points change
-// pub fn apply_points_correction(
-//     env: &Env,
-//     user: &Address,
-//     asset: &Address,
-//     diff: i128,
-//     shares_per_point: u128,
-// ) -> Result<(), ContractError> {
-//     let mut withdraw_adjustments = get_withdraw_adjustments(env, user)?;
-//     let mut withdraw_adjustment = get_withdraw_adjustment(&withdraw_adjustments, asset);
-//     withdraw_adjustment.shared_correction += diff;
-//     withdraw_adjustments.push((asset.clone(), withdraw_adjustment));
-//     save_withdraw_adjustments(env, user, &withdraw_adjustments);
-//     Ok(())
-// }
+pub fn update_rewards(
+    env: &Env,
+    user: &Address,
+    asset: &Address,
+    distribution: &mut Distribution,
+    old_rewards_power: i128,
+    new_rewards_power: i128,
+) {
+    if old_rewards_power == new_rewards_power {
+        return;
+    }
+    let ppw = distribution.shares_per_point;
+    let diff = new_rewards_power - old_rewards_power;
+    apply_points_correction(env, user, asset, diff, ppw);
+}
+
+/// Applies points correction for given address.
+/// `shares_per_point` is current value from `SHARES_PER_POINT` - not loaded in function, to
+/// avoid multiple queries on bulk updates.
+/// `diff` is the points change
+fn apply_points_correction(
+    env: &Env,
+    user: &Address,
+    asset: &Address,
+    diff: i128,
+    shares_per_point: u128,
+) {
+    let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
+    let shares_correction = withdraw_adjustment.shares_correction;
+    withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
+    save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
+}
 
 #[contracttype]
 #[derive(Debug, Default, Clone)]
@@ -132,7 +122,7 @@ pub struct WithdrawAdjustment {
     /// Represents a correction to the reward points for the user. This can be positive or negative.
     /// A positive value indicates that the user should receive additional points (e.g., from a bonus or an error correction),
     /// while a negative value signifies a reduction (e.g., due to a penalty or an adjustment for past over-allocations).
-    pub shared_correction: i128,
+    pub shares_correction: i128,
     /// Represents the total amount of rewards that the user has withdrawn so far.
     /// This value ensures that a user doesn't withdraw more than they are owed and is used to
     /// calculate the net rewards a user can withdraw at any given time.
@@ -180,10 +170,10 @@ pub fn withdrawable_rewards(
 ) -> Result<u128, ContractError> {
     let ppw = distribution.shares_per_point;
 
-    let points = dbg!(get_stakes(env, owner)?.total_stake);
+    let points = get_stakes(env, owner)?.total_stake;
     let points = (ppw * points) as i128;
 
-    let correction = adjustment.shared_correction;
+    let correction = adjustment.shares_correction;
     let points = points + correction;
     let amount = points as u128 >> SHARES_SHIFT;
     let amount = amount - adjustment.withdrawn_rewards;
