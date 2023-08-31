@@ -69,12 +69,32 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "value cannot be less than or equal zero")]
-    fn should_panic_when_value_less_than_or_equal_zero() {
+    #[should_panic]
+    fn should_panic_when_value_less_than_zero() {
         validate_int_parameters!(1, -2, 3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_when_first_value_equal_zero() {
         validate_int_parameters!(0, 1, 3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_when_last_value_equal_zero() {
         validate_int_parameters!(1, 1, 0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_when_some_equals_zero() {
         validate_int_parameters!(Some(0i128), None::<i128>);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_when_some_less_than_zero() {
         validate_int_parameters!(Some(-1i128), None::<i128>);
     }
 
