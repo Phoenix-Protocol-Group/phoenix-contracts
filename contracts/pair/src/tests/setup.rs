@@ -1,6 +1,5 @@
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
-// use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
     token_contract,
