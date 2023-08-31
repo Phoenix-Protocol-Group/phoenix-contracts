@@ -67,7 +67,8 @@ impl FactoryTrait for Factory {
 
         save_lp_vec(&env, lp_vec);
 
-        env.events().publish(("create", "liquidity_pool"), &lp_contract_address);
+        env.events()
+            .publish(("create", "liquidity_pool"), &lp_contract_address);
 
         Ok(())
     }

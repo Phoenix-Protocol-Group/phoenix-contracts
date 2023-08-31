@@ -9,10 +9,10 @@ use crate::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
     },
-    token_contract,
 };
 use decimal::Decimal;
 use phoenix::{
+    token_contract,
     utils::{assert_approx_ratio, StakeInitInfo, TokenInitInfo},
     validate_int_parameters,
 };

@@ -6,11 +6,9 @@ use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, Symbol};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
-use crate::{
-    storage::{Asset, PoolResponse},
-    token_contract,
-};
+use crate::storage::{Asset, PoolResponse};
 use decimal::Decimal;
+use phoenix::token_contract;
 
 #[test]
 fn provide_liqudity() {

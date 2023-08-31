@@ -1,5 +1,5 @@
 use crate::contract::{Factory, FactoryClient};
-use crate::token_contract;
+use phoenix::token_contract;
 use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{Address, BytesN, Env};
 
