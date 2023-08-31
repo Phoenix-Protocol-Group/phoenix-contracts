@@ -83,12 +83,13 @@ PAIR_CONTRACT=$(soroban contract deploy \
     --source $IDENTITY_STRING \
     --network futurenet)
 
-STAKE_CONTRACT=$(soroban contract deploy \
+STAKE_WASM_HASH=$(soroban contract install \
     --wasm phoenix_stake.optimized.wasm \
     --source $IDENTITY_STRING \
     --network futurenet)
 
 echo "Pair and stake contracts deployed..."
+
 
 # Initialize pair using the previously fetched hashes
 soroban contract invoke \
@@ -98,14 +99,19 @@ soroban contract invoke \
     -- \
     initialize \
     --admin $ADMIN_ADDRESS \
-    --token_wasm_hash $TOKEN_WASM_HASH \
-    --token_a $TOKEN_ID1 \
-    --token_b $TOKEN_ID2 \
     --share_token_decimals 7 \
     --swap_fee_bps 1000 \
     --fee_recipient $ADMIN_ADDRESS \
     --max_allowed_slippage_bps 10000 \
-    --max_allowed_spread_bps 10000
+    --max_allowed_spread_bps 10000 \
+    --token_init_info "{\"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\", \"token_wasm_hash\": \"${TOKEN_WASM_HASH}\"}" \
+    --stake_init_info "{\"stake_wasm_hash\": \"${STAKE_WASM_HASH}\", \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3}"
+
+    # --token_init_info '{"token_a": \"${TOKEN_ID1}\", "token_b": \"${TOKEN_ID2}\", "token_wasm_hash": \"${TOKEN_WASM_HASH}\"}' \
+    # --stake_init_info '{"stake_wasm_hash": \"${STAKE_WASM_HASH}\", "min_bond": "100", "min_reward": "100", "max_distributions": 3}'
+
+    # --token_init_info '{ "token_a": "$(TOKEN_ID1)", "token_b": "$(TOKEN_ID2)", "token_wasm_hash": "$(TOKEN_WASM_HASH)" }' \
+    # --stake_init_info '{ "stake_wasm_hash": "$(STAKE_WASM_HASH)", "min_bond": "100", "min_reward": "100", "max_distributions": "3" }'
 
 echo "Pair contract initialized..."
 
@@ -135,26 +141,12 @@ soroban contract invoke \
 echo "Liquidity provided..."
 
 # Continue with the rest of the commands
-LP_SHARE_ADDRESS=$(soroban contract invoke \
+STAKE_CONTRACT=$(soroban contract invoke \
     --id $PAIR_CONTRACT \
     --source $IDENTITY_STRING \
     --network futurenet --fee 10000000 \
     -- \
-    query_pool_info | jq -r .asset_lp_share.address)
-
-# Initialize stake contract
-soroban contract invoke \
-    --id $STAKE_CONTRACT \
-    --source $IDENTITY_STRING \
-    --network futurenet \
-    -- initialize \
-    --admin $ADMIN_ADDRESS \
-    --lp_token $LP_SHARE_ADDRESS \
-    --min_bond 100 \
-    --max_distributions 7 \
-    --min_reward 100
-
-echo "Stake contract initialized..."
+    query_stake_contract_address)
 
 # Bond token in stake contract
 soroban contract invoke \
