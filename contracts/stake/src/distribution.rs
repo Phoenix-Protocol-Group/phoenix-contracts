@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Env, Vec};
+use soroban_sdk::{contracttype, Address, Env};
 
 use curve::Curve;
 
@@ -16,10 +16,17 @@ pub const SHARES_SHIFT: u8 = 32;
 
 #[derive(Clone)]
 #[contracttype]
+pub struct WithdrawAdjustmentKey {
+    user: Address,
+    asset: Address,
+}
+
+#[derive(Clone)]
+#[contracttype]
 pub enum DistributionDataKey {
     Curve(Address),
     Distribution(Address),
-    WithdrawAdjustment(Address),
+    WithdrawAdjustment(WithdrawAdjustmentKey),
 }
 
 // one reward distribution curve over one denom
@@ -91,6 +98,34 @@ pub fn get_distribution(env: &Env, asset: &Address) -> Result<Distribution, Cont
     }
 }
 
+// pub fn update_rewards(distribution: &mut Distribution, old_rewards_power: u128, new_rewards_power: u128) {
+//     if old_rewards_power == new_rewards_power {
+//         return;
+//     }
+//     let ppw = distribution.shared.shares_per_point;
+//     let diff = new_rewards_power - old_rewards_power;
+//
+// }
+//
+// /// Applies points correction for given address.
+// /// `shares_per_point` is current value from `SHARES_PER_POINT` - not loaded in function, to
+// /// avoid multiple queries on bulk updates.
+// /// `diff` is the points change
+// pub fn apply_points_correction(
+//     env: &Env,
+//     user: &Address,
+//     asset: &Address,
+//     diff: i128,
+//     shares_per_point: u128,
+// ) -> Result<(), ContractError> {
+//     let mut withdraw_adjustments = get_withdraw_adjustments(env, user)?;
+//     let mut withdraw_adjustment = get_withdraw_adjustment(&withdraw_adjustments, asset);
+//     withdraw_adjustment.shared_correction += diff;
+//     withdraw_adjustments.push((asset.clone(), withdraw_adjustment));
+//     save_withdraw_adjustments(env, user, &withdraw_adjustments);
+//     Ok(())
+// }
+
 #[contracttype]
 #[derive(Debug, Default, Clone)]
 pub struct WithdrawAdjustment {
@@ -106,36 +141,34 @@ pub struct WithdrawAdjustment {
 
 /// Save the withdraw adjustment for a user for a given asset using the user's address as the key
 /// and asset's address as the subkey.
-pub fn save_withdraw_adjustments(
+pub fn save_withdraw_adjustment(
     env: &Env,
     user: &Address,
-    adjustments: &Vec<(Address, WithdrawAdjustment)>,
+    distribution: &Address,
+    adjustment: &WithdrawAdjustment,
 ) {
     env.storage().persistent().set(
-        &DistributionDataKey::WithdrawAdjustment(user.clone()),
-        adjustments,
+        &DistributionDataKey::WithdrawAdjustment(WithdrawAdjustmentKey {
+            user: user.clone(),
+            asset: distribution.clone(),
+        }),
+        adjustment,
     );
 }
 
-pub fn get_withdraw_adjustments(
+pub fn get_withdraw_adjustment(
     env: &Env,
     user: &Address,
-) -> Result<Vec<(Address, WithdrawAdjustment)>, ContractError> {
-    Ok(env
-        .storage()
-        .persistent()
-        .get(&DistributionDataKey::WithdrawAdjustment(user.clone()))
-        .unwrap_or_else(|| soroban_sdk::vec![env]))
-}
-
-pub fn get_withdraw_adjustment(
-    withdraw_adjustments: &Vec<(Address, WithdrawAdjustment)>,
     distribution: &Address,
 ) -> WithdrawAdjustment {
-    withdraw_adjustments
-        .iter()
-        .find(|(asset, _)| asset == distribution)
-        .map(|(_, adjustment)| adjustment)
+    env.storage()
+        .persistent()
+        .get(&DistributionDataKey::WithdrawAdjustment(
+            WithdrawAdjustmentKey {
+                user: user.clone(),
+                asset: distribution.clone(),
+            },
+        ))
         .unwrap_or_default()
 }
 
@@ -147,7 +180,7 @@ pub fn withdrawable_rewards(
 ) -> Result<u128, ContractError> {
     let ppw = distribution.shares_per_point;
 
-    let points = get_stakes(env, owner)?.total_stake;
+    let points = dbg!(get_stakes(env, owner)?.total_stake);
     let points = (ppw * points) as i128;
 
     let correction = adjustment.shared_correction;

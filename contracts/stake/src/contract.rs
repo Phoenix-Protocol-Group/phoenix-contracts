@@ -2,9 +2,9 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, 
 
 use crate::{
     distribution::{
-        get_distribution, get_reward_curve, get_withdraw_adjustment, get_withdraw_adjustments,
-        save_distribution, save_reward_curve, save_withdraw_adjustments, withdrawable_rewards,
-        Distribution, SHARES_SHIFT,
+        get_distribution, get_reward_curve, get_withdraw_adjustment, save_distribution,
+        save_reward_curve, save_withdraw_adjustment, withdrawable_rewards, Distribution,
+        SHARES_SHIFT,
     },
     error::ContractError,
     msg::{
@@ -251,8 +251,9 @@ impl StakingTrait for Staking {
             // Calculate how much we have received since the last time Distributed was called,
             // including only the reward config amount that is eligible for distribution.
             // This is the amount we will distribute to all mem
-            let amount =
-                undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
+            let amount = dbg!(
+                undistributed_rewards - withdrawable - dbg!(curve.value(env.ledger().timestamp()))
+            );
 
             if amount == 0 {
                 continue;
@@ -285,11 +286,6 @@ impl StakingTrait for Staking {
     }
 
     fn withdraw_rewards(env: Env, sender: Address) -> Result<(), ContractError> {
-        let withdraw_adjustments = get_withdraw_adjustments(&env, &sender)
-            .map_err(|_| ContractError::RewardsNotDistributedOrDistributionNotCreated)?;
-
-        let mut updated_withdraw_adjustments = vec![&env];
-
         env.events().publish(("withdraw_rewards", "user"), &sender);
 
         for distribution_address in get_distributions(&env) {
@@ -297,7 +293,7 @@ impl StakingTrait for Staking {
             let mut distribution = get_distribution(&env, &distribution_address)?;
             // get withdraw adjustment for the given distribution
             let mut withdraw_adjustment =
-                get_withdraw_adjustment(&withdraw_adjustments, &distribution_address);
+                get_withdraw_adjustment(&env, &sender, &distribution_address);
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
@@ -311,8 +307,7 @@ impl StakingTrait for Staking {
             distribution.withdrawable_total -= reward_amount;
 
             save_distribution(&env, &distribution_address, &distribution);
-            updated_withdraw_adjustments
-                .push_back((distribution_address.clone(), withdraw_adjustment));
+            save_withdraw_adjustment(&env, &sender, &distribution_address, &withdraw_adjustment);
 
             let reward_token_client = token_contract::Client::new(&env, &distribution_address);
             reward_token_client.transfer(
@@ -328,8 +323,6 @@ impl StakingTrait for Staking {
             env.events()
                 .publish(("withdraw_rewards", "reward_amount"), reward_amount as i128);
         }
-
-        save_withdraw_adjustments(&env, &sender, &updated_withdraw_adjustments);
 
         Ok(())
     }
@@ -436,17 +429,13 @@ impl StakingTrait for Staking {
         env: Env,
         user: Address,
     ) -> Result<WithdrawableRewardsResponse, ContractError> {
-        // get withdraw adjustments for all distributions
-        let withdraw_adjustments = get_withdraw_adjustments(&env, &user)?;
-
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
         for distribution_address in get_distributions(&env) {
             // get distribution data for the given reward
             let distribution = get_distribution(&env, &distribution_address)?;
             // get withdraw adjustment for the given distribution
-            let withdraw_adjustment =
-                get_withdraw_adjustment(&withdraw_adjustments, &distribution_address);
+            let withdraw_adjustment = get_withdraw_adjustment(&env, &user, &distribution_address);
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
