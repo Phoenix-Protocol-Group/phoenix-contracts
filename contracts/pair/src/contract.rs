@@ -2,7 +2,6 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, En
 
 use num_integer::Roots;
 
-use crate::utils::{StakeInitInfo, TokenInitInfo};
 use crate::{
     error::ContractError,
     stake_contract,
@@ -11,10 +10,12 @@ use crate::{
         SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
-    utils::assert_approx_ratio,
-    validate_int_parameters,
 };
 use decimal::Decimal;
+use phoenix::{
+    utils::{assert_approx_ratio, StakeInitInfo, TokenInitInfo},
+    validate_int_parameters,
+};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -213,7 +214,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError> {
-        validate_int_parameters!(desired_a, min_a, desired_b, min_b)?;
+        validate_int_parameters!(desired_a, min_a, desired_b, min_b);
 
         // sender needs to authorize the deposit
         sender.require_auth();
@@ -336,7 +337,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
     ) -> Result<(), ContractError> {
-        validate_int_parameters!(offer_amount)?;
+        validate_int_parameters!(offer_amount);
 
         sender.require_auth();
 
@@ -357,7 +358,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_a: i128,
         min_b: i128,
     ) -> Result<(i128, i128), ContractError> {
-        validate_int_parameters!(share_amount, min_a, min_b)?;
+        validate_int_parameters!(share_amount, min_a, min_b);
 
         sender.require_auth();
 

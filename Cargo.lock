@@ -736,9 +736,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
+name = "phoenix"
+version = "0.5.0"
+dependencies = [
+ "decimal",
+ "soroban-sdk",
+ "test-case",
+]
+
+[[package]]
 name = "phoenix-factory"
 version = "0.5.0"
 dependencies = [
+ "phoenix",
  "soroban-sdk",
 ]
 
@@ -748,6 +758,7 @@ version = "0.5.0"
 dependencies = [
  "decimal",
  "num-integer",
+ "phoenix",
  "pretty_assertions",
  "soroban-sdk",
 ]
@@ -758,6 +769,7 @@ version = "0.5.0"
 dependencies = [
  "decimal",
  "num-integer",
+ "phoenix",
  "pretty_assertions",
  "soroban-sdk",
 ]

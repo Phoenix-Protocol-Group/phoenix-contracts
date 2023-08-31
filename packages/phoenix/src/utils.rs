@@ -6,16 +6,14 @@ use soroban_sdk::{contracttype, Address, BytesN};
 macro_rules! validate_int_parameters {
     ($($arg:expr),*) => {
         {
-            let mut res: Result<(), $crate::error::ContractError> = Ok(());
             $(
                 let value: Option<i128> = Into::<Option<_>>::into($arg);
                 if let Some(val) = value {
                     if val <= 0 {
-                        res = Err($crate::error::ContractError::ArgumentsInvalidLessOrEqualZero);
+                        panic!("value cannot be less than or equal zero")
                     }
                 }
             )*
-            res
         }
     };
 }
@@ -42,6 +40,20 @@ pub struct StakeInitInfo {
     pub min_reward: i128,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LiquidityPoolInitInfo {
+    pub admin: Address,
+    pub lp_wasm_hash: BytesN<32>,
+    pub share_token_decimals: u32,
+    pub swap_fee_bps: i64,
+    pub fee_recipient: Address,
+    pub max_allowed_slippage_bps: i64,
+    pub max_allowed_spread_bps: i64,
+    pub token_init_info: TokenInitInfo,
+    pub stake_init_info: StakeInitInfo,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -49,17 +61,41 @@ mod tests {
     #[test]
     fn test_validate_int_parameters() {
         // The macro should not panic for valid parameters.
-        validate_int_parameters!(1, 2, 3).unwrap();
-        validate_int_parameters!(1, 1, 1).unwrap();
-        validate_int_parameters!(1i128, 2i128, 3i128, Some(4i128), None::<i128>).unwrap();
-        validate_int_parameters!(None::<i128>, None::<i128>).unwrap();
-        validate_int_parameters!(Some(1i128), None::<i128>).unwrap();
+        validate_int_parameters!(1, 2, 3);
+        validate_int_parameters!(1, 1, 1);
+        validate_int_parameters!(1i128, 2i128, 3i128, Some(4i128), None::<i128>);
+        validate_int_parameters!(None::<i128>, None::<i128>);
+        validate_int_parameters!(Some(1i128), None::<i128>);
+    }
 
-        validate_int_parameters!(1, -2, 3).unwrap_err();
-        validate_int_parameters!(0, 1, 3).unwrap_err();
-        validate_int_parameters!(1, 1, 0).unwrap_err();
-        validate_int_parameters!(Some(0i128), None::<i128>).unwrap_err();
-        validate_int_parameters!(Some(-1i128), None::<i128>).unwrap_err();
+    #[test]
+    #[should_panic]
+    fn should_panic_when_value_less_than_zero() {
+        validate_int_parameters!(1, -2, 3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_when_first_value_equal_zero() {
+        validate_int_parameters!(0, 1, 3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_when_last_value_equal_zero() {
+        validate_int_parameters!(1, 1, 0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_when_some_equals_zero() {
+        validate_int_parameters!(Some(0i128), None::<i128>);
+    }
+
+    #[test]
+    #[should_panic]
+    fn should_panic_when_some_less_than_zero() {
+        validate_int_parameters!(Some(-1i128), None::<i128>);
     }
 
     #[test]
