@@ -3,7 +3,6 @@ use super::setup::{
 };
 use crate::lp_contract;
 use crate::lp_contract::PairType;
-use crate::tests::setup::deploy_token_contract;
 use soroban_sdk::arbitrary::std;
 use soroban_sdk::{testutils::Address as _, Address, Env};
 
@@ -25,13 +24,13 @@ fn factory_successfully_inits_lp() {
     let mut token2_admin = Address::random(&env);
     let user = Address::random(&env);
 
-    let mut token1 = deploy_token_contract(&env, &token1_admin);
-    let mut token2 = deploy_token_contract(&env, &token2_admin);
+    let mut token1 = Address::random(&env);
+    let mut token2 = Address::random(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    if token2.address < token1.address {
+    if token2 < token1 {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut token1_admin, &mut token2_admin);
     }
@@ -41,8 +40,8 @@ fn factory_successfully_inits_lp() {
 
     let token_init_info = lp_contract::TokenInitInfo {
         token_wasm_hash: install_token_wasm(&env),
-        token_a: token1.address,
-        token_b: token2.address,
+        token_a: token1,
+        token_b: token2,
     };
     let stake_init_info = lp_contract::StakeInitInfo {
         stake_wasm_hash: install_stake_wasm(&env),

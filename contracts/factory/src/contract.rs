@@ -139,7 +139,10 @@ mod tests {
             stake_wasm_hash,
         };
 
-        assert_eq!(validate_token_info(&env, &token_init_info, &stake_init_info), Err(ContractError::FirstTokenMustBeSmallerThenSecond));
+        assert_eq!(
+            validate_token_info(&env, &token_init_info, &stake_init_info),
+            Err(ContractError::FirstTokenMustBeSmallerThenSecond)
+        );
     }
 
     #[test]
@@ -168,7 +171,10 @@ mod tests {
             stake_wasm_hash,
         };
 
-        assert_eq!(validate_token_info(&env, &token_init_info, &stake_init_info), Err(ContractError::MinStakeLessOrEqualZero));
+        assert_eq!(
+            validate_token_info(&env, &token_init_info, &stake_init_info),
+            Err(ContractError::MinStakeLessOrEqualZero)
+        );
     }
 
     #[test]
@@ -197,6 +203,9 @@ mod tests {
             stake_wasm_hash,
         };
 
-        assert_eq!(validate_token_info(&env, &token_init_info, &stake_init_info), Err(ContractError::MinRewardTooSmall));
+        assert_eq!(
+            validate_token_info(&env, &token_init_info, &stake_init_info),
+            Err(ContractError::MinRewardTooSmall)
+        );
     }
 }

@@ -1,7 +1,9 @@
 use soroban_sdk::{testutils::Address as _, Address, Env};
 
-use crate::contract::{Staking, StakingClient};
-use phoenix::token_contract;
+use crate::{
+    contract::{Staking, StakingClient},
+    token_contract,
+};
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
     token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))

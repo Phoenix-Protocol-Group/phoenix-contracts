@@ -3,9 +3,8 @@ use soroban_sdk::{
     Symbol, TryFromVal, Val,
 };
 
-use crate::error::ContractError;
+use crate::{error::ContractError, token_contract};
 use decimal::Decimal;
-use phoenix::token_contract;
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
