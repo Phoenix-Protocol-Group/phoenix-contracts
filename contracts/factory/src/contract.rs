@@ -114,7 +114,6 @@ mod tests {
     use soroban_sdk::BytesN;
 
     #[test]
-    #[should_panic]
     fn validate_token_info_should_fail_on_token_a_less_than_token_b() {
         let env = Env::default();
 
@@ -140,11 +139,10 @@ mod tests {
             stake_wasm_hash,
         };
 
-        validate_token_info(&env, &token_init_info, &stake_init_info).unwrap();
+        assert_eq!(validate_token_info(&env, &token_init_info, &stake_init_info), Err(ContractError::FirstTokenMustBeSmallerThenSecond));
     }
 
     #[test]
-    #[should_panic]
     fn validate_token_info_should_fail_on_min_bond_less_than_zero() {
         let env = Env::default();
 
@@ -170,11 +168,10 @@ mod tests {
             stake_wasm_hash,
         };
 
-        validate_token_info(&env, &token_init_info, &stake_init_info).unwrap();
+        assert_eq!(validate_token_info(&env, &token_init_info, &stake_init_info), Err(ContractError::MinStakeLessOrEqualZero));
     }
 
     #[test]
-    #[should_panic]
     fn validate_token_info_should_fail_on_min_reward_less_than_zero() {
         let env = Env::default();
 
@@ -200,6 +197,6 @@ mod tests {
             stake_wasm_hash,
         };
 
-        validate_token_info(&env, &token_init_info, &stake_init_info).unwrap();
+        assert_eq!(validate_token_info(&env, &token_init_info, &stake_init_info), Err(ContractError::MinRewardTooSmall));
     }
 }
