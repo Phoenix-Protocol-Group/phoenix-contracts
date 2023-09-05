@@ -1,4 +1,7 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, Env, Vec};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, symbol_short, Address, Env, IntoVal, Symbol, Val,
+    Vec,
+};
 
 use crate::{
     error::ContractError,
@@ -6,6 +9,7 @@ use crate::{
     storage::{get_admin, get_lp_vec, save_admin, save_lp_vec},
     utils::deploy_lp_contract,
 };
+use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
@@ -18,7 +22,7 @@ pub trait FactoryTrait {
 
     fn create_liquidity_pool(
         env: Env,
-        lp_init_info: lp_contract::LiquidityPoolInitInfo,
+        lp_init_info: LiquidityPoolInitInfo,
     ) -> Result<(), ContractError>;
 
     fn query_pools(env: Env) -> Result<Vec<Address>, ContractError>;
@@ -40,22 +44,39 @@ impl FactoryTrait for Factory {
 
     fn create_liquidity_pool(
         env: Env,
-        lp_init_info: lp_contract::LiquidityPoolInitInfo,
+        lp_init_info: LiquidityPoolInitInfo,
     ) -> Result<(), ContractError> {
-        validate_token_info(&env, &lp_init_info.token_init_info, &lp_init_info.stake_init_info)?;
+        validate_token_info(
+            &env,
+            &lp_init_info.token_init_info,
+            &lp_init_info.stake_init_info,
+        )?;
 
         let lp_contract_address = deploy_lp_contract(&env, lp_init_info.lp_wasm_hash);
 
-        lp_contract::Client::new(&env, &lp_contract_address).initialize(
-            &get_admin(&env)?,
-            &lp_init_info.share_token_decimals,
-            &lp_init_info.swap_fee_bps,
-            &lp_init_info.fee_recipient,
-            &lp_init_info.max_allowed_slippage_bps,
-            &lp_init_info.max_allowed_spread_bps,
-            &lp_init_info.token_init_info,
-            &lp_init_info.stake_init_info
-        );
+        let init_fn: Symbol = Symbol::new(&env, "initialize");
+        let init_fn_args: Vec<Val> = (
+            lp_init_info.admin,
+            lp_init_info.share_token_decimals,
+            lp_init_info.swap_fee_bps,
+            lp_init_info.fee_recipient,
+            lp_init_info.max_allowed_slippage_bps,
+            lp_init_info.max_allowed_spread_bps,
+            lp_init_info.token_init_info,
+            lp_init_info.stake_init_info,
+        )
+            .into_val(&env);
+        let res: Val = env.invoke_contract(&lp_contract_address, &init_fn, init_fn_args);
+        // lp_contract::Client::new(&env, &lp_contract_address).initialize(
+        //     &lp_init_info.admin,
+        //     &lp_init_info.share_token_decimals,
+        //     &lp_init_info.swap_fee_bps,
+        //     &lp_init_info.fee_recipient,
+        //     &lp_init_info.max_allowed_slippage_bps,
+        //     &lp_init_info.max_allowed_spread_bps,
+        //     &lp_init_info.token_init_info,
+        //     &lp_init_info.stake_init_info,
+        // );
 
         let mut lp_vec = get_lp_vec(&env)?;
 
@@ -80,8 +101,8 @@ impl FactoryTrait for Factory {
 
 fn validate_token_info(
     env: &Env,
-    token_init_info: &lp_contract::TokenInitInfo,
-    stake_init_info: &lp_contract::StakeInitInfo,
+    token_init_info: &TokenInitInfo,
+    stake_init_info: &StakeInitInfo,
 ) -> Result<(), ContractError> {
     if token_init_info.token_a >= token_init_info.token_b {
         log!(env, "token_a must be less than token_b");
