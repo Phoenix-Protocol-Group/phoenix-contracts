@@ -50,8 +50,6 @@ fn factory_successfully_inits_lp() {
         min_reward: 5i128,
     };
 
-    let token_init_info_cloned = token_init_info.clone();
-    let stake_init_info_cloned = stake_init_info.clone();
     let lp_wasm_hash = install_lp_contract(&env);
 
     let lp_init_info = lp_contract::LiquidityPoolInitInfo {
@@ -61,15 +59,13 @@ fn factory_successfully_inits_lp() {
         max_allowed_slippage_bps: 5_000,
         max_allowed_spread_bps: 500,
         share_token_decimals: 7,
-        stake_init_info,
         swap_fee_bps: 0,
-        token_init_info,
+        token_init_info: token_init_info.clone(),
+        stake_init_info,
     };
 
     factory.create_liquidity_pool(
         &lp_init_info,
-        &token_init_info_cloned,
-        &stake_init_info_cloned,
     );
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
@@ -86,8 +82,8 @@ fn factory_successfully_inits_lp() {
             pair_type: PairType::Xyk,
             share_token: share_token_address,
             stake_contract: stake_token_address,
-            token_a: token_init_info_cloned.token_a,
-            token_b: token_init_info_cloned.token_b,
+            token_a: token_init_info.token_a,
+            token_b: token_init_info.token_b,
             total_fee_bps: 0,
         }
     );

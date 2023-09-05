@@ -19,8 +19,6 @@ pub trait FactoryTrait {
     fn create_liquidity_pool(
         env: Env,
         lp_init_info: lp_contract::LiquidityPoolInitInfo,
-        token_init_info: lp_contract::TokenInitInfo,
-        stake_init_info: lp_contract::StakeInitInfo,
     ) -> Result<(), ContractError>;
 
     fn query_pools(env: Env) -> Result<Vec<Address>, ContractError>;
@@ -43,10 +41,8 @@ impl FactoryTrait for Factory {
     fn create_liquidity_pool(
         env: Env,
         lp_init_info: lp_contract::LiquidityPoolInitInfo,
-        token_init_info: lp_contract::TokenInitInfo,
-        stake_init_info: lp_contract::StakeInitInfo,
     ) -> Result<(), ContractError> {
-        validate_token_info(&env, &token_init_info, &stake_init_info)?;
+        validate_token_info(&env, &lp_init_info.token_init_info, &lp_init_info.stake_init_info)?;
 
         let lp_contract_address = deploy_lp_contract(&env, lp_init_info.lp_wasm_hash);
 
@@ -57,8 +53,8 @@ impl FactoryTrait for Factory {
             &lp_init_info.fee_recipient,
             &lp_init_info.max_allowed_slippage_bps,
             &lp_init_info.max_allowed_spread_bps,
-            &token_init_info,
-            &stake_init_info,
+            &lp_init_info.token_init_info,
+            &lp_init_info.stake_init_info
         );
 
         let mut lp_vec = get_lp_vec(&env)?;
