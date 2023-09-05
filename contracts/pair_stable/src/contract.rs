@@ -3,16 +3,18 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, En
 use num_integer::Roots;
 
 use crate::{
+    token_contract,
     error::ContractError,
     storage::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
     },
-    token_contract,
 };
 use decimal::Decimal;
 
-use phoenix::{utils::assert_approx_ratio, validate_int_parameters};
+use phoenix::{
+    {utils::assert_approx_ratio, validate_int_parameters},
+};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
