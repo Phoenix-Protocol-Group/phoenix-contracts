@@ -64,9 +64,7 @@ fn factory_successfully_inits_lp() {
         stake_init_info,
     };
 
-    factory.create_liquidity_pool(
-        &lp_init_info,
-    );
+    factory.create_liquidity_pool(&lp_init_info);
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
     let first_lp_contract = lp_contract::Client::new(&env, &lp_contract_addr);
