@@ -26,6 +26,7 @@ and this project adheres to
 - Pair: Removes redundant slippage check ([#96])
 - All: more granular error handling ([#95])
 - All: changed the test for auths() and panic! ([#90])
+- Factory: Remove pair initialization through client in order to not import other contract in binary ([#122])
 
 ## Fixed
 
@@ -46,6 +47,7 @@ and this project adheres to
 [#115]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/115
 [#116]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/116
 [#118]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/118
+[#122]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/122
 
 ## [0.5.0] - 2023-08-04
 
