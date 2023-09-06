@@ -126,7 +126,7 @@ soroban contract invoke \
 
 PAIR_ADDR=$(soroban contract invoke \
     --id $FACTORY_ADDR \
-    --source futurenetacc \
+    --source $IDENTITY_STRING \
     --network futurenet --fee 100 \
     -- \
     query_pools | jq -r '.[0]')
