@@ -1,8 +1,9 @@
 use super::setup::{
     deploy_factory_contract, install_lp_contract, install_stake_wasm, install_token_wasm,
+    lp_contract,
 };
-use crate::lp_contract;
-use crate::lp_contract::PairType;
+use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+
 use soroban_sdk::arbitrary::std;
 use soroban_sdk::{testutils::Address as _, Address, Env};
 
@@ -38,12 +39,12 @@ fn factory_successfully_inits_lp() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
     assert_eq!(factory.get_admin(), admin);
 
-    let token_init_info = lp_contract::TokenInitInfo {
+    let token_init_info = TokenInitInfo {
         token_wasm_hash: install_token_wasm(&env),
         token_a: token1,
         token_b: token2,
     };
-    let stake_init_info = lp_contract::StakeInitInfo {
+    let stake_init_info = StakeInitInfo {
         stake_wasm_hash: install_stake_wasm(&env),
         min_bond: 10i128,
         max_distributions: 10u32,
@@ -52,7 +53,7 @@ fn factory_successfully_inits_lp() {
 
     let lp_wasm_hash = install_lp_contract(&env);
 
-    let lp_init_info = lp_contract::LiquidityPoolInitInfo {
+    let lp_init_info = LiquidityPoolInitInfo {
         admin,
         fee_recipient: user.clone(),
         lp_wasm_hash,
@@ -77,7 +78,7 @@ fn factory_successfully_inits_lp() {
             fee_recipient: user,
             max_allowed_slippage_bps: 5_000,
             max_allowed_spread_bps: 500,
-            pair_type: PairType::Xyk,
+            pair_type: lp_contract::PairType::Xyk,
             share_token: share_token_address,
             stake_contract: stake_token_address,
             token_a: token_init_info.token_a,

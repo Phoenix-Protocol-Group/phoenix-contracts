@@ -1,11 +1,9 @@
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, symbol_short, Address, Env, IntoVal, Symbol, Val,
-    Vec,
+    contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
 
 use crate::{
     error::ContractError,
-    lp_contract,
     storage::{get_admin, get_lp_vec, save_admin, save_lp_vec},
     utils::deploy_lp_contract,
 };
@@ -66,17 +64,7 @@ impl FactoryTrait for Factory {
             lp_init_info.stake_init_info,
         )
             .into_val(&env);
-        let res: Val = env.invoke_contract(&lp_contract_address, &init_fn, init_fn_args);
-        // lp_contract::Client::new(&env, &lp_contract_address).initialize(
-        //     &lp_init_info.admin,
-        //     &lp_init_info.share_token_decimals,
-        //     &lp_init_info.swap_fee_bps,
-        //     &lp_init_info.fee_recipient,
-        //     &lp_init_info.max_allowed_slippage_bps,
-        //     &lp_init_info.max_allowed_spread_bps,
-        //     &lp_init_info.token_init_info,
-        //     &lp_init_info.stake_init_info,
-        // );
+        let _res: Val = env.invoke_contract(&lp_contract_address, &init_fn, init_fn_args);
 
         let mut lp_vec = get_lp_vec(&env)?;
 
@@ -143,13 +131,13 @@ mod tests {
         let token_a = Address::from_contract_id(&contract1);
         let token_b = Address::from_contract_id(&contract2);
 
-        let token_init_info = lp_contract::TokenInitInfo {
+        let token_init_info = TokenInitInfo {
             token_a,
             token_b,
             token_wasm_hash,
         };
 
-        let stake_init_info = lp_contract::StakeInitInfo {
+        let stake_init_info = StakeInitInfo {
             max_distributions: 10,
             min_bond: 10,
             min_reward: 10,
@@ -175,13 +163,13 @@ mod tests {
         let token_a = Address::from_contract_id(&contract1);
         let token_b = Address::from_contract_id(&contract2);
 
-        let token_init_info = lp_contract::TokenInitInfo {
+        let token_init_info = TokenInitInfo {
             token_a,
             token_b,
             token_wasm_hash,
         };
 
-        let stake_init_info = lp_contract::StakeInitInfo {
+        let stake_init_info = StakeInitInfo {
             max_distributions: 10,
             min_bond: 0,
             min_reward: 10,
@@ -207,13 +195,13 @@ mod tests {
         let token_a = Address::from_contract_id(&contract1);
         let token_b = Address::from_contract_id(&contract2);
 
-        let token_init_info = lp_contract::TokenInitInfo {
+        let token_init_info = TokenInitInfo {
             token_a,
             token_b,
             token_wasm_hash,
         };
 
-        let stake_init_info = lp_contract::StakeInitInfo {
+        let stake_init_info = StakeInitInfo {
             max_distributions: 10,
             min_bond: 10,
             min_reward: 0,
