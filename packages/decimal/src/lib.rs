@@ -208,6 +208,16 @@ impl Decimal {
         }
     }
 
+    pub fn to_i128_with_precision(&self, precision: impl Into<i32>) -> i128 {
+        let value = self.atomics();
+        let precision = precision.into();
+
+        let divisor = 10i128.pow((self.decimal_places() - precision) as u32);
+        let result = value / divisor;
+
+        result.into()
+    }
+
     /// Returns the ratio (numerator / denominator) as a Decimal
     fn checked_from_ratio(
         numerator: impl Into<i128>,
