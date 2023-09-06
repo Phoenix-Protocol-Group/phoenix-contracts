@@ -218,6 +218,15 @@ impl Decimal {
         result.into()
     }
 
+    fn multiply_ratio(
+        &self,
+        numerator: Decimal,
+        denominator: Decimal,
+    ) -> Decimal {
+        Decimal::from_ratio(self.atomics() * numerator.atomics(), denominator.atomics())
+    }
+
+
     /// Returns the ratio (numerator / denominator) as a Decimal
     fn checked_from_ratio(
         numerator: impl Into<i128>,

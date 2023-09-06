@@ -4,7 +4,7 @@ use num_integer::Roots;
 
 use crate::{
     error::ContractError,
-    math::{compute_current_amp, AMP_PRECISION},
+    math::{compute_current_amp, compute_d, AMP_PRECISION},
     storage::{
         get_amp, get_config, save_amp, save_config, utils, validate_fee_bps, AmplifierParameters,
         Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
@@ -197,9 +197,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     fn provide_liquidity(
         env: Env,
         sender: Address,
-        desired_a: Option<i128>,
+        desired_a: i128,
         min_a: Option<i128>,
-        desired_b: Option<i128>,
+        desired_b: i128,
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError> {
@@ -223,56 +223,28 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                                                      // validation to AMP parameters
         let amp = compute_current_amp(&env, &amp_parameters);
 
-        // Check if both tokens are provided, one token is provided, or none are provided
-        let amounts = match (desired_a, desired_b) {
-            // Both tokens are provided
-            (Some(a), Some(b)) if a > 0 && b > 0 => {
-                // Calculate deposit amounts
-                utils::get_deposit_amounts(
-                    &env,
-                    a,
-                    min_a,
-                    b,
-                    min_b,
-                    pool_balance_a,
-                    pool_balance_b,
-                    Decimal::bps(custom_slippage_bps.unwrap_or(100)),
-                )?
-            }
-            // Only token A is provided
-            (Some(a), None) if a > 0 => {
-                let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
-                    &env,
-                    pool_balance_a,
-                    pool_balance_b,
-                    a,
-                    true,
-                )?;
-                do_swap(env.clone(), sender.clone(), true, a_for_swap, None, None)?;
-                // return: rest of Token A amount, simulated result of swap of portion A
-                (a - a_for_swap, b_from_swap)
-            }
-            // Only token B is provided
-            (None, Some(b)) if b > 0 => {
-                let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
-                    &env,
-                    pool_balance_a,
-                    pool_balance_b,
-                    b,
-                    false,
-                )?;
-                do_swap(env.clone(), sender.clone(), false, b_for_swap, None, None)?;
-                // return: simulated result of swap of portion B, rest of Token B amount
-                (a_from_swap, b - b_for_swap)
-            }
-            // None or invalid amounts are provided
-            _ => {
-                log!(
-                    &env,
-                    "At least one token must be provided and must be bigger then 0!"
-                );
-                return Err(ContractError::InvalidAmounts);
-            }
+
+        // Invariant (D) after deposit added
+        let new_balance_a = desired_a + pool_balance_a;
+        let new_balance_b = desired_b + pool_balance_b;
+        let deposit_d = compute_d(
+            amp as u128,
+            &[
+                Decimal::from_atomics(new_balance_a, 6),
+                Decimal::from_atomics(new_balance_b, 6),
+            ],
+        );
+
+        let shares = if utils::get_total_shares(&env)? == 0 {
+            deposit_d.to_i128_with_precision(7);
+        } else {
+            let initial_deposit_d = compute_d(
+                amp as u128,
+                &[
+                    Decimal::from_atomics(new_balance_a, 6),
+                    Decimal::from_atomics(new_balance_b, 6),
+                ],
+            );
         };
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
