@@ -14,14 +14,6 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo
-            target
-          key: ${{ runner.os }}-rust-${{ matrix.rust-version }}
-          restore-keys: ${{ runner.os }}-rust-${{ matrix.rust-version }}-
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -29,11 +21,6 @@ jobs:
           toolchain: ${{ matrix.rust-version }}
           target: wasm32-unknown-unknown
           override: true
-      - name: Install soroban-cli
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --locked --version 0.9.4 soroban-cli
       - name: Build artifacts
         run: make build
       - name: Generate checksums
