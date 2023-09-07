@@ -14,14 +14,6 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
-      - name: Cache dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo
-            target
-          key: ${{ runner.os }}-rust-${{ matrix.rust-version }}
-          restore-keys: ${{ runner.os }}-rust-${{ matrix.rust-version }}-
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
