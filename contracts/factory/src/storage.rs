@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use soroban_sdk::{Address, ConversionError, Env, TryFromVal, Val, Vec};
+use soroban_sdk::{contracttype, Address, ConversionError, Env, TryFromVal, Val, Vec};
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -17,6 +17,27 @@ impl TryFromVal<Env, DataKey> for Val {
     }
 }
 
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Asset {
+    /// Address of the asset
+    pub address: Address,
+    /// The total amount of those tokens in the pool
+    pub amount: i128,
+}
+
+/// This struct is used to return a query result with the total amount of LP tokens and assets in a specific pool.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PoolResponse {
+    /// The asset A in the pool together with asset amounts
+    pub asset_a: Asset,
+    /// The asset B in the pool together with asset amounts
+    pub asset_b: Asset,
+    /// The total amount of LP tokens currently issued
+    pub asset_lp_share: Asset,
+}
+
 pub fn save_admin(env: &Env, address: Address) {
     env.storage().instance().set(&DataKey::Admin, &address);
 }
@@ -28,15 +49,15 @@ pub fn get_admin(env: &Env) -> Result<Address, ContractError> {
         .ok_or(ContractError::FailedToGetAdminAddrFromStorage)
 }
 
-pub fn get_lp_vec(env: &Env) -> Result<Vec<Address>, ContractError> {
+pub fn get_lp_vec(env: &Env) -> Result<Vec<PoolResponse>, ContractError> {
     env.storage()
         .instance()
         .get(&DataKey::LpVec)
         .ok_or(ContractError::LiquidityPoolVectorNotFound)
 }
 
-pub fn save_lp_vec(env: &Env, lp_vec: Vec<Address>) {
-    env.storage().instance().set(&DataKey::LpVec, &lp_vec);
+pub fn save_lp_vec(env: &Env, lp_info: Vec<PoolResponse>) {
+    env.storage().instance().set(&DataKey::LpVec, &lp_info);
 }
 
 #[cfg(test)]

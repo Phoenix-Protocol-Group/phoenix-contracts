@@ -2,6 +2,7 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
 
+use crate::storage::{Asset, PoolResponse};
 use crate::{
     error::ContractError,
     storage::{get_admin, get_lp_vec, save_admin, save_lp_vec},
@@ -23,7 +24,7 @@ pub trait FactoryTrait {
         lp_init_info: LiquidityPoolInitInfo,
     ) -> Result<(), ContractError>;
 
-    fn query_pools(env: Env) -> Result<Vec<Address>, ContractError>;
+    fn query_pools(env: Env) -> Result<Vec<PoolResponse>, ContractError>;
 
     fn get_admin(env: Env) -> Result<Address, ContractError>;
 }
@@ -66,9 +67,46 @@ impl FactoryTrait for Factory {
             .into_val(&env);
         let _res: Val = env.invoke_contract(&lp_contract_address, &init_fn, init_fn_args);
 
+        let pool_response: PoolResponse = env.invoke_contract(
+            &lp_contract_address,
+            &Symbol::new(&env, "query_pool_info"),
+            Vec::new(&env),
+        );
+
         let mut lp_vec = get_lp_vec(&env)?;
 
-        lp_vec.push_back(lp_contract_address.clone());
+        // move PoolResponse and Asset to the phoenix util library?
+        let lp_to_save = PoolResponse {
+            asset_a: Asset {
+                address: pool_response.asset_a.address,
+                amount: pool_response.asset_a.amount,
+            },
+            asset_b: Asset {
+                address: pool_response.asset_b.address,
+                amount: pool_response.asset_b.amount,
+            },
+            asset_lp_share: Asset {
+                address: pool_response.asset_lp_share.address,
+                amount: pool_response.asset_lp_share.amount,
+            },
+        };
+
+        lp_vec.push_back(lp_to_save);
+
+        // A few things are blurry for me
+        // 1.   Which fees exactly are we gonna send back to the client (my guess it's swap fees,
+        //      but not 100% sure).
+        // 2.   Isn't this a bit an expensive operation to make (query all the lp_contract on ledger
+        //      Initially it'll be fine, but as soon as our ledger grows it can be costly. Maybe
+        //      we can specify which addresses to query for?
+        // 2.1. Initially the total supply will be the same so we might just end not calling the
+        //      lp_contract rather use the values from the initialization
+        // 2.2  Am I correct to think that in order to have consistent information on ledger we need
+        //      to call some new method update_lp_info() everytime a swap is made?
+        // 3.   Is the factory contract the one that should be responsible for this type of
+        //      operations - update the storage associated with the liquidity pools bookkeeping?
+        //      Isn't this contract supposed to only create new liquidity_pools.
+        // 4.   Off-topic - can we rename pair contract to liquidity_pool.
 
         save_lp_vec(&env, lp_vec);
 
@@ -78,7 +116,7 @@ impl FactoryTrait for Factory {
         Ok(())
     }
 
-    fn query_pools(env: Env) -> Result<Vec<Address>, ContractError> {
+    fn query_pools(env: Env) -> Result<Vec<PoolResponse>, ContractError> {
         get_lp_vec(&env)
     }
 
