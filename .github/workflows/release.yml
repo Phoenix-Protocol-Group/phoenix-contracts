@@ -29,11 +29,6 @@ jobs:
           toolchain: ${{ matrix.rust-version }}
           target: wasm32-unknown-unknown
           override: true
-      - name: Install soroban-cli
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --locked --version 0.9.4 soroban-cli
       - name: Build artifacts
         run: make build
       - name: Generate checksums

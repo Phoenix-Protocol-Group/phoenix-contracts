@@ -27,11 +27,6 @@ jobs:
           toolchain: ${{ matrix.rust-version }}
           target: wasm32-unknown-unknown
           override: true
-      - name: Install soroban-cli
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --locked --version 0.9.4 soroban-cli
       - name: Build
         run: make build
 
@@ -60,11 +55,6 @@ jobs:
           toolchain: ${{ matrix.rust-version }}
           target: wasm32-unknown-unknown
           override: true
-      - name: Install soroban-cli
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --locked --version 0.9.4 soroban-cli
       - name: Run tests
         run: make test
 
@@ -94,10 +84,5 @@ jobs:
           override: true
           target: wasm32-unknown-unknown
           components: rustfmt, clippy
-      - name: Install soroban-cli
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --locked --version 0.9.4 soroban-cli
       - name: Run lints
         run: make lints
