@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use soroban_sdk::{contracttype, Address, ConversionError, Env, TryFromVal, Val, Vec};
+use soroban_sdk::{contracttype, Address, ConversionError, Env, Symbol, TryFromVal, Val, Vec};
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -49,15 +49,36 @@ pub fn get_admin(env: &Env) -> Result<Address, ContractError> {
         .ok_or(ContractError::FailedToGetAdminAddrFromStorage)
 }
 
-pub fn get_lp_vec(env: &Env) -> Result<Vec<PoolResponse>, ContractError> {
+pub fn get_lp_vec(env: &Env) -> Result<Vec<Address>, ContractError> {
     env.storage()
         .instance()
         .get(&DataKey::LpVec)
         .ok_or(ContractError::LiquidityPoolVectorNotFound)
 }
 
-pub fn save_lp_vec(env: &Env, lp_info: Vec<PoolResponse>) {
+pub fn query_pool_details(env: Env, pool_address: Address) -> Result<PoolResponse, ContractError> {
+    let pool_response: PoolResponse = query_pool_info(&env, &pool_address);
+
+    Ok(pool_response)
+}
+
+pub fn query_all_pool_details(env: Env) -> Result<Vec<PoolResponse>, ContractError> {
+    let all_lp_vec_addresses = get_lp_vec(&env)?;
+    let mut result = Vec::new(&env);
+    for address in all_lp_vec_addresses {
+        let pool_response: PoolResponse = query_pool_info(&env, &address);
+        result.push_back(pool_response);
+    }
+
+    Ok(result)
+}
+
+pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
     env.storage().instance().set(&DataKey::LpVec, &lp_info);
+}
+
+fn query_pool_info(env: &Env, address: &Address) -> PoolResponse {
+    env.invoke_contract(address, &Symbol::new(env, "query_pool_info"), Vec::new(env))
 }
 
 #[cfg(test)]
