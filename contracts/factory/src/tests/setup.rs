@@ -13,14 +13,6 @@ pub fn install_lp_contract(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(lp_contract::WASM)
 }
 
-pub fn install_second_lp_contract(env: &Env) -> BytesN<32> {
-    env.deployer().upload_contract_wasm(lp_contract::WASM)
-}
-
-pub fn install_third_lp_contract(env: &Env) -> BytesN<32> {
-    env.deployer().upload_contract_wasm(lp_contract::WASM)
-}
-
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
