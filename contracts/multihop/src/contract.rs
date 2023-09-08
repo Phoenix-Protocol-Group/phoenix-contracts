@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env};
+use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use crate::error::ContractError;
 use crate::storage::Swap;
