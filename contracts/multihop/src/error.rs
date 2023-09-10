@@ -5,4 +5,6 @@ use soroban_sdk::contracterror;
 #[repr(u32)]
 pub enum ContractError {
     Unauthorized = 0,
+    AdminNotFound = 1,
+    LiquidityPoolNotFound = 2,
 }

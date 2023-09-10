@@ -1,7 +1,7 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use crate::error::ContractError;
-use crate::storage::Swap;
+use crate::storage::{get_liquidity_pool, save_admin, save_liquidity_pool, Pair, Swap};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -16,7 +16,7 @@ pub trait MultihopTrait {
     fn initialize(
         env: Env,
         admin: Address,
-        liquidity_pools: Vec<Address>,
+        liquidity_pools: Vec<(Pair, Address)>,
     ) -> Result<(), ContractError>;
 
     fn swap(env: Env, operations: Vec<Swap>) -> Result<(), ContractError>;
@@ -25,14 +25,46 @@ pub trait MultihopTrait {
 #[contractimpl]
 impl MultihopTrait for Multihop {
     fn initialize(
-        _env: Env,
-        _admin: Address,
-        _liquidity_pools: Vec<Address>,
+        env: Env,
+        admin: Address,
+        liquidity_pools: Vec<(Pair, Address)>,
     ) -> Result<(), ContractError> {
-        unimplemented!();
+        save_admin(&env, &admin);
+
+        for lp in liquidity_pools.iter() {
+            let pair = lp.0;
+            let lp_address = lp.1;
+            save_liquidity_pool(&env, pair, lp_address);
+        }
+
+        env.events()
+            .publish(("initialize", "Multihop factory"), admin);
+
+        Ok(())
     }
 
-    fn swap(_env: Env, _operations: Vec<Swap>) -> Result<(), ContractError> {
-        unimplemented!();
+    fn swap(env: Env, operations: Vec<Swap>) -> Result<(), ContractError> {
+        for op in operations.iter() {
+            let _lp_address = get_liquidity_pool(
+                &env,
+                Pair {
+                    token_a: op.ask_asset,
+                    token_b: op.offer_asset,
+                },
+            )?;
+
+            // todo swap me using pair::swap?
+            // ``` fn swap(
+            //         env: Env,
+            //         sender: Address,
+            //         sell_a: bool,
+            //         offer_amount: i128,
+            //         belief_price: Option<i64>,
+            //         max_spread_bps: Option<i64>,
+            //     ) -> Result<(), ContractError>;```
+            // if yes, we'll need more arguments to this function
+        }
+
+        Ok(())
     }
 }
