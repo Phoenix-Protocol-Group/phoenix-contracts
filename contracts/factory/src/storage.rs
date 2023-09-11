@@ -38,6 +38,13 @@ pub struct PoolResponse {
     pub asset_lp_share: Asset,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LiquidityPoolInfo {
+    pub pool_response: PoolResponse,
+    pub total_fee_bps: i64,
+}
+
 pub fn save_admin(env: &Env, address: Address) {
     env.storage().instance().set(&DataKey::Admin, &address);
 }
@@ -56,18 +63,33 @@ pub fn get_lp_vec(env: &Env) -> Result<Vec<Address>, ContractError> {
         .ok_or(ContractError::LiquidityPoolVectorNotFound)
 }
 
-pub fn query_pool_details(env: Env, pool_address: Address) -> Result<PoolResponse, ContractError> {
+pub fn query_pool_details(
+    env: Env,
+    pool_address: Address,
+) -> Result<LiquidityPoolInfo, ContractError> {
     let pool_response: PoolResponse = query_pool_info(&env, &pool_address);
+    let total_fee_bps = query_pool_total_fee_bps(&env, &pool_address);
+    let lp_info = LiquidityPoolInfo {
+        pool_response,
+        total_fee_bps,
+    };
 
-    Ok(pool_response)
+    Ok(lp_info)
 }
 
-pub fn query_all_pool_details(env: Env) -> Result<Vec<PoolResponse>, ContractError> {
+pub fn query_all_pool_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError> {
     let all_lp_vec_addresses = get_lp_vec(&env)?;
     let mut result = Vec::new(&env);
     for address in all_lp_vec_addresses {
         let pool_response: PoolResponse = query_pool_info(&env, &address);
-        result.push_back(pool_response);
+        let total_fee_bps = query_pool_total_fee_bps(&env, &address);
+
+        let lp_info = LiquidityPoolInfo {
+            pool_response,
+            total_fee_bps,
+        };
+
+        result.push_back(lp_info);
     }
 
     Ok(result)
@@ -79,6 +101,14 @@ pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
 
 fn query_pool_info(env: &Env, address: &Address) -> PoolResponse {
     env.invoke_contract(address, &Symbol::new(env, "query_pool_info"), Vec::new(env))
+}
+
+fn query_pool_total_fee_bps(env: &Env, address: &Address) -> i64 {
+    env.invoke_contract(
+        address,
+        &Symbol::new(env, "get_total_fee_bps"),
+        Vec::new(env),
+    )
 }
 
 #[cfg(test)]

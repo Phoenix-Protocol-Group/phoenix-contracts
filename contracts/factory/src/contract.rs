@@ -2,7 +2,7 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
 
-use crate::storage::{query_all_pool_details, query_pool_details, PoolResponse};
+use crate::storage::{query_all_pool_details, query_pool_details, LiquidityPoolInfo, PoolResponse};
 use crate::{
     error::ContractError,
     storage::{get_admin, get_lp_vec, save_admin, save_lp_vec},
@@ -26,9 +26,12 @@ pub trait FactoryTrait {
 
     fn query_pools(env: Env) -> Result<Vec<Address>, ContractError>;
 
-    fn query_pool_details(env: Env, pool_address: Address) -> Result<PoolResponse, ContractError>;
+    fn query_pool_details(
+        env: Env,
+        pool_address: Address,
+    ) -> Result<LiquidityPoolInfo, ContractError>;
 
-    fn query_all_pool_details(env: Env) -> Result<Vec<PoolResponse>, ContractError>;
+    fn query_all_pool_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError>;
 
     fn get_admin(env: Env) -> Result<Address, ContractError>;
 }
@@ -87,11 +90,14 @@ impl FactoryTrait for Factory {
         get_lp_vec(&env)
     }
 
-    fn query_pool_details(env: Env, pool_address: Address) -> Result<PoolResponse, ContractError> {
+    fn query_pool_details(
+        env: Env,
+        pool_address: Address,
+    ) -> Result<LiquidityPoolInfo, ContractError> {
         query_pool_details(env, pool_address)
     }
 
-    fn query_all_pool_details(env: Env) -> Result<Vec<PoolResponse>, ContractError> {
+    fn query_all_pool_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError> {
         query_all_pool_details(env)
     }
 

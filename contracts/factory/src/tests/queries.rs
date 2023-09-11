@@ -75,7 +75,7 @@ fn test_single_query() {
         stake_init_info: first_stake_init_info,
     };
 
-    let _second_lp_init_info = LiquidityPoolInitInfo {
+    let second_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
@@ -90,7 +90,7 @@ fn test_single_query() {
     factory.create_liquidity_pool(&first_lp_init_info);
     // uncommenting the line below brakes the tests
     // we use the same lp_wasm_hash and this causes HostError: Error(Storage, ExistingValue)
-    // factory.create_liquidity_pool(&second_lp_init_info);
+    factory.create_liquidity_pool(&second_lp_init_info);
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
     let _first_lp_contract = lp_contract::Client::new(&env, &lp_contract_addr);

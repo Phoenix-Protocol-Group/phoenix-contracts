@@ -120,6 +120,8 @@ pub trait LiquidityPoolTrait {
         sell_a: bool,
         ask_amount: i128,
     ) -> Result<SimulateReverseSwapResponse, ContractError>;
+
+    fn get_total_fee_bps(env: Env) -> Result<i64, ContractError>;
 }
 
 #[contractimpl]
@@ -559,6 +561,11 @@ impl LiquidityPoolTrait for LiquidityPool {
             spread_amount,
             commission_amount,
         })
+    }
+
+    fn get_total_fee_bps(env: Env) -> Result<i64, ContractError> {
+        let config = get_config(&env)?;
+        Ok(config.total_fee_bps)
     }
 }
 
