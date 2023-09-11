@@ -1,5 +1,6 @@
+use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
+    contract, contractimpl, contractmeta, log, Address, Bytes, Env, IntoVal, Symbol, Val, Vec,
 };
 
 use crate::storage::{query_all_pool_details, query_pool_details, LiquidityPoolInfo};
@@ -58,8 +59,6 @@ impl FactoryTrait for Factory {
             &lp_init_info.stake_init_info,
         )?;
 
-        let lp_contract_address = deploy_lp_contract(&env, lp_init_info.lp_wasm_hash);
-
         let init_fn: Symbol = Symbol::new(&env, "initialize");
         let init_fn_args: Vec<Val> = (
             lp_init_info.admin,
@@ -72,7 +71,18 @@ impl FactoryTrait for Factory {
             lp_init_info.stake_init_info,
         )
             .into_val(&env);
-        let _res: Val = env.invoke_contract(&lp_contract_address, &init_fn, init_fn_args);
+
+        let mut salt = Bytes::new(&env);
+        salt.append(&lp_init_info.lp_wasm_hash.clone().to_xdr(&env));
+        let final_salt = env.crypto().sha256(&salt);
+
+        let lp_contract_address = deploy_lp_contract(
+            &env,
+            lp_init_info.lp_wasm_hash,
+            final_salt,
+            init_fn,
+            init_fn_args,
+        )?;
 
         let mut lp_vec = get_lp_vec(&env)?;
 

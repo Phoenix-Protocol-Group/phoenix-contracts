@@ -5,7 +5,9 @@ use super::setup::{
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::arbitrary::std;
-use soroban_sdk::{testutils::Address as _, Address, Env, Symbol, Vec};
+use soroban_sdk::arbitrary::std::dbg;
+use soroban_sdk::xdr::ToXdr;
+use soroban_sdk::{testutils::Address as _, Address, Bytes, Env, Symbol, Vec};
 
 #[test]
 fn test_single_query() {
@@ -75,25 +77,43 @@ fn test_single_query() {
         stake_init_info: first_stake_init_info,
     };
 
+    /// fixme this is where things go South.
+    /// If I use lp_wasm_hash.clone() in second_lp_init_info we end up with Error(Storage, ExistingValue)
+    /// If we use the values as is below then we get Error(Storage, MissingValue)
+    /// internal calls as follow:
+    /// 4: [Failed Diagnostic Event (not emitted)]
+    /// contract:27bb86cc8f38e38b0fdce9f01faed4cb43e13cab1d438997878c17567ce4fe25,
+    /// topics:[error, Error(Storage, MissingValue)], data:"Wasm does not exist"
+    /// I've redone the deployer contract as it's given in the examples and still we have this issue.
+    /// dmytro in Discord says that it's possible to decouple contract WASM from contract instances
+    /// but I'm not sure how exactly - he says that the examples will be updated
+    /// https://discord.com/channels/897514728459468821/1047254001927868466/1047262760150519859
+    ///
+    /// Ultimately this test is supposed to create 3 liquidity pools with different data
+    /// so that we can validate that the deployment has been successful and that the
+    /// contract info is legit
+    let mut second_salt = Bytes::new(&env);
+    second_salt.append(&lp_wasm_hash.clone().to_xdr(&env));
+    let second_lp_wasm_hash = env.crypto().sha256(&second_salt);
+
     let second_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
-        lp_wasm_hash: lp_wasm_hash.clone(),
+        lp_wasm_hash: second_lp_wasm_hash,
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
         share_token_decimals: 6,
         swap_fee_bps: 0,
-        token_init_info: second_token_init_info.clone(),
+        token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
     };
 
     factory.create_liquidity_pool(&first_lp_init_info);
-    // uncommenting the line below brakes the tests
-    // we use the same lp_wasm_hash and this causes HostError: Error(Storage, ExistingValue)
     factory.create_liquidity_pool(&second_lp_init_info);
+
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
-    let _first_lp_contract = lp_contract::Client::new(&env, &lp_contract_addr);
+    lp_contract::Client::new(&env, &lp_contract_addr);
 
     let result = factory.query_pool_details(&lp_contract_addr);
     let share_token_addr: Address = env.invoke_contract(
@@ -104,5 +124,8 @@ fn test_single_query() {
 
     assert_eq!(token1, result.pool_response.asset_a.address);
     assert_eq!(token2, result.pool_response.asset_b.address);
-    assert_eq!(share_token_addr, result.pool_response.asset_lp_share.address);
+    assert_eq!(
+        share_token_addr,
+        result.pool_response.asset_lp_share.address
+    );
 }

@@ -11,4 +11,5 @@ pub enum ContractError {
     LiquidityPoolVectorNotFound = 4,
     MinStakeLessOrEqualZero = 5,
     MinRewardTooSmall = 6,
+    ContractNotDeployed = 7,
 }
