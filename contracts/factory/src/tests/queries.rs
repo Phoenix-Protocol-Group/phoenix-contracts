@@ -102,7 +102,7 @@ fn test_single_query() {
         Vec::new(&env),
     );
 
-    assert_eq!(token1, result.asset_a.address);
-    assert_eq!(token2, result.asset_b.address);
-    assert_eq!(share_token_addr, result.asset_lp_share.address);
+    assert_eq!(token1, result.pool_response.asset_a.address);
+    assert_eq!(token2, result.pool_response.asset_b.address);
+    assert_eq!(share_token_addr, result.pool_response.asset_lp_share.address);
 }

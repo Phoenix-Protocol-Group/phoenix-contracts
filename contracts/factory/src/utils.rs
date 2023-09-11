@@ -1,5 +1,4 @@
-use soroban_sdk::xdr::ToXdr;
-use soroban_sdk::{Address, Bytes, BytesN, Env, Symbol};
+use soroban_sdk::{Address, Bytes, BytesN, Env};
 
 pub fn deploy_lp_contract(env: &Env, lp_wasm_hash: BytesN<32>) -> Address {
     let deployer = env.current_contract_address();
@@ -8,8 +7,7 @@ pub fn deploy_lp_contract(env: &Env, lp_wasm_hash: BytesN<32>) -> Address {
         deployer.require_auth();
     }
 
-    let mut salt = Bytes::new(env);
-    salt.append(&Symbol::new(env, "hi there").to_xdr(env));
+    let salt = Bytes::new(env);
     let salt = env.crypto().sha256(&salt);
 
     env.deployer()

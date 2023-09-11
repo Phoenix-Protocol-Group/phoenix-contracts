@@ -2,7 +2,7 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
 
-use crate::storage::{query_all_pool_details, query_pool_details, LiquidityPoolInfo, PoolResponse};
+use crate::storage::{query_all_pool_details, query_pool_details, LiquidityPoolInfo};
 use crate::{
     error::ContractError,
     storage::{get_admin, get_lp_vec, save_admin, save_lp_vec},
