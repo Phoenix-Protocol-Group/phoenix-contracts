@@ -52,19 +52,8 @@ impl MultihopTrait for Multihop {
                     token_b: op.offer_asset,
                 },
             )?;
-
-            // todo swap me using pair::swap?
-            // ``` fn swap(
-            //         env: Env,
-            //         sender: Address,
-            //         sell_a: bool,
-            //         offer_amount: i128,
-            //         belief_price: Option<i64>,
-            //         max_spread_bps: Option<i64>,
-            //     ) -> Result<(), ContractError>;```
-            // if yes, we'll need more arguments to this function
         }
 
-        Ok(())
+        unimplemented!();
     }
 }
