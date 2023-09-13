@@ -48,10 +48,8 @@ pub trait StableLiquidityPoolTrait {
     fn provide_liquidity(
         env: Env,
         depositor: Address,
-        desired_a: Option<i128>,
-        min_a: Option<i128>,
-        desired_b: Option<i128>,
-        min_b: Option<i128>,
+        desired_a: i128,
+        desired_b: i128,
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError>;
 
@@ -198,12 +196,10 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env: Env,
         sender: Address,
         desired_a: i128,
-        min_a: Option<i128>,
         desired_b: i128,
-        min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError> {
-        validate_int_parameters!(desired_a, min_a, desired_b, min_b);
+        validate_int_parameters!(desired_a, desired_b);
 
         // sender needs to authorize the deposit
         sender.require_auth();
@@ -236,7 +232,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         );
 
         let shares = if utils::get_total_shares(&env)? == 0 {
-            deposit_d.to_i128_with_precision(7);
+            deposit_d.to_i128_with_precision(7)
         } else {
             let initial_deposit_d = compute_d(
                 amp as u128,
@@ -245,14 +241,15 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                     Decimal::from_atomics(new_balance_b, 6),
                 ],
             );
+
         };
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
         // Move tokens from client's wallet to the contract
-        token_a_client.transfer(&sender, &env.current_contract_address(), &(amounts.0));
-        token_b_client.transfer(&sender, &env.current_contract_address(), &(amounts.1));
+        token_a_client.transfer(&sender, &env.current_contract_address(), &(desired_a));
+        token_b_client.transfer(&sender, &env.current_contract_address(), &(desired_b));
 
         let pool_balance_a = utils::get_pool_balance_a(&env)?;
         let pool_balance_b = utils::get_pool_balance_b(&env)?;
@@ -260,22 +257,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, &config.token_a);
         let balance_b = utils::get_balance(&env, &config.token_b);
-        let total_shares = utils::get_total_shares(&env)?;
 
-        let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
-            let shares_a = (balance_a * total_shares) / pool_balance_a;
-            let shares_b = (balance_b * total_shares) / pool_balance_b;
-            shares_a.min(shares_b)
-        } else {
-            // In case of empty pool, just produce X*Y shares
-            (balance_a * balance_b).sqrt()
-        };
 
         utils::mint_shares(
             &env,
             &config.share_token,
             &sender,
-            new_total_shares - total_shares,
+            shares,
         )?;
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
@@ -285,11 +273,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env.events()
             .publish(("provide_liquidity", "token_a"), &config.token_a);
         env.events()
-            .publish(("provide_liquidity", "token_a-amount"), amounts.0);
+            .publish(("provide_liquidity", "token_a-amount"), desired_a);
         env.events()
             .publish(("provide_liquidity", "token_a"), &config.token_b);
         env.events()
-            .publish(("provide_liquidity", "token_b-amount"), amounts.1);
+            .publish(("provide_liquidity", "token_b-amount"), desired_b);
 
         Ok(())
     }
