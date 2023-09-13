@@ -1,32 +1,23 @@
-use crate::error::ContractError;
-use soroban_sdk::arbitrary::std::dbg;
-use soroban_sdk::{Address, BytesN, Env, Symbol, Val, Vec};
+use soroban_sdk::{xdr::ToXdr, Address, Bytes, BytesN, Env};
 
 pub fn deploy_lp_contract(
     env: &Env,
     lp_wasm_hash: BytesN<32>,
-    salt: BytesN<32>,
-    init_fn: Symbol,
-    init_fn_args: Vec<Val>,
-) -> Result<Address, ContractError> {
+    token_a: &Address,
+    token_b: &Address,
+) -> Address {
     let deployer = env.current_contract_address();
 
     if deployer != env.current_contract_address() {
         deployer.require_auth();
     }
 
-    dbg!(&salt);
-    let deployed_address = env
-        .deployer()
-        .with_address(deployer, salt)
-        .deploy(lp_wasm_hash);
-    dbg!("calling the deploy liquidity pool function twice, this should be twice");
+    let mut salt = Bytes::new(env);
+    salt.append(&token_a.to_xdr(env));
+    salt.append(&token_b.to_xdr(env));
+    let salt = env.crypto().sha256(&salt);
 
-    let res: Val = env.invoke_contract(&deployed_address, &init_fn, init_fn_args);
-
-    if !res.is_void() {
-        return Err(ContractError::ContractNotDeployed);
-    }
-
-    Ok(deployed_address)
+    env.deployer()
+        .with_current_contract(salt)
+        .deploy(lp_wasm_hash)
 }

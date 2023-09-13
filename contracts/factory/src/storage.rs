@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use soroban_sdk::{contracttype, Address, ConversionError, Env, Symbol, TryFromVal, Val, Vec};
+use soroban_sdk::{contracttype, Address, ConversionError, Env, TryFromVal, Val, Vec};
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -63,52 +63,8 @@ pub fn get_lp_vec(env: &Env) -> Result<Vec<Address>, ContractError> {
         .ok_or(ContractError::LiquidityPoolVectorNotFound)
 }
 
-pub fn query_pool_details(
-    env: Env,
-    pool_address: Address,
-) -> Result<LiquidityPoolInfo, ContractError> {
-    let pool_response: PoolResponse = query_pool_info(&env, &pool_address);
-    let total_fee_bps = query_pool_total_fee_bps(&env, &pool_address);
-    let lp_info = LiquidityPoolInfo {
-        pool_response,
-        total_fee_bps,
-    };
-
-    Ok(lp_info)
-}
-
-pub fn query_all_pool_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError> {
-    let all_lp_vec_addresses = get_lp_vec(&env)?;
-    let mut result = Vec::new(&env);
-    for address in all_lp_vec_addresses {
-        let pool_response: PoolResponse = query_pool_info(&env, &address);
-        let total_fee_bps = query_pool_total_fee_bps(&env, &address);
-
-        let lp_info = LiquidityPoolInfo {
-            pool_response,
-            total_fee_bps,
-        };
-
-        result.push_back(lp_info);
-    }
-
-    Ok(result)
-}
-
 pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
     env.storage().instance().set(&DataKey::LpVec, &lp_info);
-}
-
-fn query_pool_info(env: &Env, address: &Address) -> PoolResponse {
-    env.invoke_contract(address, &Symbol::new(env, "query_pool_info"), Vec::new(env))
-}
-
-fn query_pool_total_fee_bps(env: &Env, address: &Address) -> i64 {
-    env.invoke_contract(
-        address,
-        &Symbol::new(env, "get_total_fee_bps"),
-        Vec::new(env),
-    )
 }
 
 #[cfg(test)]
