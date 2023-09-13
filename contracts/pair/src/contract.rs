@@ -2,6 +2,7 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, En
 
 use num_integer::Roots;
 
+use crate::storage::LiquidityPoolInfo;
 use crate::{
     error::ContractError,
     stake_contract,
@@ -107,6 +108,8 @@ pub trait LiquidityPoolTrait {
     // Returns  the total amount of LP tokens and assets in a specific pool
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
 
+    fn query_pool_info_for_factory(env: Env) -> Result<LiquidityPoolInfo, ContractError>;
+
     // Simulate swap transaction
     fn simulate_swap(
         env: Env,
@@ -120,8 +123,6 @@ pub trait LiquidityPoolTrait {
         sell_a: bool,
         ask_amount: i128,
     ) -> Result<SimulateReverseSwapResponse, ContractError>;
-
-    fn get_total_fee_bps(env: Env) -> Result<i64, ContractError>;
 }
 
 #[contractimpl]
@@ -502,6 +503,30 @@ impl LiquidityPoolTrait for LiquidityPool {
         })
     }
 
+    fn query_pool_info_for_factory(env: Env) -> Result<LiquidityPoolInfo, ContractError> {
+        let config = get_config(&env)?;
+        let pool_response = PoolResponse {
+            asset_a: Asset {
+                address: config.token_a,
+                amount: utils::get_pool_balance_a(&env)?,
+            },
+            asset_b: Asset {
+                address: config.token_b,
+                amount: utils::get_pool_balance_b(&env)?,
+            },
+            asset_lp_share: Asset {
+                address: config.share_token,
+                amount: utils::get_total_shares(&env)?,
+            },
+        };
+        let total_fee_bps = config.max_allowed_spread_bps;
+
+        Ok(LiquidityPoolInfo {
+            pool_response,
+            total_fee_bps,
+        })
+    }
+
     fn simulate_swap(
         env: Env,
         sell_a: bool,
@@ -561,11 +586,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             spread_amount,
             commission_amount,
         })
-    }
-
-    fn get_total_fee_bps(env: Env) -> Result<i64, ContractError> {
-        let config = get_config(&env)?;
-        Ok(config.total_fee_bps)
     }
 }
 

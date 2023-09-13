@@ -18,6 +18,30 @@ impl TryFromVal<Env, DataKey> for Val {
 }
 
 #[contracttype]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum PairType {
+    Xyk = 0,
+}
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Config {
+    pub token_a: Address,
+    pub token_b: Address,
+    pub share_token: Address,
+    pub stake_contract: Address,
+    pub pair_type: PairType,
+    /// The total fees (in bps) charged by a pair of this type.
+    /// In relation to the returned amount of tokens
+    pub total_fee_bps: i64,
+    pub fee_recipient: Address,
+    /// The maximum amount of slippage (in bps) that is tolerated during providing liquidity
+    pub max_allowed_slippage_bps: i64,
+    /// The maximum amount of spread (in bps) that is tolerated during swap
+    pub max_allowed_spread_bps: i64,
+}
+
+#[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Asset {
     /// Address of the asset

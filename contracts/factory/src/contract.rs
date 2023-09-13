@@ -2,7 +2,7 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
 
-use crate::storage::{LiquidityPoolInfo, PoolResponse};
+use crate::storage::LiquidityPoolInfo;
 use crate::{
     error::ContractError,
     storage::{get_admin, get_lp_vec, save_admin, save_lp_vec},
@@ -100,37 +100,26 @@ impl FactoryTrait for Factory {
         env: Env,
         pool_address: Address,
     ) -> Result<LiquidityPoolInfo, ContractError> {
-        let pool_response: PoolResponse = env.invoke_contract(
+        let pool_response: LiquidityPoolInfo = env.invoke_contract(
             &pool_address,
-            &Symbol::new(&env, "query_pool_info"),
+            &Symbol::new(&env, "query_pool_info_for_factory"),
             Vec::new(&env),
         );
-        let total_fee_bps: i64 = 30; // env.invoke_contract(&pool_address, &Symbol::new(&env, "query_total_fee_bps"), Vec::new(&env));
-        let lp_info = LiquidityPoolInfo {
-            pool_response,
-            total_fee_bps,
-        };
 
-        Ok(lp_info)
+        Ok(pool_response)
     }
 
     fn query_all_pool_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError> {
         let all_lp_vec_addresses = get_lp_vec(&env)?;
         let mut result = Vec::new(&env);
         for address in all_lp_vec_addresses {
-            let pool_response: PoolResponse = env.invoke_contract(
+            let pool_response: LiquidityPoolInfo = env.invoke_contract(
                 &address,
-                &Symbol::new(&env, "query_pool_info"),
+                &Symbol::new(&env, "query_pool_info_for_factory"),
                 Vec::new(&env),
             );
-            let total_fee_bps = 30; // query_pool_total_fee_bps(&env, &address);
 
-            let lp_info = LiquidityPoolInfo {
-                pool_response,
-                total_fee_bps,
-            };
-
-            result.push_back(lp_info);
+            result.push_back(pool_response);
         }
 
         Ok(result)
