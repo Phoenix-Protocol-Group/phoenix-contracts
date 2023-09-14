@@ -31,7 +31,7 @@ pub trait FactoryTrait {
         pool_address: Address,
     ) -> Result<LiquidityPoolInfo, ContractError>;
 
-    fn query_all_pool_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError>;
+    fn query_all_pools_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError>;
 
     fn get_admin(env: Env) -> Result<Address, ContractError>;
 }
@@ -109,7 +109,7 @@ impl FactoryTrait for Factory {
         Ok(pool_response)
     }
 
-    fn query_all_pool_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError> {
+    fn query_all_pools_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError> {
         let all_lp_vec_addresses = get_lp_vec(&env)?;
         let mut result = Vec::new(&env);
         for address in all_lp_vec_addresses {

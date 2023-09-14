@@ -522,6 +522,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let total_fee_bps = config.max_allowed_spread_bps;
 
         Ok(LiquidityPoolInfo {
+            pool_address: env.current_contract_address(),
             pool_response,
             total_fee_bps,
         })

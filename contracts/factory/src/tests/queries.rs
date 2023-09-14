@@ -3,9 +3,32 @@ use super::setup::{
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
-use crate::storage::Config;
 use soroban_sdk::arbitrary::std;
-use soroban_sdk::{testutils::Address as _, Address, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, testutils::Address as _, Address, Env, Symbol, Vec};
+
+#[contracttype]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum PairType {
+    Xyk = 0,
+}
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Config {
+    pub token_a: Address,
+    pub token_b: Address,
+    pub share_token: Address,
+    pub stake_contract: Address,
+    pub pair_type: PairType,
+    /// The total fees (in bps) charged by a pair of this type.
+    /// In relation to the returned amount of tokens
+    pub total_fee_bps: i64,
+    pub fee_recipient: Address,
+    /// The maximum amount of slippage (in bps) that is tolerated during providing liquidity
+    pub max_allowed_slippage_bps: i64,
+    /// The maximum amount of spread (in bps) that is tolerated during swap
+    pub max_allowed_spread_bps: i64,
+}
 
 #[test]
 fn test_deploy_multiple_liquidity_pools() {
@@ -139,6 +162,7 @@ fn test_deploy_multiple_liquidity_pools() {
         share_token_addr,
         first_result.pool_response.asset_lp_share.address
     );
+    assert_eq!(lp_contract_addr, first_result.pool_address);
 
     let second_lp_contract_addr = factory.query_pools().get(1).unwrap();
     let second_result = factory.query_pool_details(&second_lp_contract_addr);
@@ -164,6 +188,7 @@ fn test_deploy_multiple_liquidity_pools() {
         second_share_token_addr,
         second_result.pool_response.asset_lp_share.address
     );
+    assert_eq!(second_lp_contract_addr, second_result.pool_address);
 
     let third_lp_contract_addr = factory.query_pools().get(2).unwrap();
     let third_result = factory.query_pool_details(&third_lp_contract_addr);
@@ -189,8 +214,9 @@ fn test_deploy_multiple_liquidity_pools() {
         third_share_token_addr,
         third_result.pool_response.asset_lp_share.address
     );
+    assert_eq!(third_lp_contract_addr, third_result.pool_address);
 
-    let all_pools = factory.query_all_pool_details();
+    let all_pools = factory.query_all_pools_details();
     assert_eq!(all_pools.len(), 3);
     all_pools.iter().for_each(|pool| {
         assert!(all_pools.contains(pool));
