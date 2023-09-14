@@ -104,6 +104,14 @@ pub struct PoolResponse {
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LiquidityPoolInfo {
+    pub pool_address: Address,
+    pub pool_response: PoolResponse,
+    pub total_fee_bps: i64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SimulateSwapResponse {
     pub ask_amount: i128,
     pub commission_amount: i128,

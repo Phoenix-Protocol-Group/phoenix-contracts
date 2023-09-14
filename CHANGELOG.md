@@ -18,6 +18,7 @@ and this project adheres to
 - Decimal: Implement `from_atomics` and `to_string` ([#115])
 - Curve: Implement `end` helper ([#115])
 - Phoenix: Helper library for commonly used functions, structs, etc... ([#116])
+- Factory: Adds functionality that provides more detailed information about a single pool or a vector of pools ([#128])
 
 ## Changed
 
@@ -48,6 +49,7 @@ and this project adheres to
 [#116]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/116
 [#118]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/118
 [#122]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/122
+[#128]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/128
 
 ## [0.5.0] - 2023-08-04
 
