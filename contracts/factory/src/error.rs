@@ -12,4 +12,5 @@ pub enum ContractError {
     MinStakeLessOrEqualZero = 5,
     MinRewardTooSmall = 6,
     ContractNotDeployed = 7,
+    LiquidityPoolPairNotFound = 8,
 }
