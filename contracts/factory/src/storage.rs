@@ -1,5 +1,4 @@
 use crate::error::ContractError;
-use phoenix::utils::TokenInitInfo;
 use soroban_sdk::{contracttype, Address, ConversionError, Env, TryFromVal, Val, Vec};
 
 #[derive(Clone, Copy)]
@@ -76,11 +75,15 @@ pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
     env.storage().instance().set(&DataKey::LpVec, &lp_info);
 }
 
-pub fn save_lp_vec_with_tuple_as_key(env: &Env, tuple_pair: &TokenInitInfo, lp_address: &Address) {
+pub fn save_lp_vec_with_tuple_as_key(
+    env: &Env,
+    tuple_pair: (&Address, &Address),
+    lp_address: &Address,
+) {
     env.storage().instance().set(
         &PairTupleKey {
-            token_a: tuple_pair.token_a.clone(),
-            token_b: tuple_pair.token_b.clone(),
+            token_a: tuple_pair.0.clone(),
+            token_b: tuple_pair.1.clone(),
         },
         &lp_address,
     )

@@ -90,7 +90,9 @@ impl FactoryTrait for Factory {
         lp_vec.push_back(lp_contract_address.clone());
 
         save_lp_vec(&env, lp_vec);
-        save_lp_vec_with_tuple_as_key(&env, &lp_init_info.token_init_info, &lp_contract_address);
+        let token_a = &lp_init_info.token_init_info.token_a;
+        let token_b = &lp_init_info.token_init_info.token_b;
+        save_lp_vec_with_tuple_as_key(&env, (token_a, token_b), &lp_contract_address);
 
         env.events()
             .publish(("create", "liquidity_pool"), &lp_contract_address);
@@ -143,9 +145,6 @@ impl FactoryTrait for Factory {
         if let Some(addr) = pair_result {
             return Ok(addr);
         }
-
-        // this would've been the use case if we can swap memory without std
-        // std::mem::swap(&mut tuple_pair.0, &mut tuple_pair.1);
 
         let reverted_pair_resul: Option<Address> = env.storage().instance().get(&PairTupleKey {
             token_a: tuple_pair.1,

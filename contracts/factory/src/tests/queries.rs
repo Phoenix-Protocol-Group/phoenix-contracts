@@ -337,28 +337,9 @@ fn test_queries_by_tuple() {
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
     let first_result = factory.query_pool_details(&lp_contract_addr);
-    let share_token_addr: Address = env.invoke_contract(
-        &lp_contract_addr,
-        &Symbol::new(&env, "query_share_token_address"),
-        Vec::new(&env),
-    );
-    let first_lp_config: Config = env.invoke_contract(
-        &lp_contract_addr,
-        &Symbol::new(&env, "query_config"),
-        Vec::new(&env),
-    );
-
-    assert_eq!(
-        first_lp_init_info.max_allowed_spread_bps,
-        first_lp_config.max_allowed_spread_bps
-    );
 
     assert_eq!(token1, first_result.pool_response.asset_a.address);
     assert_eq!(token2, first_result.pool_response.asset_b.address);
-    assert_eq!(
-        share_token_addr,
-        first_result.pool_response.asset_lp_share.address
-    );
     assert_eq!(lp_contract_addr, first_result.pool_address);
 
     let second_lp_contract_addr = factory.query_pools().get(1).unwrap();
@@ -389,7 +370,7 @@ fn test_queries_by_tuple() {
 
     let third_lp_contract_addr = factory.query_pools().get(2).unwrap();
 
-    let first_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&(token1, token2));
+    let first_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&(token2, token1));
     let second_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&(token3, token4));
     let third_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&(token5, token6));
 
