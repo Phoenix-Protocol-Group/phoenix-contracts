@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec, Symbol, Val, IntoVal};
 
 use crate::error::ContractError;
 use crate::storage::{get_liquidity_pool, save_admin, save_liquidity_pool, Pair, Swap};
@@ -16,10 +16,10 @@ pub trait MultihopTrait {
     fn initialize(
         env: Env,
         admin: Address,
-        liquidity_pools: Vec<(Pair, Address)>,
+        swap_info: Vec<(Pair, Address)>,
     ) -> Result<(), ContractError>;
 
-    fn swap(env: Env, operations: Vec<Swap>) -> Result<(), ContractError>;
+    fn swap(env: Env, operations: Vec<Swap>, factory: Address) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -43,8 +43,29 @@ impl MultihopTrait for Multihop {
         Ok(())
     }
 
-    fn swap(env: Env, operations: Vec<Swap>) -> Result<(), ContractError> {
+    fn swap(env: Env, operations: Vec<Swap>, factory: Address) -> Result<(), ContractError> {
         for op in operations.iter() {
+            // few of questions
+            // to get the liquidity_pool addr we need to query the factory. Where does the factory addr comes from?
+            // currently Swap has the initial swap amount inside the struct. I guess we should get rid of it
+            // are we supposed to call pair::swap() method, if yes, what would the rest of the values be? None?
+
+            // might not be idea, but I want to code
+            let init_fn_args: Vec<Val> = (
+                // whos the sender?
+                op.ask_asset.clone(),
+                op.amount,
+                None,
+                None,
+            )
+                .into_val(&env);
+            //        env: Env,
+            //         sender: Address,
+            //         sell_a: bool,
+            //         offer_amount: i128,
+            //         belief_price: Option<i64>,
+            //         max_spread_bps: Option<i64>,
+            env.invoke_contract(&factory, &Symbol::new(&env, "swap"), init_fn_args);
             let _lp_address = get_liquidity_pool(
                 &env,
                 Pair {
