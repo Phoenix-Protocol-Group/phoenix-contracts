@@ -45,18 +45,25 @@ impl MultihopTrait for Multihop {
 
     fn swap(env: Env, operations: Vec<Swap>, factory: Address) -> Result<(), ContractError> {
         for op in operations.iter() {
-            // few of questions
-            // to get the liquidity_pool addr we need to query the factory. Where does the factory addr comes from?
-            // currently Swap has the initial swap amount inside the struct. I guess we should get rid of it
-            // are we supposed to call pair::swap() method, if yes, what would the rest of the values be? None?
+            // few of questions:
 
-            // might not be idea, but I want to code
+            // to get the liquidity_pool addr we need to query the factory. Where does the factory
+            // addr comes from? I added it as a param, don't know if that's okay
+
+            // currently Swap has the initial swap amount inside the struct. I guess we should move
+            // it out of the struct and call swap method like
+            // swap(env: Env, Vec<Swap>, initial_amount: i128)
+
+            // are we supposed to call pair::swap() method, if yes, what would the rest of the
+            // values be? None? None - doesn't work
+
+            // drafting
             let init_fn_args: Vec<Val> = (
                 // whos the sender?
                 op.ask_asset.clone(),
                 op.amount,
-                None,
-                None,
+                None,// must be belief_price Option<i64>
+                None,// must be max_spread_bps Option<i64>
             )
                 .into_val(&env);
             //        env: Env,
