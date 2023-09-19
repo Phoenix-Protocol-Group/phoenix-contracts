@@ -58,12 +58,15 @@ impl MultihopTrait for Multihop {
             // values be? None? None - doesn't work
 
             // drafting
+            let ask_asset: Address = op.ask_asset;
+            let amount: i128 = op.amount;
             let init_fn_args: Vec<Val> = (
                 // whos the sender?
-                op.ask_asset.clone(),
-                op.amount,
-                None,// must be belief_price Option<i64>
-                None,// must be max_spread_bps Option<i64>
+                ask_asset,
+                amount,
+                1i64, 1i64
+                // None::<i64>,// must be belief_price Option<i64>
+                // None::<i64>,// must be max_spread_bps Option<i64>
             )
                 .into_val(&env);
             //        env: Env,
@@ -72,7 +75,8 @@ impl MultihopTrait for Multihop {
             //         offer_amount: i128,
             //         belief_price: Option<i64>,
             //         max_spread_bps: Option<i64>,
-            env.invoke_contract(&factory, &Symbol::new(&env, "swap"), init_fn_args);
+            let swap_fn: Symbol = Symbol::new(&env, "swap");
+            env.invoke_contract(&factory, &swap_fn, init_fn_args);
             let _lp_address = get_liquidity_pool(
                 &env,
                 Pair {
