@@ -19,6 +19,7 @@ and this project adheres to
 - Curve: Implement `end` helper ([#115])
 - Phoenix: Helper library for commonly used functions, structs, etc... ([#116])
 - Factory: Adds functionality that provides more detailed information about a single pool or a vector of pools ([#128])
+- Factory: Adds new query to search for a liquidity pool address by a tuple of token addresses. ([#131])
 
 ## Changed
 
@@ -50,6 +51,7 @@ and this project adheres to
 [#118]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/118
 [#122]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/122
 [#128]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/128
+[#131]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/131
 
 ## [0.5.0] - 2023-08-04
 

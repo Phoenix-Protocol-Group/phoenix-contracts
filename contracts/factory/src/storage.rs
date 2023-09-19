@@ -9,6 +9,13 @@ pub enum DataKey {
     LpVec = 3,
 }
 
+#[derive(Clone)]
+#[contracttype]
+pub struct PairTupleKey {
+    pub(crate) token_a: Address,
+    pub(crate) token_b: Address,
+}
+
 impl TryFromVal<Env, DataKey> for Val {
     type Error = ConversionError;
 
@@ -66,6 +73,20 @@ pub fn get_lp_vec(env: &Env) -> Result<Vec<Address>, ContractError> {
 
 pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
     env.storage().instance().set(&DataKey::LpVec, &lp_info);
+}
+
+pub fn save_lp_vec_with_tuple_as_key(
+    env: &Env,
+    tuple_pair: (&Address, &Address),
+    lp_address: &Address,
+) {
+    env.storage().instance().set(
+        &PairTupleKey {
+            token_a: tuple_pair.0.clone(),
+            token_b: tuple_pair.1.clone(),
+        },
+        &lp_address,
+    )
 }
 
 #[cfg(test)]

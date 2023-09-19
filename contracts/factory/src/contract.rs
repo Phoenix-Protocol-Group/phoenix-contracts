@@ -2,10 +2,10 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
 
-use crate::storage::LiquidityPoolInfo;
+use crate::storage::{LiquidityPoolInfo, PairTupleKey};
 use crate::{
     error::ContractError,
-    storage::{get_admin, get_lp_vec, save_admin, save_lp_vec},
+    storage::{get_admin, get_lp_vec, save_admin, save_lp_vec, save_lp_vec_with_tuple_as_key},
     utils::deploy_lp_contract,
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
@@ -32,6 +32,11 @@ pub trait FactoryTrait {
     ) -> Result<LiquidityPoolInfo, ContractError>;
 
     fn query_all_pools_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError>;
+
+    fn query_for_pool_by_pair_tuple(
+        env: Env,
+        tuple_pair: (Address, Address),
+    ) -> Result<Address, ContractError>;
 
     fn get_admin(env: Env) -> Result<Address, ContractError>;
 }
@@ -73,7 +78,7 @@ impl FactoryTrait for Factory {
             lp_init_info.fee_recipient,
             lp_init_info.max_allowed_slippage_bps,
             lp_init_info.max_allowed_spread_bps,
-            lp_init_info.token_init_info,
+            lp_init_info.token_init_info.clone(),
             lp_init_info.stake_init_info,
         )
             .into_val(&env);
@@ -85,6 +90,9 @@ impl FactoryTrait for Factory {
         lp_vec.push_back(lp_contract_address.clone());
 
         save_lp_vec(&env, lp_vec);
+        let token_a = &lp_init_info.token_init_info.token_a;
+        let token_b = &lp_init_info.token_init_info.token_b;
+        save_lp_vec_with_tuple_as_key(&env, (token_a, token_b), &lp_contract_address);
 
         env.events()
             .publish(("create", "liquidity_pool"), &lp_contract_address);
@@ -123,6 +131,31 @@ impl FactoryTrait for Factory {
         }
 
         Ok(result)
+    }
+
+    fn query_for_pool_by_pair_tuple(
+        env: Env,
+        tuple_pair: (Address, Address),
+    ) -> Result<Address, ContractError> {
+        let pair_result: Option<Address> = env.storage().instance().get(&PairTupleKey {
+            token_a: tuple_pair.0.clone(),
+            token_b: tuple_pair.1.clone(),
+        });
+
+        if let Some(addr) = pair_result {
+            return Ok(addr);
+        }
+
+        let reverted_pair_resul: Option<Address> = env.storage().instance().get(&PairTupleKey {
+            token_a: tuple_pair.1,
+            token_b: tuple_pair.0,
+        });
+
+        if let Some(addr) = reverted_pair_resul {
+            return Ok(addr);
+        }
+
+        Err(ContractError::LiquidityPoolPairNotFound)
     }
 
     fn get_admin(env: Env) -> Result<Address, ContractError> {
