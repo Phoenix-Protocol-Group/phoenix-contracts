@@ -88,8 +88,7 @@ fn update_config() {
 }
 
 #[test]
-#[ignore]
-#[should_panic(expected = "ContractError(14)")]
+#[should_panic(expected = "Error(Contract, #21)")]
 fn update_config_unauthorized() {
     let env = Env::default();
     env.mock_all_auths();
@@ -176,8 +175,7 @@ fn update_config_update_admin() {
 }
 
 #[test]
-#[ignore]
-#[should_panic(expected = "ContractError(11)")]
+#[should_panic(expected = "Error(Contract, #2)")]
 fn update_config_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();

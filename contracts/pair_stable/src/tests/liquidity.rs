@@ -232,8 +232,7 @@ fn withdraw_liquidity() {
 }
 
 #[test]
-#[ignore]
-#[should_panic = "Status(ContractError(12))"]
+#[should_panic = "Error(Contract, #6)"]
 fn provide_liqudity_single_asset_on_empty_pool() {
     let env = Env::default();
     env.mock_all_auths();
@@ -543,8 +542,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
 }
 
 #[test]
-#[ignore]
-#[should_panic(expected = "ContractError(11)")]
+#[should_panic(expected = "Error(Contract, #2)")]
 fn provide_liqudity_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();
@@ -572,8 +570,7 @@ fn provide_liqudity_too_high_fees() {
 }
 
 #[test]
-#[ignore]
-#[should_panic(expected = "ContractError(13)")]
+#[should_panic(expected = "Error(Contract, #20)")]
 fn swap_with_no_amounts() {
     let env = Env::default();
     env.mock_all_auths();
@@ -607,8 +604,7 @@ fn swap_with_no_amounts() {
 }
 
 #[test]
-#[ignore]
-#[should_panic(expected = "ContractError(9)")]
+#[should_panic(expected = "Error(Contract, #19)")]
 fn withdraw_liqudity_below_min() {
     let env = Env::default();
     env.mock_all_auths();
