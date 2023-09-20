@@ -6,6 +6,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.6.0] - 2023-09-20
+
 ## Added
 
 - Stake: Create new distribution structure for staking rewards flow ([#83])
@@ -150,7 +152,8 @@ and this project adheres to
 [#19]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/19
 [#24]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/24
 
-[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.5.0...HEAD
+[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.2.7...v0.3.1
