@@ -3,7 +3,7 @@ members = ["contracts/*", "packages/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 license = "GPL 3.0"
 repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
@@ -13,8 +13,8 @@ curve = { path = "./packages/curve"}
 decimal = { path = "./packages/decimal"}
 phoenix = { path = "./packages/phoenix"}
 num-integer = { version = "0.1.45", default-features = false, features = ["i128"] }
-soroban-sdk = "0.9.2"
-soroban-token-sdk = "0.9.2"
+soroban-sdk = "20.0.0-rc2"
+soroban-token-sdk = "20.0.0-rc2"
 test-case = "3.1"
 pretty_assertions = "1.4.0"
 

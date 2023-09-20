@@ -56,7 +56,7 @@ fn bond_too_few() {
 }
 
 #[test]
-#[should_panic = "HostError: Error(Value, InvalidInput)"]
+#[should_panic = "Error(Contract, #10)"]
 fn bond_not_having_tokens() {
     let env = Env::default();
     env.mock_all_auths();
