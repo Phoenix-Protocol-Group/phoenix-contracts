@@ -1,7 +1,7 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec, Symbol, Val, IntoVal};
+use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, IntoVal, Symbol, Val, Vec};
 
 use crate::error::ContractError;
-use crate::storage::{get_liquidity_pool, save_admin, save_liquidity_pool, Pair, Swap};
+use crate::storage::{get_factory, save_admin, save_factory, Pair, PoolResponse, Swap};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -19,7 +19,7 @@ pub trait MultihopTrait {
         swap_info: Vec<(Pair, Address)>,
     ) -> Result<(), ContractError>;
 
-    fn swap(env: Env, operations: Vec<Swap>, factory: Address) -> Result<(), ContractError>;
+    fn swap(env: Env, operations: Vec<Swap>, amount: i128) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -33,8 +33,8 @@ impl MultihopTrait for Multihop {
 
         for lp in liquidity_pools.iter() {
             let pair = lp.0;
-            let lp_address = lp.1;
-            save_liquidity_pool(&env, pair, lp_address);
+            let factory = lp.1;
+            save_factory(&env, pair, factory);
         }
 
         env.events()
@@ -43,49 +43,66 @@ impl MultihopTrait for Multihop {
         Ok(())
     }
 
-    fn swap(env: Env, operations: Vec<Swap>, factory: Address) -> Result<(), ContractError> {
+    fn swap(env: Env, operations: Vec<Swap>, amount: i128) -> Result<(), ContractError> {
+        // todo: use iterator afterwards
+        let mut asked_amount: i128 = amount;
+
         for op in operations.iter() {
-            // few of questions:
+            let current_pair = Pair {
+                token_a: op.offer_asset.clone(),
+                token_b: op.ask_asset.clone(),
+            };
 
-            // to get the liquidity_pool addr we need to query the factory. Where does the factory
-            // addr comes from? I added it as a param, don't know if that's okay
+            let factory = get_factory(&env, current_pair)?;
 
-            // currently Swap has the initial swap amount inside the struct. I guess we should move
-            // it out of the struct and call swap method like
-            // swap(env: Env, Vec<Swap>, initial_amount: i128)
+            let factory_func_name = Symbol::new(&env, "query_for_pool_by_pair_tuple");
+            let factory_call_args: Vec<Val> = (op.offer_asset.clone(), op.ask_asset).into_val(&env);
+            let liquidity_pool_addr: Address =
+                env.invoke_contract(&factory, &factory_func_name, factory_call_args);
 
-            // are we supposed to call pair::swap() method, if yes, what would the rest of the
-            // values be? None? None - doesn't work
-
-            // drafting
-            let ask_asset: Address = op.ask_asset;
-            let amount: i128 = op.amount;
-            let init_fn_args: Vec<Val> = (
-                // whos the sender?
-                ask_asset,
-                amount,
-                1i64, 1i64
-                // None::<i64>,// must be belief_price Option<i64>
-                // None::<i64>,// must be max_spread_bps Option<i64>
+            let lp_call_args: Vec<Val> = (
+                env.current_contract_address(),
+                op.offer_asset,
+                asked_amount,
+                None::<i64>,
+                1i64,
             )
                 .into_val(&env);
-            //        env: Env,
-            //         sender: Address,
-            //         sell_a: bool,
-            //         offer_amount: i128,
-            //         belief_price: Option<i64>,
-            //         max_spread_bps: Option<i64>,
+
             let swap_fn: Symbol = Symbol::new(&env, "swap");
-            env.invoke_contract(&factory, &swap_fn, init_fn_args);
-            let _lp_address = get_liquidity_pool(
-                &env,
-                Pair {
-                    token_a: op.ask_asset,
-                    token_b: op.offer_asset,
-                },
-            )?;
+            // in pair contract the swap method returns Ok(())
+            // is the check on line 10 work
+            let res: Val = env.invoke_contract(&liquidity_pool_addr, &swap_fn, lp_call_args);
+
+            // according to docs:
+            // Invokes a function of a contract that is registered in the Env.
+            // Panics
+            // Will panic if the contract_id does not match a registered contract, func does not
+            // match a function of the referenced contract, or the number of args do not match the
+            //
+            // argument count of the referenced contract function.
+
+            // Will panic if the contract that is invoked fails or aborts in anyway.
+
+            // Will panic if the value returned from the contract cannot be converted into the type T.
+
+            // I don't think this is needed in this case
+            if res.is_void() {
+                return Err(ContractError::RemoteCallFailed);
+            }
+
+            // querying liquidity pool info again, because the swap method does not return amount left
+            let lp_func_name = Symbol::new(&env, "query_pool_info");
+            let lp_info: PoolResponse =
+                env.invoke_contract(&liquidity_pool_addr, &lp_func_name, Vec::new(&env));
+
+            // check the remaining amount of the asked asset
+            let asked_asset_amount = lp_info.asset_b.amount;
+            asked_amount = asked_asset_amount;
+
+            // where do we send the final sum?
         }
 
-        unimplemented!();
+        Err(ContractError::OperationsEmpty)
     }
 }
