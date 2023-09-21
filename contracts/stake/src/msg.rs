@@ -1,9 +1,6 @@
-use soroban_sdk::{contracttype, Address, Vec};
+use soroban_sdk::{contracttype, Address, String, Vec};
 
-use crate::{
-    storage::{Config, Stake},
-    utils::OptionUint,
-};
+use crate::storage::{Config, Stake};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -18,12 +15,17 @@ pub struct StakedResponse {
 }
 
 #[contracttype]
-pub struct AnnualizedRewardsResponse {
-    info: Address,
-    /// None means contract does not know the value - total_staked or total_power could be 0.
-    amount: OptionUint,
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct AnnualizedReward {
+    pub asset: Address,
+    pub amount: String,
 }
 
+#[contracttype]
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct AnnualizedRewardsResponse {
+    pub rewards: Vec<AnnualizedReward>,
+}
 #[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WithdrawableReward {

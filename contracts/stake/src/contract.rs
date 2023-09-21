@@ -1,15 +1,15 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, String, Vec};
 
 use crate::{
     distribution::{
-        get_distribution, get_reward_curve, get_withdraw_adjustment, save_distribution,
-        save_reward_curve, save_withdraw_adjustment, update_rewards, withdrawable_rewards,
-        Distribution, SHARES_SHIFT,
+        calculate_annualized_payout, get_distribution, get_reward_curve, get_withdraw_adjustment,
+        save_distribution, save_reward_curve, save_withdraw_adjustment, update_rewards,
+        withdrawable_rewards, Distribution, SHARES_SHIFT,
     },
     error::ContractError,
     msg::{
-        AnnualizedRewardsResponse, ConfigResponse, StakedResponse, WithdrawableReward,
-        WithdrawableRewardsResponse,
+        AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
+        WithdrawableReward, WithdrawableRewardsResponse,
     },
     storage::{
         get_config, get_stakes, save_config, save_stakes,
@@ -433,8 +433,34 @@ impl StakingTrait for Staking {
         get_total_staked_counter(&env)
     }
 
-    fn query_annualized_rewards(_env: Env) -> Result<AnnualizedRewardsResponse, ContractError> {
-        unimplemented!();
+    fn query_annualized_rewards(env: Env) -> Result<AnnualizedRewardsResponse, ContractError> {
+        let now = env.ledger().timestamp();
+        let mut aprs = vec![&env];
+        let total_rewards_power = get_total_staked_counter(&env)? as u128;
+
+        for distribution_address in get_distributions(&env) {
+            if total_rewards_power == 0 {
+                aprs.push_back(AnnualizedReward {
+                    asset: distribution_address.clone(),
+                    amount: String::from_slice(&env, "0"),
+                });
+                continue;
+            }
+
+            // get distribution data for the given reward
+            let distribution = get_distribution(&env, &distribution_address)?;
+            let curve = get_reward_curve(&env, &distribution_address).ok();
+            let annualized_payout = calculate_annualized_payout(curve, now);
+            let apr =
+                annualized_payout / (total_rewards_power * distribution.shares_per_point) as i128;
+
+            aprs.push_back(AnnualizedReward {
+                asset: distribution_address.clone(),
+                amount: apr.to_string(&env),
+            });
+        }
+
+        Ok(AnnualizedRewardsResponse { rewards: aprs })
     }
 
     fn query_withdrawable_rewards(
