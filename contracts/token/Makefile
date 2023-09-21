@@ -6,7 +6,7 @@ test: build
 	cargo test
 
 build:
-	RUSTFLAGS="-C target-cpu=mvp" cargo build --target wasm32-unknown-unknown --release
+	cargo build --target wasm32-unknown-unknown --release
 
 clippy:
 	cargo clippy --all-targets -- -D warnings

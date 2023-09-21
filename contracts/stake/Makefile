@@ -7,7 +7,7 @@ test: build
 
 build:
 	$(MAKE) -C ../token build || break;
-	RUSTFLAGS="-C target-cpu=mvp" cargo build --target wasm32-unknown-unknown --release
+	cargo build --target wasm32-unknown-unknown --release
 
 lint: fmt clippy
 
