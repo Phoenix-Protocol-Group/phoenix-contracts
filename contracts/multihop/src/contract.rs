@@ -67,13 +67,13 @@ impl MultihopTrait for Multihop {
         let mut asked_token_addr: Address =
             Address::from_contract_id(&BytesN::from_array(&env, &[1u8; 0x20]));
 
-        for op in operations.iter() {
+        operations.iter().for_each(|op| {
             let current_pair = Pair {
                 token_a: op.offer_asset.clone(),
                 token_b: op.ask_asset.clone(),
             };
 
-            let factory = get_factory(&env, current_pair)?;
+            let factory = get_factory(&env, current_pair).expect("factory not found");
 
             let factory_func_name = Symbol::new(&env, "query_for_pool_by_pair_tuple");
             let factory_call_args: Vec<Val> =
@@ -97,17 +97,13 @@ impl MultihopTrait for Multihop {
             asked_amount =
                 env.invoke_contract(&op.ask_asset.clone(), token_func_name, token_call_args);
             asked_token_addr = op.ask_asset.clone();
-        }
+        });
 
         let token_func_name = &Symbol::new(&env, "transfer");
-        //from: Address, to: Address, amount: i128
         let token_call_args: Vec<Val> =
             (env.current_contract_address(), recipient, asked_amount).into_val(&env);
         env.invoke_contract::<Val>(&asked_token_addr, token_func_name, token_call_args);
 
         Ok(())
-        // invoke_contract for the last token that was called
-        // transfer the last asked_amount to the user
-        // the user is the sender from input parameters
     }
 }
