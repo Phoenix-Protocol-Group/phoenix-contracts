@@ -3,7 +3,7 @@ use soroban_sdk::{
 };
 
 use crate::error::ContractError;
-use crate::storage::{get_factory, save_admin, save_factory, Pair, PoolResponse, Swap};
+use crate::storage::{get_factory, save_admin, save_factory, Pair, Swap};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -101,7 +101,8 @@ impl MultihopTrait for Multihop {
 
         let token_func_name = &Symbol::new(&env, "transfer");
         //from: Address, to: Address, amount: i128
-        let token_call_args: Vec<Val> = (env.current_contract_address(), sender, asked_amount).into_val(&env);
+        let token_call_args: Vec<Val> =
+            (env.current_contract_address(), sender, asked_amount).into_val(&env);
         env.invoke_contract::<Val>(&asked_token_addr, token_func_name, token_call_args);
 
         Ok(())
