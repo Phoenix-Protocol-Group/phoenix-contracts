@@ -1,4 +1,6 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, IntoVal, Symbol, Val, Vec};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
+};
 
 use crate::error::ContractError;
 use crate::storage::{get_factory, save_admin, save_factory, Pair, PoolResponse, Swap};
@@ -19,7 +21,12 @@ pub trait MultihopTrait {
         swap_info: Vec<(Pair, Address)>,
     ) -> Result<(), ContractError>;
 
-    fn swap(env: Env, operations: Vec<Swap>, amount: i128) -> Result<(), ContractError>;
+    fn swap(
+        env: Env,
+        sender: Address,
+        operations: Vec<Swap>,
+        amount: i128,
+    ) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -43,9 +50,22 @@ impl MultihopTrait for Multihop {
         Ok(())
     }
 
-    fn swap(env: Env, operations: Vec<Swap>, amount: i128) -> Result<(), ContractError> {
+    fn swap(
+        env: Env,
+        sender: Address,
+        operations: Vec<Swap>,
+        amount: i128,
+    ) -> Result<(), ContractError> {
         // todo: use iterator afterwards
+        if operations.is_empty() {
+            return Err(ContractError::OperationsEmpty);
+        }
+
         let mut asked_amount: i128 = amount;
+
+        // this value will be updated in the iterator. Using from_contract_id as a placeholder
+        let mut asked_token_addr: Address =
+            Address::from_contract_id(&BytesN::from_array(&env, &[1u8; 0x20]));
 
         for op in operations.iter() {
             let current_pair = Pair {
@@ -56,7 +76,8 @@ impl MultihopTrait for Multihop {
             let factory = get_factory(&env, current_pair)?;
 
             let factory_func_name = Symbol::new(&env, "query_for_pool_by_pair_tuple");
-            let factory_call_args: Vec<Val> = (op.offer_asset.clone(), op.ask_asset).into_val(&env);
+            let factory_call_args: Vec<Val> =
+                (op.offer_asset.clone(), op.ask_asset.clone()).into_val(&env);
             let liquidity_pool_addr: Address =
                 env.invoke_contract(&factory, &factory_func_name, factory_call_args);
 
@@ -68,23 +89,24 @@ impl MultihopTrait for Multihop {
                 1i64,
             )
                 .into_val(&env);
-
             let swap_fn: Symbol = Symbol::new(&env, "swap");
-            // in pair contract the swap method returns Ok(())
-            let res: Val = env.invoke_contract(&liquidity_pool_addr, &swap_fn, lp_call_args);
+            env.invoke_contract::<Val>(&liquidity_pool_addr, &swap_fn, lp_call_args);
 
-            // querying liquidity pool info again, because the swap method does not return amount left
-            let lp_func_name = Symbol::new(&env, "query_pool_info");
-            let lp_info: PoolResponse =
-                env.invoke_contract(&liquidity_pool_addr, &lp_func_name, Vec::new(&env));
-
-            // check the remaining amount of the asked asset
-            let asked_asset_amount = lp_info.asset_b.amount;
-            asked_amount = asked_asset_amount;
-
-            // where do we send the final sum?
+            let token_func_name = &Symbol::new(&env, "balance");
+            let token_call_args: Vec<Val> = (env.current_contract_address(),).into_val(&env);
+            asked_amount =
+                env.invoke_contract(&op.ask_asset.clone(), token_func_name, token_call_args);
+            asked_token_addr = op.ask_asset.clone();
         }
 
-        Err(ContractError::OperationsEmpty)
+        let token_func_name = &Symbol::new(&env, "transfer");
+        //from: Address, to: Address, amount: i128
+        let token_call_args: Vec<Val> = (env.current_contract_address(), sender, asked_amount).into_val(&env);
+        env.invoke_contract::<Val>(&asked_token_addr, token_func_name, token_call_args);
+
+        Ok(())
+        // invoke_contract for the last token that was called
+        // transfer the last asked_amount to the user
+        // the user is the sender from input parameters
     }
 }
