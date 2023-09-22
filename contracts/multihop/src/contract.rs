@@ -73,23 +73,6 @@ impl MultihopTrait for Multihop {
             // in pair contract the swap method returns Ok(())
             let res: Val = env.invoke_contract(&liquidity_pool_addr, &swap_fn, lp_call_args);
 
-            // according to docs:
-            // Invokes a function of a contract that is registered in the Env.
-            // Panics
-            // Will panic if the contract_id does not match a registered contract, func does not
-            // match a function of the referenced contract, or the number of args do not match the
-            //
-            // argument count of the referenced contract function.
-
-            // Will panic if the contract that is invoked fails or aborts in anyway.
-
-            // Will panic if the value returned from the contract cannot be converted into the type T.
-
-            // I don't think this is needed in this case
-            if res.is_void() {
-                return Err(ContractError::RemoteCallFailed);
-            }
-
             // querying liquidity pool info again, because the swap method does not return amount left
             let lp_func_name = Symbol::new(&env, "query_pool_info");
             let lp_info: PoolResponse =
