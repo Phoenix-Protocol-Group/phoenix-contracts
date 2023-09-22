@@ -23,7 +23,7 @@ pub trait MultihopTrait {
 
     fn swap(
         env: Env,
-        sender: Address,
+        recipient: Address,
         operations: Vec<Swap>,
         amount: i128,
     ) -> Result<(), ContractError>;
@@ -52,7 +52,7 @@ impl MultihopTrait for Multihop {
 
     fn swap(
         env: Env,
-        sender: Address,
+        recipient: Address,
         operations: Vec<Swap>,
         amount: i128,
     ) -> Result<(), ContractError> {
@@ -102,7 +102,7 @@ impl MultihopTrait for Multihop {
         let token_func_name = &Symbol::new(&env, "transfer");
         //from: Address, to: Address, amount: i128
         let token_call_args: Vec<Val> =
-            (env.current_contract_address(), sender, asked_amount).into_val(&env);
+            (env.current_contract_address(), recipient, asked_amount).into_val(&env);
         env.invoke_contract::<Val>(&asked_token_addr, token_func_name, token_call_args);
 
         Ok(())
