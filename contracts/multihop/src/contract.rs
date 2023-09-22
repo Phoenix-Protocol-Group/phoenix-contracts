@@ -71,7 +71,6 @@ impl MultihopTrait for Multihop {
 
             let swap_fn: Symbol = Symbol::new(&env, "swap");
             // in pair contract the swap method returns Ok(())
-            // is the check on line 10 work
             let res: Val = env.invoke_contract(&liquidity_pool_addr, &swap_fn, lp_call_args);
 
             // according to docs:
