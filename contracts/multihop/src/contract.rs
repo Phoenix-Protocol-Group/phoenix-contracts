@@ -34,13 +34,13 @@ impl MultihopTrait for Multihop {
     fn initialize(
         env: Env,
         admin: Address,
-        liquidity_pools: Vec<(Pair, Address)>,
+        swap_info: Vec<(Pair, Address)>,
     ) -> Result<(), ContractError> {
         save_admin(&env, &admin);
 
-        for lp in liquidity_pools.iter() {
-            let pair = lp.0;
-            let factory = lp.1;
+        for info in swap_info.iter() {
+            let pair = info.0;
+            let factory = info.1;
             save_factory(&env, pair, factory);
         }
 
