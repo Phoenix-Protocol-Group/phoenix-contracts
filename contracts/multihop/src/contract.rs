@@ -1,9 +1,7 @@
-use soroban_sdk::{
-    contract, contractimpl, contractmeta, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
-};
+use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, IntoVal, Symbol, Val, Vec};
 
 use crate::error::ContractError;
-use crate::storage::{get_factory, save_admin, save_factory, Pair, Swap};
+use crate::storage::{get_factory, save_admin, save_factory, Swap};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -15,11 +13,7 @@ contractmeta!(
 pub struct Multihop;
 
 pub trait MultihopTrait {
-    fn initialize(
-        env: Env,
-        admin: Address,
-        swap_info: Vec<(Pair, Address)>,
-    ) -> Result<(), ContractError>;
+    fn initialize(env: Env, admin: Address, factory: Address) -> Result<(), ContractError>;
 
     fn swap(
         env: Env,
@@ -31,21 +25,13 @@ pub trait MultihopTrait {
 
 #[contractimpl]
 impl MultihopTrait for Multihop {
-    fn initialize(
-        env: Env,
-        admin: Address,
-        swap_info: Vec<(Pair, Address)>,
-    ) -> Result<(), ContractError> {
+    fn initialize(env: Env, admin: Address, factory: Address) -> Result<(), ContractError> {
         save_admin(&env, &admin);
 
-        for info in swap_info.iter() {
-            let pair = info.0;
-            let factory = info.1;
-            save_factory(&env, pair, factory);
-        }
+        save_factory(&env, factory);
 
         env.events()
-            .publish(("initialize", "Multihop factory"), admin);
+            .publish(("initialize", "Multihop factory with admin: "), admin);
 
         Ok(())
     }
@@ -62,16 +48,10 @@ impl MultihopTrait for Multihop {
 
         let mut asked_amount: i128 = amount;
 
-        // this value will be updated in the iterator. Using from_contract_id as a placeholder
         let mut asked_token_addr: Address = operations.get(0).unwrap().ask_asset.clone();
 
         operations.iter().for_each(|op| {
-            let current_pair = Pair {
-                token_a: op.offer_asset.clone(),
-                token_b: op.ask_asset.clone(),
-            };
-
-            let factory = get_factory(&env, current_pair).expect("factory not found");
+            let factory = get_factory(&env).expect("factory not found");
 
             let factory_func_name = Symbol::new(&env, "query_for_pool_by_pair_tuple");
             let factory_call_args: Vec<Val> =

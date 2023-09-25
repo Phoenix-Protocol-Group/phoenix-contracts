@@ -19,6 +19,7 @@ pub struct Pair {
 #[contracttype]
 pub enum DataKey {
     PairKey(Pair),
+    FactoryKey,
     Admin,
 }
 
@@ -54,15 +55,13 @@ pub fn _get_admin(env: &Env) -> Result<Address, ContractError> {
         .ok_or(ContractError::AdminNotFound)
 }
 
-pub fn save_factory(env: &Env, pair: Pair, factory: Address) {
-    env.storage()
-        .instance()
-        .set(&DataKey::PairKey(pair), &factory);
+pub fn save_factory(env: &Env, factory: Address) {
+    env.storage().instance().set(&DataKey::FactoryKey, &factory);
 }
 
-pub fn get_factory(env: &Env, pair: Pair) -> Result<Address, ContractError> {
+pub fn get_factory(env: &Env) -> Result<Address, ContractError> {
     env.storage()
         .instance()
-        .get(&DataKey::PairKey(pair))
+        .get(&DataKey::FactoryKey)
         .ok_or(ContractError::FactoryNotFound)
 }
