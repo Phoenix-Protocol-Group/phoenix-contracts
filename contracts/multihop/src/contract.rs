@@ -56,7 +56,6 @@ impl MultihopTrait for Multihop {
         operations: Vec<Swap>,
         amount: i128,
     ) -> Result<(), ContractError> {
-        // todo: use iterator afterwards
         if operations.is_empty() {
             return Err(ContractError::OperationsEmpty);
         }
@@ -64,8 +63,7 @@ impl MultihopTrait for Multihop {
         let mut asked_amount: i128 = amount;
 
         // this value will be updated in the iterator. Using from_contract_id as a placeholder
-        let mut asked_token_addr: Address =
-            Address::from_contract_id(&BytesN::from_array(&env, &[1u8; 0x20]));
+        let mut asked_token_addr: Address = operations.get(0).unwrap().ask_asset.clone();
 
         operations.iter().for_each(|op| {
             let current_pair = Pair {
