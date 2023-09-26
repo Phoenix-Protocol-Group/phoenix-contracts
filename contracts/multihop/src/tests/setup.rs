@@ -1,6 +1,6 @@
 use crate::contract::{Multihop, MultihopClient};
 use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{Address, BytesN, Env};
+use soroban_sdk::{Address, Env};
 use crate::factory_contract;
 
 pub fn deploy_factory<'a>(env: &Env, admin: &Address) -> factory_contract::Client<'a> {

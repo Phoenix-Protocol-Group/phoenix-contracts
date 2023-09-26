@@ -1,17 +1,20 @@
 use crate::error::ContractError;
 use crate::storage::Swap;
 use crate::tests::setup::{deploy_factory, deploy_multihop_contract};
-use soroban_sdk::{
-    testutils::Address as _, vec, Address, ConversionError, Env, IntoVal, TryFromVal, Val, Vec,
-};
 use soroban_sdk::arbitrary::std::dbg;
+use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 #[test]
 fn test_swap() {
     let env = Env::default();
     let admin = Address::random(&env);
+    dbg!(&admin);
     let factory = deploy_factory(&env, &admin);
 
+    // 1. deploy factory
+    // 2. create liquidity pool from factory
+    // 3. use the swap method of multihop
+    // 4. check if it goes according to plan
 
     // factory.initialize(&admin);
     // dbg!(factory.get_admin());

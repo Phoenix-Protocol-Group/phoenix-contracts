@@ -1,7 +1,6 @@
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
-use soroban_sdk::arbitrary::std::dbg;
 
 use crate::storage::{LiquidityPoolInfo, PairTupleKey};
 use crate::{
@@ -46,8 +45,6 @@ pub trait FactoryTrait {
 impl FactoryTrait for Factory {
     fn initialize(env: Env, admin: Address) -> Result<(), ContractError> {
         save_admin(&env, admin.clone());
-
-        dbg!("saved_admin");
 
         save_lp_vec(&env, Vec::new(&env));
 
@@ -162,7 +159,6 @@ impl FactoryTrait for Factory {
     }
 
     fn get_admin(env: Env) -> Result<Address, ContractError> {
-        dbg!("got admin");
         get_admin(&env)
     }
 }
