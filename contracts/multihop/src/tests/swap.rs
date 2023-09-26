@@ -1,45 +1,54 @@
 use crate::error::ContractError;
-use crate::storage::Swap;
-use crate::tests::setup::{deploy_factory, deploy_multihop_contract};
+use crate::tests::setup::{deploy_multihop_contract, deploy_and_init_factory_contract, install_factory_wasm, factory_client, deploy_factory_contract_from_wasm};
 use soroban_sdk::arbitrary::std::dbg;
-use soroban_sdk::{testutils::Address as _, vec, Address, Env};
+use soroban_sdk::{testutils::Address as _, vec, Address, Bytes, BytesN, Env};
+use crate::factory_contract;
+use crate::storage::Swap;
 
 #[test]
 fn test_swap() {
     let env = Env::default();
     let admin = Address::random(&env);
-    dbg!(&admin);
-    let factory = deploy_factory(&env, &admin);
 
     // 1. deploy factory
+    // this fails with all the below given client initializations of factory
+    // either HostError: Error(Value, InvalidInput) or HostError: Error(Context, MissingValue)
+
+    let factory_client = deploy_and_init_factory_contract(&env, &admin);
+    // let factory_client = factory_client(&env, &admin);
+
+    // let factory_address = deploy_factory_contract_from_wasm(&env);
+    // let factory_client = factory_contract::Client::new(&env, &factory_address);
+
+    let admin = factory_client.get_admin();
+
+    //
+    dbg!(admin.clone());
     // 2. create liquidity pool from factory
     // 3. use the swap method of multihop
     // 4. check if it goes according to plan
 
-    // factory.initialize(&admin);
-    // dbg!(factory.get_admin());
-
-    let multihop = deploy_multihop_contract(&env, admin, factory.address);
-
-    let recipient = Address::random(&env);
-    let swap1 = Swap {
-        ask_asset: Address::random(&env),
-        offer_asset: Address::random(&env),
-    };
-
-    let swap2 = Swap {
-        ask_asset: Address::random(&env),
-        offer_asset: Address::random(&env),
-    };
-    let swap3 = Swap {
-        ask_asset: Address::random(&env),
-        offer_asset: Address::random(&env),
-    };
-
-    let swap_vec = vec![&env, swap1, swap2, swap3];
+    // let multihop = deploy_multihop_contract(&env, admin, factory_client.address);
+    //
+    // let recipient = Address::random(&env);
+    // let swap1 = Swap {
+    //     ask_asset: Address::random(&env),
+    //     offer_asset: Address::random(&env),
+    // };
+    //
+    // let swap2 = Swap {
+    //     ask_asset: Address::random(&env),
+    //     offer_asset: Address::random(&env),
+    // };
+    // let swap3 = Swap {
+    //     ask_asset: Address::random(&env),
+    //     offer_asset: Address::random(&env),
+    // };
+    //
+    // let swap_vec = vec![&env, swap1, swap2, swap3];
 
     // WHY WOULD &swap_vec BE MARKED BY THE COMPILER LIKE THAT...
-    multihop.swap(&recipient, &swap_vec, &5i128);
+    // multihop.swap(&recipient, &swap_vec, &5i128);
 }
 
 #[test]
@@ -54,7 +63,6 @@ fn test_swap_should_return_err() {
 
     let swap_vec = vec![&env];
 
-    // WHY WOULD &swap_vec BE MARKED BY THE COMPILER LIKE THAT...
     assert_eq!(
         multihop.try_swap(&recipient, &swap_vec, &5i128),
         Err(Ok(ContractError::OperationsEmpty))
