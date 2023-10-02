@@ -1,9 +1,7 @@
 use crate::error::ContractError;
-use crate::tests::setup::{deploy_multihop_contract, deploy_and_init_factory_contract, install_factory_wasm, factory_client, deploy_factory_contract_from_wasm};
+use crate::tests::setup::{deploy_multihop_contract, deploy_factory_contract, factory};
 use soroban_sdk::arbitrary::std::dbg;
 use soroban_sdk::{testutils::Address as _, vec, Address, Bytes, BytesN, Env};
-use crate::factory_contract;
-use crate::storage::Swap;
 
 #[test]
 fn test_swap() {
@@ -14,16 +12,14 @@ fn test_swap() {
     // this fails with all the below given client initializations of factory
     // either HostError: Error(Value, InvalidInput) or HostError: Error(Context, MissingValue)
 
-    let factory_client = deploy_and_init_factory_contract(&env, &admin);
-    // let factory_client = factory_client(&env, &admin);
-
-    // let factory_address = deploy_factory_contract_from_wasm(&env);
-    // let factory_client = factory_contract::Client::new(&env, &factory_address);
+    let factory_addr = deploy_factory_contract(&env, admin.clone());
+    let factory_client = factory::Client::new(&env, &factory_addr);
+    factory_client.initialize(&admin.clone());
 
     let admin = factory_client.get_admin();
 
     //
-    dbg!(admin.clone());
+    // dbg!(admin.clone());
     // 2. create liquidity pool from factory
     // 3. use the swap method of multihop
     // 4. check if it goes according to plan
