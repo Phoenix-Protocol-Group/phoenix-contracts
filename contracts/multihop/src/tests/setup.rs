@@ -1,5 +1,4 @@
 use crate::contract::{Multihop, MultihopClient};
-use crate::factory_contract;
 use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{Address, Bytes, BytesN, Env};
 
@@ -9,29 +8,37 @@ pub mod factory {
     );
 }
 
-pub fn factory_client<'a>(env: &Env, admin: &Address) -> factory_contract::Client<'a> {
-    factory_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
-}
-
-pub fn deploy_factory_contract_from_wasm(e: &Env) -> Address {
-    let deployer = e.current_contract_address();
-
-    if deployer != e.current_contract_address() {
-        deployer.require_auth();
-    }
-
-    let salt = Bytes::new(e);
-    let salt = e.crypto().sha256(&salt);
-
-    let factory_wasm = install_factory_wasm(&e);
-    e.deployer()
-        .with_address(deployer, salt)
-        .deploy(factory_wasm)
-}
-
-pub fn install_factory_wasm(env: &Env) -> BytesN<32> {
+pub mod token_contract {
     soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"
+        file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+pub mod lp_contract {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_pair.wasm"
+    );
+}
+
+pub fn install_lp_contract(env: &Env) -> BytesN<32> {
+    env.deployer().upload_contract_wasm(lp_contract::WASM)
+}
+
+pub fn install_token_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
+    );
+    env.deployer().upload_contract_wasm(WASM)
+}
+
+pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
+    token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
+}
+
+pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
     env.deployer().upload_contract_wasm(WASM)
 }
@@ -41,9 +48,7 @@ pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
     let salt = Bytes::new(e);
     let salt = e.crypto().sha256(&salt);
 
-    e.deployer()
-        .with_address(admin, salt)
-        .deploy(factory_wasm)
+    e.deployer().with_address(admin, salt).deploy(factory_wasm)
 }
 
 pub fn deploy_multihop_contract<'a>(
