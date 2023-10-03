@@ -43,6 +43,14 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+pub fn deploy_liquidity_pool(e: &Env, admin: Address) -> Address {
+    let factory_wasm = e.deployer().upload_contract_wasm(factory::WASM);
+    let salt = Bytes::new(e);
+    let salt = e.crypto().sha256(&salt);
+
+    e.deployer().with_address(admin, salt).deploy(factory_wasm)
+}
+
 pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
     let factory_wasm = e.deployer().upload_contract_wasm(factory::WASM);
     let salt = Bytes::new(e);
@@ -54,7 +62,7 @@ pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
 pub fn deploy_multihop_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,
-    factory: Address,
+    factory: &Address,
 ) -> MultihopClient<'a> {
     let admin = admin.into().unwrap_or(Address::random(env));
 

@@ -2,12 +2,13 @@ use crate::error::ContractError;
 use crate::storage::Swap;
 use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use crate::tests::setup::{
-    deploy_factory_contract, deploy_multihop_contract, deploy_token_contract, factory,
-    install_lp_contract, install_stake_wasm, install_token_wasm,
+    deploy_factory_contract, deploy_liquidity_pool, deploy_multihop_contract,
+    deploy_token_contract, factory, install_lp_contract, install_stake_wasm, install_token_wasm,
+    lp_contract,
 };
 use soroban_sdk::arbitrary::std;
 use soroban_sdk::arbitrary::std::dbg;
-use soroban_sdk::{testutils::Address as _, vec, Address, Env};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env, IntoVal, Symbol, Val, Vec};
 
 #[test]
 fn test_swap() {
@@ -69,8 +70,8 @@ fn test_swap() {
         admin: admin.clone(),
         fee_recipient: user.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
-        max_allowed_slippage_bps: 5_000,
-        max_allowed_spread_bps: 500,
+        max_allowed_slippage_bps: 50,
+        max_allowed_spread_bps: 50,
         share_token_decimals: 7,
         swap_fee_bps: 0,
         token_init_info: first_token_init_info.clone(),
@@ -129,10 +130,25 @@ fn test_swap() {
     factory_client.create_liquidity_pool(&second_lp_init_info);
     factory_client.create_liquidity_pool(&third_lp_init_info);
 
-    dbg!(&factory_client.query_all_pools_details());
+    // 3. provide liquidity for each one of the liquidity pools
+    for lp in factory_client.query_pools() {
+        let args: Vec<Val> = (
+            user.clone(),
+            10_000i128,
+            10_000i128,
+            10_000i128,
+            10_000i128,
+            None::<i64>,
+        )
+            .into_val(&env);
 
-    // 3. use the swap method of multihop
-    let multihop = deploy_multihop_contract(&env, admin, factory_client.address);
+        let _res: Vec<Val> = env.invoke_contract(&lp, &Symbol::new(&env, "provide_liquidity"), args);
+
+        // dbg!(res);
+    }
+
+    // 4. swap with multihop
+    let multihop = deploy_multihop_contract(&env, admin, &factory_client.address);
     //
     let recipient = Address::random(&env);
 
@@ -149,15 +165,11 @@ fn test_swap() {
         offer_asset: token6.address,
     };
 
-    dbg!(&swap1);
-    dbg!(&swap2);
-    dbg!(&swap3);
-
     let swap_vec = vec![&env, swap1, swap2, swap3];
-    // WHY WOULD &swap_vec BE MARKED BY THE COMPILER LIKE THAT...
+    // ignore the compiler err highlight
     multihop.swap(&recipient, &swap_vec, &5i128);
 
-    // 4. check if it goes according to plan
+    // 5. check if it goes according to plan
 }
 
 #[test]
@@ -166,7 +178,7 @@ fn test_swap_should_return_err() {
     let admin = Address::random(&env);
     let factory = Address::random(&env);
 
-    let multihop = deploy_multihop_contract(&env, admin, factory);
+    let multihop = deploy_multihop_contract(&env, admin, &factory);
 
     let recipient = Address::random(&env);
 

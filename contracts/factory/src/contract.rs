@@ -35,7 +35,8 @@ pub trait FactoryTrait {
 
     fn query_for_pool_by_pair_tuple(
         env: Env,
-        tuple_pair: (Address, Address),
+        token_a: Address,
+        token_b: Address,
     ) -> Result<Address, ContractError>;
 
     fn get_admin(env: Env) -> Result<Address, ContractError>;
@@ -135,11 +136,12 @@ impl FactoryTrait for Factory {
 
     fn query_for_pool_by_pair_tuple(
         env: Env,
-        tuple_pair: (Address, Address),
+        token_a: Address,
+        token_b: Address,
     ) -> Result<Address, ContractError> {
         let pair_result: Option<Address> = env.storage().instance().get(&PairTupleKey {
-            token_a: tuple_pair.0.clone(),
-            token_b: tuple_pair.1.clone(),
+            token_a: token_a.clone(),
+            token_b: token_b.clone(),
         });
 
         if let Some(addr) = pair_result {
@@ -147,8 +149,8 @@ impl FactoryTrait for Factory {
         }
 
         let reverted_pair_resul: Option<Address> = env.storage().instance().get(&PairTupleKey {
-            token_a: tuple_pair.1,
-            token_b: tuple_pair.0,
+            token_a: token_b,
+            token_b: token_a,
         });
 
         if let Some(addr) = reverted_pair_resul {
