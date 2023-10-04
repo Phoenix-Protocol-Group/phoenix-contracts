@@ -134,10 +134,10 @@ fn test_swap() {
     for lp in factory_client.query_pools() {
         let args: Vec<Val> = (
             user.clone(),
-            10_000i128,
-            10_000i128,
-            10_000i128,
-            10_000i128,
+            Some(10_000i128),
+            Some(10_000i128),
+            Some(10_000i128),
+            (10_000i128),
             None::<i64>,
         )
             .into_val(&env);
