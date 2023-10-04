@@ -65,8 +65,8 @@ impl MultihopTrait for Multihop {
                 env.current_contract_address(),
                 true,
                 asked_amount,
-                Some(2i64),
-                Some(1i64),
+                None::<i64>,
+                Some(100i64),
             )
                 .into_val(&env);
             let swap_fn: Symbol = Symbol::new(&env, "swap");

@@ -618,10 +618,6 @@ fn do_swap(
         config.protocol_fee_rate(),
     );
 
-    env.events().publish(
-        ("DEBUG", "LINE 622"),
-        (belief_price.unwrap().is_zero(), offer_amount),
-    );
     assert_max_spread(
         &env,
         belief_price,
@@ -645,6 +641,10 @@ fn do_swap(
         &offer_amount,
     );
 
+    env.events().publish(
+        ("DEBUG WE MADE IT", "LINE 649"),
+        (&sell_token, &buy_token));
+
     // return swapped tokens to user
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
@@ -652,12 +652,20 @@ fn do_swap(
         &return_amount,
     );
 
+    env.events().publish(
+        ("DEBUG", "LINE 660"),
+        (&sell_token, &buy_token));
+
     // send commission to fee recipient
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
         &config.fee_recipient,
         &commission_amount,
     );
+
+    env.events().publish(
+        ("DEBUG", "LINE 671"),
+        (&sell_token, &buy_token));
 
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
@@ -839,7 +847,6 @@ pub fn assert_max_spread(
     //
     // Total return is the sum of the amount received and the spread
     let total_return = return_amount + spread_amount;
-    env.events().publish(("DEBUG", "LINE 841"), total_return);
 
     // Calculate the spread ratio, the fraction of the return that is due to spread
     // If the user has specified a belief price, use it to calculate the expected return

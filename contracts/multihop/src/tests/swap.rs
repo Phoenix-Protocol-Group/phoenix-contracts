@@ -133,10 +133,10 @@ fn test_swap() {
         let lp_client = lp_contract::Client::new(&env, &lp);
         lp_client.provide_liquidity(
             &user.clone(),
-            &Some(10_000i128),
-            &Some(10_000i128),
-            &Some(10_000i128),
-            &Some(10_000i128),
+            &Some(1_000_000i128),
+            &Some(1_000_000i128),
+            &Some(1_000_000i128),
+            &Some(1_000_000i128),
             &None::<i64>,
         );
     }
@@ -164,7 +164,7 @@ fn test_swap() {
     // if removed we get: [Diagnostic Event] topics:[error, Error(Contract, #10)]
     env.mock_all_auths_allowing_non_root_auth();
     // ignore the compiler err highlight
-    multihop.swap(&recipient, &operations, &5i128);
+    multihop.swap(&recipient, &operations, &50i128);
 
     // 5. check if it goes according to plan
 }
