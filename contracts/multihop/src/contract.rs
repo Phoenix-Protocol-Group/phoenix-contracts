@@ -59,16 +59,19 @@ impl MultihopTrait for Multihop {
             let liquidity_pool_addr: Address =
                 env.invoke_contract(&factory, &factory_func_name, factory_call_args);
 
+            // dbg!("before");
+            // dbg!(&asked_amount);
             let lp_call_args: Vec<Val> = (
                 env.current_contract_address(),
-                op.offer_asset,
+                true,
                 asked_amount,
-                None::<i64>,
-                1i64,
+                Some(2i64),
+                Some(1i64),
             )
                 .into_val(&env);
             let swap_fn: Symbol = Symbol::new(&env, "swap");
             env.invoke_contract::<Val>(&liquidity_pool_addr, &swap_fn, lp_call_args);
+            // dbg!("I made it");
 
             let token_func_name = &Symbol::new(&env, "balance");
             let token_call_args: Vec<Val> = (env.current_contract_address(),).into_val(&env);
@@ -77,6 +80,7 @@ impl MultihopTrait for Multihop {
             asked_token_addr = op.ask_asset.clone();
         });
 
+        // dbg!("out of the loop");
         let token_func_name = &Symbol::new(&env, "transfer");
         let token_call_args: Vec<Val> =
             (env.current_contract_address(), recipient, asked_amount).into_val(&env);

@@ -618,6 +618,10 @@ fn do_swap(
         config.protocol_fee_rate(),
     );
 
+    env.events().publish(
+        ("DEBUG", "LINE 622"),
+        (belief_price.unwrap().is_zero(), offer_amount),
+    );
     assert_max_spread(
         &env,
         belief_price,
@@ -832,9 +836,10 @@ pub fn assert_max_spread(
 ) -> Result<(), ContractError> {
     // Calculate the expected return if a belief price is provided
     let expected_return = belief_price.map(|price| offer_amount * price);
-
+    //
     // Total return is the sum of the amount received and the spread
     let total_return = return_amount + spread_amount;
+    env.events().publish(("DEBUG", "LINE 841"), total_return);
 
     // Calculate the spread ratio, the fraction of the return that is due to spread
     // If the user has specified a belief price, use it to calculate the expected return

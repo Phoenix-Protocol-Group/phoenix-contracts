@@ -2,13 +2,11 @@ use crate::error::ContractError;
 use crate::storage::Swap;
 use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use crate::tests::setup::{
-    deploy_factory_contract, deploy_liquidity_pool, deploy_multihop_contract,
-    deploy_token_contract, factory, install_lp_contract, install_stake_wasm, install_token_wasm,
-    lp_contract,
+    deploy_factory_contract, deploy_multihop_contract, deploy_token_contract, factory,
+    install_lp_contract, install_stake_wasm, install_token_wasm, lp_contract,
 };
 use soroban_sdk::arbitrary::std;
-use soroban_sdk::arbitrary::std::dbg;
-use soroban_sdk::{testutils::Address as _, vec, Address, Env, IntoVal, Symbol, Val, Vec};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 #[test]
 fn test_swap() {
@@ -132,24 +130,19 @@ fn test_swap() {
 
     // 3. provide liquidity for each one of the liquidity pools
     for lp in factory_client.query_pools() {
-        let args: Vec<Val> = (
-            user.clone(),
-            Some(10_000i128),
-            Some(10_000i128),
-            Some(10_000i128),
-            (10_000i128),
-            None::<i64>,
-        )
-            .into_val(&env);
-
-        let _res: Vec<Val> = env.invoke_contract(&lp, &Symbol::new(&env, "provide_liquidity"), args);
-
-        // dbg!(res);
+        let lp_client = lp_contract::Client::new(&env, &lp);
+        lp_client.provide_liquidity(
+            &user.clone(),
+            &Some(10_000i128),
+            &Some(10_000i128),
+            &Some(10_000i128),
+            &Some(10_000i128),
+            &None::<i64>,
+        );
     }
 
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin, &factory_client.address);
-    //
     let recipient = Address::random(&env);
 
     let swap1 = Swap {
@@ -165,9 +158,13 @@ fn test_swap() {
         offer_asset: token6.address,
     };
 
-    let swap_vec = vec![&env, swap1, swap2, swap3];
+    let operations = vec![&env, swap1, swap2, swap3];
+
+    // without this we get: [Diagnostic Event] topics:[error, Error(Auth, InvalidAction)]
+    // if removed we get: [Diagnostic Event] topics:[error, Error(Contract, #10)]
+    env.mock_all_auths_allowing_non_root_auth();
     // ignore the compiler err highlight
-    multihop.swap(&recipient, &swap_vec, &5i128);
+    multihop.swap(&recipient, &operations, &5i128);
 
     // 5. check if it goes according to plan
 }
