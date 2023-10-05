@@ -248,12 +248,12 @@ pub mod utils {
 
         if let Some(min_a) = min_a {
             if min_a > desired_a {
-                return Err(ContractError::IncorrectLiquidityParametersForA);
+                panic!("IncorrectLiquidityParametersForA");
             }
         }
         if let Some(min_b) = min_b {
             if min_b > desired_b {
-                return Err(ContractError::IncorrectLiquidityParametersForB);
+                panic!("IncorrectLiquidityParametersForB");
             }
         }
 
@@ -270,7 +270,7 @@ pub mod utils {
                         amount_a,
                         desired_a,
                     );
-                    return Err(ContractError::DepositAmountAExceedsDesired);
+                    panic!("DepositAmountAExceedsDesired");
                 }
             };
             if let Some(min_a) = min_a {
@@ -281,7 +281,7 @@ pub mod utils {
                         amount_a,
                         min_a
                     );
-                    return Err(ContractError::DepositAmountBelowMinA);
+                    panic!("DepositAmountBelowMinA");
                 }
             }
             amount_a
@@ -300,7 +300,7 @@ pub mod utils {
                 amount_b,
                 desired_b,
             );
-                    return Err(ContractError::DepositAmountBExceedsDesired);
+                    panic!("DepositAmountBExceedsDesired");
                 }
             };
             if let Some(min_b) = min_b {
@@ -311,7 +311,7 @@ pub mod utils {
                 amount_b,
                 min_a
             );
-                    return Err(ContractError::DepositAmountBelowMinB);
+                    panic!("DepositAmountBelowMinB");
                 }
             }
             amount_b
@@ -321,7 +321,7 @@ pub mod utils {
     }
 }
 
-#[cfg(test)]
+    #[cfg(test)]
 mod tests {
     use super::*;
 

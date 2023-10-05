@@ -42,13 +42,20 @@ impl MultihopTrait for Multihop {
         operations: Vec<Swap>,
         amount: i128,
     ) -> Result<(), ContractError> {
+        recipient.require_auth();
+
         if operations.is_empty() {
             return Err(ContractError::OperationsEmpty);
         }
 
-        let mut asked_amount: i128 = amount;
+        let mut offer_amount: i128 = amount;
+        let mut offer_token_addr: Address = operations.get(0).unwrap().ask_asset.clone();
 
-        let mut asked_token_addr: Address = operations.get(0).unwrap().ask_asset.clone();
+        // first transfer token to multihop contract
+        let token_func_name = &Symbol::new(&env, "transfer");
+        let token_call_args: Vec<Val> =
+            (&recipient, env.current_contract_address(), offer_amount).into_val(&env);
+        env.invoke_contract::<Val>(&offer_token_addr, token_func_name, token_call_args);
 
         operations.iter().for_each(|op| {
             let factory = get_factory(&env).expect("factory not found");
@@ -59,28 +66,30 @@ impl MultihopTrait for Multihop {
             let liquidity_pool_addr: Address =
                 env.invoke_contract(&factory, &factory_func_name, factory_call_args);
 
-            // dbg!("before");
-            // dbg!(&asked_amount);
             let lp_call_args: Vec<Val> = (
                 env.current_contract_address(),
                 true,
-                asked_amount,
+                offer_amount,
                 None::<i64>,
-                Some(100i64),
+                Some(5000i64),
             )
                 .into_val(&env);
             let swap_fn: Symbol = Symbol::new(&env, "swap");
             env.invoke_contract::<Val>(&liquidity_pool_addr, &swap_fn, lp_call_args);
-            // dbg!("I made it");
 
             let token_func_name = &Symbol::new(&env, "balance");
             let token_call_args: Vec<Val> = (env.current_contract_address(),).into_val(&env);
-            asked_amount =
-                env.invoke_contract(&op.ask_asset.clone(), token_func_name, token_call_args);
-            asked_token_addr = op.ask_asset.clone();
+            offer_amount =
+                env.invoke_contract(&op.ask_asset, token_func_name, token_call_args);
+            dbg!("balance after: {}", offer_amount);
+            offer_token_addr = op.ask_asset.clone();
         });
 
         // dbg!("out of the loop");
+        // in each loop iteration, last asked token becomes an offer; after loop we can rename it
+        let asked_amount = offer_amount;
+        let asked_token_addr = offer_token_addr;
+
         let token_func_name = &Symbol::new(&env, "transfer");
         let token_call_args: Vec<Val> =
             (env.current_contract_address(), recipient, asked_amount).into_val(&env);

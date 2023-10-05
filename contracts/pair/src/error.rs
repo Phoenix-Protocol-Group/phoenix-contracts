@@ -18,7 +18,7 @@ pub enum ContractError {
     ConfigNotSet = 7,
     FailedToLoadFromStorage = 8,
     IncorrectLiquidityParametersForA = 9,
-    IncorrectLiquidityParametersForB = 10,
+    IncorrectLiquidityParametersForB = 666,
     FailedToGetAdminAddrFromStorage = 11,
     FailedToGetTotalSharesFromStorage = 12,
     FailedToGetPoolBalanceAFromStorage = 13,

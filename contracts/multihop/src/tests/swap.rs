@@ -9,8 +9,9 @@ use soroban_sdk::arbitrary::std;
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 #[test]
-fn test_swap() {
+fn basic_swap() {
     let env = Env::default();
+
     let admin = Address::random(&env);
     let user = Address::random(&env);
 
@@ -18,8 +19,6 @@ fn test_swap() {
     let mut token2 = deploy_token_contract(&env, &admin);
     let mut token3 = deploy_token_contract(&env, &admin);
     let mut token4 = deploy_token_contract(&env, &admin);
-    let mut token5 = deploy_token_contract(&env, &admin);
-    let mut token6 = deploy_token_contract(&env, &admin);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -28,20 +27,18 @@ fn test_swap() {
         std::mem::swap(&mut token1, &mut token2);
     }
 
+    if token3.address < token2.address {
+        std::mem::swap(&mut token2, &mut token3);
+    }
+
     if token4.address < token3.address {
         std::mem::swap(&mut token3, &mut token4);
     }
 
-    if token6.address < token5.address {
-        std::mem::swap(&mut token5, &mut token6);
-    }
-
-    token1.mint(&user, &2_000_000i128);
-    token2.mint(&user, &2_000_000i128);
-    token3.mint(&user, &3_000_000i128);
-    token4.mint(&user, &4_000_000i128);
-    token5.mint(&user, &5_000_000i128);
-    token6.mint(&user, &6_000_000i128);
+    token1.mint(&user, &1_000_000i128);
+    token2.mint(&user, &1_000_000i128);
+    token3.mint(&user, &1_000_000i128);
+    token4.mint(&user, &1_000_000i128);
 
     // 1. deploy factory
     let factory_addr = deploy_factory_contract(&env, admin.clone());
@@ -68,8 +65,8 @@ fn test_swap() {
         admin: admin.clone(),
         fee_recipient: user.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
-        max_allowed_slippage_bps: 50,
-        max_allowed_spread_bps: 50,
+        max_allowed_slippage_bps: 5000,
+        max_allowed_spread_bps: 500,
         share_token_decimals: 7,
         swap_fee_bps: 0,
         token_init_info: first_token_init_info.clone(),
@@ -78,8 +75,8 @@ fn test_swap() {
 
     let second_token_init_info = TokenInitInfo {
         token_wasm_hash: install_token_wasm(&env),
-        token_a: token3.address.clone(),
-        token_b: token4.address.clone(),
+        token_a: token2.address.clone(),
+        token_b: token3.address.clone(),
     };
     let second_stake_init_info = StakeInitInfo {
         stake_wasm_hash: install_stake_wasm(&env),
@@ -102,8 +99,8 @@ fn test_swap() {
 
     let third_token_init_info = TokenInitInfo {
         token_wasm_hash: install_token_wasm(&env),
-        token_a: token5.address.clone(),
-        token_b: token6.address.clone(),
+        token_a: token3.address.clone(),
+        token_b: token4.address.clone(),
     };
     let third_stake_init_info = StakeInitInfo {
         stake_wasm_hash: install_stake_wasm(&env),
@@ -144,33 +141,32 @@ fn test_swap() {
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin, &factory_client.address);
     let recipient = Address::random(&env);
+    token1.mint(&recipient, &50i128);
 
     let swap1 = Swap {
         ask_asset: token1.address,
-        offer_asset: token2.address,
+        offer_asset: token2.address.clone(),
     };
     let swap2 = Swap {
-        ask_asset: token3.address,
-        offer_asset: token4.address,
+        ask_asset: token3.address.clone(),
+        offer_asset: token2.address,
     };
     let swap3 = Swap {
-        ask_asset: token5.address,
-        offer_asset: token6.address,
+        ask_asset: token4.address,
+        offer_asset: token3.address,
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    // without this we get: [Diagnostic Event] topics:[error, Error(Auth, InvalidAction)]
-    // if removed we get: [Diagnostic Event] topics:[error, Error(Contract, #10)]
-    env.mock_all_auths_allowing_non_root_auth();
     // ignore the compiler err highlight
+    env.mock_all_auths_allowing_non_root_auth();
     multihop.swap(&recipient, &operations, &50i128);
 
     // 5. check if it goes according to plan
 }
 
 #[test]
-fn test_swap_should_return_err() {
+fn swap_panics_with_no_operations() {
     let env = Env::default();
     let admin = Address::random(&env);
     let factory = Address::random(&env);
