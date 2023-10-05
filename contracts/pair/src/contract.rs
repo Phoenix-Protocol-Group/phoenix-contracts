@@ -641,10 +641,6 @@ fn do_swap(
         &offer_amount,
     );
 
-    env.events().publish(
-        ("DEBUG WE MADE IT", "LINE 649"),
-        (&sell_token, &buy_token));
-
     // return swapped tokens to user
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
@@ -652,20 +648,12 @@ fn do_swap(
         &return_amount,
     );
 
-    env.events().publish(
-        ("DEBUG", "LINE 660"),
-        (&sell_token, &buy_token));
-
     // send commission to fee recipient
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
         &config.fee_recipient,
         &commission_amount,
     );
-
-    env.events().publish(
-        ("DEBUG", "LINE 671"),
-        (&sell_token, &buy_token));
 
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller

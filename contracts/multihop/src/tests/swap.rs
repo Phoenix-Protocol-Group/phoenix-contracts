@@ -36,12 +36,12 @@ fn test_swap() {
         std::mem::swap(&mut token5, &mut token6);
     }
 
-    token1.mint(&user, &10_000i128);
-    token2.mint(&user, &10_000i128);
-    token3.mint(&user, &10_000i128);
-    token4.mint(&user, &10_000i128);
-    token5.mint(&user, &10_000i128);
-    token6.mint(&user, &10_000i128);
+    token1.mint(&user, &2_000_000i128);
+    token2.mint(&user, &2_000_000i128);
+    token3.mint(&user, &3_000_000i128);
+    token4.mint(&user, &4_000_000i128);
+    token5.mint(&user, &5_000_000i128);
+    token6.mint(&user, &6_000_000i128);
 
     // 1. deploy factory
     let factory_addr = deploy_factory_contract(&env, admin.clone());
