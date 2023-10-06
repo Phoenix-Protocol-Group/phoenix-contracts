@@ -46,7 +46,7 @@ impl MultihopTrait for Multihop {
         if operations.is_empty() {
             return Err(ContractError::OperationsEmpty);
         }
-              
+
         recipient.require_auth();
 
         let mut offer_amount: i128 = amount;
