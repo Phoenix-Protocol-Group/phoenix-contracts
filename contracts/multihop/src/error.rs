@@ -6,5 +6,7 @@ use soroban_sdk::contracterror;
 pub enum ContractError {
     Unauthorized = 0,
     AdminNotFound = 1,
-    LiquidityPoolNotFound = 2,
+    FactoryNotFound = 2,
+    RemoteCallFailed = 3,
+    OperationsEmpty = 4,
 }

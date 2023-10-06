@@ -147,8 +147,8 @@ impl FactoryTrait for Factory {
         }
 
         let reverted_pair_resul: Option<Address> = env.storage().instance().get(&PairTupleKey {
-            token_a: tuple_pair.1,
-            token_b: tuple_pair.0,
+            token_a: tuple_pair.1.clone(),
+            token_b: tuple_pair.0.clone(),
         });
 
         if let Some(addr) = reverted_pair_resul {

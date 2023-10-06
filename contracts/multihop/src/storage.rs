@@ -6,7 +6,6 @@ use soroban_sdk::{contracttype, Address, Env};
 pub struct Swap {
     pub ask_asset: Address,
     pub offer_asset: Address,
-    pub amount: i128,
 }
 
 #[derive(Clone)]
@@ -20,7 +19,29 @@ pub struct Pair {
 #[contracttype]
 pub enum DataKey {
     PairKey(Pair),
+    FactoryKey,
     Admin,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Asset {
+    /// Address of the asset
+    pub address: Address,
+    /// The total amount of those tokens in the pool
+    pub amount: i128,
+}
+
+/// This struct is used to return a query result with the total amount of LP tokens and assets in a specific pool.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PoolResponse {
+    /// The asset A in the pool together with asset amounts
+    pub asset_a: Asset,
+    /// The asset B in the pool together with asset amounts
+    pub asset_b: Asset,
+    /// The total amount of LP tokens currently issued
+    pub asset_lp_share: Asset,
 }
 
 pub fn save_admin(env: &Env, admin: &Address) {
@@ -34,15 +55,13 @@ pub fn _get_admin(env: &Env) -> Result<Address, ContractError> {
         .ok_or(ContractError::AdminNotFound)
 }
 
-pub fn save_liquidity_pool(env: &Env, pair: Pair, liquidity_pool: Address) {
-    env.storage()
-        .instance()
-        .set(&DataKey::PairKey(pair), &liquidity_pool);
+pub fn save_factory(env: &Env, factory: Address) {
+    env.storage().instance().set(&DataKey::FactoryKey, &factory);
 }
 
-pub fn get_liquidity_pool(env: &Env, pair: Pair) -> Result<Address, ContractError> {
+pub fn get_factory(env: &Env) -> Result<Address, ContractError> {
     env.storage()
         .instance()
-        .get(&DataKey::PairKey(pair))
-        .ok_or(ContractError::LiquidityPoolNotFound)
+        .get(&DataKey::FactoryKey)
+        .ok_or(ContractError::FactoryNotFound)
 }
