@@ -2,7 +2,7 @@ use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, IntoVal, S
 
 use crate::error::ContractError;
 use crate::storage::{get_factory, save_admin, save_factory, Swap};
-use crate::token_contract;
+use crate::{factory_contract, token_contract};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -56,14 +56,12 @@ impl MultihopTrait for Multihop {
         // first transfer token to multihop contract
         offer_token_client.transfer(&recipient, &env.current_contract_address(), &offer_amount);
 
-        operations.iter().for_each(|op| {
-            let factory = get_factory(&env).expect("factory not found");
+        let factory_client =
+            factory_contract::Client::new(&env, &get_factory(&env).expect("factory not found"));
 
-            let factory_func_name = Symbol::new(&env, "query_for_pool_by_pair_tuple");
-            let factory_call_args: Vec<Val> =
-                (op.offer_asset.clone(), op.ask_asset.clone()).into_val(&env);
+        operations.iter().for_each(|op| {
             let liquidity_pool_addr: Address =
-                env.invoke_contract(&factory, &factory_func_name, factory_call_args);
+                factory_client.query_for_pool_by_pair_tuple(&op.offer_asset, &op.ask_asset);
 
             let lp_call_args: Vec<Val> = (
                 env.current_contract_address(),
