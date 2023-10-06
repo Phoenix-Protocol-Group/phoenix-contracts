@@ -223,7 +223,7 @@ fn test_deploy_multiple_liquidity_pools() {
         assert!(all_pools.contains(pool));
     });
 
-    let first_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&(token1, token2));
+    let first_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&token1, &token2);
     assert_eq!(first_lp_address_by_tuple, lp_contract_addr);
 }
 
@@ -370,16 +370,16 @@ fn test_queries_by_tuple() {
 
     let third_lp_contract_addr = factory.query_pools().get(2).unwrap();
 
-    let first_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&(token2, token1));
-    let second_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&(token3, token4));
-    let third_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&(token5, token6));
+    let first_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&token2, &token1);
+    let second_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&token3, &token4);
+    let third_lp_address_by_tuple = factory.query_for_pool_by_pair_tuple(&token5, &token6);
 
     assert_eq!(first_lp_address_by_tuple, lp_contract_addr);
     assert_eq!(second_lp_address_by_tuple, second_lp_contract_addr);
     assert_eq!(third_lp_address_by_tuple, third_lp_contract_addr);
 
     assert_eq!(
-        factory.try_query_for_pool_by_pair_tuple(&(Address::random(&env), Address::random(&env))),
+        factory.try_query_for_pool_by_pair_tuple(&Address::random(&env), &Address::random(&env)),
         Err(Ok(ContractError::LiquidityPoolPairNotFound))
     );
 }
