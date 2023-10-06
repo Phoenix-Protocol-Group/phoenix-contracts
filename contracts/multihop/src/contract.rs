@@ -43,11 +43,11 @@ impl MultihopTrait for Multihop {
         operations: Vec<Swap>,
         amount: i128,
     ) -> Result<(), ContractError> {
-        recipient.require_auth();
-
         if operations.is_empty() {
             return Err(ContractError::OperationsEmpty);
         }
+              
+        recipient.require_auth();
 
         let mut offer_amount: i128 = amount;
         let mut offer_token_addr: Address = operations.get(0).unwrap().offer_asset.clone();
