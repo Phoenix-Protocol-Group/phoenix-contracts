@@ -162,17 +162,21 @@ fn swap_three_equal_pools_no_fees() {
 #[test]
 fn swap_panics_with_no_operations() {
     let env = Env::default();
+    env.mock_all_auths();
     let admin = Address::random(&env);
     let factory = Address::random(&env);
 
-    let multihop = deploy_multihop_contract(&env, admin, &factory);
-
     let recipient = Address::random(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+    token.mint(&recipient, &50i128);
+
+    let multihop = deploy_multihop_contract(&env, admin, &factory);
 
     let swap_vec = vec![&env];
 
     assert_eq!(
-        multihop.try_swap(&recipient, &swap_vec, &5i128),
+        multihop.try_swap(&recipient, &swap_vec, &50i128),
         Err(Ok(ContractError::OperationsEmpty))
     );
 }
