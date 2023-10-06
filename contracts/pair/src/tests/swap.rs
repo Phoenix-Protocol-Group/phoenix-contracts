@@ -98,7 +98,7 @@ fn simple_swap() {
 
     // false means selling B token
     // this time 100 units
-    pool.swap(&user1, &false, &1_000, &None, &Some(spread));
+    let output_amount = pool.swap(&user1, &false, &1_000, &None, &Some(spread));
     let result = pool.query_pool_info();
     assert_eq!(
         result,
@@ -117,6 +117,7 @@ fn simple_swap() {
             },
         }
     );
+    assert_eq!(output_amount, 1000);
     assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
     assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
 }

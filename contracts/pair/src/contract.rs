@@ -59,6 +59,7 @@ pub trait LiquidityPoolTrait {
     // If "buy_a" is true, the swap will buy token_a and sell token_b. This is flipped if "buy_a" is false.
     // "out" is the amount being bought, with in_max being a safety to make sure you receive at least that amount.
     // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to "to".
+    // Returns the amount of the token being bought.
     fn swap(
         env: Env,
         sender: Address,
@@ -66,7 +67,7 @@ pub trait LiquidityPoolTrait {
         offer_amount: i128,
         belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
-    ) -> Result<(), ContractError>;
+    ) -> Result<i128, ContractError>;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
     // corresponding amount of token_a and token_b to "to".
@@ -339,7 +340,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         offer_amount: i128,
         belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
-    ) -> Result<(), ContractError> {
+    ) -> Result<i128, ContractError> {
         validate_int_parameters!(offer_amount);
 
         sender.require_auth();
@@ -597,7 +598,7 @@ fn do_swap(
     offer_amount: i128,
     belief_price: Option<i64>,
     max_spread: Option<i64>,
-) -> Result<(), ContractError> {
+) -> Result<i128, ContractError> {
     let config = get_config(&env)?;
 
     let belief_price = belief_price.map(Decimal::percent);
@@ -680,7 +681,7 @@ fn do_swap(
     env.events()
         .publish(("swap", "spread_amount"), spread_amount);
 
-    Ok(())
+    Ok(return_amount)
 }
 
 /// This function divides the deposit in such a way that when swapping it for the other token,
