@@ -8,7 +8,7 @@ use crate::tests::setup::{
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 #[test]
-fn basic_swap_equal_pools_no_fees() {
+fn swap_three_equal_pools_no_fees() {
     let env = Env::default();
 
     let admin = Address::random(&env);
