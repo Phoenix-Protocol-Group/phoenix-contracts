@@ -7,6 +7,6 @@ pub enum ContractError {
     Unauthorized = 0,
     AdminNotFound = 1,
     FactoryNotFound = 2,
-    RemoteCallFailed = 555,
+    RemoteCallFailed = 3,
     OperationsEmpty = 4,
 }

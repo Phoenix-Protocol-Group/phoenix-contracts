@@ -600,7 +600,6 @@ fn do_swap(
 ) -> Result<(), ContractError> {
     let config = get_config(&env)?;
 
-    dbg!("start swap");
     let belief_price = belief_price.map(Decimal::percent);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
 
@@ -612,7 +611,6 @@ fn do_swap(
         (pool_balance_b, pool_balance_a)
     };
 
-    dbg!("compute swap");
     let (return_amount, spread_amount, commission_amount) = compute_swap(
         pool_balance_sell,
         pool_balance_buy,
@@ -834,7 +832,7 @@ pub fn assert_max_spread(
 ) -> Result<(), ContractError> {
     // Calculate the expected return if a belief price is provided
     let expected_return = belief_price.map(|price| offer_amount * price);
-    //
+
     // Total return is the sum of the amount received and the spread
     let total_return = return_amount + spread_amount;
 

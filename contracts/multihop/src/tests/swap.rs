@@ -5,11 +5,10 @@ use crate::tests::setup::{
     deploy_factory_contract, deploy_multihop_contract, deploy_token_contract, factory,
     install_lp_contract, install_stake_wasm, install_token_wasm, lp_contract,
 };
-use soroban_sdk::arbitrary::std;
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 #[test]
-fn basic_swap() {
+fn basic_swap_equal_pools_no_fees() {
     let env = Env::default();
 
     let admin = Address::random(&env);
@@ -23,22 +22,13 @@ fn basic_swap() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    if token2.address < token1.address {
-        std::mem::swap(&mut token1, &mut token2);
-    }
+    let mut tokens = [&mut token1, &mut token2, &mut token3, &mut token4];
+    tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
-    if token3.address < token2.address {
-        std::mem::swap(&mut token2, &mut token3);
-    }
-
-    if token4.address < token3.address {
-        std::mem::swap(&mut token3, &mut token4);
-    }
-
-    token1.mint(&user, &1_000_000i128);
-    token2.mint(&user, &1_000_000i128);
-    token3.mint(&user, &1_000_000i128);
-    token4.mint(&user, &1_000_000i128);
+    tokens[0].mint(&user, &10_000_000i128);
+    tokens[1].mint(&user, &10_000_000i128);
+    tokens[2].mint(&user, &10_000_000i128);
+    tokens[3].mint(&user, &10_000_000i128);
 
     // 1. deploy factory
     let factory_addr = deploy_factory_contract(&env, admin.clone());
@@ -51,8 +41,8 @@ fn basic_swap() {
 
     let first_token_init_info = TokenInitInfo {
         token_wasm_hash: install_token_wasm(&env),
-        token_a: token1.address.clone(),
-        token_b: token2.address.clone(),
+        token_a: tokens[0].address.clone(),
+        token_b: tokens[1].address.clone(),
     };
     let first_stake_init_info = StakeInitInfo {
         stake_wasm_hash: install_stake_wasm(&env),
@@ -75,8 +65,8 @@ fn basic_swap() {
 
     let second_token_init_info = TokenInitInfo {
         token_wasm_hash: install_token_wasm(&env),
-        token_a: token2.address.clone(),
-        token_b: token3.address.clone(),
+        token_a: tokens[1].address.clone(),
+        token_b: tokens[2].address.clone(),
     };
     let second_stake_init_info = StakeInitInfo {
         stake_wasm_hash: install_stake_wasm(&env),
@@ -99,8 +89,8 @@ fn basic_swap() {
 
     let third_token_init_info = TokenInitInfo {
         token_wasm_hash: install_token_wasm(&env),
-        token_a: token3.address.clone(),
-        token_b: token4.address.clone(),
+        token_a: tokens[2].address.clone(),
+        token_b: tokens[3].address.clone(),
     };
     let third_stake_init_info = StakeInitInfo {
         stake_wasm_hash: install_stake_wasm(&env),
@@ -131,9 +121,9 @@ fn basic_swap() {
         lp_client.provide_liquidity(
             &user.clone(),
             &Some(1_000_000i128),
+            &None,
             &Some(1_000_000i128),
-            &Some(1_000_000i128),
-            &Some(1_000_000i128),
+            &None,
             &None::<i64>,
         );
     }
@@ -141,19 +131,21 @@ fn basic_swap() {
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin, &factory_client.address);
     let recipient = Address::random(&env);
-    token1.mint(&recipient, &50i128);
+    tokens[0].mint(&recipient, &50i128);
+    assert_eq!(tokens[0].balance(&recipient), 50i128);
+    assert_eq!(tokens[3].balance(&recipient), 0i128);
 
     let swap1 = Swap {
-        ask_asset: token1.address,
-        offer_asset: token2.address.clone(),
+        offer_asset: tokens[0].address.clone(),
+        ask_asset: tokens[1].address.clone(),
     };
     let swap2 = Swap {
-        ask_asset: token3.address.clone(),
-        offer_asset: token2.address,
+        offer_asset: tokens[1].address.clone(),
+        ask_asset: tokens[2].address.clone(),
     };
     let swap3 = Swap {
-        ask_asset: token4.address,
-        offer_asset: token3.address,
+        offer_asset: tokens[2].address.clone(),
+        ask_asset: tokens[3].address.clone(),
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
@@ -163,6 +155,8 @@ fn basic_swap() {
     multihop.swap(&recipient, &operations, &50i128);
 
     // 5. check if it goes according to plan
+    assert_eq!(tokens[0].balance(&recipient), 0i128);
+    assert_eq!(tokens[3].balance(&recipient), 50i128);
 }
 
 #[test]

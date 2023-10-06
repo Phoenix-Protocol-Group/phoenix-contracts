@@ -2,6 +2,7 @@ use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, IntoVal, S
 
 use crate::error::ContractError;
 use crate::storage::{get_factory, save_admin, save_factory, Swap};
+use crate::token_contract;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -49,13 +50,11 @@ impl MultihopTrait for Multihop {
         }
 
         let mut offer_amount: i128 = amount;
-        let mut offer_token_addr: Address = operations.get(0).unwrap().ask_asset.clone();
+        let mut offer_token_addr: Address = operations.get(0).unwrap().offer_asset.clone();
+        let mut offer_token_client = token_contract::Client::new(&env, &offer_token_addr);
 
         // first transfer token to multihop contract
-        let token_func_name = &Symbol::new(&env, "transfer");
-        let token_call_args: Vec<Val> =
-            (&recipient, env.current_contract_address(), offer_amount).into_val(&env);
-        env.invoke_contract::<Val>(&offer_token_addr, token_func_name, token_call_args);
+        offer_token_client.transfer(&recipient, &env.current_contract_address(), &offer_amount);
 
         operations.iter().for_each(|op| {
             let factory = get_factory(&env).expect("factory not found");
@@ -77,15 +76,11 @@ impl MultihopTrait for Multihop {
             let swap_fn: Symbol = Symbol::new(&env, "swap");
             env.invoke_contract::<Val>(&liquidity_pool_addr, &swap_fn, lp_call_args);
 
-            let token_func_name = &Symbol::new(&env, "balance");
-            let token_call_args: Vec<Val> = (env.current_contract_address(),).into_val(&env);
-            offer_amount =
-                env.invoke_contract(&op.ask_asset, token_func_name, token_call_args);
-            dbg!("balance after: {}", offer_amount);
+            offer_token_client = token_contract::Client::new(&env, &op.ask_asset);
+            offer_amount = offer_token_client.balance(&env.current_contract_address());
             offer_token_addr = op.ask_asset.clone();
         });
 
-        // dbg!("out of the loop");
         // in each loop iteration, last asked token becomes an offer; after loop we can rename it
         let asked_amount = offer_amount;
         let asked_token_addr = offer_token_addr;

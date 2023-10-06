@@ -26,7 +26,7 @@ pub enum ContractError {
 
     /// Storage errors
     ConfigNotSet = 9,
-    FailedToGetAdminAddrFromStorage = 777,
+    FailedToGetAdminAddrFromStorage = 10,
 
     /// Other errors
     Unauthorized = 11,

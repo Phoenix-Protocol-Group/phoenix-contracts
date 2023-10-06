@@ -649,13 +649,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "multi-hop"
-version = "0.6.0"
-dependencies = [
- "soroban-sdk",
-]
-
-[[package]]
 name = "num-bigint"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -731,6 +724,13 @@ name = "phoenix-factory"
 version = "0.6.0"
 dependencies = [
  "phoenix",
+ "soroban-sdk",
+]
+
+[[package]]
+name = "phoenix-multihop"
+version = "0.6.0"
+dependencies = [
  "soroban-sdk",
 ]
 
