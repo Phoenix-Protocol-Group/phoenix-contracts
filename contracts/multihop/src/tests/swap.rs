@@ -150,8 +150,6 @@ fn swap_three_equal_pools_no_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    // ignore the compiler err highlight
-    env.mock_all_auths_allowing_non_root_auth();
     multihop.swap(&recipient, &operations, &50i128);
 
     // 5. check if it goes according to plan
