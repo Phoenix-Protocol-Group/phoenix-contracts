@@ -10,9 +10,11 @@ and this project adheres to
 
 - Stake: Implement APR query ([#101])
 - Multihop: Provide swap implementation and a testing framework ([#133])
+- Multihop: Refactor swap algorithm and fix authorization issue on subsequent swaps ([#138])
 
 [#101]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/101
 [#133]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/133
+[#138]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/138
 
 ## [0.6.0] - 2023-09-20
 
