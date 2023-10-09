@@ -63,7 +63,7 @@ pub trait LiquidityPoolTrait {
     fn swap(
         env: Env,
         sender: Address,
-        sell_a: bool,
+        offer_asset: Address,
         offer_amount: i128,
         belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
@@ -259,7 +259,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     a,
                     true,
                 )?;
-                do_swap(env.clone(), sender.clone(), true, a_for_swap, None, None)?;
+                do_swap(env.clone(), sender.clone(), config.clone().token_a, a_for_swap, None, None)?;
                 // return: rest of Token A amount, simulated result of swap of portion A
                 (a - a_for_swap, b_from_swap)
             }
@@ -272,7 +272,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     b,
                     false,
                 )?;
-                do_swap(env.clone(), sender.clone(), false, b_for_swap, None, None)?;
+                do_swap(env.clone(), sender.clone(), config.clone().token_b, b_for_swap, None, None)?;
                 // return: simulated result of swap of portion B, rest of Token B amount
                 (a_from_swap, b - b_for_swap)
             }
@@ -336,7 +336,7 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn swap(
         env: Env,
         sender: Address,
-        sell_a: bool,
+        offer_asset: Address,
         offer_amount: i128,
         belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
@@ -348,7 +348,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         do_swap(
             env,
             sender,
-            sell_a,
+            offer_asset,
             offer_amount,
             belief_price,
             max_spread_bps,
@@ -594,7 +594,7 @@ impl LiquidityPoolTrait for LiquidityPool {
 fn do_swap(
     env: Env,
     sender: Address,
-    sell_a: bool,
+    offer_asset: Address,
     offer_amount: i128,
     belief_price: Option<i64>,
     max_spread: Option<i64>,
@@ -606,7 +606,8 @@ fn do_swap(
 
     let pool_balance_a = utils::get_pool_balance_a(&env)?;
     let pool_balance_b = utils::get_pool_balance_b(&env)?;
-    let (pool_balance_sell, pool_balance_buy) = if sell_a {
+
+    let (pool_balance_sell, pool_balance_buy) = if offer_asset == config.token_a {
         (pool_balance_a, pool_balance_b)
     } else {
         (pool_balance_b, pool_balance_a)
@@ -629,10 +630,10 @@ fn do_swap(
     )?;
 
     // Transfer the amount being sold to the contract
-    let (sell_token, buy_token) = if sell_a {
-        (config.token_a, config.token_b)
+    let (sell_token, buy_token) = if offer_asset == config.clone().token_a {
+        (config.clone().token_a, config.clone().token_b)
     } else {
-        (config.token_b, config.token_a)
+        (config.clone().token_b, config.clone().token_a)
     };
 
     // transfer tokens to swap
@@ -658,7 +659,7 @@ fn do_swap(
 
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
-    let (balance_a, balance_b) = if sell_a {
+    let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
             pool_balance_a + offer_amount,
             pool_balance_b - commission_amount - return_amount,

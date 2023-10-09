@@ -59,12 +59,12 @@ impl MultihopTrait for Multihop {
 
         operations.iter().for_each(|op| {
             let liquidity_pool_addr: Address = factory_client
-                .query_for_pool_by_pair_tuple(&(op.offer_asset, op.ask_asset.clone()));
+                .query_for_pool_by_pair_tuple(&(op.clone().offer_asset, op.ask_asset.clone()));
 
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
             next_offer_amount = lp_client.swap(
                 &recipient,
-                &true,
+                &op.offer_asset,
                 &next_offer_amount,
                 &None::<i64>,
                 &Some(5000i64),
