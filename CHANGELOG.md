@@ -16,12 +16,14 @@ and this project adheres to
 
 - Pair: Replace `sell_a` parameter in swap message with `offer_asset` address ([#141])
 - Pool: Rename `pair` to `pool` to avoid further confusion in names ([#139])
+- Factory: Replace tuple in a query `query_for_pool_by_pair_tuple` with a two separate parameters; rename that query to `query_for_pool_by_token_pair` ([#144])
 
 [#101]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/101
 [#133]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/133
 [#138]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/138
 [#141]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/141
 [#139]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/139
+[#144]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/144
 
 ## [0.6.0] - 2023-09-20
 
