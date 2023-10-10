@@ -49,7 +49,7 @@ fn simple_swap() {
     // true means "selling A token"
     // selling just one token with 1% max spread allowed
     let spread = 100i64; // 1% maximum spread allowed
-    pool.swap(&user1, &true, &1, &None, &Some(spread));
+    pool.swap(&user1, &token1.address, &1, &None, &Some(spread));
     assert_eq!(
         env.auths(),
         [(
@@ -58,7 +58,7 @@ fn simple_swap() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     symbol_short!("swap"),
-                    (&user1, true, 1_i128, None::<i64>, spread).into_val(&env)
+                    (&user1, token1.address.clone(), 1_i128, None::<i64>, spread).into_val(&env)
                 )),
                 sub_invocations: std::vec![
                     (AuthorizedInvocation {
@@ -98,7 +98,7 @@ fn simple_swap() {
 
     // false means selling B token
     // this time 100 units
-    let output_amount = pool.swap(&user1, &false, &1_000, &None, &Some(spread));
+    let output_amount = pool.swap(&user1, &token2.address, &1_000, &None, &Some(spread));
     let result = pool.query_pool_info();
     assert_eq!(
         result,
@@ -167,7 +167,7 @@ fn swap_with_high_fee() {
     let spread = 1_000; // 10% maximum spread allowed
 
     // let's swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
-    pool.swap(&user1, &true, &100_000, &None, &Some(spread));
+    pool.swap(&user1, &token1.address, &100_000, &None, &Some(spread));
 
     // This is XYK LP with constant product formula
     // Y_new = (X_in * Y_old) / (X_in + X_old)

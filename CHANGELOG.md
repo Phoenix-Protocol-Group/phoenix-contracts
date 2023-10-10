@@ -12,9 +12,14 @@ and this project adheres to
 - Multihop: Provide swap implementation and a testing framework ([#133])
 - Multihop: Refactor swap algorithm and fix authorization issue on subsequent swaps ([#138])
 
+## Changed
+
+- Pair: Replace `sell_a` parameter in swap message with `offer_asset` address ([#141])
+
 [#101]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/101
 [#133]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/133
 [#138]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/138
+[#141]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/141
 
 ## [0.6.0] - 2023-09-20
 
