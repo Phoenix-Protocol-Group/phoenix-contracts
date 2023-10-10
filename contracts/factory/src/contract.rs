@@ -33,9 +33,9 @@ pub trait FactoryTrait {
 
     fn query_all_pools_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError>;
 
-    fn query_for_pool_by_pair_tuple(
+    fn query_for_pool_by_pool_tuple(
         env: Env,
-        tuple_pair: (Address, Address),
+        tuple_pool: (Address, Address),
     ) -> Result<Address, ContractError>;
 
     fn get_admin(env: Env) -> Result<Address, ContractError>;
@@ -133,25 +133,25 @@ impl FactoryTrait for Factory {
         Ok(result)
     }
 
-    fn query_for_pool_by_pair_tuple(
+    fn query_for_pool_by_pool_tuple(
         env: Env,
-        tuple_pair: (Address, Address),
+        tuple_pool: (Address, Address),
     ) -> Result<Address, ContractError> {
-        let pair_result: Option<Address> = env.storage().instance().get(&PairTupleKey {
-            token_a: tuple_pair.0.clone(),
-            token_b: tuple_pair.1.clone(),
+        let pool_result: Option<Address> = env.storage().instance().get(&PairTupleKey {
+            token_a: tuple_pool.0.clone(),
+            token_b: tuple_pool.1.clone(),
         });
 
-        if let Some(addr) = pair_result {
+        if let Some(addr) = pool_result {
             return Ok(addr);
         }
 
-        let reverted_pair_resul: Option<Address> = env.storage().instance().get(&PairTupleKey {
-            token_a: tuple_pair.1.clone(),
-            token_b: tuple_pair.0.clone(),
+        let reverted_pool_resul: Option<Address> = env.storage().instance().get(&PairTupleKey {
+            token_a: tuple_pool.1.clone(),
+            token_b: tuple_pool.0.clone(),
         });
 
-        if let Some(addr) = reverted_pair_resul {
+        if let Some(addr) = reverted_pool_resul {
             return Ok(addr);
         }
 

@@ -2,8 +2,10 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, En
 
 use num_integer::Roots;
 
+use crate::storage::LiquidityPoolInfo;
 use crate::{
     error::ContractError,
+    stake_contract,
     storage::{
         get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
@@ -11,33 +13,34 @@ use crate::{
     token_contract,
 };
 use decimal::Decimal;
-
-use phoenix::{utils::assert_approx_ratio, validate_int_parameters};
+use phoenix::{
+    utils::{assert_approx_ratio, StakeInitInfo, TokenInitInfo},
+    validate_int_parameters,
+};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
     key = "Description",
-    val = "Phoenix Protocol Stable Liquidity Pool"
+    val = "Phoenix Protocol XYK Liquidity Pool"
 );
 
 #[contract]
-pub struct StableLiquidityPool;
+pub struct LiquidityPool;
 
-pub trait StableLiquidityPoolTrait {
+pub trait LiquidityPoolTrait {
     // Sets the token contract addresses for this pool
     // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
-        token_wasm_hash: BytesN<32>,
-        token_a: Address,
-        token_b: Address,
         share_token_decimals: u32,
         swap_fee_bps: i64,
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        token_init_info: TokenInitInfo,
+        stake_contract_info: StakeInitInfo,
     ) -> Result<(), ContractError>;
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -53,17 +56,18 @@ pub trait StableLiquidityPoolTrait {
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError>;
 
-    // If "buy_a" is true, the swap will buy token_a and sell token_b. This is flipped if "buy_a" is false.
-    // "out" is the amount being bought, with in_max being a safety to make sure you receive at least that amount.
-    // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to "to".
+    // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
+    // `offer_amount` is the amount being sold, with `max_spread_bps` being a safety to make sure you receive at least that amount.
+    // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to `sender`.
+    // Returns the amount of the token being bought.
     fn swap(
         env: Env,
         sender: Address,
-        sell_a: bool,
+        offer_asset: Address,
         offer_amount: i128,
         belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
-    ) -> Result<(), ContractError>;
+    ) -> Result<i128, ContractError>;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
     // corresponding amount of token_a and token_b to "to".
@@ -99,8 +103,13 @@ pub trait StableLiquidityPoolTrait {
     // Returns the address for the pool share token
     fn query_share_token_address(env: Env) -> Result<Address, ContractError>;
 
+    // Returns the address for the pool stake contract
+    fn query_stake_contract_address(env: Env) -> Result<Address, ContractError>;
+
     // Returns  the total amount of LP tokens and assets in a specific pool
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError>;
+
+    fn query_pool_info_for_factory(env: Env) -> Result<LiquidityPoolInfo, ContractError>;
 
     // Simulate swap transaction
     fn simulate_swap(
@@ -118,20 +127,29 @@ pub trait StableLiquidityPoolTrait {
 }
 
 #[contractimpl]
-impl StableLiquidityPoolTrait for StableLiquidityPool {
+impl LiquidityPoolTrait for LiquidityPool {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
-        token_wasm_hash: BytesN<32>,
-        token_a: Address,
-        token_b: Address,
         share_token_decimals: u32,
         swap_fee_bps: i64,
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        token_init_info: TokenInitInfo,
+        stake_init_info: StakeInitInfo,
     ) -> Result<(), ContractError> {
+        // Token info
+        let token_a = token_init_info.token_a;
+        let token_b = token_init_info.token_b;
+        let token_wasm_hash = token_init_info.token_wasm_hash;
+        // Contract info
+        let stake_wasm_hash = stake_init_info.stake_wasm_hash;
+        let min_bond = stake_init_info.min_bond;
+        let max_distributions = stake_init_info.max_distributions;
+        let min_reward = stake_init_info.min_reward;
+
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
             log!(&env, "token_a must be less than token_b");
@@ -157,11 +175,21 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &"POOL".into_val(&env),
         );
 
+        let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);
+        stake_contract::Client::new(&env, &stake_contract_address).initialize(
+            &admin,
+            &share_token_address,
+            &min_bond,
+            &max_distributions,
+            &min_reward,
+        );
+
         let config = Config {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
             share_token: share_token_address,
-            pair_type: PairType::Xyk,
+            stake_contract: stake_contract_address,
+            pool_type: PairType::Xyk,
             total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
             fee_recipient,
             max_allowed_slippage_bps,
@@ -231,7 +259,14 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                     a,
                     true,
                 )?;
-                do_swap(env.clone(), sender.clone(), true, a_for_swap, None, None)?;
+                do_swap(
+                    env.clone(),
+                    sender.clone(),
+                    config.clone().token_a,
+                    a_for_swap,
+                    None,
+                    None,
+                )?;
                 // return: rest of Token A amount, simulated result of swap of portion A
                 (a - a_for_swap, b_from_swap)
             }
@@ -244,7 +279,14 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                     b,
                     false,
                 )?;
-                do_swap(env.clone(), sender.clone(), false, b_for_swap, None, None)?;
+                do_swap(
+                    env.clone(),
+                    sender.clone(),
+                    config.clone().token_b,
+                    b_for_swap,
+                    None,
+                    None,
+                )?;
                 // return: simulated result of swap of portion B, rest of Token B amount
                 (a_from_swap, b - b_for_swap)
             }
@@ -308,11 +350,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     fn swap(
         env: Env,
         sender: Address,
-        sell_a: bool,
+        offer_asset: Address,
         offer_amount: i128,
         belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
-    ) -> Result<(), ContractError> {
+    ) -> Result<i128, ContractError> {
         validate_int_parameters!(offer_amount);
 
         sender.require_auth();
@@ -320,7 +362,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         do_swap(
             env,
             sender,
-            sell_a,
+            offer_asset,
             offer_amount,
             belief_price,
             max_spread_bps,
@@ -453,6 +495,10 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         Ok(get_config(&env)?.share_token)
     }
 
+    fn query_stake_contract_address(env: Env) -> Result<Address, ContractError> {
+        Ok(get_config(&env)?.stake_contract)
+    }
+
     fn query_pool_info(env: Env) -> Result<PoolResponse, ContractError> {
         let config = get_config(&env)?;
 
@@ -469,6 +515,31 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 address: config.share_token,
                 amount: utils::get_total_shares(&env)?,
             },
+        })
+    }
+
+    fn query_pool_info_for_factory(env: Env) -> Result<LiquidityPoolInfo, ContractError> {
+        let config = get_config(&env)?;
+        let pool_response = PoolResponse {
+            asset_a: Asset {
+                address: config.token_a,
+                amount: utils::get_pool_balance_a(&env)?,
+            },
+            asset_b: Asset {
+                address: config.token_b,
+                amount: utils::get_pool_balance_b(&env)?,
+            },
+            asset_lp_share: Asset {
+                address: config.share_token,
+                amount: utils::get_total_shares(&env)?,
+            },
+        };
+        let total_fee_bps = config.max_allowed_spread_bps;
+
+        Ok(LiquidityPoolInfo {
+            pool_address: env.current_contract_address(),
+            pool_response,
+            total_fee_bps,
         })
     }
 
@@ -537,11 +608,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 fn do_swap(
     env: Env,
     sender: Address,
-    sell_a: bool,
+    offer_asset: Address,
     offer_amount: i128,
     belief_price: Option<i64>,
     max_spread: Option<i64>,
-) -> Result<(), ContractError> {
+) -> Result<i128, ContractError> {
     let config = get_config(&env)?;
 
     let belief_price = belief_price.map(Decimal::percent);
@@ -549,7 +620,8 @@ fn do_swap(
 
     let pool_balance_a = utils::get_pool_balance_a(&env)?;
     let pool_balance_b = utils::get_pool_balance_b(&env)?;
-    let (pool_balance_sell, pool_balance_buy) = if sell_a {
+
+    let (pool_balance_sell, pool_balance_buy) = if offer_asset == config.token_a {
         (pool_balance_a, pool_balance_b)
     } else {
         (pool_balance_b, pool_balance_a)
@@ -572,10 +644,10 @@ fn do_swap(
     )?;
 
     // Transfer the amount being sold to the contract
-    let (sell_token, buy_token) = if sell_a {
-        (config.token_a, config.token_b)
+    let (sell_token, buy_token) = if offer_asset == config.clone().token_a {
+        (config.clone().token_a, config.clone().token_b)
     } else {
-        (config.token_b, config.token_a)
+        (config.clone().token_b, config.clone().token_a)
     };
 
     // transfer tokens to swap
@@ -601,7 +673,7 @@ fn do_swap(
 
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
-    let (balance_a, balance_b) = if sell_a {
+    let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
             pool_balance_a + offer_amount,
             pool_balance_b - commission_amount - return_amount,
@@ -624,7 +696,7 @@ fn do_swap(
     env.events()
         .publish(("swap", "spread_amount"), spread_amount);
 
-    Ok(())
+    Ok(return_amount)
 }
 
 /// This function divides the deposit in such a way that when swapping it for the other token,
@@ -670,7 +742,7 @@ fn split_deposit_based_on_pool_ratio(
             spread_amount: _,
             commission_amount: _,
             total_return: _,
-        } = StableLiquidityPool::simulate_swap(env.clone(), sell_a, mid)?;
+        } = LiquidityPool::simulate_swap(env.clone(), sell_a, mid)?;
 
         // Update final amounts
         final_offer_amount = mid;

@@ -44,7 +44,7 @@ fn confirm_stake_contract_deployment() {
             token_b: token2.address.clone(),
             share_token: share_token_address.clone(),
             stake_contract: stake_token_address.clone(),
-            pair_type: PairType::Xyk,
+            pool_type: PairType::Xyk,
             total_fee_bps: 0,
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,

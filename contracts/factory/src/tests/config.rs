@@ -78,7 +78,7 @@ fn factory_successfully_inits_lp() {
             fee_recipient: user,
             max_allowed_slippage_bps: 5_000,
             max_allowed_spread_bps: 500,
-            pair_type: lp_contract::PairType::Xyk,
+            pool_type: lp_contract::PairType::Xyk,
             share_token: share_token_address,
             stake_contract: stake_token_address,
             token_a: token_init_info.token_a,

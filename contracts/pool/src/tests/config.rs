@@ -1,13 +1,14 @@
 extern crate std;
 use soroban_sdk::{testutils::Address as _, Address, Env};
 
-use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
+use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Config, PairType};
 
 #[test]
 fn update_config() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -20,11 +21,10 @@ fn update_config() {
     }
     let user1 = Address::random(&env);
     let swap_fees = 0i64;
-    let pool = deploy_stable_liquidity_pool_contract(
+    let pool = deploy_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         user1.clone(),
         500,
@@ -32,6 +32,7 @@ fn update_config() {
     );
 
     let share_token_address = pool.query_share_token_address();
+    let stake_token_address = pool.query_stake_contract_address();
 
     assert_eq!(
         pool.query_config(),
@@ -39,7 +40,8 @@ fn update_config() {
             token_a: token1.address.clone(),
             token_b: token2.address.clone(),
             share_token: share_token_address.clone(),
-            pair_type: PairType::Xyk,
+            stake_contract: stake_token_address.clone(),
+            pool_type: PairType::Xyk,
             total_fee_bps: 0,
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
@@ -62,7 +64,8 @@ fn update_config() {
             token_a: token1.address.clone(),
             token_b: token2.address.clone(),
             share_token: share_token_address.clone(),
-            pair_type: PairType::Xyk,
+            stake_contract: stake_token_address.clone(),
+            pool_type: PairType::Xyk,
             total_fee_bps: 500,
             fee_recipient: admin2.clone(),
             max_allowed_slippage_bps: 500,
@@ -78,7 +81,8 @@ fn update_config() {
             token_a: token1.address.clone(),
             token_b: token2.address,
             share_token: share_token_address,
-            pair_type: PairType::Xyk,
+            stake_contract: stake_token_address,
+            pool_type: PairType::Xyk,
             total_fee_bps: 500,
             fee_recipient: admin2,
             max_allowed_slippage_bps: 5_000,
@@ -104,11 +108,10 @@ fn update_config_unauthorized() {
     }
     let user1 = Address::random(&env);
     let swap_fees = 0i64;
-    let pool = deploy_stable_liquidity_pool_contract(
+    let pool = deploy_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         user1,
         500,
@@ -129,6 +132,7 @@ fn update_config_unauthorized() {
 fn update_config_update_admin() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -141,11 +145,10 @@ fn update_config_update_admin() {
     }
     let user1 = Address::random(&env);
     let swap_fees = 0i64;
-    let pool = deploy_stable_liquidity_pool_contract(
+    let pool = deploy_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         user1.clone(),
         500,
@@ -156,6 +159,7 @@ fn update_config_update_admin() {
     pool.update_config(&admin1, &Some(admin2.clone()), &None, &None, &None, &None);
 
     let share_token_address = pool.query_share_token_address();
+    let stake_token_address = pool.query_stake_contract_address();
 
     // now update succeeds
     pool.update_config(&admin2, &None, &None, &None, &None, &Some(3_000_000));
@@ -165,7 +169,8 @@ fn update_config_update_admin() {
             token_a: token1.address.clone(),
             token_b: token2.address,
             share_token: share_token_address,
-            pair_type: PairType::Xyk,
+            stake_contract: stake_token_address,
+            pool_type: PairType::Xyk,
             total_fee_bps: 0,
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
@@ -191,11 +196,10 @@ fn update_config_too_high_fees() {
     }
     let user1 = Address::random(&env);
     let swap_fees = 0i64;
-    let pool = deploy_stable_liquidity_pool_contract(
+    let pool = deploy_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         user1,
         500,
