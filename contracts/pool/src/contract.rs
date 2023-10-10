@@ -259,7 +259,14 @@ impl LiquidityPoolTrait for LiquidityPool {
                     a,
                     true,
                 )?;
-                do_swap(env.clone(), sender.clone(), config.clone().token_a, a_for_swap, None, None)?;
+                do_swap(
+                    env.clone(),
+                    sender.clone(),
+                    config.clone().token_a,
+                    a_for_swap,
+                    None,
+                    None,
+                )?;
                 // return: rest of Token A amount, simulated result of swap of portion A
                 (a - a_for_swap, b_from_swap)
             }
@@ -272,7 +279,14 @@ impl LiquidityPoolTrait for LiquidityPool {
                     b,
                     false,
                 )?;
-                do_swap(env.clone(), sender.clone(), config.clone().token_b, b_for_swap, None, None)?;
+                do_swap(
+                    env.clone(),
+                    sender.clone(),
+                    config.clone().token_b,
+                    b_for_swap,
+                    None,
+                    None,
+                )?;
                 // return: simulated result of swap of portion B, rest of Token B amount
                 (a_from_swap, b - b_for_swap)
             }
