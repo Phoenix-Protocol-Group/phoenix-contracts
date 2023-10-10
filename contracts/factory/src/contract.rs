@@ -33,7 +33,7 @@ pub trait FactoryTrait {
 
     fn query_all_pools_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError>;
 
-    fn query_for_pool_by_pool_tuple(
+    fn query_for_pool_by_token_pair(
         env: Env,
         token_a: Address,
         token_b: Address,
@@ -134,7 +134,7 @@ impl FactoryTrait for Factory {
         Ok(result)
     }
 
-    fn query_for_pool_by_pool_tuple(
+    fn query_for_pool_by_token_pair(
         env: Env,
         token_a: Address,
         token_b: Address,
