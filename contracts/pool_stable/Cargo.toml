@@ -1,5 +1,5 @@
 [package]
-name = "phoenix-pair-stable"
+name = "phoenix-pool-stable"
 version = { workspace = true }
 authors = ["Jakub <jakub@moonbite.space>"]
 repository = { workspace = true }

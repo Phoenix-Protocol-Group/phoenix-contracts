@@ -161,7 +161,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
             share_token: share_token_address,
-            pair_type: PairType::Xyk,
+            pool_type: PairType::Xyk,
             total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
             fee_recipient,
             max_allowed_slippage_bps,

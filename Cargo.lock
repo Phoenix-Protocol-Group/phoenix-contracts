@@ -735,7 +735,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "phoenix-pair"
+name = "phoenix-pool"
 version = "0.6.0"
 dependencies = [
  "decimal",
@@ -746,7 +746,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "phoenix-pair-stable"
+name = "phoenix-pool-stable"
 version = "0.6.0"
 dependencies = [
  "decimal",

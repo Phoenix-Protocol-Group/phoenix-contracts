@@ -5,7 +5,7 @@ use soroban_sdk::{Address, BytesN, Env};
 #[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
     soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/phoenix_pair.wasm"
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm"
     );
 }
 

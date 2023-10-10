@@ -56,7 +56,7 @@ pub trait LiquidityPoolTrait {
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError>;
 
-    // `offer_asset` is the asset that the user would like to swap for the other token in the pair.
+    // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
     // `offer_amount` is the amount being sold, with `max_spread_bps` being a safety to make sure you receive at least that amount.
     // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to `sender`.
     // Returns the amount of the token being bought.
@@ -189,7 +189,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             token_b: token_b.clone(),
             share_token: share_token_address,
             stake_contract: stake_contract_address,
-            pair_type: PairType::Xyk,
+            pool_type: PairType::Xyk,
             total_fee_bps: validate_fee_bps(&env, swap_fee_bps)?,
             fee_recipient,
             max_allowed_slippage_bps,
