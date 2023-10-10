@@ -15,11 +15,13 @@ and this project adheres to
 ## Changed
 
 - Pair: Replace `sell_a` parameter in swap message with `offer_asset` address ([#141])
+- Pool: Rename `pair` to `pool` to avoid further confusion in names ([#139])
 
 [#101]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/101
 [#133]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/133
 [#138]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/138
 [#141]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/141
+[#139]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/139
 
 ## [0.6.0] - 2023-09-20
 
