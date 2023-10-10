@@ -9,6 +9,9 @@ fi
 
 IDENTITY_STRING=$1
 
+# FAUCET ADDRESS
+FAUCET=GAFNG7UOA2FDD745PVHFYHSZEIMJ6NYY2BY7ONJ74MRZGHSU2NEHBZ74
+
 echo "Build and optimize the contracts...";
 
 make build > /dev/null
@@ -21,6 +24,7 @@ soroban contract optimize --wasm soroban_token_contract.wasm
 soroban contract optimize --wasm phoenix_factory.wasm
 soroban contract optimize --wasm phoenix_pair.wasm
 soroban contract optimize --wasm phoenix_stake.wasm
+soroban contract optimize --wasm phoenix_multihop.wasm
 
 echo "Contracts optimized."
 
@@ -178,10 +182,47 @@ soroban contract invoke \
 
 echo "Tokens bonded."
 
+echo "Deploy and initializa a multihop..."
+
+MULTIHOP=$(soroban contract deploy \
+    --wasm phoenix_multihop.optimized.wasm \
+    --source $IDENTITY_STRING \
+    --network futurenet)
+
+soroban contract invoke \
+    --id $MULTIHOP \
+    --source $IDENTITY_STRING \
+    --network futurenet \
+    -- \
+    initialize \
+    --admin $ADMIN_ADDRESS \
+    --factory $FACTORY_ADDR
+
+echo "Multihop initialized."
+
+echo "Mint tokens to the faucet..."
+
+soroban contract invoke \
+    --id $TOKEN_ID1 \
+    --source $IDENTITY_STRING \
+    --network futurenet \
+    -- \
+    mint --to $FAUCET --amount 100000000000
+
+soroban contract invoke \
+    --id $TOKEN_ID2 \
+    --source $IDENTITY_STRING \
+    --network futurenet \
+    -- \
+    mint --to $FAUCET --amount 100000000000
+
+echo "Tokens minted."
+
 echo "Initialization complete!"
 echo "Token Contract 1 address: $TOKEN_ID1"
 echo "Token Contract 2 address: $TOKEN_ID2"
 echo "Pair Contract address: $PAIR_ADDR"
 echo "Stake Contract address: $STAKE_ADDR"
 echo "Factory Contract address: $FACTORY_ADDR"
+echo "Multihop Contract address: $MULTIHOP"
 
