@@ -56,9 +56,9 @@ pub trait LiquidityPoolTrait {
         custom_slippage_bps: Option<i64>,
     ) -> Result<(), ContractError>;
 
-    // If "buy_a" is true, the swap will buy token_a and sell token_b. This is flipped if "buy_a" is false.
-    // "out" is the amount being bought, with in_max being a safety to make sure you receive at least that amount.
-    // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to "to".
+    // `offer_asset` is the asset that the user would like to swap for the other token in the pair.
+    // `offer_amount` is the amount being sold, with `max_spread_bps` being a safety to make sure you receive at least that amount.
+    // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to `sender`.
     // Returns the amount of the token being bought.
     fn swap(
         env: Env,
