@@ -11,7 +11,6 @@ fn swap_three_equal_pools_no_fees() {
     let env = Env::default();
 
     let admin = Address::random(&env);
-    let user = Address::random(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
@@ -24,10 +23,10 @@ fn swap_three_equal_pools_no_fees() {
     let mut tokens = [&mut token1, &mut token2, &mut token3, &mut token4];
     tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
-    tokens[0].mint(&user, &10_000_000i128);
-    tokens[1].mint(&user, &10_000_000i128);
-    tokens[2].mint(&user, &10_000_000i128);
-    tokens[3].mint(&user, &10_000_000i128);
+    tokens[0].mint(&admin, &10_000_000i128);
+    tokens[1].mint(&admin, &10_000_000i128);
+    tokens[2].mint(&admin, &10_000_000i128);
+    tokens[3].mint(&admin, &10_000_000i128);
 
     // 1. deploy factory
     let factory_addr = deploy_factory_contract(&env, admin.clone());
@@ -52,7 +51,7 @@ fn swap_three_equal_pools_no_fees() {
 
     let first_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 500,
@@ -76,7 +75,7 @@ fn swap_three_equal_pools_no_fees() {
 
     let second_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
@@ -100,7 +99,7 @@ fn swap_three_equal_pools_no_fees() {
 
     let third_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash,
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
@@ -118,7 +117,7 @@ fn swap_three_equal_pools_no_fees() {
     for lp in factory_client.query_pools() {
         let lp_client = lp_contract::Client::new(&env, &lp);
         lp_client.provide_liquidity(
-            &user.clone(),
+            &admin.clone(),
             &Some(1_000_000i128),
             &None,
             &Some(1_000_000i128),
@@ -161,7 +160,6 @@ fn swap_single_pool_no_fees() {
     let env = Env::default();
 
     let admin = Address::random(&env);
-    let user = Address::random(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
@@ -172,8 +170,8 @@ fn swap_single_pool_no_fees() {
     let mut tokens = [&mut token1, &mut token2];
     tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
-    tokens[0].mint(&user, &10_000_000i128);
-    tokens[1].mint(&user, &10_000_000i128);
+    tokens[0].mint(&admin, &10_000_000i128);
+    tokens[1].mint(&admin, &10_000_000i128);
 
     // 1. deploy factory
     let factory_addr = deploy_factory_contract(&env, admin.clone());
@@ -198,7 +196,7 @@ fn swap_single_pool_no_fees() {
 
     let first_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 500,
@@ -214,7 +212,7 @@ fn swap_single_pool_no_fees() {
     for lp in factory_client.query_pools() {
         let lp_client = lp_contract::Client::new(&env, &lp);
         lp_client.provide_liquidity(
-            &user.clone(),
+            &admin.clone(),
             &Some(1_000_000i128),
             &None,
             &Some(1_000_000i128),
@@ -249,7 +247,6 @@ fn swap_single_pool_with_fees() {
     let env = Env::default();
 
     let admin = Address::random(&env);
-    let user = Address::random(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
@@ -260,8 +257,8 @@ fn swap_single_pool_with_fees() {
     let mut tokens = [&mut token1, &mut token2];
     tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
-    tokens[0].mint(&user, &10_000_000i128);
-    tokens[1].mint(&user, &10_000_000i128);
+    tokens[0].mint(&admin, &10_000_000i128);
+    tokens[1].mint(&admin, &10_000_000i128);
 
     // 1. deploy factory
     let factory_addr = deploy_factory_contract(&env, admin.clone());
@@ -286,7 +283,7 @@ fn swap_single_pool_with_fees() {
 
     let first_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 500,
@@ -302,7 +299,7 @@ fn swap_single_pool_with_fees() {
     for lp in factory_client.query_pools() {
         let lp_client = lp_contract::Client::new(&env, &lp);
         lp_client.provide_liquidity(
-            &user.clone(),
+            &admin.clone(),
             &Some(1_000_000i128),
             &None,
             &Some(1_000_000i128),
@@ -337,7 +334,6 @@ fn swap_three_different_pools_no_fees() {
     let env = Env::default();
 
     let admin = Address::random(&env);
-    let user = Address::random(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
@@ -350,10 +346,10 @@ fn swap_three_different_pools_no_fees() {
     let mut tokens = [&mut token1, &mut token2, &mut token3, &mut token4];
     tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
-    tokens[0].mint(&user, &10_000_000i128);
-    tokens[1].mint(&user, &15_000_000i128);
-    tokens[2].mint(&user, &20_000_000i128);
-    tokens[3].mint(&user, &25_000_000i128);
+    tokens[0].mint(&admin, &10_000_000i128);
+    tokens[1].mint(&admin, &15_000_000i128);
+    tokens[2].mint(&admin, &20_000_000i128);
+    tokens[3].mint(&admin, &25_000_000i128);
 
     // 1. deploy factory
     let factory_addr = deploy_factory_contract(&env, admin.clone());
@@ -378,7 +374,7 @@ fn swap_three_different_pools_no_fees() {
 
     let first_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 500,
@@ -402,7 +398,7 @@ fn swap_three_different_pools_no_fees() {
 
     let second_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
@@ -426,7 +422,7 @@ fn swap_three_different_pools_no_fees() {
 
     let third_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash,
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
@@ -444,7 +440,7 @@ fn swap_three_different_pools_no_fees() {
     for lp in factory_client.query_pools() {
         let lp_client = lp_contract::Client::new(&env, &lp);
         lp_client.provide_liquidity(
-            &user.clone(),
+            &admin.clone(),
             &Some(1_000_000i128),
             &None,
             &Some(2_000_000i128),
@@ -487,7 +483,6 @@ fn swap_three_different_pools_with_fees() {
     let env = Env::default();
 
     let admin = Address::random(&env);
-    let user = Address::random(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
@@ -500,10 +495,10 @@ fn swap_three_different_pools_with_fees() {
     let mut tokens = [&mut token1, &mut token2, &mut token3, &mut token4];
     tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
-    tokens[0].mint(&user, &10_000_000i128);
-    tokens[1].mint(&user, &15_000_000i128);
-    tokens[2].mint(&user, &20_000_000i128);
-    tokens[3].mint(&user, &25_000_000i128);
+    tokens[0].mint(&admin, &10_000_000i128);
+    tokens[1].mint(&admin, &15_000_000i128);
+    tokens[2].mint(&admin, &20_000_000i128);
+    tokens[3].mint(&admin, &25_000_000i128);
 
     // 1. deploy factory
     let factory_addr = deploy_factory_contract(&env, admin.clone());
@@ -528,7 +523,7 @@ fn swap_three_different_pools_with_fees() {
 
     let first_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 500,
@@ -552,7 +547,7 @@ fn swap_three_different_pools_with_fees() {
 
     let second_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
@@ -576,7 +571,7 @@ fn swap_three_different_pools_with_fees() {
 
     let third_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
-        fee_recipient: user.clone(),
+        fee_recipient: admin.clone(),
         lp_wasm_hash,
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
@@ -594,7 +589,7 @@ fn swap_three_different_pools_with_fees() {
     for lp in factory_client.query_pools() {
         let lp_client = lp_contract::Client::new(&env, &lp);
         lp_client.provide_liquidity(
-            &user.clone(),
+            &admin.clone(),
             &Some(1_000_000i128),
             &None,
             &Some(2_000_000i128),
