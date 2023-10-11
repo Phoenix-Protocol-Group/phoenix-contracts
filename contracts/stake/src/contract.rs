@@ -12,13 +12,17 @@ use crate::{
         WithdrawableReward, WithdrawableRewardsResponse,
     },
     storage::{
-        get_config, get_stakes, save_config, save_stakes,
-        utils::{self, add_distribution, get_admin, get_distributions, get_total_staked_counter},
+        get_config, get_stakes, save_config, save_stakes, update_stakes_rewards,
+        utils::{
+            self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
+            get_total_virtual_staked_counter, reset_stake_increase_counter,
+        },
         Config, Stake,
     },
     token_contract,
 };
 use curve::Curve;
+use decimal::Decimal;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -32,6 +36,7 @@ pub struct Staking;
 pub trait StakingTrait {
     // Sets the token contract addresses for this pool
     // epoch: Number of seconds between payments
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
@@ -39,6 +44,8 @@ pub trait StakingTrait {
         min_bond: i128,
         max_distributions: u32,
         min_reward: i128,
+        bonus_per_day_bps: i64,
+        max_bonus_bps: i64,
     ) -> Result<(), ContractError>;
 
     fn bond(env: Env, sender: Address, tokens: i128) -> Result<(), ContractError>;
@@ -94,6 +101,7 @@ pub trait StakingTrait {
 
 #[contractimpl]
 impl StakingTrait for Staking {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
@@ -101,6 +109,8 @@ impl StakingTrait for Staking {
         min_bond: i128,
         max_distributions: u32,
         min_reward: i128,
+        bonus_per_day_bps: i64,
+        max_bonus_bps: i64,
     ) -> Result<(), ContractError> {
         if min_bond <= 0 {
             log!(
@@ -122,6 +132,8 @@ impl StakingTrait for Staking {
             min_bond,
             max_distributions,
             min_reward,
+            bonus_per_day_bps,
+            max_bonus_bps,
         };
         save_config(&env, config);
 
@@ -156,6 +168,7 @@ impl StakingTrait for Staking {
             stake_timestamp: ledger.timestamp(),
         };
         stakes.total_stake += tokens as u128;
+        stakes.virtual_stake += tokens as u128;
         // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
         // creating multiple stakes the same day
 
@@ -175,6 +188,7 @@ impl StakingTrait for Staking {
         stakes.stakes.push_back(stake);
         save_stakes(&env, &sender, &stakes);
         utils::increase_total_staked(&env, &tokens)?;
+        utils::increase_total_virtual_staked(&env, &tokens)?;
 
         env.events().publish(("bond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
@@ -197,11 +211,19 @@ impl StakingTrait for Staking {
         remove_stake(&mut stakes.stakes, stake_amount, stake_timestamp)?;
         stakes.total_stake -= stake_amount as u128;
 
+        // calculate new virtual stake amount necessary for correct reward calculation
+        let virtual_stake_difference = stakes.virtual_stake - stakes.total_stake;
+        // withdrawing any stake will reset the virtual stake to the current stake amount,
+        // effectively discarding the bonus
+        stakes.virtual_stake = stakes.total_stake;
+        stakes.current_rewards_bps = 0i64;
+
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
 
         save_stakes(&env, &sender, &stakes);
         utils::decrease_total_staked(&env, &stake_amount)?;
+        utils::decrease_total_virtual_staked(&env, &(virtual_stake_difference as i128))?;
 
         env.events().publish(("unbond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
@@ -223,10 +245,8 @@ impl StakingTrait for Staking {
             shares_leftover: 0u64,
             distributed_total: 0u128,
             withdrawable_total: 0u128,
+            total_points: 0u128,
             manager,
-            // TODO: Add bonus rewards multiplier
-            max_bonus_bps: 0u64,
-            bonus_per_day_bps: 0u64,
         };
 
         let reward_token_client = token_contract::Client::new(&env, &asset);
@@ -245,11 +265,15 @@ impl StakingTrait for Staking {
     }
 
     fn distribute_rewards(env: Env) -> Result<(), ContractError> {
-        let total_rewards_power = get_total_staked_counter(&env)? as u128;
+        // get total_virtual_staked, meaning all staked tokens plus increases coming from rewards
+        let total_rewards_power = dbg!(get_total_virtual_staked_counter(&env)? as u128);
         if total_rewards_power == 0 {
             log!(&env, "No rewards to distribute!");
             return Ok(());
         }
+
+        let config = get_config(&env)?;
+
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address)?;
             let withdrawable = distribution.withdrawable_total;
@@ -273,7 +297,20 @@ impl StakingTrait for Staking {
 
             let leftover: u128 = distribution.shares_leftover.into();
             let points = (amount << SHARES_SHIFT) + leftover;
+
+            // One line that separates my life from being an unfeeling ghost after spending days on
+            // debugging the issue - why the stake rewards increased after increasing user stakes;
+            // the answer is - total number of points needs to be increased by percentage of global
+            // stake increase caused by rewards withdrawals
+            // let stake_increase = Decimal::one()
+            //     - Decimal::bps(config.bonus_per_day_bps)
+            //         * Decimal::from_ratio(utils::get_stake_increase_counter(&env), 1);
+
+            // let points = (points as i128 * stake_increase) as u128;
+            distribution.total_points = points;
             let points_per_share = points / total_rewards_power;
+            dbg!(points);
+            dbg!(points_per_share);
             distribution.shares_leftover = (points % total_rewards_power) as u64;
 
             // Everything goes back to 128-bits/16-bytes
@@ -281,6 +318,7 @@ impl StakingTrait for Staking {
             // on future distributions - even if because of calculation offsets it is not fully
             // distributed, the error is handled by leftover.
             distribution.shares_per_point += points_per_share;
+            dbg!(distribution.shares_per_point);
             distribution.distributed_total += amount;
             distribution.withdrawable_total += amount;
 
@@ -293,6 +331,9 @@ impl StakingTrait for Staking {
             env.events()
                 .publish(("distribute_rewards", "amount"), amount);
         }
+
+        // reset counter of total stake increase due to bonus rewards added during withdrawals
+        reset_stake_increase_counter(&env);
 
         Ok(())
     }
@@ -335,6 +376,8 @@ impl StakingTrait for Staking {
             env.events()
                 .publish(("withdraw_rewards", "reward_amount"), reward_amount as i128);
         }
+
+        update_stakes_rewards(&env, &sender)?;
 
         Ok(())
     }
@@ -424,8 +467,11 @@ impl StakingTrait for Staking {
     }
 
     fn query_staked(env: Env, address: Address) -> Result<StakedResponse, ContractError> {
+        let bonding_info = get_stakes(&env, &address)?;
         Ok(StakedResponse {
-            stakes: get_stakes(&env, &address)?.stakes,
+            stakes: bonding_info.stakes,
+            current_rewards_bps: bonding_info.current_rewards_bps,
+            total_stake: bonding_info.total_stake,
         })
     }
 

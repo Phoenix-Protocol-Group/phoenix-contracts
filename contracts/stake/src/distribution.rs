@@ -62,10 +62,8 @@ pub struct Distribution {
     pub withdrawable_total: u128,
     /// The manager of this distribution
     pub manager: Address,
-    /// Max bonus for staking after 60 days
-    pub max_bonus_bps: u64,
-    /// Bonus per staking day
-    pub bonus_per_day_bps: u64,
+    /// The total amount of distribution points; required for proper reward calculation
+    pub total_points: u128,
 }
 
 pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution) {
@@ -173,7 +171,7 @@ pub fn withdrawable_rewards(
 ) -> Result<u128, ContractError> {
     let ppw = distribution.shares_per_point;
 
-    let points = get_stakes(env, owner)?.total_stake;
+    let points = get_stakes(env, owner)?.virtual_stake;
     let points = (ppw * points) as i128;
 
     let correction = adjustment.shares_correction;

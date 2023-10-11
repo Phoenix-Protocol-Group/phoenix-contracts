@@ -1,6 +1,12 @@
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
-use crate::error::ContractError;
+use crate::{
+    distribution::{get_distribution, save_distribution, update_rewards, SHARES_SHIFT},
+    error::ContractError,
+};
+use decimal::Decimal;
+
+const DAY_IN_SECONDS: u64 = 60 * 60 * 24;
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -9,6 +15,10 @@ pub struct Config {
     pub min_bond: i128,
     pub max_distributions: u32,
     pub min_reward: i128,
+    /// Max bonus for staking after 60 days
+    pub max_bonus_bps: i64,
+    /// Bonus per staking day
+    pub bonus_per_day_bps: i64,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
@@ -37,15 +47,16 @@ pub struct Stake {
 pub struct BondingInfo {
     /// Vec of stakes sorted by stake timestamp
     pub stakes: Vec<Stake>,
-    /// The rewards debt is a mechanism to determine how much a user has already been credited in terms of staking rewards.
-    /// Whenever a user deposits or withdraws staked tokens to the pool, the rewards for the user is updated based on the
-    /// accumulated rewards per share, and the difference is stored as reward debt. When claiming rewards, this reward debt
-    /// is used to determine how much rewards a user can actually claim.
-    pub reward_debt: u128,
     /// Last time when user has claimed rewards
+    /// User can withdraw rewards as often as they want, but this parameter resets
+    /// only after 24h when reward percentage is bumped
     pub last_reward_time: u64,
     /// Total amount of staked tokens
     pub total_stake: u128,
+    /// Current rewards percentage in bps
+    pub current_rewards_bps: i64,
+    /// Total amount of staked tokens plus rewards
+    pub virtual_stake: u128,
 }
 
 pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError> {
@@ -53,15 +64,85 @@ pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError
         Some(stake) => stake,
         None => Ok(BondingInfo {
             stakes: Vec::new(env),
-            reward_debt: 0u128,
             last_reward_time: 0u64,
             total_stake: 0u128,
+            current_rewards_bps: 0i64,
+            virtual_stake: 0u128,
         }),
     }
 }
 
 pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
     env.storage().persistent().set(key, bonding_info);
+}
+
+pub fn update_stakes_rewards(env: &Env, key: &Address) -> Result<(), ContractError> {
+    let mut bonding_info = get_stakes(env, key)?;
+    let current_time = env.ledger().timestamp();
+
+    // if last_reward_time is 0, it means that user has never claimed rewards
+    // otherwise check if rewards were claimed more than 24h ago
+    // (-1 second is to allow rewards to be claimed exactly after 24h)
+    if bonding_info.last_reward_time == 0
+        || bonding_info.last_reward_time + DAY_IN_SECONDS - 1 < current_time
+    {
+        bonding_info.last_reward_time = current_time;
+        let config = get_config(env)?;
+        // if rewards are already at maximum, do nothing
+        if bonding_info.current_rewards_bps >= config.max_bonus_bps {
+            return Ok(());
+        }
+        // update rewards percentage (in bps)
+        bonding_info.current_rewards_bps += config.bonus_per_day_bps;
+        // calculate bonus staking points
+        let reward_stake_points =
+            bonding_info.total_stake as i128 * Decimal::bps(bonding_info.current_rewards_bps);
+        let user_original_virtual_stake = bonding_info.virtual_stake;
+        bonding_info.virtual_stake = bonding_info.total_stake + reward_stake_points as u128;
+        // Important - also increase total staked counter, otherwise there would be a gap
+        let total_staked = utils::get_total_virtual_staked_counter(&env)?;
+        utils::increase_total_virtual_staked(env, &reward_stake_points)?;
+        utils::increment_stake_increase_counter(env);
+
+        save_stakes(env, key, &bonding_info);
+        for distribution_address in utils::get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address)?;
+            update_rewards(
+                &env,
+                &key,
+                &distribution_address,
+                &mut distribution,
+                total_staked,
+                total_staked + reward_stake_points,
+            )
+        }
+
+        // save_stakes(env, key, &bonding_info);
+        // let total_rewards_power = dbg!(utils::get_total_virtual_staked_counter(&env)? as u128);
+        // for distribution_address in utils::get_distributions(&env) {
+        //     let mut distribution = get_distribution(&env, &distribution_address)?;
+
+        //     let user_original_share = Decimal::from_ratio(user_original_virtual_stake as i128, total_rewards_power as i128);
+        //     let user_original_points = (distribution.total_points - reward_stake_points as u128 ) as i128 * user_original_share;
+
+        //     let user_new_share = Decimal::from_ratio(bonding_info.virtual_stake as i128, utils::get_total_virtual_staked_counter(env)?);
+        //     let user_new_points = distribution.total_points as i128 * user_new_share;
+
+        //     let total_points = distribution.total_points - user_original_points as u128 + user_new_points as u128;
+        //     let points_per_share = total_points / total_rewards_power;
+        //     distribution.shares_per_point = points_per_share;
+        //     dbg!(distribution.total_points);
+        //     dbg!(distribution.shares_per_point);
+
+        //     // Update the leftover points
+        //     distribution.shares_leftover = (distribution.total_points % total_rewards_power) as u64;
+
+        //     dbg!(points_per_share);
+        //     // Save the updated distribution back to storage
+        //     save_distribution(env, &distribution_address, &distribution);
+        // }
+    }
+    Ok(())
 }
 
 pub mod utils {
@@ -74,7 +155,9 @@ pub mod utils {
     pub enum DataKey {
         Admin = 0,
         TotalStaked = 1,
-        Distributions = 2,
+        TotalVirtualStaked = 2,
+        Distributions = 3,
+        StakeIncreaseCounter = 4,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -98,6 +181,9 @@ pub mod utils {
 
     pub fn init_total_staked(e: &Env) {
         e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalVirtualStaked, &0i128);
     }
 
     pub fn increase_total_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
@@ -105,7 +191,6 @@ pub mod utils {
         e.storage()
             .persistent()
             .set(&DataKey::TotalStaked, &(count + amount));
-
         Ok(())
     }
 
@@ -114,12 +199,35 @@ pub mod utils {
         e.storage()
             .persistent()
             .set(&DataKey::TotalStaked, &(count - amount));
-
         Ok(())
     }
 
     pub fn get_total_staked_counter(env: &Env) -> Result<i128, ContractError> {
         match env.storage().persistent().get(&DataKey::TotalStaked) {
+            Some(val) => val,
+            None => Err(ContractError::TotalStakedCannotBeZeroOrLess),
+        }
+    }
+
+    // Virtual stakes representing total staked amount plus all reward stakes from withdrawing
+    pub fn increase_total_virtual_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+        let count = get_total_virtual_staked_counter(e)?;
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalVirtualStaked, &(count + amount));
+        Ok(())
+    }
+
+    pub fn decrease_total_virtual_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
+        let count = get_total_virtual_staked_counter(e)?;
+        e.storage()
+            .persistent()
+            .set(&DataKey::TotalVirtualStaked, &(count - amount));
+        Ok(())
+    }
+
+    pub fn get_total_virtual_staked_counter(env: &Env) -> Result<i128, ContractError> {
+        match env.storage().persistent().get(&DataKey::TotalVirtualStaked) {
             Some(val) => val,
             None => Err(ContractError::TotalStakedCannotBeZeroOrLess),
         }
@@ -143,5 +251,25 @@ pub mod utils {
             .persistent()
             .get(&DataKey::Distributions)
             .unwrap_or_else(|| soroban_sdk::vec![e])
+    }
+
+    pub fn increment_stake_increase_counter(e: &Env) {
+        let counter = get_stake_increase_counter(e);
+        e.storage()
+            .persistent()
+            .set(&DataKey::StakeIncreaseCounter, &(counter + 1i128));
+    }
+
+    pub fn reset_stake_increase_counter(e: &Env) {
+        e.storage()
+            .persistent()
+            .set(&DataKey::StakeIncreaseCounter, &0i128);
+    }
+
+    pub fn get_stake_increase_counter(env: &Env) -> i128 {
+        env.storage()
+            .persistent()
+            .get(&DataKey::StakeIncreaseCounter)
+            .unwrap_or(0i128)
     }
 }
