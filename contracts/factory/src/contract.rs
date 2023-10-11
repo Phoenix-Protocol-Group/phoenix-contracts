@@ -22,7 +22,7 @@ pub trait FactoryTrait {
     fn create_liquidity_pool(
         env: Env,
         lp_init_info: LiquidityPoolInitInfo,
-    ) -> Result<(), ContractError>;
+    ) -> Result<Address, ContractError>;
 
     fn query_pools(env: Env) -> Result<Vec<Address>, ContractError>;
 
@@ -57,7 +57,7 @@ impl FactoryTrait for Factory {
     fn create_liquidity_pool(
         env: Env,
         lp_init_info: LiquidityPoolInitInfo,
-    ) -> Result<(), ContractError> {
+    ) -> Result<Address, ContractError> {
         validate_token_info(
             &env,
             &lp_init_info.token_init_info,
@@ -98,7 +98,7 @@ impl FactoryTrait for Factory {
         env.events()
             .publish(("create", "liquidity_pool"), &lp_contract_address);
 
-        Ok(())
+        Ok(lp_contract_address)
     }
 
     fn query_pools(env: Env) -> Result<Vec<Address>, ContractError> {
