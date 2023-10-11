@@ -135,11 +135,10 @@ fn test_deploy_multiple_liquidity_pools() {
         stake_init_info: third_stake_init_info,
     };
 
-    factory.create_liquidity_pool(&first_lp_init_info);
-    factory.create_liquidity_pool(&second_lp_init_info);
-    factory.create_liquidity_pool(&third_lp_init_info);
+    let lp_contract_addr = factory.create_liquidity_pool(&first_lp_init_info);
+    let second_lp_contract_addr = factory.create_liquidity_pool(&second_lp_init_info);
+    let third_lp_contract_addr = factory.create_liquidity_pool(&third_lp_init_info);
 
-    let lp_contract_addr = factory.query_pools().get(0).unwrap();
     let first_result = factory.query_pool_details(&lp_contract_addr);
     let share_token_addr: Address = env.invoke_contract(
         &lp_contract_addr,
@@ -165,7 +164,6 @@ fn test_deploy_multiple_liquidity_pools() {
     );
     assert_eq!(lp_contract_addr, first_result.pool_address);
 
-    let second_lp_contract_addr = factory.query_pools().get(1).unwrap();
     let second_result = factory.query_pool_details(&second_lp_contract_addr);
     let second_share_token_addr: Address = env.invoke_contract(
         &second_lp_contract_addr,
@@ -191,7 +189,6 @@ fn test_deploy_multiple_liquidity_pools() {
     );
     assert_eq!(second_lp_contract_addr, second_result.pool_address);
 
-    let third_lp_contract_addr = factory.query_pools().get(2).unwrap();
     let third_result = factory.query_pool_details(&third_lp_contract_addr);
     let third_share_token_addr: Address = env.invoke_contract(
         &third_lp_contract_addr,
@@ -331,18 +328,16 @@ fn test_queries_by_tuple() {
         stake_init_info: third_stake_init_info,
     };
 
-    factory.create_liquidity_pool(&first_lp_init_info);
-    factory.create_liquidity_pool(&second_lp_init_info);
-    factory.create_liquidity_pool(&third_lp_init_info);
+    let lp_contract_addr = factory.create_liquidity_pool(&first_lp_init_info);
+    let second_lp_contract_addr = factory.create_liquidity_pool(&second_lp_init_info);
+    let third_lp_contract_addr = factory.create_liquidity_pool(&third_lp_init_info);
 
-    let lp_contract_addr = factory.query_pools().get(0).unwrap();
     let first_result = factory.query_pool_details(&lp_contract_addr);
 
     assert_eq!(token1, first_result.pool_response.asset_a.address);
     assert_eq!(token2, first_result.pool_response.asset_b.address);
     assert_eq!(lp_contract_addr, first_result.pool_address);
 
-    let second_lp_contract_addr = factory.query_pools().get(1).unwrap();
     let second_result = factory.query_pool_details(&second_lp_contract_addr);
     let second_share_token_addr: Address = env.invoke_contract(
         &second_lp_contract_addr,
@@ -367,8 +362,6 @@ fn test_queries_by_tuple() {
         second_result.pool_response.asset_lp_share.address
     );
     assert_eq!(second_lp_contract_addr, second_result.pool_address);
-
-    let third_lp_contract_addr = factory.query_pools().get(2).unwrap();
 
     let first_lp_address_by_tuple = factory.query_for_pool_by_token_pair(&token2, &token1);
     let second_lp_address_by_tuple = factory.query_for_pool_by_token_pair(&token3, &token4);
