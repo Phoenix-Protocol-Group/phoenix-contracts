@@ -8,7 +8,6 @@ use crate::tests::setup::{
 
 use soroban_sdk::arbitrary::std;
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
-use soroban_sdk::arbitrary::std::dbg;
 
 #[test]
 fn swap_three_equal_pools_no_fees() {
@@ -289,7 +288,7 @@ fn swap_three_different_pools_with_fees() {
         1_000_000,
         token2.address.clone(),
         1_000_000,
-        Some(2000),
+        Some(1_000),
     );
     deploy_and_initialize_lp(
         &env,
@@ -299,7 +298,7 @@ fn swap_three_different_pools_with_fees() {
         2_000_000,
         token3.address.clone(),
         2_000_000,
-        Some(2000),
+        Some(1_000),
     );
     deploy_and_initialize_lp(
         &env,
@@ -309,14 +308,16 @@ fn swap_three_different_pools_with_fees() {
         3_000_000,
         token4.address.clone(),
         3_000_000,
-        Some(2000),
+        Some(1_000),
     );
 
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
     let recipient = Address::random(&env);
-    token1.mint(&recipient, &5000i128);
-    assert_eq!(token1.balance(&recipient), 5000i128);
+    token1.mint(&recipient, &10_000i128);
+    assert_eq!(token1.balance(&recipient), 10_000i128);
+    assert_eq!(token2.balance(&recipient), 0i128);
+    assert_eq!(token3.balance(&recipient), 0i128);
     assert_eq!(token4.balance(&recipient), 0i128);
 
     let swap1 = Swap {
@@ -334,14 +335,31 @@ fn swap_three_different_pools_with_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &5000i128);
+    multihop.swap(&recipient, &operations, &10_000i128);
 
-    // we star swapping from 5000 tokens
-    // first swap we end up with 5000 - 20% = 4000
-    // second swap we end up with 4000 - 20% = 3200
-    // finally we end up with 3200 - 20% = 2560
+    // we start swapping 10_000 tokens
+
+    // token1 => token2
+    // (10_000 * 1_000_000) / (10_000 + 1_000_000)
+    // 10_000_000_000 / 1_010_000
+    // 9900.99009901
+    // 9901 - 10% =  8911
+
+    // token2 => token3
+    // (8911 * 2_000_000) / (8911 + 2_000_000)
+    // 17_822_000_000 / 2_008_911
+    // 8871.47315137
+    // 8872 - 10% = 7985
+
+    // token3 => token4
+    // (7985 * 3_000_000) / (7985 + 3_000_000)
+    // 23_955_000_000 / 3_007_985
+    // 7963.80301099
+    // 7964 - 10% = 7168
     assert_eq!(token1.balance(&recipient), 0i128);
-    assert_eq!(token4.balance(&recipient), 2560i128);
+    assert_eq!(token2.balance(&recipient), 0i128);
+    assert_eq!(token3.balance(&recipient), 0i128);
+    assert_eq!(token4.balance(&recipient), 7_168i128);
 }
 
 #[test]
