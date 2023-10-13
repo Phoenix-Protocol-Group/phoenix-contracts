@@ -1,7 +1,5 @@
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
-use crate::error::ContractError;
-
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
@@ -12,11 +10,11 @@ pub struct Config {
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
-pub fn get_config(env: &Env) -> Result<Config, ContractError> {
+pub fn get_config(env: &Env) -> Config {
     env.storage()
         .persistent()
         .get(&CONFIG)
-        .ok_or(ContractError::ConfigNotSet)
+        .expect("Stake: Config not set")
 }
 
 pub fn save_config(env: &Env, config: Config) {
@@ -48,15 +46,15 @@ pub struct BondingInfo {
     pub total_stake: u128,
 }
 
-pub fn get_stakes(env: &Env, key: &Address) -> Result<BondingInfo, ContractError> {
-    match env.storage().persistent().get(&key) {
+pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
+    match env.storage().persistent().get::<_, BondingInfo>(key) {
         Some(stake) => stake,
-        None => Ok(BondingInfo {
+        None => BondingInfo {
             stakes: Vec::new(env),
             reward_debt: 0u128,
             last_reward_time: 0u64,
             total_stake: 0u128,
-        }),
+        },
     }
 }
 
@@ -89,53 +87,45 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::Admin, address)
     }
 
-    pub fn get_admin(e: &Env) -> Result<Address, ContractError> {
-        e.storage()
-            .persistent()
-            .get(&DataKey::Admin)
-            .ok_or(ContractError::FailedToGetAdminAddrFromStorage)
+    pub fn get_admin(e: &Env) -> Address {
+        e.storage().persistent().get(&DataKey::Admin).unwrap()
     }
 
     pub fn init_total_staked(e: &Env) {
         e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
     }
 
-    pub fn increase_total_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
-        let count = get_total_staked_counter(e)?;
+    pub fn increase_total_staked(e: &Env, amount: &i128) {
+        let count = get_total_staked_counter(e);
         e.storage()
             .persistent()
             .set(&DataKey::TotalStaked, &(count + amount));
-
-        Ok(())
     }
 
-    pub fn decrease_total_staked(e: &Env, amount: &i128) -> Result<(), ContractError> {
-        let count = get_total_staked_counter(e)?;
+    pub fn decrease_total_staked(e: &Env, amount: &i128) {
+        let count = get_total_staked_counter(e);
         e.storage()
             .persistent()
             .set(&DataKey::TotalStaked, &(count - amount));
-
-        Ok(())
     }
 
-    pub fn get_total_staked_counter(env: &Env) -> Result<i128, ContractError> {
-        match env.storage().persistent().get(&DataKey::TotalStaked) {
-            Some(val) => val,
-            None => Err(ContractError::TotalStakedCannotBeZeroOrLess),
-        }
+    pub fn get_total_staked_counter(env: &Env) -> i128 {
+        env.storage()
+            .persistent()
+            .get(&DataKey::TotalStaked)
+            .unwrap()
     }
 
     // Keep track of all distributions to be able to iterate over them
-    pub fn add_distribution(e: &Env, asset: &Address) -> Result<(), ContractError> {
+    pub fn add_distribution(e: &Env, asset: &Address) {
         let mut distributions = get_distributions(e);
         if distributions.contains(asset) {
-            return Err(ContractError::DistributionAlreadyAdded);
+            panic!("Stake: Add distribution: Distribution already added");
         }
         distributions.push_back(asset.clone());
         e.storage()
             .persistent()
             .set(&DataKey::Distributions, &distributions);
-        Ok(())
     }
 
     pub fn get_distributions(e: &Env) -> Vec<Address> {

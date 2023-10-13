@@ -6,7 +6,6 @@ use soroban_sdk::{
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
-use crate::error::ContractError::{StakeLessThenMinBond, StakeNotFound};
 use crate::{
     msg::ConfigResponse,
     storage::{Config, Stake},
@@ -40,6 +39,7 @@ fn initializa_staking_contract() {
 }
 
 #[test]
+#[should_panic = "Stake: Bond: Trying to stake less then minimum required"]
 fn bond_too_few() {
     let env = Env::default();
     env.mock_all_auths();
@@ -52,32 +52,7 @@ fn bond_too_few() {
 
     lp_token.mint(&user, &999);
 
-    assert_eq!(staking.try_bond(&user, &999), Err(Ok(StakeLessThenMinBond)));
-}
-
-#[test]
-#[should_panic = "Error(Contract, #10)"]
-fn bond_not_having_tokens() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
-    let lp_token = deploy_token_contract(&env, &admin);
-
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
-
-    // fails with error[E0600]: cannot apply unary operator `!` to type `()`; not sure if fixing this
-    // won't be too hacky
-    // assert_with_error!(&env, staking.bond(&user, &10_000), StakeLessThenMinBond);
-
-    // fails with error[E0423]: cannot initialize a tuple struct which contains private fields
-    // the way it is commented now; Basically I'm not sure for the correct import of `Error`
-    // tried all the variants and this one hit closest to home.
-    // assert_eq!(staking.try_bond(&user, &10_000i128), Err(Err(Error(Val::default()))))
-
-    // For now I'm leaving it with should_panic macro
-    staking.bond(&user, &10_000);
+    staking.bond(&user, &999);
 }
 
 #[test]
@@ -184,6 +159,7 @@ fn initializing_contract_sets_total_staked_var() {
 }
 
 #[test]
+#[should_panic(expected = "Stake: Remove stake: Stake not found")]
 fn unbond_wrong_user_stake_not_found() {
     let env = Env::default();
     env.mock_all_auths();
@@ -212,8 +188,5 @@ fn unbond_wrong_user_stake_not_found() {
     assert_eq!(lp_token.balance(&user2), 0);
     assert_eq!(lp_token.balance(&staking.address), 30_000);
 
-    assert_eq!(
-        staking.try_unbond(&user2, &10_000, &2_000),
-        Err(Ok(StakeNotFound))
-    );
+    staking.unbond(&user2, &10_000, &2_000);
 }

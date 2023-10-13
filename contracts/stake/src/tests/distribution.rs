@@ -5,7 +5,6 @@ use soroban_sdk::{
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
-use crate::error::ContractError;
 use crate::msg::{
     AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward, WithdrawableRewardsResponse,
 };
@@ -527,6 +526,7 @@ fn two_users_both_bonds_after_distribution_starts() {
 }
 
 #[test]
+#[should_panic(expected = "Stake: Fund distribution: Not reward curve exists")]
 fn fund_rewards_without_establishing_distribution() {
     let env = Env::default();
     env.mock_all_auths();
@@ -540,10 +540,7 @@ fn fund_rewards_without_establishing_distribution() {
 
     reward_token.mint(&admin, &1000);
 
-    assert_eq!(
-        staking.try_fund_distribution(&admin, &2_000, &600, &reward_token.address, &1000,),
-        Err(Ok(ContractError::NoRewardsForThisAsset))
-    );
+    staking.fund_distribution(&admin, &2_000, &600, &reward_token.address, &1000);
 }
 
 #[test]
@@ -604,9 +601,7 @@ fn try_to_withdraw_rewards_without_bonding() {
 }
 
 #[test]
-// for some reason I'm not getting the correct error, despite debugging process
-// proving that it fails on the correct line
-#[should_panic]
+#[should_panic(expected = "Stake: Fund distribution: Fund distribution start time is too early")]
 fn fund_distribution_starting_before_current_timestamp() {
     let env = Env::default();
     env.mock_all_auths();
@@ -637,6 +632,7 @@ fn fund_distribution_starting_before_current_timestamp() {
 }
 
 #[test]
+#[should_panic(expected = "Stake: Fund distribution: minimum reward amount not reached")]
 fn fund_distribution_with_reward_below_required_minimum() {
     let env = Env::default();
     env.mock_all_auths();
@@ -656,11 +652,7 @@ fn fund_distribution_with_reward_below_required_minimum() {
     });
 
     let reward_duration = 600;
-    assert_eq!(
-        staking
-            .try_fund_distribution(&admin, &2_000, &reward_duration, &reward_token.address, &10,),
-        Err(Ok(ContractError::MinRewardNotReached))
-    );
+    staking.fund_distribution(&admin, &2_000, &reward_duration, &reward_token.address, &10);
 }
 
 #[test]
