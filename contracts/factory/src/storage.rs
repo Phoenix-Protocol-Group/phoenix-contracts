@@ -1,4 +1,3 @@
-use crate::error::ContractError;
 use soroban_sdk::{contracttype, Address, ConversionError, Env, TryFromVal, Val, Vec};
 
 #[derive(Clone, Copy)]
@@ -57,18 +56,18 @@ pub fn save_admin(env: &Env, address: Address) {
     env.storage().instance().set(&DataKey::Admin, &address);
 }
 
-pub fn get_admin(env: &Env) -> Result<Address, ContractError> {
+pub fn get_admin(env: &Env) -> Address {
     env.storage()
         .instance()
         .get(&DataKey::Admin)
-        .ok_or(ContractError::FailedToGetAdminAddrFromStorage)
+        .expect("Factory: Failed to get admin from storage")
 }
 
-pub fn get_lp_vec(env: &Env) -> Result<Vec<Address>, ContractError> {
+pub fn get_lp_vec(env: &Env) -> Vec<Address> {
     env.storage()
         .instance()
         .get(&DataKey::LpVec)
-        .ok_or(ContractError::LiquidityPoolVectorNotFound)
+        .expect("Factory: get_lp_vec: Liquidity Pool vector not found")
 }
 
 pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
@@ -98,7 +97,7 @@ mod tests {
     fn test_get_admin_should_panic_when_no_admin_saved() {
         let env = Env::default();
 
-        get_admin(&env).unwrap();
+        get_admin(&env);
     }
 
     #[test]
@@ -106,6 +105,6 @@ mod tests {
     fn test_get_lp_vec_should_panic_when_no_vec_saved() {
         let env = Env::default();
 
-        get_lp_vec(&env).unwrap();
+        get_lp_vec(&env);
     }
 }

@@ -3,7 +3,6 @@ use super::setup::{
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
-use crate::error::ContractError;
 use soroban_sdk::arbitrary::std;
 use soroban_sdk::{contracttype, testutils::Address as _, Address, Env, Symbol, Vec};
 
@@ -15,7 +14,7 @@ pub enum PairType {
 }
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Config {
+pub struct LiquidityPoolConfig {
     pub token_a: Address,
     pub token_b: Address,
     pub share_token: Address,
@@ -145,7 +144,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &Symbol::new(&env, "query_share_token_address"),
         Vec::new(&env),
     );
-    let first_lp_config: Config = env.invoke_contract(
+    let first_lp_config: LiquidityPoolConfig = env.invoke_contract(
         &lp_contract_addr,
         &Symbol::new(&env, "query_config"),
         Vec::new(&env),
@@ -170,7 +169,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &Symbol::new(&env, "query_share_token_address"),
         Vec::new(&env),
     );
-    let second_lp_config: Config = env.invoke_contract(
+    let second_lp_config: LiquidityPoolConfig = env.invoke_contract(
         &second_lp_contract_addr,
         &Symbol::new(&env, "query_config"),
         Vec::new(&env),
@@ -195,7 +194,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &Symbol::new(&env, "query_share_token_address"),
         Vec::new(&env),
     );
-    let third_lp_config: Config = env.invoke_contract(
+    let third_lp_config: LiquidityPoolConfig = env.invoke_contract(
         &third_lp_contract_addr,
         &Symbol::new(&env, "query_config"),
         Vec::new(&env),
@@ -225,6 +224,7 @@ fn test_deploy_multiple_liquidity_pools() {
 }
 
 #[test]
+#[should_panic(expected = "Factory: query_for_pool_by_token_pair failed: No liquidity pool found")]
 fn test_queries_by_tuple() {
     let env = Env::default();
     let admin = Address::random(&env);
@@ -344,7 +344,7 @@ fn test_queries_by_tuple() {
         &Symbol::new(&env, "query_share_token_address"),
         Vec::new(&env),
     );
-    let second_lp_config: Config = env.invoke_contract(
+    let second_lp_config: LiquidityPoolConfig = env.invoke_contract(
         &second_lp_contract_addr,
         &Symbol::new(&env, "query_config"),
         Vec::new(&env),
@@ -371,8 +371,5 @@ fn test_queries_by_tuple() {
     assert_eq!(second_lp_address_by_tuple, second_lp_contract_addr);
     assert_eq!(third_lp_address_by_tuple, third_lp_contract_addr);
 
-    assert_eq!(
-        factory.try_query_for_pool_by_token_pair(&Address::random(&env), &Address::random(&env)),
-        Err(Ok(ContractError::LiquidityPoolPairNotFound))
-    );
+    factory.query_for_pool_by_token_pair(&Address::random(&env), &Address::random(&env));
 }
