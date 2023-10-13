@@ -1,6 +1,5 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
-use crate::error::ContractError;
 use crate::storage::{get_factory, save_admin, save_factory, Swap};
 use crate::{factory_contract, lp_contract};
 
@@ -14,37 +13,25 @@ contractmeta!(
 pub struct Multihop;
 
 pub trait MultihopTrait {
-    fn initialize(env: Env, admin: Address, factory: Address) -> Result<(), ContractError>;
+    fn initialize(env: Env, admin: Address, factory: Address);
 
-    fn swap(
-        env: Env,
-        recipient: Address,
-        operations: Vec<Swap>,
-        amount: i128,
-    ) -> Result<(), ContractError>;
+    fn swap(env: Env, recipient: Address, operations: Vec<Swap>, amount: i128);
 }
 
 #[contractimpl]
 impl MultihopTrait for Multihop {
-    fn initialize(env: Env, admin: Address, factory: Address) -> Result<(), ContractError> {
+    fn initialize(env: Env, admin: Address, factory: Address) {
         save_admin(&env, &admin);
 
         save_factory(&env, factory);
 
         env.events()
             .publish(("initialize", "Multihop factory with admin: "), admin);
-
-        Ok(())
     }
 
-    fn swap(
-        env: Env,
-        recipient: Address,
-        operations: Vec<Swap>,
-        amount: i128,
-    ) -> Result<(), ContractError> {
+    fn swap(env: Env, recipient: Address, operations: Vec<Swap>, amount: i128) {
         if operations.is_empty() {
-            return Err(ContractError::OperationsEmpty);
+            panic!("Multihop: Swap: Operations empty");
         }
 
         recipient.require_auth();
@@ -54,8 +41,7 @@ impl MultihopTrait for Multihop {
         let mut next_offer_amount: i128 = amount;
         let mut offer_token_addr: Address = operations.get(0).unwrap().offer_asset.clone();
 
-        let factory_client =
-            factory_contract::Client::new(&env, &get_factory(&env).expect("factory not found"));
+        let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
         operations.iter().for_each(|op| {
             let liquidity_pool_addr: Address = factory_client
@@ -72,7 +58,5 @@ impl MultihopTrait for Multihop {
 
             offer_token_addr = op.ask_asset.clone();
         });
-
-        Ok(())
     }
 }

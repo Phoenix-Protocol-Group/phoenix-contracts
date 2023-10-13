@@ -1,4 +1,3 @@
-use crate::error::ContractError;
 use soroban_sdk::{contracttype, Address, Env};
 
 #[contracttype]
@@ -48,20 +47,14 @@ pub fn save_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, &admin);
 }
 
-pub fn _get_admin(env: &Env) -> Result<Address, ContractError> {
-    env.storage()
-        .instance()
-        .get(&DataKey::Admin)
-        .ok_or(ContractError::AdminNotFound)
+pub fn _get_admin(env: &Env) -> Address {
+    env.storage().instance().get(&DataKey::Admin).unwrap()
 }
 
 pub fn save_factory(env: &Env, factory: Address) {
     env.storage().instance().set(&DataKey::FactoryKey, &factory);
 }
 
-pub fn get_factory(env: &Env) -> Result<Address, ContractError> {
-    env.storage()
-        .instance()
-        .get(&DataKey::FactoryKey)
-        .ok_or(ContractError::FactoryNotFound)
+pub fn get_factory(env: &Env) -> Address {
+    env.storage().instance().get(&DataKey::FactoryKey).unwrap()
 }
