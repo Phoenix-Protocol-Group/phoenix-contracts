@@ -5,6 +5,7 @@ use crate::tests::setup::{
     install_lp_contract, install_stake_wasm, install_token_wasm, lp_contract, token_contract,
 };
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
+use soroban_sdk::arbitrary::std::dbg;
 
 #[test]
 fn swap_three_equal_pools_no_fees() {
@@ -12,11 +13,19 @@ fn swap_three_equal_pools_no_fees() {
 
     let admin = Address::random(&env);
 
-    let tokens = generate_minted_tokens::<4>(&env, admin.clone(), 4, false);
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut token1 = deploy_and_mint_tokens(&env, &admin, 1_000_000i128);
+    let mut token2 = deploy_and_mint_tokens(&env, &admin, 1_000_000i128);
+    let mut token3 = deploy_and_mint_tokens(&env, &admin, 1_000_000i128);
+    let mut token4 = deploy_and_mint_tokens(&env, &admin, 1_000_000i128);
+
+    let mut tokens = [&mut token1, &mut token2, &mut token3, &mut token4];
+    tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
     // 1. deploy factory
-
-    let factory_client = get_factory(&env, admin.clone());
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     // 2. create liquidity pool from factory
     let lp_wasm_hash = install_lp_contract(&env);
@@ -86,7 +95,7 @@ fn swap_three_equal_pools_no_fees() {
         fee_recipient: admin.clone(),
         lp_wasm_hash,
         max_allowed_slippage_bps: 4_000,
-        max_allowed_spread_bps: 400,
+        max_allowed_spread_bps: 100,
         share_token_decimals: 6,
         swap_fee_bps: 0,
         token_init_info: third_token_init_info,
@@ -97,21 +106,29 @@ fn swap_three_equal_pools_no_fees() {
     let second_lp = factory_client.create_liquidity_pool(&second_lp_init_info);
     let third_lp = factory_client.create_liquidity_pool(&third_lp_init_info);
 
+    let pools = [first_lp, second_lp, third_lp];
+
     // 3. provide liquidity for each one of the liquidity pools
-    for lp in factory_client.query_pools() {
-        let lp_client = lp_contract::Client::new(&env, &lp);
+    for pool in pools.iter() {
+        let lp_client = lp_contract::Client::new(&env, pool);
         lp_client.provide_liquidity(
             &admin.clone(),
-            &Some(1_000_000i128),
-            &None,
-            &Some(1_000_000i128),
-            &None,
+            &Some(500_000i128),
+            &Some(500_000i128),
+            &Some(500_000i128),
+            &Some(500_000i128),
             &None::<i64>,
         );
     }
 
+    // check balance after assertions
+    assert_eq!(tokens[0].balance(&admin), 500_000i128);
+    assert_eq!(tokens[0].balance(&admin), 500_000i128);
+    assert_eq!(tokens[0].balance(&admin), 500_000i128);
+    assert_eq!(tokens[0].balance(&admin), 500_000i128);
+
     // 4. swap with multihop
-    let multihop = deploy_multihop_contract(&env, admin, &factory_client.address);
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
     let recipient = Address::random(&env);
     tokens[0].mint(&recipient, &50i128);
     assert_eq!(tokens[0].balance(&recipient), 50i128);
@@ -147,10 +164,14 @@ fn swap_single_pool_no_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let tokens = generate_minted_tokens(&env, admin.clone(), 2, false);
+    let mut token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
+    let mut token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
+
+    let mut tokens = [&mut token1, &mut token2];
+    tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
     // 1. deploy factory
-    let factory_client = get_factory(&env, admin.clone());
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     // 2. create liquidity pool from factory
     let lp_wasm_hash = install_lp_contract(&env);
@@ -172,32 +193,32 @@ fn swap_single_pool_no_fees() {
         fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5000,
-        max_allowed_spread_bps: 500,
+        max_allowed_spread_bps: 100,
         share_token_decimals: 7,
         swap_fee_bps: 0,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
     };
 
-    factory_client.create_liquidity_pool(&first_lp_init_info);
+    let lp = factory_client.create_liquidity_pool(&first_lp_init_info);
 
     // 3. provide liquidity for each one of the liquidity pools
-    for lp in factory_client.query_pools() {
-        let lp_client = lp_contract::Client::new(&env, &lp);
-        lp_client.provide_liquidity(
-            &admin.clone(),
-            &Some(1_000_000i128),
-            &None,
-            &Some(1_000_000i128),
-            &None,
-            &None::<i64>,
-        );
-    }
+    let lp_client = lp_contract::Client::new(&env, &lp);
+    lp_client.provide_liquidity(
+        &admin.clone(),
+        &Some(1_000_000i128),
+        &Some(1_000_000i128),
+        &Some(1_000_000i128),
+        &Some(1_000_000i128),
+        &None::<i64>,
+    );
+    assert_eq!(tokens[0].balance(&admin), 1_000i128); // remaining amount after providing liquidity
+    assert_eq!(tokens[1].balance(&admin), 1_000i128); // remaining amount after providing liquidity
 
     // 4. swap with multihop
-    let multihop = deploy_multihop_contract(&env, admin, &factory_client.address);
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
     let recipient = Address::random(&env);
-    tokens[0].mint(&recipient, &50i128);
+    tokens[0].mint(&recipient, &50i128); // mints 50 token0 to recipient
     assert_eq!(tokens[0].balance(&recipient), 50i128);
     assert_eq!(tokens[1].balance(&recipient), 0i128);
 
@@ -208,11 +229,11 @@ fn swap_single_pool_no_fees() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &operations, &50i128);
+    multihop.swap(&recipient, &operations, &1);
 
     // 5. check if it goes according to plan
-    assert_eq!(tokens[0].balance(&recipient), 0i128);
-    assert_eq!(tokens[1].balance(&recipient), 50i128);
+    assert_eq!(tokens[0].balance(&recipient), 49i128); // -1 token0
+    assert_eq!(tokens[1].balance(&recipient), 1i128); // +1 token1
 }
 
 #[test]
@@ -223,10 +244,14 @@ fn swap_single_pool_with_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let tokens = generate_minted_tokens(&env, admin.clone(), 2, false);
+    let mut token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
+    let mut token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
+
+    let mut tokens = [&mut token1, &mut token2];
+    tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
     // 1. deploy factory
-    let factory_client = get_factory(&env, admin.clone());
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     // 2. create liquidity pool from factory
     let lp_wasm_hash = install_lp_contract(&env);
@@ -250,31 +275,32 @@ fn swap_single_pool_with_fees() {
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 500,
         share_token_decimals: 7,
-        swap_fee_bps: 1500,
+        swap_fee_bps: 2000,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
     };
 
-    factory_client.create_liquidity_pool(&first_lp_init_info);
+    let lp = factory_client.create_liquidity_pool(&first_lp_init_info);
 
     // 3. provide liquidity for each one of the liquidity pools
-    for lp in factory_client.query_pools() {
-        let lp_client = lp_contract::Client::new(&env, &lp);
-        lp_client.provide_liquidity(
-            &admin.clone(),
-            &Some(1_000_000i128),
-            &None,
-            &Some(1_000_000i128),
-            &None,
-            &None::<i64>,
-        );
-    }
+    let lp_client = lp_contract::Client::new(&env, &lp);
+    lp_client.provide_liquidity(
+        &admin.clone(),
+        &Some(1_000_000i128),
+        &Some(1_000_000i128),
+        &Some(1_000_000i128),
+        &Some(1_000_000i128),
+        &None::<i64>,
+    );
+
+    assert_eq!(tokens[0].balance(&admin), 1_000i128); // remaining amount after providing liquidity
+    assert_eq!(tokens[1].balance(&admin), 1_000i128); // remaining amount after providing liquidity
 
     // 4. swap with multihop
-    let multihop = deploy_multihop_contract(&env, admin, &factory_client.address);
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
     let recipient = Address::random(&env);
-    tokens[0].mint(&recipient, &50i128);
-    assert_eq!(tokens[0].balance(&recipient), 50i128);
+    tokens[0].mint(&recipient, &1000i128);
+    assert_eq!(tokens[0].balance(&recipient), 1000i128);
     assert_eq!(tokens[1].balance(&recipient), 0i128);
 
     let swap1 = Swap {
@@ -284,11 +310,14 @@ fn swap_single_pool_with_fees() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &operations, &50i128);
+    multihop.swap(&recipient, &operations, &300i128);
 
     // 5. check if it goes according to plan
-    assert_eq!(tokens[0].balance(&recipient), 0i128);
-    assert_eq!(tokens[1].balance(&recipient), 43i128);
+    // 1000 tokens initially
+    // swap 300 from token0 to token1 with 2000 bps (20%)
+    // tokens1 will be 240
+    assert_eq!(tokens[0].balance(&recipient), 700i128);
+    assert_eq!(tokens[1].balance(&recipient), 240i128);
 }
 
 #[test]
@@ -300,10 +329,16 @@ fn swap_three_different_pools_no_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let tokens = generate_minted_tokens(&env, admin.clone(), 4, true);
+    let mut token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let mut token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let mut token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let mut token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+
+    let mut tokens = [&mut token1, &mut token2, &mut token3, &mut token4];
+    tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
     // 1. deploy factory
-    let factory_client = get_factory(&env, admin.clone());
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     // 2. create liquidity pool from factory
     let lp_wasm_hash = install_lp_contract(&env);
@@ -325,7 +360,7 @@ fn swap_three_different_pools_no_fees() {
         fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5000,
-        max_allowed_spread_bps: 500,
+        max_allowed_spread_bps: 100,
         share_token_decimals: 7,
         swap_fee_bps: 0,
         token_init_info: first_token_init_info.clone(),
@@ -349,7 +384,7 @@ fn swap_three_different_pools_no_fees() {
         fee_recipient: admin.clone(),
         lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 4_000,
-        max_allowed_spread_bps: 400,
+        max_allowed_spread_bps: 100,
         share_token_decimals: 6,
         swap_fee_bps: 0,
         token_init_info: second_token_init_info,
@@ -373,35 +408,45 @@ fn swap_three_different_pools_no_fees() {
         fee_recipient: admin.clone(),
         lp_wasm_hash,
         max_allowed_slippage_bps: 4_000,
-        max_allowed_spread_bps: 400,
+        max_allowed_spread_bps: 100,
         share_token_decimals: 6,
         swap_fee_bps: 0,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
     };
 
-    factory_client.create_liquidity_pool(&first_lp_init_info);
-    factory_client.create_liquidity_pool(&second_lp_init_info);
-    factory_client.create_liquidity_pool(&third_lp_init_info);
+    let first_lp = factory_client.create_liquidity_pool(&first_lp_init_info);
+    let second_lp = factory_client.create_liquidity_pool(&second_lp_init_info);
+    let third_lp = factory_client.create_liquidity_pool(&third_lp_init_info);
+
+    let pools = [first_lp, second_lp, third_lp];
 
     // 3. provide liquidity for each one of the liquidity pools
-    for lp in factory_client.query_pools() {
-        let lp_client = lp_contract::Client::new(&env, &lp);
+    let mut increment = 1_000_000i128;
+    for pool in pools.iter() {
+        let lp_client = lp_contract::Client::new(&env, pool);
         lp_client.provide_liquidity(
             &admin.clone(),
-            &Some(1_000_000i128),
-            &None,
-            &Some(2_000_000i128),
-            &None,
+            &Some(increment),
+            &Some(increment),
+            &Some(increment),
+            &Some(increment),
             &None::<i64>,
         );
+
+        increment += 1_000_000i128;
     }
 
+    assert_eq!(tokens[0].balance(&admin), 9_000_000i128);
+    assert_eq!(tokens[1].balance(&admin), 7_000_000i128);
+    assert_eq!(tokens[2].balance(&admin), 5_000_000i128);
+    assert_eq!(tokens[3].balance(&admin), 7_000_000i128);
     // 4. swap with multihop
-    let multihop = deploy_multihop_contract(&env, admin, &factory_client.address);
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
     let recipient = Address::random(&env);
-    tokens[0].mint(&recipient, &50i128);
-    assert_eq!(tokens[0].balance(&recipient), 50i128);
+    tokens[0].mint(&recipient, &100_000i128);
+
+    assert_eq!(tokens[0].balance(&recipient), 100_000i128);
     assert_eq!(tokens[3].balance(&recipient), 0i128);
 
     let swap1 = Swap {
@@ -419,11 +464,11 @@ fn swap_three_different_pools_no_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &50i128);
+    multihop.swap(&recipient, &operations, &50_000i128);
 
     // 5. check if it goes according to plan
-    assert_eq!(tokens[0].balance(&recipient), 0i128);
-    assert_eq!(tokens[3].balance(&recipient), 400i128);
+    assert_eq!(tokens[0].balance(&recipient), 50_000i128);
+    assert_eq!(tokens[3].balance(&recipient), 50_000i128, "token[3] not as expected");
 }
 
 #[test]
@@ -435,10 +480,16 @@ fn swap_three_different_pools_with_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let tokens = generate_minted_tokens(&env, admin.clone(), 4, true);
+    let mut token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let mut token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let mut token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let mut token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+
+    let mut tokens = [&mut token1, &mut token2, &mut token3, &mut token4];
+    tokens.sort_by(|a, b| a.address.cmp(&b.address));
 
     // 1. deploy factory
-    let factory_client = get_factory(&env, admin.clone());
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     // 2. create liquidity pool from factory
     let lp_wasm_hash = install_lp_contract(&env);
@@ -515,25 +566,27 @@ fn swap_three_different_pools_with_fees() {
         stake_init_info: third_stake_init_info,
     };
 
-    factory_client.create_liquidity_pool(&first_lp_init_info);
-    factory_client.create_liquidity_pool(&second_lp_init_info);
-    factory_client.create_liquidity_pool(&third_lp_init_info);
+    let first_lp = factory_client.create_liquidity_pool(&first_lp_init_info);
+    let second_lp = factory_client.create_liquidity_pool(&second_lp_init_info);
+    let third_lp = factory_client.create_liquidity_pool(&third_lp_init_info);
+
+    let pools = [first_lp, second_lp, third_lp];
 
     // 3. provide liquidity for each one of the liquidity pools
-    for lp in factory_client.query_pools() {
-        let lp_client = lp_contract::Client::new(&env, &lp);
+    for pool in pools.iter() {
+        let lp_client = lp_contract::Client::new(&env, pool);
         lp_client.provide_liquidity(
             &admin.clone(),
             &Some(1_000_000i128),
             &None,
-            &Some(2_000_000i128),
+            &Some(1_000_000i128),
             &None,
             &None::<i64>,
         );
     }
 
     // 4. swap with multihop
-    let multihop = deploy_multihop_contract(&env, admin, &factory_client.address);
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
     let recipient = Address::random(&env);
     tokens[0].mint(&recipient, &50i128);
     assert_eq!(tokens[0].balance(&recipient), 50i128);
@@ -578,39 +631,19 @@ fn swap_panics_with_no_operations() {
     multihop.swap(&recipient, &swap_vec, &50i128);
 }
 
-fn generate_minted_tokens<'a, const LEN: usize>(
-    env: &Env,
-    admin: Address,
-    number_of_tokens: i32,
-    different_token_ratio: bool,
-) -> [token_contract::Client<'a>; LEN] {
-    let mut tokens = [token_contract::Client, LEN];
-    for i in 0..number_of_tokens {
-        let token = deploy_token_contract(&env, &admin);
-        tokens[i] = token
-    }
-
-    tokens.sort_by(|a, b| a.address.cmp(&b.address));
-
-    match different_token_ratio {
-        true => {
-            let mut i = 1i128;
-            tokens.iter().for_each(|mut t| {
-                t.mint(&admin, &(i * 10_000_000i128));
-                i += 1;
-            });
-        }
-        false => {
-            tokens.iter().for_each(|t| t.mint(&admin, &10_000_000i128));
-        }
-    }
-
-    tokens
+fn deploy_and_mint_tokens<'a>(
+    env: &'a Env,
+    admin: &'a Address,
+    amount: i128,
+) -> token_contract::Client<'a> {
+    let token = deploy_token_contract(env, admin);
+    token.mint(admin, &amount);
+    token
 }
 
-fn get_factory(env: &Env, admin: Address) -> factory::Client {
-    let factory_addr = deploy_factory_contract(&env, admin.clone());
-    let factory_client = factory::Client::new(&env, &factory_addr);
+fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Client {
+    let factory_addr = deploy_factory_contract(env, admin.clone());
+    let factory_client = factory::Client::new(env, &factory_addr);
 
     factory_client.initialize(&admin.clone());
     factory_client
