@@ -92,7 +92,7 @@ fn update_config() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #21)")]
+#[should_panic(expected = "Pool: UpdateConfig: Unauthorize")]
 fn update_config_unauthorized() {
     let env = Env::default();
     env.mock_all_auths();
@@ -180,7 +180,7 @@ fn update_config_update_admin() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #2)")]
+#[should_panic(expected = "Pool: UpdateConfig: Invalid total_fee_bps")]
 fn update_config_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();

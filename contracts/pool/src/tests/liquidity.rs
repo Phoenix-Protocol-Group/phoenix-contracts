@@ -229,7 +229,7 @@ fn withdraw_liquidity() {
 }
 
 #[test]
-#[should_panic = "Error(Contract, #6)"]
+#[should_panic = "Pool: split_deposit_based_on_pool_ratio: Both pools and deposit must be a positive!"]
 fn provide_liqudity_single_asset_on_empty_pool() {
     let env = Env::default();
     env.mock_all_auths();
@@ -539,7 +539,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #2)")]
+#[should_panic(expected = "Pool: Initialize: Fees must be between 0 and 100%")]
 fn provide_liqudity_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();
@@ -566,7 +566,9 @@ fn provide_liqudity_too_high_fees() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #20)")]
+#[should_panic(
+    expected = "Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!"
+)]
 fn swap_with_no_amounts() {
     let env = Env::default();
     env.mock_all_auths();
@@ -599,7 +601,9 @@ fn swap_with_no_amounts() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #19)")]
+#[should_panic(
+    expected = "Pool: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied!"
+)]
 fn withdraw_liqudity_below_min() {
     let env = Env::default();
     env.mock_all_auths();
