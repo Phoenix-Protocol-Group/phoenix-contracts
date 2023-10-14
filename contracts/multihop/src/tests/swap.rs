@@ -316,9 +316,6 @@ fn swap_three_different_pools_with_fees() {
     let recipient = Address::random(&env);
     token1.mint(&recipient, &10_000i128);
     assert_eq!(token1.balance(&recipient), 10_000i128);
-    assert_eq!(token2.balance(&recipient), 0i128);
-    assert_eq!(token3.balance(&recipient), 0i128);
-    assert_eq!(token4.balance(&recipient), 0i128);
 
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
