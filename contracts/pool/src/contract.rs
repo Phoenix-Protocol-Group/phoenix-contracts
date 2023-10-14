@@ -111,12 +111,12 @@ pub trait LiquidityPoolTrait {
     fn query_pool_info_for_factory(env: Env) -> LiquidityPoolInfo;
 
     // Simulate swap transaction
-    fn simulate_swap(env: Env, sell_a: bool, sell_amount: i128) -> SimulateSwapResponse;
+    fn simulate_swap(env: Env, offer_asset: Address, sell_amount: i128) -> SimulateSwapResponse;
 
     // Simulate reverse swap transaction
     fn simulate_reverse_swap(
         env: Env,
-        sell_a: bool,
+        offer_asset: Address,
         ask_amount: i128,
     ) -> SimulateReverseSwapResponse;
 }
@@ -249,10 +249,11 @@ impl LiquidityPoolTrait for LiquidityPool {
             (Some(a), None) if a > 0 => {
                 let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
                     &env,
+                    &config,
                     pool_balance_a,
                     pool_balance_b,
                     a,
-                    true,
+                    &config.token_a,
                 );
                 do_swap(
                     env.clone(),
@@ -269,10 +270,11 @@ impl LiquidityPoolTrait for LiquidityPool {
             (None, Some(b)) if b > 0 => {
                 let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
                     &env,
+                    &config,
                     pool_balance_a,
                     pool_balance_b,
                     b,
-                    false,
+                    &config.token_b,
                 );
                 do_swap(
                     env.clone(),
@@ -535,16 +537,16 @@ impl LiquidityPoolTrait for LiquidityPool {
         }
     }
 
-    fn simulate_swap(env: Env, sell_a: bool, offer_amount: i128) -> SimulateSwapResponse {
+    fn simulate_swap(env: Env, offer_asset: Address, offer_amount: i128) -> SimulateSwapResponse {
+        let config = get_config(&env);
+
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
-        let (pool_balance_offer, pool_balance_ask) = if sell_a {
+        let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
             (pool_balance_a, pool_balance_b)
         } else {
             (pool_balance_b, pool_balance_a)
         };
-
-        let config = get_config(&env);
 
         let (ask_amount, spread_amount, commission_amount) = compute_swap(
             pool_balance_offer,
@@ -565,18 +567,18 @@ impl LiquidityPoolTrait for LiquidityPool {
 
     fn simulate_reverse_swap(
         env: Env,
-        sell_a: bool,
+        offer_asset: Address,
         ask_amount: i128,
     ) -> SimulateReverseSwapResponse {
+        let config = get_config(&env);
+
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
-        let (pool_balance_offer, pool_balance_ask) = if sell_a {
+        let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
             (pool_balance_a, pool_balance_b)
         } else {
             (pool_balance_b, pool_balance_a)
         };
-
-        let config = get_config(&env);
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
             pool_balance_offer,
@@ -698,10 +700,11 @@ fn do_swap(
 ///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.
 fn split_deposit_based_on_pool_ratio(
     env: &Env,
+    config: &Config,
     a_pool: i128,
     b_pool: i128,
     deposit: i128,
-    sell_a: bool,
+    offer_asset: &Address,
 ) -> (i128, i128) {
     // Validate the inputs
     if a_pool <= 0 || b_pool <= 0 || deposit <= 0 {
@@ -732,14 +735,14 @@ fn split_deposit_based_on_pool_ratio(
             spread_amount: _,
             commission_amount: _,
             total_return: _,
-        } = LiquidityPool::simulate_swap(env.clone(), sell_a, mid);
+        } = LiquidityPool::simulate_swap(env.clone(), offer_asset.clone(), mid);
 
         // Update final amounts
         final_offer_amount = mid;
         final_ask_amount = ask_amount;
 
         // Calculate the ratio that would result from swapping `mid` deposit tokens
-        let ratio = if sell_a {
+        let ratio = if offer_asset == &config.token_a {
             Decimal::from_ratio(ask_amount, deposit - mid)
         } else {
             Decimal::from_ratio(deposit - mid, ask_amount)
@@ -751,12 +754,12 @@ fn split_deposit_based_on_pool_ratio(
         }
         // Update boundaries for the next iteration of the binary search
         if ratio > target_ratio {
-            if sell_a {
+            if offer_asset == &config.token_a {
                 high = mid;
             } else {
                 low = mid;
             }
-        } else if sell_a {
+        } else if offer_asset == &config.token_a {
             low = mid;
         } else {
             high = mid;
