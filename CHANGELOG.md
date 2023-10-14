@@ -11,9 +11,11 @@ and this project adheres to
 - Factory: Replace tuple in a query `query_for_pool_by_pair_tuple` with a two separate parameters; rename that query to `query_for_pool_by_token_pair` ([#144])
 - Total surrender refactor: replace all errors with panics ([#140])
 - Pool/Pool stable: Replace `sell_a` parameter in simulate swap messages with `offer_asset` address ([#154])
+- Multihop: Implement simulate swap/reverse swap queries ([#147])
 
 [#140]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/140
 [#144]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/144
+[#147]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/147
 
 ## [0.7.0] - 2023-10-10
 

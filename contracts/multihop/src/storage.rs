@@ -65,3 +65,10 @@ pub struct SimulateSwapResponse {
     pub ask_amount: i128,
     pub total_commission_amount: i128,
 }
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SimulateReverseSwapResponse {
+    pub offer_amount: i128,
+    pub total_commission_amount: i128,
+}
