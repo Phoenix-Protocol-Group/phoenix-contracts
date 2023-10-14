@@ -1,4 +1,3 @@
-use crate::error::ContractError;
 use crate::storage::Swap;
 use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use crate::tests::setup::{
@@ -360,6 +359,7 @@ fn swap_three_different_pools_with_fees() {
 }
 
 #[test]
+#[should_panic(expected = "Multihop: Swap: Operations empty")]
 fn swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
@@ -368,14 +368,14 @@ fn swap_panics_with_no_operations() {
 
     let recipient = Address::random(&env);
 
+    let token = deploy_token_contract(&env, &admin);
+    token.mint(&recipient, &50i128);
+
     let multihop = deploy_multihop_contract(&env, admin, &factory);
 
     let swap_vec = vec![&env];
 
-    assert_eq!(
-        multihop.try_swap(&recipient, &swap_vec, &50i128),
-        Err(Ok(ContractError::OperationsEmpty))
-    );
+    multihop.swap(&recipient, &swap_vec, &50i128);
 }
 
 fn deploy_and_mint_tokens<'a>(
