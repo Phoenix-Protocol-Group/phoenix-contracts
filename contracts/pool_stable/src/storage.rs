@@ -3,7 +3,7 @@ use soroban_sdk::{
     Symbol, TryFromVal, Val,
 };
 
-use crate::{error::ContractError, token_contract};
+use crate::token_contract;
 use decimal::Decimal;
 
 #[derive(Clone, Copy)]
@@ -36,6 +36,7 @@ pub struct Config {
     pub token_a: Address,
     pub token_b: Address,
     pub share_token: Address,
+    pub stake_contract: Address,
     pub pool_type: PairType,
     /// The total fees (in bps) charged by a pool of this type.
     /// In relation to the returned amount of tokens
@@ -51,12 +52,12 @@ const CONFIG: Symbol = symbol_short!("CONFIG");
 const MAX_TOTAL_FEE_BPS: i64 = 10_000;
 
 /// This method is used to check fee bps.
-pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> Result<i64, ContractError> {
+pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> i64 {
     if total_fee_bps > MAX_TOTAL_FEE_BPS {
         log!(env, "Total fees cannot be greater than 100%");
-        return Err(ContractError::InvalidFeeBps);
+        panic!("Pool: Validate fee bps: total fees cannot be greater than 100%")
     }
-    Ok(total_fee_bps)
+    total_fee_bps
 }
 
 impl Config {
@@ -69,11 +70,8 @@ impl Config {
     }
 }
 
-pub fn get_config(env: &Env) -> Result<Config, ContractError> {
-    env.storage()
-        .instance()
-        .get(&CONFIG)
-        .ok_or(ContractError::ConfigNotSet)
+pub fn get_config(env: &Env) -> Config {
+    env.storage().instance().get(&CONFIG).unwrap()
 }
 
 pub fn save_config(env: &Env, config: Config) {
@@ -99,6 +97,14 @@ pub struct PoolResponse {
     pub asset_b: Asset,
     /// The total amount of LP tokens currently issued
     pub asset_lp_share: Asset,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StableLiquidityPoolInfo {
+    pub pool_address: Address,
+    pub pool_response: PoolResponse,
+    pub total_fee_bps: i64,
 }
 
 #[contracttype]
@@ -136,6 +142,21 @@ pub mod utils {
             .deploy(token_wasm_hash)
     }
 
+    pub fn deploy_stake_contract(e: &Env, stake_wasm_hash: BytesN<32>) -> Address {
+        let deployer = e.current_contract_address();
+
+        if deployer != e.current_contract_address() {
+            deployer.require_auth();
+        }
+
+        let salt = Bytes::new(e);
+        let salt = e.crypto().sha256(&salt);
+
+        e.deployer()
+            .with_address(deployer, salt)
+            .deploy(stake_wasm_hash)
+    }
+
     pub fn save_admin(e: &Env, address: Address) {
         e.storage().instance().set(&DataKey::Admin, &address)
     }
@@ -152,55 +173,36 @@ pub mod utils {
         e.storage().instance().set(&DataKey::ReserveB, &amount)
     }
 
-    pub fn mint_shares(
-        e: &Env,
-        share_token: &Address,
-        to: &Address,
-        amount: i128,
-    ) -> Result<(), ContractError> {
-        let total = get_total_shares(e)?;
+    pub fn mint_shares(e: &Env, share_token: &Address, to: &Address, amount: i128) {
+        let total = get_total_shares(e);
 
         token_contract::Client::new(e, share_token).mint(to, &amount);
 
         save_total_shares(e, total + amount);
-        Ok(())
     }
 
-    pub fn burn_shares(e: &Env, share_token: &Address, amount: i128) -> Result<(), ContractError> {
-        let total = get_total_shares(e)?;
+    pub fn burn_shares(e: &Env, share_token: &Address, amount: i128) {
+        let total = get_total_shares(e);
 
         token_contract::Client::new(e, share_token).burn(&e.current_contract_address(), &amount);
 
         save_total_shares(e, total - amount);
-        Ok(())
     }
 
     // queries
-    pub fn get_admin(e: &Env) -> Result<Address, ContractError> {
-        e.storage()
-            .instance()
-            .get(&DataKey::Admin)
-            .ok_or(ContractError::FailedToGetAdminAddrFromStorage)
+    pub fn get_admin(e: &Env) -> Address {
+        e.storage().instance().get(&DataKey::Admin).unwrap()
     }
 
-    pub fn get_total_shares(e: &Env) -> Result<i128, ContractError> {
-        e.storage()
-            .instance()
-            .get(&DataKey::TotalShares)
-            .ok_or(ContractError::FailedToGetTotalSharesFromStorage)
+    pub fn get_total_shares(e: &Env) -> i128 {
+        e.storage().instance().get(&DataKey::TotalShares).unwrap()
     }
-    pub fn get_pool_balance_a(e: &Env) -> Result<i128, ContractError> {
-        e.storage()
-            .instance()
-            .get(&DataKey::ReserveA)
-            .ok_or(ContractError::FailedToGetPoolBalanceAFromStorage)
+    pub fn get_pool_balance_a(e: &Env) -> i128 {
+        e.storage().instance().get(&DataKey::ReserveA).unwrap()
     }
 
-    pub fn get_pool_balance_b(e: &Env) -> Result<i128, ContractError> {
-        e.storage()
-            .instance()
-            .get(&DataKey::ReserveB)
-            .ok_or(ContractError::FailedToGetPoolBalanceBFromStorage)
+    pub fn get_pool_balance_b(e: &Env) -> i128 {
+        e.storage().instance().get(&DataKey::ReserveB).unwrap()
     }
 
     pub fn get_balance(e: &Env, contract: &Address) -> i128 {
@@ -217,19 +219,19 @@ pub mod utils {
         pool_balance_a: i128,
         pool_balance_b: i128,
         allowed_slippage: Decimal,
-    ) -> Result<(i128, i128), ContractError> {
+    ) -> (i128, i128) {
         if pool_balance_a == 0 && pool_balance_b == 0 {
-            return Ok((desired_a, desired_b));
+            return (desired_a, desired_b);
         }
 
         if let Some(min_a) = min_a {
             if min_a > desired_a {
-                return Err(ContractError::IncorrectLiquidityParametersForA);
+                panic!("Pool: Get deposit amounts: min_a > desired_a");
             }
         }
         if let Some(min_b) = min_b {
             if min_b > desired_b {
-                return Err(ContractError::IncorrectLiquidityParametersForB);
+                panic!("Pool: Get deposit amounts: min_b > desired_b");
             }
         }
 
@@ -246,7 +248,7 @@ pub mod utils {
                         amount_a,
                         desired_a,
                     );
-                    return Err(ContractError::DepositAmountAExceedsDesired);
+                    panic!("Pool: Get deposit amounts: amount_a > desired_a");
                 }
             };
             if let Some(min_a) = min_a {
@@ -257,7 +259,7 @@ pub mod utils {
                         amount_a,
                         min_a
                     );
-                    return Err(ContractError::DepositAmountBelowMinA);
+                    panic!("Pool: Get deposit amounts: amount_a < min_a");
                 }
             }
             amount_a
@@ -276,7 +278,7 @@ pub mod utils {
                 amount_b,
                 desired_b,
             );
-                    return Err(ContractError::DepositAmountBExceedsDesired);
+                    panic!("Pool: Get deposit amounts: amount_b > desired_b");
                 }
             };
             if let Some(min_b) = min_b {
@@ -285,15 +287,15 @@ pub mod utils {
                 env,
                 "Deposit amount for asset B ({}) is invalid. It falls below the minimum requirement ({})",
                 amount_b,
-                min_a
+                min_b
             );
-                    return Err(ContractError::DepositAmountBelowMinB);
+                    panic!("Pool: Get deposit amounts: amount_b < min_b");
                 }
             }
             amount_b
         };
 
-        Ok((amount_a, amount_b))
+        (amount_a, amount_b)
     }
 }
 
@@ -334,23 +336,21 @@ mod tests {
         let env = Env::default();
         let result =
             utils::get_deposit_amounts(&env, 100, Some(50), 200, Some(50), 0, 0, Decimal::bps(100));
-        assert_eq!(result, Ok((100, 200)));
+        assert_eq!(result, (100, 200));
     }
 
     #[test]
+    #[should_panic(expected = "Pool: Get deposit amounts: amount_b < min_b")]
     fn test_get_deposit_amounts_amount_b_less_than_desired() {
         let env = Env::default();
-        let result =
-            utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
-        assert_eq!(result, Err(ContractError::DepositAmountBelowMinB));
+        utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
     }
 
     #[test]
+    #[should_panic(expected = "Pool: Get deposit amounts: amount_b < min_b")]
     fn test_get_deposit_amounts_amount_b_less_than_min_b() {
         let env = Env::default();
-        let result =
-            utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
-        assert_eq!(result, Err(ContractError::DepositAmountBelowMinB));
+        utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
     }
 
     #[test]
@@ -366,21 +366,21 @@ mod tests {
             200,
             Decimal::bps(100),
         );
-        assert_eq!(result, Ok((100, 200)));
+        assert_eq!(result, (100, 200));
     }
 
     #[test]
+    #[should_panic(expected = "Pool: Get deposit amounts: min_a > desired_a")]
     fn test_get_deposit_amounts_amount_a_greater_than_desired_and_less_than_min_a() {
         let env = Env::default();
-        let result =
-            utils::get_deposit_amounts(&env, 50, Some(100), 200, None, 100, 200, Decimal::bps(100));
-        assert_eq!(result, Err(ContractError::IncorrectLiquidityParametersForA));
+        utils::get_deposit_amounts(&env, 50, Some(100), 200, None, 100, 200, Decimal::bps(100));
     }
 
     #[test]
+    #[should_panic(expected = "Pool: Get deposit amounts: min_b > desired_b")]
     fn test_get_deposit_amounts_amount_b_greater_than_desired_and_less_than_min_b() {
         let env = Env::default();
-        let result = utils::get_deposit_amounts(
+        utils::get_deposit_amounts(
             &env,
             150,
             Some(100),
@@ -390,23 +390,13 @@ mod tests {
             200,
             Decimal::bps(100),
         );
-        assert_eq!(result, Err(ContractError::IncorrectLiquidityParametersForB));
     }
 
     #[test]
+    #[should_panic(expected = "Pool: Get deposit amounts: min_a > desired_a")]
     fn test_get_deposit_amounts_amount_a_less_than_min_a() {
         let env = Env::default();
-        let result = utils::get_deposit_amounts(
-            &env,
-            100,
-            Some(200),
-            200,
-            None,
-            100,
-            200,
-            Decimal::bps(100),
-        );
-        assert_eq!(result, Err(ContractError::IncorrectLiquidityParametersForA));
+        utils::get_deposit_amounts(&env, 100, Some(200), 200, None, 100, 200, Decimal::bps(100));
     }
 
     #[test]
@@ -421,37 +411,26 @@ mod tests {
             5000,
             10000,
             Decimal::bps(100),
-        )
-        .unwrap();
+        );
         // The desired ratio is within 1% of the current pool ratio, so the desired amounts are returned
         assert_eq!(amount_a, 1000);
         assert_eq!(amount_b, 2000);
     }
 
     #[test]
+    #[should_panic(expected = "Pool: Get deposit amounts: amount_a > desired_a")]
     fn test_get_deposit_amounts_exceeds_desired() {
         let env = Env::default();
-        let result = utils::get_deposit_amounts(
-            &env,
-            1000,
-            None,
-            2000,
-            None,
-            10000,
-            5000,
-            Decimal::bps(100),
-        );
         // The calculated deposit for asset A exceeds the desired amount and is not within 1% tolerance
-        assert_eq!(
-            result.unwrap_err(),
-            ContractError::DepositAmountAExceedsDesired
-        );
+        utils::get_deposit_amounts(&env, 1000, None, 2000, None, 10000, 5000, Decimal::bps(100));
     }
 
     #[test]
+    #[should_panic(expected = "Pool: Get deposit amounts: amount_a < min_a")]
     fn test_get_deposit_amounts_below_min_a() {
         let env = Env::default();
-        let result = utils::get_deposit_amounts(
+        // The calculated deposit for asset A is below the minimum requirement
+        utils::get_deposit_amounts(
             &env,
             5000,
             Some(2000),
@@ -461,14 +440,14 @@ mod tests {
             500,
             Decimal::bps(1000),
         );
-        // The calculated deposit for asset A is below the minimum requirement
-        assert_eq!(result.unwrap_err(), ContractError::DepositAmountBelowMinA);
     }
 
     #[test]
+    #[should_panic(expected = "Pool: Get deposit amounts: amount_b < min_b")]
     fn test_get_deposit_amounts_below_min_b() {
         let env = Env::default();
-        let result = utils::get_deposit_amounts(
+        // The calculated deposit for asset B is below the minimum requirement
+        utils::get_deposit_amounts(
             &env,
             200,
             None,
@@ -478,8 +457,6 @@ mod tests {
             1000,
             Decimal::bps(120000),
         );
-        // The calculated deposit for asset B is below the minimum requirement
-        assert_eq!(result.unwrap_err(), ContractError::DepositAmountBelowMinB);
     }
 
     #[test]
@@ -488,8 +465,7 @@ mod tests {
         // Set up the inputs so that amount_a = (1010 * 1000 / 1000) = 1010, which is > desired_a (1000),
         // but the ratio is exactly 1.01, which is within the 1% tolerance
         let result =
-            utils::get_deposit_amounts(&env, 1000, None, 1010, None, 1000, 1000, Decimal::bps(100))
-                .unwrap();
+            utils::get_deposit_amounts(&env, 1000, None, 1010, None, 1000, 1000, Decimal::bps(100));
         assert_eq!(result, (1000, 1000));
     }
 
@@ -497,8 +473,7 @@ mod tests {
     fn test_get_deposit_amounts_accept_b_within_1_percent() {
         let env = Env::default();
         let result =
-            utils::get_deposit_amounts(&env, 1010, None, 1000, None, 1000, 1000, Decimal::bps(100))
-                .unwrap();
+            utils::get_deposit_amounts(&env, 1010, None, 1000, None, 1000, 1000, Decimal::bps(100));
         assert_eq!(result, (1000, 1000));
     }
 
@@ -506,12 +481,17 @@ mod tests {
     fn test_validate_fee_bps() {
         let env = Env::default();
         let result = validate_fee_bps(&env, 0);
-        assert_eq!(result, Ok(0));
+        assert_eq!(result, 0);
         let result = validate_fee_bps(&env, 9999);
-        assert_eq!(result, Ok(9999));
+        assert_eq!(result, 9999);
         let result = validate_fee_bps(&env, 10_000);
-        assert_eq!(result, Ok(10_000));
-        let result = validate_fee_bps(&env, 10_001);
-        assert_eq!(result, Err(ContractError::InvalidFeeBps));
+        assert_eq!(result, 10_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "total fees cannot be greater than 100%")]
+    fn test_invalidate_fee_bps() {
+        let env = Env::default();
+        validate_fee_bps(&env, 10_001);
     }
 }

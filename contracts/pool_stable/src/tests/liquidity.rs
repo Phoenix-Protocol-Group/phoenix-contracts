@@ -16,6 +16,7 @@ use decimal::Decimal;
 fn provide_liqudity() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -31,8 +32,7 @@ fn provide_liqudity() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -128,6 +128,7 @@ fn provide_liqudity() {
 fn withdraw_liquidity() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -143,8 +144,7 @@ fn withdraw_liquidity() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -218,9 +218,6 @@ fn withdraw_liquidity() {
         }
     );
 
-    // Reset Budget for next call to not exceed allowed amount of calls within one context
-    env.budget().reset_default();
-
     // clear the pool
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
     assert_eq!(token_share.balance(&user1), 0);
@@ -232,7 +229,7 @@ fn withdraw_liquidity() {
 }
 
 #[test]
-#[should_panic = "Error(Contract, #6)"]
+#[should_panic = "Pool: split_deposit_based_on_pool_ratio: Both pools and deposit must be a positive!"]
 fn provide_liqudity_single_asset_on_empty_pool() {
     let env = Env::default();
     env.mock_all_auths();
@@ -251,8 +248,7 @@ fn provide_liqudity_single_asset_on_empty_pool() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -276,6 +272,7 @@ fn provide_liqudity_single_asset_on_empty_pool() {
 fn provide_liqudity_single_asset_equal() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -291,8 +288,7 @@ fn provide_liqudity_single_asset_equal() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -315,6 +311,7 @@ fn provide_liqudity_single_asset_equal() {
     assert_eq!(token2.balance(&pool.address), 10_000_000);
 
     token1.mint(&user1, &100_000);
+
     // Providing 100k of token1 to 1:1 pool will perform swap which will create imbalance
     pool.provide_liquidity(
         &user1,
@@ -343,6 +340,7 @@ fn provide_liqudity_single_asset_equal() {
 fn provide_liqudity_single_asset_equal_with_fees() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -358,8 +356,7 @@ fn provide_liqudity_single_asset_equal_with_fees() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -420,6 +417,7 @@ fn provide_liqudity_single_asset_equal_with_fees() {
 fn provide_liqudity_single_asset_one_third() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -435,8 +433,7 @@ fn provide_liqudity_single_asset_one_third() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -484,6 +481,7 @@ fn provide_liqudity_single_asset_one_third() {
 fn provide_liqudity_single_asset_one_third_with_fees() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -499,8 +497,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -542,7 +539,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #2)")]
+#[should_panic(expected = "Pool: Initialize: Fees must be between 0 and 100%")]
 fn provide_liqudity_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();
@@ -560,8 +557,7 @@ fn provide_liqudity_too_high_fees() {
     deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -570,7 +566,9 @@ fn provide_liqudity_too_high_fees() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #20)")]
+#[should_panic(
+    expected = "Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!"
+)]
 fn swap_with_no_amounts() {
     let env = Env::default();
     env.mock_all_auths();
@@ -589,8 +587,7 @@ fn swap_with_no_amounts() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -604,7 +601,9 @@ fn swap_with_no_amounts() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #19)")]
+#[should_panic(
+    expected = "Pool: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied!"
+)]
 fn withdraw_liqudity_below_min() {
     let env = Env::default();
     env.mock_all_auths();
@@ -623,8 +622,7 @@ fn withdraw_liqudity_below_min() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,

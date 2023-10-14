@@ -4,7 +4,6 @@ use soroban_sdk::{
 
 use crate::storage::{LiquidityPoolInfo, PairTupleKey};
 use crate::{
-    error::ContractError,
     storage::{get_admin, get_lp_vec, save_admin, save_lp_vec, save_lp_vec_with_tuple_as_key},
     utils::deploy_lp_contract,
 };
@@ -17,52 +16,38 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
 pub struct Factory;
 
 pub trait FactoryTrait {
-    fn initialize(env: Env, admin: Address) -> Result<(), ContractError>;
+    fn initialize(env: Env, admin: Address);
 
-    fn create_liquidity_pool(
-        env: Env,
-        lp_init_info: LiquidityPoolInitInfo,
-    ) -> Result<Address, ContractError>;
+    fn create_liquidity_pool(env: Env, lp_init_info: LiquidityPoolInitInfo) -> Address;
 
-    fn query_pools(env: Env) -> Result<Vec<Address>, ContractError>;
+    fn query_pools(env: Env) -> Vec<Address>;
 
-    fn query_pool_details(
-        env: Env,
-        pool_address: Address,
-    ) -> Result<LiquidityPoolInfo, ContractError>;
+    fn query_pool_details(env: Env, pool_address: Address) -> LiquidityPoolInfo;
 
-    fn query_all_pools_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError>;
+    fn query_all_pools_details(env: Env) -> Vec<LiquidityPoolInfo>;
 
-    fn query_for_pool_by_token_pair(
-        env: Env,
-        token_a: Address,
-        token_b: Address,
-    ) -> Result<Address, ContractError>;
+    fn query_for_pool_by_token_pair(env: Env, token_a: Address, token_b: Address) -> Address;
 
-    fn get_admin(env: Env) -> Result<Address, ContractError>;
+    fn get_admin(env: Env) -> Address;
 }
 
 #[contractimpl]
 impl FactoryTrait for Factory {
-    fn initialize(env: Env, admin: Address) -> Result<(), ContractError> {
+    fn initialize(env: Env, admin: Address) {
         save_admin(&env, admin.clone());
 
         save_lp_vec(&env, Vec::new(&env));
 
         env.events()
             .publish(("initialize", "LP factory contract"), admin);
-        Ok(())
     }
 
-    fn create_liquidity_pool(
-        env: Env,
-        lp_init_info: LiquidityPoolInitInfo,
-    ) -> Result<Address, ContractError> {
+    fn create_liquidity_pool(env: Env, lp_init_info: LiquidityPoolInitInfo) -> Address {
         validate_token_info(
             &env,
             &lp_init_info.token_init_info,
             &lp_init_info.stake_init_info,
-        )?;
+        );
 
         let lp_contract_address = deploy_lp_contract(
             &env,
@@ -84,9 +69,9 @@ impl FactoryTrait for Factory {
         )
             .into_val(&env);
 
-        let _res: Val = env.invoke_contract(&lp_contract_address, &init_fn, init_fn_args);
+        env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
 
-        let mut lp_vec = get_lp_vec(&env)?;
+        let mut lp_vec = get_lp_vec(&env);
 
         lp_vec.push_back(lp_contract_address.clone());
 
@@ -98,28 +83,24 @@ impl FactoryTrait for Factory {
         env.events()
             .publish(("create", "liquidity_pool"), &lp_contract_address);
 
-        Ok(lp_contract_address)
+        lp_contract_address
     }
 
-    fn query_pools(env: Env) -> Result<Vec<Address>, ContractError> {
+    fn query_pools(env: Env) -> Vec<Address> {
         get_lp_vec(&env)
     }
 
-    fn query_pool_details(
-        env: Env,
-        pool_address: Address,
-    ) -> Result<LiquidityPoolInfo, ContractError> {
+    fn query_pool_details(env: Env, pool_address: Address) -> LiquidityPoolInfo {
         let pool_response: LiquidityPoolInfo = env.invoke_contract(
             &pool_address,
             &Symbol::new(&env, "query_pool_info_for_factory"),
             Vec::new(&env),
         );
-
-        Ok(pool_response)
+        pool_response
     }
 
-    fn query_all_pools_details(env: Env) -> Result<Vec<LiquidityPoolInfo>, ContractError> {
-        let all_lp_vec_addresses = get_lp_vec(&env)?;
+    fn query_all_pools_details(env: Env) -> Vec<LiquidityPoolInfo> {
+        let all_lp_vec_addresses = get_lp_vec(&env);
         let mut result = Vec::new(&env);
         for address in all_lp_vec_addresses {
             let pool_response: LiquidityPoolInfo = env.invoke_contract(
@@ -131,21 +112,17 @@ impl FactoryTrait for Factory {
             result.push_back(pool_response);
         }
 
-        Ok(result)
+        result
     }
 
-    fn query_for_pool_by_token_pair(
-        env: Env,
-        token_a: Address,
-        token_b: Address,
-    ) -> Result<Address, ContractError> {
+    fn query_for_pool_by_token_pair(env: Env, token_a: Address, token_b: Address) -> Address {
         let pool_result: Option<Address> = env.storage().instance().get(&PairTupleKey {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
         });
 
         if let Some(addr) = pool_result {
-            return Ok(addr);
+            return addr;
         }
 
         let reverted_pool_resul: Option<Address> = env.storage().instance().get(&PairTupleKey {
@@ -154,13 +131,13 @@ impl FactoryTrait for Factory {
         });
 
         if let Some(addr) = reverted_pool_resul {
-            return Ok(addr);
+            return addr;
         }
 
-        Err(ContractError::LiquidityPoolPairNotFound)
+        panic!("Factory: query_for_pool_by_token_pair failed: No liquidity pool found");
     }
 
-    fn get_admin(env: Env) -> Result<Address, ContractError> {
+    fn get_admin(env: Env) -> Address {
         get_admin(&env)
     }
 }
@@ -169,10 +146,10 @@ fn validate_token_info(
     env: &Env,
     token_init_info: &TokenInitInfo,
     stake_init_info: &StakeInitInfo,
-) -> Result<(), ContractError> {
+) {
     if token_init_info.token_a >= token_init_info.token_b {
         log!(env, "token_a must be less than token_b");
-        return Err(ContractError::FirstTokenMustBeSmallerThenSecond);
+        panic!("Factory: validate_token_info failed: First token must be smaller then second");
     }
 
     if stake_init_info.min_bond <= 0 {
@@ -180,15 +157,13 @@ fn validate_token_info(
             env,
             "Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
         );
-        return Err(ContractError::MinStakeLessOrEqualZero);
+        panic!("Factory: validate_token_info failed: min stake is less or equal to zero");
     }
 
     if stake_init_info.min_reward <= 0 {
         log!(env, "min_reward must be bigger then 0!");
-        return Err(ContractError::MinRewardTooSmall);
+        panic!("Factory: validate_token_info failed: min reward too small");
     }
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -197,6 +172,9 @@ mod tests {
     use soroban_sdk::BytesN;
 
     #[test]
+    #[should_panic(
+        expected = "Factory: validate_token_info failed: First token must be smaller then second"
+    )]
     fn validate_token_info_should_fail_on_token_a_less_than_token_b() {
         let env = Env::default();
 
@@ -221,14 +199,13 @@ mod tests {
             min_reward: 10,
             stake_wasm_hash,
         };
-
-        assert_eq!(
-            validate_token_info(&env, &token_init_info, &stake_init_info),
-            Err(ContractError::FirstTokenMustBeSmallerThenSecond)
-        );
+        validate_token_info(&env, &token_init_info, &stake_init_info);
     }
 
     #[test]
+    #[should_panic(
+        expected = "Factory: validate_token_info failed: min stake is less or equal to zero"
+    )]
     fn validate_token_info_should_fail_on_min_bond_less_than_zero() {
         let env = Env::default();
 
@@ -254,13 +231,11 @@ mod tests {
             stake_wasm_hash,
         };
 
-        assert_eq!(
-            validate_token_info(&env, &token_init_info, &stake_init_info),
-            Err(ContractError::MinStakeLessOrEqualZero)
-        );
+        validate_token_info(&env, &token_init_info, &stake_init_info);
     }
 
     #[test]
+    #[should_panic(expected = "Factory: validate_token_info failed: min reward too small")]
     fn validate_token_info_should_fail_on_min_reward_less_than_zero() {
         let env = Env::default();
 
@@ -285,10 +260,6 @@ mod tests {
             min_reward: 0,
             stake_wasm_hash,
         };
-
-        assert_eq!(
-            validate_token_info(&env, &token_init_info, &stake_init_info),
-            Err(ContractError::MinRewardTooSmall)
-        );
+        validate_token_info(&env, &token_init_info, &stake_init_info);
     }
 }
