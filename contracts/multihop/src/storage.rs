@@ -58,3 +58,10 @@ pub fn save_factory(env: &Env, factory: Address) {
 pub fn get_factory(env: &Env) -> Address {
     env.storage().instance().get(&DataKey::FactoryKey).unwrap()
 }
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SimulateSwapResponse {
+    pub ask_amount: i128,
+    pub total_commission_amount: i128,
+}
