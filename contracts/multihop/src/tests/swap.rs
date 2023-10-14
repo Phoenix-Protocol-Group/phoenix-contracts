@@ -114,8 +114,8 @@ fn swap_single_pool_no_fees() {
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
     let recipient = Address::random(&env);
-    token1.mint(&recipient, &50i128); // mints 50 token0 to recipient
-    assert_eq!(token1.balance(&recipient), 50i128);
+    token1.mint(&recipient, &5_000i128); // mints 50 token0 to recipient
+    assert_eq!(token1.balance(&recipient), 5_000i128);
     assert_eq!(token2.balance(&recipient), 0i128);
 
     let swap1 = Swap {
@@ -125,11 +125,11 @@ fn swap_single_pool_no_fees() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &operations, &1);
+    multihop.swap(&recipient, &operations, &1_000);
 
     // 5. check if it goes according to plan
-    assert_eq!(token1.balance(&recipient), 49i128); // -1 token0
-    assert_eq!(token2.balance(&recipient), 1i128); // +1 token1
+    assert_eq!(token1.balance(&recipient), 4_000i128); // -1_000 token0
+    assert_eq!(token2.balance(&recipient), 1_000i128); // +1_000 token1
 }
 
 #[test]
