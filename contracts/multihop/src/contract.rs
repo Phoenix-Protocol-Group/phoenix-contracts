@@ -53,7 +53,7 @@ impl MultihopTrait for Multihop {
                 &op.offer_asset,
                 &next_offer_amount,
                 &None::<i64>,
-                &None::<i64>,
+                &Some(5000i64),
             );
 
             offer_token_addr = op.ask_asset.clone();
