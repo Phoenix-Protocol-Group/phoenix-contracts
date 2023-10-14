@@ -1,6 +1,5 @@
 #![no_std]
 mod contract;
-mod error;
 mod storage;
 
 pub mod token_contract {
@@ -9,6 +8,12 @@ pub mod token_contract {
     // - Any types in the contract that were annotated with #[contracttype].
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
+    );
+}
+
+pub mod stake_contract {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
 }
 

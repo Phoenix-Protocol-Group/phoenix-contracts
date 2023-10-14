@@ -12,6 +12,7 @@ use decimal::Decimal;
 fn simple_swap() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -27,8 +28,7 @@ fn simple_swap() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         None,
         None,
@@ -49,7 +49,7 @@ fn simple_swap() {
     // true means "selling A token"
     // selling just one token with 1% max spread allowed
     let spread = 100i64; // 1% maximum spread allowed
-    pool.swap(&user1, &true, &1, &None, &Some(spread));
+    pool.swap(&user1, &token1.address, &1, &None, &Some(spread));
     assert_eq!(
         env.auths(),
         [(
@@ -58,7 +58,7 @@ fn simple_swap() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     symbol_short!("swap"),
-                    (&user1, true, 1_i128, None::<i64>, spread).into_val(&env)
+                    (&user1, token1.address.clone(), 1_i128, None::<i64>, spread).into_val(&env)
                 )),
                 sub_invocations: std::vec![
                     (AuthorizedInvocation {
@@ -98,7 +98,7 @@ fn simple_swap() {
 
     // false means selling B token
     // this time 100 units
-    pool.swap(&user1, &false, &1_000, &None, &Some(spread));
+    let output_amount = pool.swap(&user1, &token2.address, &1_000, &None, &Some(spread));
     let result = pool.query_pool_info();
     assert_eq!(
         result,
@@ -117,6 +117,7 @@ fn simple_swap() {
             },
         }
     );
+    assert_eq!(output_amount, 1000);
     assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
     assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
 }
@@ -125,6 +126,7 @@ fn simple_swap() {
 fn swap_with_high_fee() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -142,8 +144,7 @@ fn swap_with_high_fee() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         fee_recipient.clone(),
         None,
@@ -166,7 +167,7 @@ fn swap_with_high_fee() {
     let spread = 1_000; // 10% maximum spread allowed
 
     // let's swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
-    pool.swap(&user1, &true, &100_000, &None, &Some(spread));
+    pool.swap(&user1, &token1.address, &100_000, &None, &Some(spread));
 
     // This is XYK LP with constant product formula
     // Y_new = (X_in * Y_old) / (X_in + X_old)
@@ -201,6 +202,7 @@ fn swap_with_high_fee() {
 fn swap_simulation_even_pool() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::random(&env));
     let mut token2 = deploy_token_contract(&env, &Address::random(&env));
@@ -212,8 +214,7 @@ fn swap_simulation_even_pool() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         Address::random(&env),
         None,
@@ -301,6 +302,7 @@ fn swap_simulation_even_pool() {
 fn swap_simulation_one_third_pool() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::random(&env));
     let mut token2 = deploy_token_contract(&env, &Address::random(&env));
@@ -312,8 +314,7 @@ fn swap_simulation_one_third_pool() {
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,
-        &token1.address,
-        &token2.address,
+        (&token1.address, &token2.address),
         swap_fees,
         Address::random(&env),
         None,
