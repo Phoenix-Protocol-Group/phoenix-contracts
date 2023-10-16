@@ -1,6 +1,8 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
-use crate::storage::{get_factory, save_admin, save_factory, Swap};
+use crate::storage::{
+    get_factory, save_admin, save_factory, SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
+};
 use crate::{factory_contract, lp_contract};
 
 // Metadata that is added on to the WASM custom section
@@ -16,6 +18,14 @@ pub trait MultihopTrait {
     fn initialize(env: Env, admin: Address, factory: Address);
 
     fn swap(env: Env, recipient: Address, operations: Vec<Swap>, amount: i128);
+
+    fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse;
+
+    fn simulate_reverse_swap(
+        env: Env,
+        operations: Vec<Swap>,
+        amount: i128,
+    ) -> SimulateReverseSwapResponse;
 }
 
 #[contractimpl]
@@ -39,7 +49,6 @@ impl MultihopTrait for Multihop {
         // first offer amount is an input from the user,
         // subsequent are the results of the previous swap
         let mut next_offer_amount: i128 = amount;
-        let mut offer_token_addr: Address = operations.get(0).unwrap().offer_asset.clone();
 
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
@@ -55,8 +64,72 @@ impl MultihopTrait for Multihop {
                 &None::<i64>,
                 &Some(5000i64),
             );
-
-            offer_token_addr = op.ask_asset.clone();
         });
+    }
+
+    fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse {
+        if operations.is_empty() {
+            panic!("Multihop: Simulate swap: Operations empty");
+        }
+
+        let mut next_offer_amount: i128 = amount;
+
+        let mut simulate_swap_response = SimulateSwapResponse {
+            ask_amount: 0,
+            total_commission_amount: 0,
+        };
+
+        let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
+
+        operations.iter().for_each(|op| {
+            let liquidity_pool_addr: Address = factory_client
+                .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
+
+            let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
+            let simulate_swap = lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
+
+            simulate_swap_response.total_commission_amount += simulate_swap.commission_amount;
+            simulate_swap_response.ask_amount = simulate_swap.ask_amount;
+
+            next_offer_amount = simulate_swap.ask_amount;
+        });
+
+        simulate_swap_response
+    }
+
+    fn simulate_reverse_swap(
+        env: Env,
+        operations: Vec<Swap>,
+        amount: i128,
+    ) -> SimulateReverseSwapResponse {
+        if operations.is_empty() {
+            panic!("Multihop: Simulate reverse swap: Operations empty");
+        }
+
+        let mut next_ask_amount: i128 = amount;
+
+        let mut simulate_swap_response = SimulateReverseSwapResponse {
+            offer_amount: 0,
+            total_commission_amount: 0,
+        };
+
+        let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
+
+        operations.iter().for_each(|op| {
+            let liquidity_pool_addr: Address = factory_client
+                .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
+
+            let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
+            let simulate_reverse_swap =
+                lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
+
+            simulate_swap_response.total_commission_amount +=
+                simulate_reverse_swap.commission_amount;
+            simulate_swap_response.offer_amount = simulate_reverse_swap.offer_amount;
+
+            next_ask_amount = simulate_reverse_swap.offer_amount;
+        });
+
+        simulate_swap_response
     }
 }
