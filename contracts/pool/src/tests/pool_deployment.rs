@@ -2,13 +2,15 @@ extern crate std;
 use soroban_sdk::{testutils::Address as _, Address, Env};
 use phoenix::utils::{StakeInitInfo, TokenInitInfo};
 
-use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
+use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
     stake_contract,
     storage::{Config, PairType},
 };
-use crate::contract::{StableLiquidityPool, StableLiquidityPoolClient};
+
+use crate::contract::{LiquidityPool, LiquidityPoolClient};
 use crate::tests::setup::{install_stake_wasm, install_token_wasm};
+
 
 #[test]
 fn confirm_pool_contract_deployment() {
@@ -27,7 +29,7 @@ fn confirm_pool_contract_deployment() {
     }
     let user1 = Address::random(&env);
     let swap_fees = 0i64;
-    let pool = deploy_stable_liquidity_pool_contract(
+    let pool = deploy_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
         (&token1.address, &token2.address),
@@ -70,8 +72,8 @@ fn confirm_pool_contract_deployment() {
 }
 
 #[test]
-#[should_panic(expected = "Pool stable: Initialize: initializing contract twice is not allowed")]
-fn second_pool_deployment_should_fail() {
+#[should_panic(expected = "Liquidity Pool: Initialize: initializing contract twice is not allowed")]
+fn second_pool_stable_deployment_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -88,7 +90,7 @@ fn second_pool_deployment_should_fail() {
     }
 
     let pool =
-        StableLiquidityPoolClient::new(&env, &env.register_contract(None, StableLiquidityPool {}));
+        LiquidityPoolClient::new(&env, &env.register_contract(None, LiquidityPool {}));
 
     let token_wasm_hash = install_token_wasm(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
