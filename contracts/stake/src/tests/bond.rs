@@ -40,7 +40,7 @@ fn initializa_staking_contract() {
 
 #[test]
 #[should_panic(expected = "Stake: Initialize: initializing contract twice is not allowed")]
-fn test_initializing_twice_should_fail() {
+fn test_deploying_stake_twice_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
 
