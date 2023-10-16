@@ -75,7 +75,7 @@ impl MultihopTrait for Multihop {
             panic!("Multihop: Simulate swap: Operations empty");
         }
 
-        let next_offer_amount: i128 = amount;
+        let mut next_offer_amount: i128 = amount;
         let mut offer_token_addr: Address = operations.get(0).unwrap().offer_asset.clone();
 
         let mut simulate_swap_response = SimulateSwapResponse {
@@ -96,6 +96,7 @@ impl MultihopTrait for Multihop {
             simulate_swap_response.ask_amount = simulate_swap.ask_amount;
 
             offer_token_addr = op.ask_asset.clone();
+            next_offer_amount = simulate_swap.ask_amount;
         });
 
         simulate_swap_response
@@ -110,7 +111,7 @@ impl MultihopTrait for Multihop {
             panic!("Multihop: Simulate reverse swap: Operations empty");
         }
 
-        let next_ask_amount: i128 = amount;
+        let mut next_ask_amount: i128 = amount;
         let mut ask_token_addr: Address = operations.get(0).unwrap().ask_asset.clone();
 
         let mut simulate_swap_response = SimulateReverseSwapResponse {
@@ -133,6 +134,7 @@ impl MultihopTrait for Multihop {
             simulate_swap_response.offer_amount = simulate_reverse_swap.offer_amount;
 
             ask_token_addr = op.offer_asset.clone();
+            next_ask_amount = simulate_reverse_swap.offer_amount;
         });
 
         simulate_swap_response

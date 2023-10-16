@@ -17,7 +17,6 @@ fn simulate_swap_single_pool_no_fees() {
     let token1 = deploy_and_mint_tokens(&env, &admin, 100_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 200_000_000i128);
 
-    // 1. deploy factory
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     // 1:2 token ratio
@@ -32,7 +31,6 @@ fn simulate_swap_single_pool_no_fees() {
         None,
     );
 
-    // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
 
     let operation = vec![
@@ -69,7 +67,6 @@ fn simulate_swap_three_equal_pools_no_fees() {
     let token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
 
-    // 1. deploy factory
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     deploy_and_initialize_lp(
@@ -103,264 +100,320 @@ fn simulate_swap_three_equal_pools_no_fees() {
         None,
     );
 
-    // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
 
-    let operations = vec![
-        &env,
-        Swap {
-            offer_asset: token1.address.clone(),
-            ask_asset: token2.address.clone(),
-        },
-        Swap {
-            offer_asset: token2.address.clone(),
-            ask_asset: token3.address.clone(),
-        },
-        Swap {
-            offer_asset: token3.address.clone(),
-            ask_asset: token4.address.clone(),
-        },
-    ];
-
     // Very low amount will result in equal 1:1 swaps
-    let simulated_swap = multihop.simulate_swap(&operations, &50i128);
+    let simulated_swap = multihop.simulate_swap(
+        &vec![
+            &env,
+            Swap {
+                offer_asset: token1.address.clone(),
+                ask_asset: token2.address.clone(),
+            },
+            Swap {
+                offer_asset: token2.address.clone(),
+                ask_asset: token3.address.clone(),
+            },
+            Swap {
+                offer_asset: token3.address.clone(),
+                ask_asset: token4.address.clone(),
+            },
+        ],
+        &50i128,
+    );
 
     assert_eq!(simulated_swap.ask_amount, 50i128);
     assert_eq!(simulated_swap.total_commission_amount, 0i128);
 
     // simulate reverse swap for exact results
-    let reverse_simulated_swap = multihop.simulate_reverse_swap(&operations, &50i128);
+    let reverse_simulated_swap = multihop.simulate_reverse_swap(
+        &vec![
+            &env,
+            Swap {
+                offer_asset: token3.address.clone(),
+                ask_asset: token4.address.clone(),
+            },
+            Swap {
+                offer_asset: token2.address.clone(),
+                ask_asset: token3.address.clone(),
+            },
+            Swap {
+                offer_asset: token1.address.clone(),
+                ask_asset: token2.address.clone(),
+            },
+        ],
+        &50i128,
+    );
 
     assert_eq!(reverse_simulated_swap.offer_amount, 50i128);
     assert_eq!(reverse_simulated_swap.total_commission_amount, 0i128);
 }
 
-// #[test]
-// fn swap_single_pool_with_fees() {
-//     let env = Env::default();
-//     let admin = Address::random(&env);
-//
-//     env.mock_all_auths();
-//     env.budget().reset_unlimited();
-//
-//     let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
-//     let token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
-//
-//     // 1. deploy factory
-//     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
-//
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token1.address.clone(),
-//         1_000_000,
-//         token2.address.clone(),
-//         1_000_000,
-//         Some(2000),
-//     );
-//
-//     // 4. swap with multihop
-//     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-//     let recipient = Address::random(&env);
-//     token1.mint(&recipient, &1000i128);
-//     assert_eq!(token1.balance(&recipient), 1000i128);
-//     assert_eq!(token2.balance(&recipient), 0i128);
-//
-//     let swap1 = Swap {
-//         offer_asset: token1.address.clone(),
-//         ask_asset: token2.address.clone(),
-//     };
-//
-//     let operations = vec![&env, swap1];
-//
-//     multihop.swap(&recipient, &operations, &300i128);
-//
-//     // 5. check if it goes according to plan
-//     // 1000 tokens initially
-//     // swap 300 from token0 to token1 with 2000 bps (20%)
-//     // tokens1 will be 240
-//     assert_eq!(token1.balance(&recipient), 700i128);
-//     assert_eq!(token2.balance(&recipient), 240i128);
-// }
-//
-// #[test]
-// fn swap_three_different_pools_no_fees() {
-//     let env = Env::default();
-//
-//     let admin = Address::random(&env);
-//
-//     env.mock_all_auths();
-//     env.budget().reset_unlimited();
-//
-//     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//     let token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//     let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//
-//     // 1. deploy factory
-//     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
-//
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token1.address.clone(),
-//         1_000_000,
-//         token2.address.clone(),
-//         1_000_000,
-//         None,
-//     );
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token2.address.clone(),
-//         2_000_000,
-//         token3.address.clone(),
-//         2_000_000,
-//         None,
-//     );
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token3.address.clone(),
-//         3_000_000,
-//         token4.address.clone(),
-//         3_000_000,
-//         None,
-//     );
-//
-//     // 4. swap with multihop
-//     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-//     let recipient = Address::random(&env);
-//     token1.mint(&recipient, &5_000i128);
-//
-//     assert_eq!(token1.balance(&recipient), 5_000i128);
-//     assert_eq!(token4.balance(&recipient), 0i128);
-//
-//     let swap1 = Swap {
-//         offer_asset: token1.address.clone(),
-//         ask_asset: token2.address.clone(),
-//     };
-//     let swap2 = Swap {
-//         offer_asset: token2.address.clone(),
-//         ask_asset: token3.address.clone(),
-//     };
-//     let swap3 = Swap {
-//         offer_asset: token3.address.clone(),
-//         ask_asset: token4.address.clone(),
-//     };
-//
-//     let operations = vec![&env, swap1, swap2, swap3];
-//
-//     multihop.swap(&recipient, &operations, &5_000i128);
-//
-//     // 5. check if it goes according to plan
-//     assert_eq!(token1.balance(&recipient), 0i128);
-//     assert_eq!(
-//         token4.balance(&recipient),
-//         4_956i128,
-//         "token4 not as expected"
-//     );
-// }
-//
-// #[test]
-// fn swap_three_different_pools_with_fees() {
-//     let env = Env::default();
-//
-//     let admin = Address::random(&env);
-//
-//     env.mock_all_auths();
-//     env.budget().reset_unlimited();
-//
-//     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//     let token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//     let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//
-//     // 1. deploy factory
-//     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
-//
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token1.address.clone(),
-//         1_000_000,
-//         token2.address.clone(),
-//         1_000_000,
-//         Some(1_000),
-//     );
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token2.address.clone(),
-//         2_000_000,
-//         token3.address.clone(),
-//         2_000_000,
-//         Some(1_000),
-//     );
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token3.address.clone(),
-//         3_000_000,
-//         token4.address.clone(),
-//         3_000_000,
-//         Some(1_000),
-//     );
-//
-//     // 4. swap with multihop
-//     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-//     let recipient = Address::random(&env);
-//     token1.mint(&recipient, &10_000i128);
-//     assert_eq!(token1.balance(&recipient), 10_000i128);
-//
-//     let swap1 = Swap {
-//         offer_asset: token1.address.clone(),
-//         ask_asset: token2.address.clone(),
-//     };
-//     let swap2 = Swap {
-//         offer_asset: token2.address.clone(),
-//         ask_asset: token3.address.clone(),
-//     };
-//     let swap3 = Swap {
-//         offer_asset: token3.address.clone(),
-//         ask_asset: token4.address.clone(),
-//     };
-//
-//     let operations = vec![&env, swap1, swap2, swap3];
-//
-//     multihop.swap(&recipient, &operations, &10_000i128);
-//
-//     // we start swapping 10_000 tokens
-//
-//     // token1 => token2
-//     // (10_000 * 1_000_000) / (10_000 + 1_000_000)
-//     // 10_000_000_000 / 1_010_000
-//     // 9900.99009901
-//     // 9901 - 10% =  8911
-//
-//     // token2 => token3
-//     // (8911 * 2_000_000) / (8911 + 2_000_000)
-//     // 17_822_000_000 / 2_008_911
-//     // 8871.47315137
-//     // 8872 - 10% = 7985
-//
-//     // token3 => token4
-//     // (7985 * 3_000_000) / (7985 + 3_000_000)
-//     // 23_955_000_000 / 3_007_985
-//     // 7963.80301099
-//     // 7964 - 10% = 7168
-//     assert_eq!(token1.balance(&recipient), 0i128);
-//     assert_eq!(token2.balance(&recipient), 0i128);
-//     assert_eq!(token3.balance(&recipient), 0i128);
-//     assert_eq!(token4.balance(&recipient), 7_168i128);
-// }
+#[test]
+fn simulate_swap_single_pool_with_fees() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::random(&env);
+
+    let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
+    let token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
+
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        1_000_000,
+        token2.address.clone(),
+        1_000_000,
+        Some(2000),
+    );
+
+    // 4. swap with multihop
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+
+    let operation = vec![
+        &env,
+        Swap {
+            offer_asset: token1.address.clone(),
+            ask_asset: token2.address.clone(),
+        },
+    ];
+
+    let simulated_swap = multihop.simulate_swap(&operation, &300i128);
+
+    // 1000 tokens initially
+    // swap 300 from token1 to token2 with 2000 bps (20%)
+    // tokens2 will be 240
+    assert_eq!(simulated_swap.ask_amount, 240i128);
+    assert_eq!(simulated_swap.total_commission_amount, 60i128);
+
+    // simulate reverse swap returns same result
+    let reverse_simulated_swap = multihop.simulate_reverse_swap(&operation, &240i128);
+
+    assert_eq!(reverse_simulated_swap.offer_amount, 300i128);
+    assert_eq!(reverse_simulated_swap.total_commission_amount, 60i128);
+}
+
+#[test]
+fn simulate_swap_three_different_pools_no_fees() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::random(&env);
+
+    let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        1_000_000,
+        token2.address.clone(),
+        1_000_000,
+        None,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token2.address.clone(),
+        2_000_000,
+        token3.address.clone(),
+        2_000_000,
+        None,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token3.address.clone(),
+        3_000_000,
+        token4.address.clone(),
+        3_000_000,
+        None,
+    );
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+
+    let simulated_swap = multihop.simulate_swap(
+        &vec![
+            &env,
+            Swap {
+                offer_asset: token1.address.clone(),
+                ask_asset: token2.address.clone(),
+            },
+            Swap {
+                offer_asset: token2.address.clone(),
+                ask_asset: token3.address.clone(),
+            },
+            Swap {
+                offer_asset: token3.address.clone(),
+                ask_asset: token4.address.clone(),
+            },
+        ],
+        &5_000i128,
+    );
+
+    // constant product formula starts to with which amoutns such as 5k
+    assert_eq!(simulated_swap.ask_amount, 4_956i128);
+    assert_eq!(simulated_swap.total_commission_amount, 0i128);
+
+    // simulate reverse swap returns same result
+    let reverse_simulated_swap = multihop.simulate_reverse_swap(
+        &vec![
+            &env,
+            Swap {
+                offer_asset: token3.address.clone(),
+                ask_asset: token4.address.clone(),
+            },
+            Swap {
+                offer_asset: token2.address.clone(),
+                ask_asset: token3.address.clone(),
+            },
+            Swap {
+                offer_asset: token1.address.clone(),
+                ask_asset: token2.address.clone(),
+            },
+        ],
+        &4_956i128,
+    );
+
+    assert_eq!(reverse_simulated_swap.offer_amount, 5_000i128);
+    assert_eq!(reverse_simulated_swap.total_commission_amount, 0i128);
+}
+
+#[test]
+fn simulate_swap_three_different_pools_with_fees() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::random(&env);
+
+    let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+
+    let fees = Some(1_000); // 1000bps == 10%
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        1_000_000,
+        token2.address.clone(),
+        2_000_000,
+        fees,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token2.address.clone(),
+        1_000_000,
+        token3.address.clone(),
+        3_000_000,
+        fees,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token3.address.clone(),
+        1_000_000,
+        token4.address.clone(),
+        5_000_000,
+        fees,
+    );
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+
+    let simulated_swap = multihop.simulate_swap(
+        &vec![
+            &env,
+            Swap {
+                offer_asset: token1.address.clone(),
+                ask_asset: token2.address.clone(),
+            },
+            Swap {
+                offer_asset: token2.address.clone(),
+                ask_asset: token3.address.clone(),
+            },
+            Swap {
+                offer_asset: token3.address.clone(),
+                ask_asset: token4.address.clone(),
+            },
+        ],
+        &10_000i128,
+    );
+
+    // cp = offer_pool * ask_pool
+    // return_amount = ask_pool - (cp / (offer_pool + offer_amount))
+    // commission_amount = return_amount * commission_rate
+
+    // we start swapping 10_000 tokens
+
+    // token1 => token2
+    // cp = 2_000_000_000_000
+    // return_amount = 2_000_000 - (2 * 10^12 / (1_000_000 + 10_000)) = 19_802
+    // commission_amount = 1_980.2
+    // ask_amount = 19_802 - 1_980 = 17_822
+
+    // token2 => token3
+    // cp = 3_000_000_000_000
+    // return_amount = 3_000_000 - (3 * 10^12 / (1_000_000 + 17_822)) = 52_529.82
+    // commission_amount = 5_252.9
+    // ask_amount = 52_529 - 5_252 = 47_277
+
+    // token3 => token4
+    // cp = 5_000_000_000_000
+    // return_amount = 5_000_000 - (5 * 10^12 / (1_000_000 + 47_277)) = 225_713.93
+    // commission_amount = 22_571.3
+    // ask_amount = 225_714 - 22_571 = 203_143
+    //
+    // total_commission_amount = 1_980 + 5_253 + 22_571 = 29_804
+    assert_eq!(simulated_swap.ask_amount, 203_143i128);
+    assert_eq!(simulated_swap.total_commission_amount, 29_804i128);
+
+    // simulate reverse swap returns same result
+    let reverse_simulated_swap = multihop.simulate_reverse_swap(
+        &vec![
+            &env,
+            Swap {
+                offer_asset: token3.address.clone(),
+                ask_asset: token4.address.clone(),
+            },
+            Swap {
+                offer_asset: token2.address.clone(),
+                ask_asset: token3.address.clone(),
+            },
+            Swap {
+                offer_asset: token1.address.clone(),
+                ask_asset: token2.address.clone(),
+            },
+        ],
+        &203_143i128,
+    );
+
+    // one difference due to rounding
+    assert_eq!(reverse_simulated_swap.offer_amount, 9_999i128);
+    assert_eq!(reverse_simulated_swap.total_commission_amount, 29_803i128);
+}
 
 #[test]
 #[should_panic(expected = "Multihop: Simulate swap: Operations empty")]
