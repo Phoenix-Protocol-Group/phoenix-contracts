@@ -385,9 +385,8 @@ fn simulate_swap_three_different_pools_with_fees() {
     // return_amount = 5_000_000 - (5 * 10^12 / (1_000_000 + 47_277)) = 225_713.93
     // commission_amount = 22_571.3
     // ask_amount = 225_714 - 22_571 = 203_143
-    //
-    // total_commission_amount = 1_980 + 5_253 + 22_571 = 29_804
     assert_eq!(simulated_swap.ask_amount, 203_143i128);
+    // total_commission_amount = 1_980 + 5_253 + 22_571 = 29_804
     assert_eq!(simulated_swap.total_commission_amount, 29_804i128);
 
     // simulate reverse swap returns same result
@@ -417,7 +416,7 @@ fn simulate_swap_three_different_pools_with_fees() {
 
 #[test]
 #[should_panic(expected = "Multihop: Simulate swap: Operations empty")]
-fn query_simulate_panics_with_no_operations() {
+fn query_simulate_swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
@@ -433,4 +432,24 @@ fn query_simulate_panics_with_no_operations() {
     let swap_vec = vec![&env];
 
     multihop.simulate_swap(&swap_vec, &50i128);
+}
+
+#[test]
+#[should_panic(expected = "Multihop: Simulate reverse swap: Operations empty")]
+fn query_simulate_reverse_swap_panics_with_no_operations() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::random(&env);
+    let factory = Address::random(&env);
+
+    let recipient = Address::random(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+    token.mint(&recipient, &50i128);
+
+    let multihop = deploy_multihop_contract(&env, admin, &factory);
+
+    let swap_vec = vec![&env];
+
+    multihop.simulate_reverse_swap(&swap_vec, &50i128);
 }
