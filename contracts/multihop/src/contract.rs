@@ -72,7 +72,7 @@ impl MultihopTrait for Multihop {
 
     fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse {
         if operations.is_empty() {
-            panic!("Multihop: Swap: Operations empty");
+            panic!("Multihop: Simulate swap: Operations empty");
         }
 
         let next_offer_amount: i128 = amount;
@@ -107,7 +107,7 @@ impl MultihopTrait for Multihop {
         amount: i128,
     ) -> SimulateReverseSwapResponse {
         if operations.is_empty() {
-            panic!("Multihop: Swap: Operations empty");
+            panic!("Multihop: Simulate reverse swap: Operations empty");
         }
 
         let next_ask_amount: i128 = amount;
