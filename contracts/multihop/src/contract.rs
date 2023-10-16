@@ -1,8 +1,6 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
-use crate::storage::{
-    get_factory, save_admin, save_factory, SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
-};
+use crate::storage::{get_factory, get_initialized_status, save_admin, save_factory, set_initialized_status, SimulateReverseSwapResponse, SimulateSwapResponse, Swap};
 use crate::{factory_contract, lp_contract};
 
 // Metadata that is added on to the WASM custom section
@@ -31,9 +29,15 @@ pub trait MultihopTrait {
 #[contractimpl]
 impl MultihopTrait for Multihop {
     fn initialize(env: Env, admin: Address, factory: Address) {
+        if get_initialized_status(&env) {
+            panic!("Multihop: Initialize: initializing contract twice is not allowed");
+        }
+
         save_admin(&env, &admin);
 
         save_factory(&env, factory);
+
+        set_initialized_status(&env);
 
         env.events()
             .publish(("initialize", "Multihop factory with admin: "), admin);
