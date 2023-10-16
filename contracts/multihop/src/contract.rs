@@ -1,6 +1,9 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
-use crate::storage::{get_factory, get_initialized_status, save_admin, save_factory, set_initialized_status, SimulateReverseSwapResponse, SimulateSwapResponse, Swap};
+use crate::storage::{
+    get_factory, get_initialized_status, save_admin, save_factory, set_initialized_status,
+    SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
+};
 use crate::{factory_contract, lp_contract};
 
 // Metadata that is added on to the WASM custom section

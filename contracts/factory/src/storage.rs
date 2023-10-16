@@ -90,7 +90,10 @@ pub fn save_lp_vec_with_tuple_as_key(
 }
 
 pub fn get_initialized_status(e: &Env) -> bool {
-    e.storage().persistent().get(&DataKey::Initialized).unwrap_or(false)
+    e.storage()
+        .persistent()
+        .get(&DataKey::Initialized)
+        .unwrap_or(false)
 }
 
 pub fn set_initialized_status(e: &Env) {

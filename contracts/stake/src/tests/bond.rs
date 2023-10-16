@@ -51,7 +51,13 @@ fn test_deploying_stake_twice_should_fail() {
     let first = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
 
     first.initialize(&admin, &lp_token.address, &100i128, &100_000u32, &50i128);
-    first.initialize(&fake_admin, &lp_token.address, &100i128, &100_000u32, &50i128);
+    first.initialize(
+        &fake_admin,
+        &lp_token.address,
+        &100i128,
+        &100_000u32,
+        &50i128,
+    );
 }
 
 #[test]

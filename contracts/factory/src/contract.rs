@@ -2,7 +2,9 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
 
-use crate::storage::{get_initialized_status, LiquidityPoolInfo, PairTupleKey, set_initialized_status};
+use crate::storage::{
+    get_initialized_status, set_initialized_status, LiquidityPoolInfo, PairTupleKey,
+};
 use crate::{
     storage::{get_admin, get_lp_vec, save_admin, save_lp_vec, save_lp_vec_with_tuple_as_key},
     utils::deploy_lp_contract,

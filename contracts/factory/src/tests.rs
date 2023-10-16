@@ -1,5 +1,5 @@
-use soroban_sdk::{testutils::Address as _, Address, Env};
 use crate::contract::{Factory, FactoryClient};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 mod config;
 mod setup;

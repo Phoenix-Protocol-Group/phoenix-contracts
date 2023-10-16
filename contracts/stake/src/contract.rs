@@ -597,5 +597,4 @@ mod tests {
 
         remove_stake(&mut stakes, 150, 1);
     }
-
 }

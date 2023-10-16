@@ -300,7 +300,10 @@ pub mod utils {
     }
 
     pub fn get_initialized_status(e: &Env) -> bool {
-        e.storage().persistent().get(&DataKey::Initialized).unwrap_or(false)
+        e.storage()
+            .persistent()
+            .get(&DataKey::Initialized)
+            .unwrap_or(false)
     }
 
     pub fn set_initialized_status(e: &Env) {

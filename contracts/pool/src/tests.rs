@@ -1,5 +1,5 @@
 mod config;
 mod liquidity;
-mod setup;
 mod pool_deployment;
+mod setup;
 mod swap;

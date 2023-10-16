@@ -1,6 +1,6 @@
 extern crate std;
-use soroban_sdk::{testutils::Address as _, Address, Env};
 use phoenix::utils::{StakeInitInfo, TokenInitInfo};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
@@ -10,7 +10,6 @@ use crate::{
 
 use crate::contract::{LiquidityPool, LiquidityPoolClient};
 use crate::tests::setup::{install_stake_wasm, install_token_wasm};
-
 
 #[test]
 fn confirm_pool_contract_deployment() {
@@ -89,8 +88,7 @@ fn second_pool_stable_deployment_should_fail() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
 
-    let pool =
-        LiquidityPoolClient::new(&env, &env.register_contract(None, LiquidityPool {}));
+    let pool = LiquidityPoolClient::new(&env, &env.register_contract(None, LiquidityPool {}));
 
     let token_wasm_hash = install_token_wasm(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
