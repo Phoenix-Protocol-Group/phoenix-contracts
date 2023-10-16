@@ -116,7 +116,7 @@ pub trait LiquidityPoolTrait {
     // Simulate reverse swap transaction
     fn simulate_reverse_swap(
         env: Env,
-        offer_asset: Address,
+        ask_asset: Address,
         ask_amount: i128,
     ) -> SimulateReverseSwapResponse;
 }
@@ -567,14 +567,14 @@ impl LiquidityPoolTrait for LiquidityPool {
 
     fn simulate_reverse_swap(
         env: Env,
-        offer_asset: Address,
+        ask_asset: Address,
         ask_amount: i128,
     ) -> SimulateReverseSwapResponse {
         let config = get_config(&env);
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
-        let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
+        let (pool_balance_offer, pool_balance_ask) = if ask_asset == config.token_b {
             (pool_balance_a, pool_balance_b)
         } else {
             (pool_balance_b, pool_balance_a)
