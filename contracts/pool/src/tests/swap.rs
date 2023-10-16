@@ -356,7 +356,7 @@ fn swap_simulation_one_third_pool() {
 
     // now reverse swap querie should give us similar results
     // User wants to buy output_amount of tokens
-    let result = pool.simulate_reverse_swap(&token1.address, &(output_amount - fees));
+    let result = pool.simulate_reverse_swap(&token2.address, &(output_amount - fees));
     assert_eq!(
         result,
         SimulateReverseSwapResponse {
@@ -385,7 +385,7 @@ fn swap_simulation_one_third_pool() {
     );
 
     // reverse should mirror it
-    let result = pool.simulate_reverse_swap(&token2.address, &(output_amount - fees));
+    let result = pool.simulate_reverse_swap(&token1.address, &(output_amount - fees));
     assert_eq!(
         result,
         SimulateReverseSwapResponse {
