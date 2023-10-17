@@ -121,7 +121,7 @@ fn second_pool_stable_deployment_should_fail() {
     );
 
     pool.initialize(
-        &admin2,
+        &admin1,
         &share_token_decimals,
         &0i64,
         &fee_recipient,
