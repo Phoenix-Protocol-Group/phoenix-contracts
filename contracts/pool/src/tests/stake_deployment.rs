@@ -12,7 +12,7 @@ use crate::contract::{LiquidityPool, LiquidityPoolClient};
 use crate::tests::setup::{install_stake_wasm, install_token_wasm};
 
 #[test]
-fn confirm_pool_contract_deployment() {
+fn confirm_stake_contract_deployment() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -72,7 +72,7 @@ fn confirm_pool_contract_deployment() {
 
 #[test]
 #[should_panic(expected = "Liquidity Pool: Initialize: initializing contract twice is not allowed")]
-fn second_pool_stable_deployment_should_fail() {
+fn second_pool_deployment_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
