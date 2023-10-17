@@ -13,9 +13,8 @@ fn test_deploy_factory_twice_should_fail() {
     env.budget().reset_unlimited();
 
     let admin = Address::random(&env);
-    let fake_admin = Address::random(&env);
 
     let multihop = FactoryClient::new(&env, &env.register_contract(None, Factory {}));
     multihop.initialize(&admin);
-    multihop.initialize(&fake_admin);
+    multihop.initialize(&admin);
 }
