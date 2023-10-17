@@ -2,7 +2,7 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, En
 
 use num_integer::Roots;
 
-use crate::storage::utils::{get_initialized_status, set_initialized_status};
+use crate::storage::utils::{is_initialized, set_initialized};
 use crate::storage::StableLiquidityPoolInfo;
 use crate::{
     stake_contract,
@@ -136,9 +136,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         token_init_info: TokenInitInfo,
         stake_init_info: StakeInitInfo,
     ) {
-        if get_initialized_status(&env) {
+        if is_initialized(&env) {
             panic!("Pool stable: Initialize: initializing contract twice is not allowed");
         }
+
+        set_initialized(&env);
 
         // Token info
         let token_a = token_init_info.token_a;
@@ -202,8 +204,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
-
-        set_initialized_status(&env);
 
         env.events()
             .publish(("initialize", "XYK LP token_a"), token_a);
