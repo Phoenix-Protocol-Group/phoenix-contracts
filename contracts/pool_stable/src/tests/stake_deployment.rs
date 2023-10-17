@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[test]
-fn confirm_pool_stable_contract_deployment() {
+fn confirm_stake_contract_deployment() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
