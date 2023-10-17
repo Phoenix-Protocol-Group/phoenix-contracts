@@ -84,14 +84,14 @@ pub mod utils {
         }
     }
 
-    pub fn get_initialized_status(e: &Env) -> bool {
+    pub fn is_initialized(e: &Env) -> bool {
         e.storage()
             .persistent()
             .get(&DataKey::Initialized)
             .unwrap_or(false)
     }
 
-    pub fn set_initialized_status(e: &Env) {
+    pub fn set_initialized(e: &Env) {
         e.storage().persistent().set(&DataKey::Initialized, &true);
     }
 

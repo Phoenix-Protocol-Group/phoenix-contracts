@@ -13,8 +13,8 @@ use crate::{
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
-            self, add_distribution, get_admin, get_distributions, get_initialized_status,
-            get_total_staked_counter, set_initialized_status,
+            self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
+            is_initialized, set_initialized,
         },
         Config, Stake,
     },
@@ -91,9 +91,11 @@ impl StakingTrait for Staking {
         max_distributions: u32,
         min_reward: i128,
     ) {
-        if get_initialized_status(&env) {
+        if is_initialized(&env) {
             panic!("Stake: Initialize: initializing contract twice is not allowed");
         }
+
+        set_initialized(&env);
 
         if min_bond <= 0 {
             log!(
@@ -120,8 +122,6 @@ impl StakingTrait for Staking {
 
         utils::save_admin(&env, &admin);
         utils::init_total_staked(&env);
-
-        set_initialized_status(&env);
     }
 
     fn bond(env: Env, sender: Address, tokens: i128) {
