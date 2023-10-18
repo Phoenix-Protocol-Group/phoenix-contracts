@@ -2,9 +2,10 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
 
-use crate::storage::{is_initialized, set_initialized, LiquidityPoolInfo, PairTupleKey};
+use crate::storage::{is_initialized, set_initialized, LiquidityPoolInfo, PairTupleKey, save_config, Config, get_config};
+use crate::utils::deploy_multihop_contract;
 use crate::{
-    storage::{get_admin, get_lp_vec, save_admin, save_lp_vec, save_lp_vec_with_tuple_as_key},
+    storage::{get_lp_vec, save_lp_vec, save_lp_vec_with_tuple_as_key},
     utils::deploy_lp_contract,
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
@@ -40,7 +41,9 @@ impl FactoryTrait for Factory {
 
         set_initialized(&env);
 
-        save_admin(&env, admin.clone());
+        let multihop_address = deploy_multihop_contract(env.clone(), admin.clone());
+
+        save_config(&env, Config{admin: admin.clone(), multihop_address});
 
         save_lp_vec(&env, Vec::new(&env));
 
@@ -144,7 +147,7 @@ impl FactoryTrait for Factory {
     }
 
     fn get_admin(env: Env) -> Address {
-        get_admin(&env)
+        get_config(&env).admin
     }
 }
 

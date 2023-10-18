@@ -3,10 +3,9 @@ use soroban_sdk::{contracttype, Address, ConversionError, Env, TryFromVal, Val, 
 #[derive(Clone, Copy)]
 #[repr(u32)]
 pub enum DataKey {
-    Admin = 1,
-    Config = 2,
-    LpVec = 3,
-    Initialized = 4,
+    Config = 1,
+    LpVec = 2,
+    Initialized = 3,
 }
 
 #[derive(Clone)]
@@ -22,6 +21,13 @@ impl TryFromVal<Env, DataKey> for Val {
     fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
         Ok((*v as u32).into())
     }
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Config {
+    pub admin: Address,
+    pub multihop_address: Address,
 }
 
 #[contracttype]
@@ -53,15 +59,12 @@ pub struct LiquidityPoolInfo {
     pub total_fee_bps: i64,
 }
 
-pub fn save_admin(env: &Env, address: Address) {
-    env.storage().instance().set(&DataKey::Admin, &address);
+pub fn save_config(env: &Env, config: Config) {
+    env.storage().persistent().set(&DataKey::Config, &config);
 }
 
-pub fn get_admin(env: &Env) -> Address {
-    env.storage()
-        .instance()
-        .get(&DataKey::Admin)
-        .expect("Factory: Failed to get admin from storage")
+pub fn get_config(env: &Env) -> Config {
+    env.storage().persistent().get(&DataKey::Config).expect("Config not set")
 }
 
 pub fn get_lp_vec(env: &Env) -> Vec<Address> {
