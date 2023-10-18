@@ -1,7 +1,8 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use crate::storage::{
-    get_factory, save_admin, save_factory, SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
+    get_factory, is_initialized, save_admin, save_factory, set_initialized,
+    SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
 };
 use crate::{factory_contract, lp_contract};
 
@@ -31,6 +32,12 @@ pub trait MultihopTrait {
 #[contractimpl]
 impl MultihopTrait for Multihop {
     fn initialize(env: Env, admin: Address, factory: Address) {
+        if is_initialized(&env) {
+            panic!("Multihop: Initialize: initializing contract twice is not allowed");
+        }
+
+        set_initialized(&env);
+
         save_admin(&env, &admin);
 
         save_factory(&env, factory);

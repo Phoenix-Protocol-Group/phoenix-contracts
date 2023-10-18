@@ -73,6 +73,7 @@ pub mod utils {
         Admin = 0,
         TotalStaked = 1,
         Distributions = 2,
+        Initialized = 3,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -81,6 +82,17 @@ pub mod utils {
         fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
             Ok((*v as u32).into())
         }
+    }
+
+    pub fn is_initialized(e: &Env) -> bool {
+        e.storage()
+            .persistent()
+            .get(&DataKey::Initialized)
+            .unwrap_or(false)
+    }
+
+    pub fn set_initialized(e: &Env) {
+        e.storage().persistent().set(&DataKey::Initialized, &true);
     }
 
     pub fn save_admin(e: &Env, address: &Address) {

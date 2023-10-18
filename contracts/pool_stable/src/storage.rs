@@ -13,6 +13,7 @@ pub enum DataKey {
     ReserveA = 1,
     ReserveB = 2,
     Admin = 3,
+    Initialized = 4,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -296,6 +297,17 @@ pub mod utils {
         };
 
         (amount_a, amount_b)
+    }
+
+    pub fn is_initialized(e: &Env) -> bool {
+        e.storage()
+            .persistent()
+            .get(&DataKey::Initialized)
+            .unwrap_or(false)
+    }
+
+    pub fn set_initialized(e: &Env) {
+        e.storage().persistent().set(&DataKey::Initialized, &true);
     }
 }
 

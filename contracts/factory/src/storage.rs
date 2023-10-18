@@ -6,6 +6,7 @@ pub enum DataKey {
     Admin = 1,
     Config = 2,
     LpVec = 3,
+    Initialized = 4,
 }
 
 #[derive(Clone)]
@@ -86,6 +87,17 @@ pub fn save_lp_vec_with_tuple_as_key(
         },
         &lp_address,
     )
+}
+
+pub fn is_initialized(e: &Env) -> bool {
+    e.storage()
+        .persistent()
+        .get(&DataKey::Initialized)
+        .unwrap_or(false)
+}
+
+pub fn set_initialized(e: &Env) {
+    e.storage().persistent().set(&DataKey::Initialized, &true);
 }
 
 #[cfg(test)]

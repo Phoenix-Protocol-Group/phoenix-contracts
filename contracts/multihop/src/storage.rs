@@ -20,6 +20,7 @@ pub enum DataKey {
     PairKey(Pair),
     FactoryKey,
     Admin,
+    Initialized,
 }
 
 #[contracttype]
@@ -57,6 +58,17 @@ pub fn save_factory(env: &Env, factory: Address) {
 
 pub fn get_factory(env: &Env) -> Address {
     env.storage().instance().get(&DataKey::FactoryKey).unwrap()
+}
+
+pub fn is_initialized(e: &Env) -> bool {
+    e.storage()
+        .persistent()
+        .get(&DataKey::Initialized)
+        .unwrap_or(false)
+}
+
+pub fn set_initialized(e: &Env) {
+    e.storage().persistent().set(&DataKey::Initialized, &true);
 }
 
 #[contracttype]

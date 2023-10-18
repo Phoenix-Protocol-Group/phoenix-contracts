@@ -13,9 +13,14 @@ and this project adheres to
 - Pool/Pool stable: Replace `sell_a` parameter in simulate swap messages with `offer_asset` address ([#154])
 - Multihop: Implement simulate swap/reverse swap queries ([#147])
 
+## Bug fixes
+
+- All: Adds a flag in all contract initialization functions to check if the contract has been already initialized ([#157])
+
 [#140]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/140
 [#144]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/144
 [#147]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/147
+[#157]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/157
 
 ## [0.7.0] - 2023-10-10
 

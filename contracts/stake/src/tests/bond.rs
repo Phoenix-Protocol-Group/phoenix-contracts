@@ -39,6 +39,21 @@ fn initializa_staking_contract() {
 }
 
 #[test]
+#[should_panic(expected = "Stake: Initialize: initializing contract twice is not allowed")]
+fn test_deploying_stake_twice_should_fail() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+
+    let first = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+
+    first.initialize(&admin, &lp_token.address, &100i128, &100_000u32, &50i128);
+    first.initialize(&admin, &lp_token.address, &100i128, &100_000u32, &50i128);
+}
+
+#[test]
 #[should_panic = "Stake: Bond: Trying to stake less then minimum required"]
 fn bond_too_few() {
     let env = Env::default();

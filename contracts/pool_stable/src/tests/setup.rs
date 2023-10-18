@@ -11,14 +11,14 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
     token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
 }
 
-fn install_token_wasm(env: &Env) -> BytesN<32> {
+pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
     );
     env.deployer().upload_contract_wasm(WASM)
 }
 
-fn install_stake_wasm(env: &Env) -> BytesN<32> {
+pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );

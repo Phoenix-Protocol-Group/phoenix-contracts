@@ -2,6 +2,7 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, En
 
 use num_integer::Roots;
 
+use crate::storage::utils::{is_initialized, set_initialized};
 use crate::storage::LiquidityPoolInfo;
 use crate::{
     stake_contract,
@@ -135,6 +136,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_init_info: TokenInitInfo,
         stake_init_info: StakeInitInfo,
     ) {
+        if is_initialized(&env) {
+            panic!("Liquidity Pool: Initialize: initializing contract twice is not allowed");
+        }
+
+        set_initialized(&env);
+
         // Token info
         let token_a = token_init_info.token_a;
         let token_b = token_init_info.token_b;

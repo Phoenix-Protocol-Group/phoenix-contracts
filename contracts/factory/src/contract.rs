@@ -2,7 +2,7 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
 };
 
-use crate::storage::{LiquidityPoolInfo, PairTupleKey};
+use crate::storage::{is_initialized, set_initialized, LiquidityPoolInfo, PairTupleKey};
 use crate::{
     storage::{get_admin, get_lp_vec, save_admin, save_lp_vec, save_lp_vec_with_tuple_as_key},
     utils::deploy_lp_contract,
@@ -34,6 +34,12 @@ pub trait FactoryTrait {
 #[contractimpl]
 impl FactoryTrait for Factory {
     fn initialize(env: Env, admin: Address) {
+        if is_initialized(&env) {
+            panic!("Factory: Initialize: initializing contract twice is not allowed");
+        }
+
+        set_initialized(&env);
+
         save_admin(&env, admin.clone());
 
         save_lp_vec(&env, Vec::new(&env));
