@@ -1,7 +1,7 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use crate::storage::{
-    get_factory, is_initialized, save_admin, save_factory, set_initialized,
+    get_factory, is_initialized, save_factory, set_initialized, DataKey,
     SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
 };
 use crate::{factory_contract, lp_contract};
@@ -27,6 +27,8 @@ pub trait MultihopTrait {
         operations: Vec<Swap>,
         amount: i128,
     ) -> SimulateReverseSwapResponse;
+
+    fn get_admin(env: Env) -> Address;
 }
 
 #[contractimpl]
@@ -38,7 +40,9 @@ impl MultihopTrait for Multihop {
 
         set_initialized(&env);
 
-        save_admin(&env, &admin);
+        env.storage()
+            .persistent()
+            .set(&DataKey::Admin, &admin.clone());
 
         save_factory(&env, factory);
 
@@ -138,5 +142,12 @@ impl MultihopTrait for Multihop {
         });
 
         simulate_swap_response
+    }
+
+    fn get_admin(env: Env) -> Address {
+        env.storage()
+            .persistent()
+            .get(&DataKey::Admin)
+            .expect("Multihop: No admin found")
     }
 }

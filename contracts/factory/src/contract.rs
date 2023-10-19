@@ -1,9 +1,5 @@
-use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
-};
-
 use crate::storage::{
-    get_config, is_initialized, save_config, set_initialized, Config, LiquidityPoolInfo,
+    get_config, is_initialized, save_config, set_initialized, Config, DataKey, LiquidityPoolInfo,
     PairTupleKey,
 };
 use crate::utils::deploy_multihop_contract;
@@ -12,6 +8,9 @@ use crate::{
     utils::deploy_lp_contract,
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
+};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
@@ -33,6 +32,8 @@ pub trait FactoryTrait {
     fn query_for_pool_by_token_pair(env: Env, token_a: Address, token_b: Address) -> Address;
 
     fn get_admin(env: Env) -> Address;
+
+    fn get_config(env: Env) -> Config;
 }
 
 #[contractimpl]
@@ -158,6 +159,13 @@ impl FactoryTrait for Factory {
 
     fn get_admin(env: Env) -> Address {
         get_config(&env).admin
+    }
+
+    fn get_config(env: Env) -> Config {
+        env.storage()
+            .persistent()
+            .get(&DataKey::Config)
+            .expect("Factory: No multihop present in storage")
     }
 }
 

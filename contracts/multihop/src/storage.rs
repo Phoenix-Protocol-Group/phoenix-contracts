@@ -44,14 +44,6 @@ pub struct PoolResponse {
     pub asset_lp_share: Asset,
 }
 
-pub fn save_admin(env: &Env, admin: &Address) {
-    env.storage().instance().set(&DataKey::Admin, &admin);
-}
-
-pub fn _get_admin(env: &Env) -> Address {
-    env.storage().instance().get(&DataKey::Admin).unwrap()
-}
-
 pub fn save_factory(env: &Env, factory: Address) {
     env.storage().instance().set(&DataKey::FactoryKey, &factory);
 }

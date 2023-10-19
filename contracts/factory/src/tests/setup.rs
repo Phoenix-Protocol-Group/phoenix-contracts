@@ -39,7 +39,6 @@ pub fn deploy_factory_contract<'a>(
 ) -> FactoryClient<'a> {
     let admin = admin.into().unwrap_or(Address::random(env));
     let factory = FactoryClient::new(env, &env.register_contract(None, Factory {}));
-    // let multihop_wasm_hash = BytesN::from_array(&env, &[1u8; 0x20]);
     let multihop_wasm_hash = install_multihop_wasm(env);
 
     factory.initialize(&admin, &multihop_wasm_hash);
