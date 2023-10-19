@@ -22,12 +22,15 @@ pub fn deploy_lp_contract(
         .deploy(lp_wasm_hash)
 }
 
-pub fn deploy_multihop_contract(env: Env, admin: Address) -> Address {
+pub fn deploy_multihop_contract(
+    env: Env,
+    admin: Address,
+    multihop_wasm_hash: BytesN<32>,
+) -> Address {
     let mut salt = Bytes::new(&env);
-    salt.append(&admin.to_xdr(&env));
+    salt.append(&admin.clone().to_xdr(&env));
     let salt = env.crypto().sha256(&salt);
 
-    let multihop_wasm_hash = env.deployer().upload_contract_wasm(multihop_contract::WASM);
     let multihop_address = env
         .deployer()
         .with_current_contract(salt)
@@ -35,7 +38,7 @@ pub fn deploy_multihop_contract(env: Env, admin: Address) -> Address {
 
     let init_fn = Symbol::new(&env, "initialize");
     let init_args: Vec<Val> = (admin, env.current_contract_address()).into_val(&env);
-    env.invoke_contract(&multihop_address, &init_fn, init_args);
+    env.invoke_contract::<Val>(&multihop_address, &init_fn, init_args);
 
     multihop_address
 }

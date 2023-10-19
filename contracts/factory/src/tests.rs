@@ -1,5 +1,5 @@
 use crate::contract::{Factory, FactoryClient};
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 mod config;
 mod setup;
@@ -15,6 +15,8 @@ fn test_deploy_factory_twice_should_fail() {
     let admin = Address::random(&env);
 
     let multihop = FactoryClient::new(&env, &env.register_contract(None, Factory {}));
-    multihop.initialize(&admin);
-    multihop.initialize(&admin);
+    let multihop_wasm_hash = BytesN::from_array(&env, &[1u8; 0x20]);
+
+    multihop.initialize(&admin, &multihop_wasm_hash);
+    multihop.initialize(&admin, &multihop_wasm_hash);
 }

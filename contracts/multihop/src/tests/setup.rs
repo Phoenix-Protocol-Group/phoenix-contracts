@@ -88,8 +88,9 @@ pub fn deploy_and_mint_tokens<'a>(
 pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Client {
     let factory_addr = deploy_factory_contract(env, admin.clone());
     let factory_client = factory::Client::new(env, &factory_addr);
+    let multihop_wasm_hash = install_stake_wasm(env);
 
-    factory_client.initialize(&admin.clone());
+    factory_client.initialize(&admin.clone(), &multihop_wasm_hash);
     factory_client
 }
 

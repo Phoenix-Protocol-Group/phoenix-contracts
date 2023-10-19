@@ -1,8 +1,11 @@
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
+    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
 };
 
-use crate::storage::{is_initialized, set_initialized, LiquidityPoolInfo, PairTupleKey, save_config, Config, get_config};
+use crate::storage::{
+    get_config, is_initialized, save_config, set_initialized, Config, LiquidityPoolInfo,
+    PairTupleKey,
+};
 use crate::utils::deploy_multihop_contract;
 use crate::{
     storage::{get_lp_vec, save_lp_vec, save_lp_vec_with_tuple_as_key},
@@ -17,7 +20,7 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
 pub struct Factory;
 
 pub trait FactoryTrait {
-    fn initialize(env: Env, admin: Address);
+    fn initialize(env: Env, admin: Address, multihop_wasm_hash: BytesN<32>);
 
     fn create_liquidity_pool(env: Env, lp_init_info: LiquidityPoolInitInfo) -> Address;
 
@@ -34,16 +37,23 @@ pub trait FactoryTrait {
 
 #[contractimpl]
 impl FactoryTrait for Factory {
-    fn initialize(env: Env, admin: Address) {
+    fn initialize(env: Env, admin: Address, multihop_wasm_hash: BytesN<32>) {
         if is_initialized(&env) {
             panic!("Factory: Initialize: initializing contract twice is not allowed");
         }
 
         set_initialized(&env);
 
-        let multihop_address = deploy_multihop_contract(env.clone(), admin.clone());
+        let multihop_address =
+            deploy_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
 
-        save_config(&env, Config{admin: admin.clone(), multihop_address});
+        save_config(
+            &env,
+            Config {
+                admin: admin.clone(),
+                multihop_address,
+            },
+        );
 
         save_lp_vec(&env, Vec::new(&env));
 

@@ -64,7 +64,10 @@ pub fn save_config(env: &Env, config: Config) {
 }
 
 pub fn get_config(env: &Env) -> Config {
-    env.storage().persistent().get(&DataKey::Config).expect("Config not set")
+    env.storage()
+        .persistent()
+        .get(&DataKey::Config)
+        .expect("Config not set")
 }
 
 pub fn get_lp_vec(env: &Env) -> Vec<Address> {
@@ -112,7 +115,7 @@ mod tests {
     fn test_get_admin_should_panic_when_no_admin_saved() {
         let env = Env::default();
 
-        get_admin(&env);
+        get_config(&env);
     }
 
     #[test]
