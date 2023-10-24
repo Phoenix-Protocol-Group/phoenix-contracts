@@ -6,6 +6,7 @@ use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::arbitrary::std;
 use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{Symbol, Vec};
 
 #[test]
 fn factory_successfully_inits_itself() {
@@ -15,6 +16,23 @@ fn factory_successfully_inits_itself() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     assert_eq!(factory.get_admin(), admin);
+}
+
+#[test]
+fn factory_successfully_inits_multihop() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::random(&env);
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+
+    let multihop_address = factory.get_config().multihop_address;
+
+    let func = Symbol::new(&env, "get_admin");
+    let admin_in_multihop = env.invoke_contract(&multihop_address, &func, Vec::new(&env));
+
+    assert_eq!(admin, admin_in_multihop);
 }
 
 #[test]

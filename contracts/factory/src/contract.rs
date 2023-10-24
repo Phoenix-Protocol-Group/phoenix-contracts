@@ -1,13 +1,16 @@
-use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, Env, IntoVal, Symbol, Val, Vec,
+use crate::storage::{
+    get_config, is_initialized, save_config, set_initialized, Config, DataKey, LiquidityPoolInfo,
+    PairTupleKey,
 };
-
-use crate::storage::{is_initialized, set_initialized, LiquidityPoolInfo, PairTupleKey};
+use crate::utils::deploy_multihop_contract;
 use crate::{
-    storage::{get_admin, get_lp_vec, save_admin, save_lp_vec, save_lp_vec_with_tuple_as_key},
+    storage::{get_lp_vec, save_lp_vec, save_lp_vec_with_tuple_as_key},
     utils::deploy_lp_contract,
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
+};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
@@ -16,7 +19,7 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
 pub struct Factory;
 
 pub trait FactoryTrait {
-    fn initialize(env: Env, admin: Address);
+    fn initialize(env: Env, admin: Address, multihop_wasm_hash: BytesN<32>);
 
     fn create_liquidity_pool(env: Env, lp_init_info: LiquidityPoolInitInfo) -> Address;
 
@@ -29,18 +32,29 @@ pub trait FactoryTrait {
     fn query_for_pool_by_token_pair(env: Env, token_a: Address, token_b: Address) -> Address;
 
     fn get_admin(env: Env) -> Address;
+
+    fn get_config(env: Env) -> Config;
 }
 
 #[contractimpl]
 impl FactoryTrait for Factory {
-    fn initialize(env: Env, admin: Address) {
+    fn initialize(env: Env, admin: Address, multihop_wasm_hash: BytesN<32>) {
         if is_initialized(&env) {
             panic!("Factory: Initialize: initializing contract twice is not allowed");
         }
 
         set_initialized(&env);
 
-        save_admin(&env, admin.clone());
+        let multihop_address =
+            deploy_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
+
+        save_config(
+            &env,
+            Config {
+                admin: admin.clone(),
+                multihop_address,
+            },
+        );
 
         save_lp_vec(&env, Vec::new(&env));
 
@@ -144,7 +158,14 @@ impl FactoryTrait for Factory {
     }
 
     fn get_admin(env: Env) -> Address {
-        get_admin(&env)
+        get_config(&env).admin
+    }
+
+    fn get_config(env: Env) -> Config {
+        env.storage()
+            .persistent()
+            .get(&DataKey::Config)
+            .expect("Factory: No multihop present in storage")
     }
 }
 

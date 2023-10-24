@@ -46,13 +46,12 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-// pub fn deploy_liquidity_pool(e: &Env, admin: Address) -> Address {
-//     let factory_wasm = e.deployer().upload_contract_wasm(factory::WASM);
-//     let salt = Bytes::new(e);
-//     let salt = e.crypto().sha256(&salt);
-//
-//     e.deployer().with_address(admin, salt).deploy(factory_wasm)
-// }
+pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_multihop.wasm"
+    );
+    env.deployer().upload_contract_wasm(WASM)
+}
 
 pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
     let factory_wasm = e.deployer().upload_contract_wasm(factory::WASM);
@@ -88,8 +87,9 @@ pub fn deploy_and_mint_tokens<'a>(
 pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Client {
     let factory_addr = deploy_factory_contract(env, admin.clone());
     let factory_client = factory::Client::new(env, &factory_addr);
+    let multihop_wasm_hash = install_multihop_wasm(env);
 
-    factory_client.initialize(&admin.clone());
+    factory_client.initialize(&admin.clone(), &multihop_wasm_hash);
     factory_client
 }
 

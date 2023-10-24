@@ -6,6 +6,7 @@ test: build # because of token dependency
 	cargo test
 
 build:
+	$(MAKE) -C ../stake build || break;
 	$(MAKE) -C ../token build || break;
 	cargo build --target wasm32-unknown-unknown --release
 

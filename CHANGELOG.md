@@ -12,6 +12,7 @@ and this project adheres to
 - Total surrender refactor: replace all errors with panics ([#140])
 - Pool/Pool stable: Replace `sell_a` parameter in simulate swap messages with `offer_asset` address ([#154])
 - Multihop: Implement simulate swap/reverse swap queries ([#147])
+- Factory: Initializes the Multihop contract upon initializing Factory ([#158])
 
 ## Bug fixes
 
@@ -21,6 +22,7 @@ and this project adheres to
 [#144]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/144
 [#147]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/147
 [#157]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/157
+[#158]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/158
 
 ## [0.7.0] - 2023-10-10
 
