@@ -5,6 +5,7 @@ use soroban_sdk::{testutils::Address as _, Address, Env};
 mod query;
 mod setup;
 mod swap;
+mod verify_operations;
 
 #[test]
 #[should_panic(expected = "Multihop: Initialize: initializing contract twice is not allowed")]

@@ -4,6 +4,7 @@ use crate::storage::{
     get_factory, is_initialized, save_factory, set_initialized, DataKey,
     SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
 };
+use crate::utils::verify_operations;
 use crate::{factory_contract, lp_contract};
 
 // Metadata that is added on to the WASM custom section
@@ -51,10 +52,7 @@ impl MultihopTrait for Multihop {
     }
 
     fn swap(env: Env, recipient: Address, operations: Vec<Swap>, amount: i128) {
-        if operations.is_empty() {
-            panic!("Multihop: Swap: Operations empty");
-        }
-
+        verify_operations(&operations);
         recipient.require_auth();
 
         // first offer amount is an input from the user,
@@ -79,9 +77,7 @@ impl MultihopTrait for Multihop {
     }
 
     fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse {
-        if operations.is_empty() {
-            panic!("Multihop: Simulate swap: Operations empty");
-        }
+        verify_operations(&operations);
 
         let mut next_offer_amount: i128 = amount;
 
@@ -113,10 +109,7 @@ impl MultihopTrait for Multihop {
         operations: Vec<Swap>,
         amount: i128,
     ) -> SimulateReverseSwapResponse {
-        if operations.is_empty() {
-            panic!("Multihop: Simulate reverse swap: Operations empty");
-        }
-
+        verify_operations(&operations);
         let mut next_ask_amount: i128 = amount;
 
         let mut simulate_swap_response = SimulateReverseSwapResponse {

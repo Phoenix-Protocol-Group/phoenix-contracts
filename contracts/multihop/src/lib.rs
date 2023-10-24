@@ -3,6 +3,8 @@ mod contract;
 
 mod storage;
 
+mod utils;
+
 #[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
     // The import will code generate:
