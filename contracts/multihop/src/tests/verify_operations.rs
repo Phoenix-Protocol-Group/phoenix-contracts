@@ -9,7 +9,7 @@ fn verify_operations_should_fail_when_empty_operations() {
     let env = Env::default();
     let empty_vec = Vec::<Swap>::new(&env);
 
-    if let Some(err) = verify_operations(&env, &empty_vec) {
+    if let Some(err) = verify_operations(&env, &empty_vec, true) {
         if err.eq(&Symbol::new(&env, "operations_empty")) {
             panic!("Multihop: Swap: Operations empty")
         } else {
@@ -42,7 +42,7 @@ fn verify_operations_should_work() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    verify_operations(&env, &operations);
+    verify_operations(&env, &operations, true);
 }
 
 #[test]
@@ -72,7 +72,7 @@ fn verify_operations_should_fail_when_bad_order_provided() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    if let Some(err) = verify_operations(&env, &operations) {
+    if let Some(err) = verify_operations(&env, &operations, true) {
         if err.eq(&Symbol::new(&env, "operations_empty")) {
             panic!("Multihop: Swap: Operations empty")
         } else {

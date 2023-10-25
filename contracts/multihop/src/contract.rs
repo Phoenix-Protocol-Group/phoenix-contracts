@@ -52,7 +52,7 @@ impl MultihopTrait for Multihop {
     }
 
     fn swap(env: Env, recipient: Address, operations: Vec<Swap>, amount: i128) {
-        if let Some(err) = verify_operations(&env, &operations) {
+        if let Some(err) = verify_operations(&env, &operations, true) {
             if err.eq(&Symbol::new(&env, "operations_empty")) {
                 panic!("Multihop: Swap: Operations empty")
             } else {
@@ -84,7 +84,7 @@ impl MultihopTrait for Multihop {
     }
 
     fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse {
-        if let Some(err) = verify_operations(&env, &operations) {
+        if let Some(err) = verify_operations(&env, &operations, true) {
             if err.eq(&Symbol::new(&env, "operations_empty")) {
                 panic!("Multihop: Simulate Swap: Operations empty")
             } else {
@@ -122,7 +122,7 @@ impl MultihopTrait for Multihop {
         operations: Vec<Swap>,
         amount: i128,
     ) -> SimulateReverseSwapResponse {
-        if let Some(err) = verify_operations(&env, &operations) {
+        if let Some(err) = verify_operations(&env, &operations, false) {
             if err.eq(&Symbol::new(&env, "operations_empty")) {
                 panic!("Multihop: Simulate reverse swap: Operations empty")
             } else {
