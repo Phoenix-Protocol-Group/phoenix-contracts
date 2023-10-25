@@ -415,7 +415,7 @@ fn simulate_swap_three_different_pools_with_fees() {
 }
 
 #[test]
-#[should_panic(expected = "Multihop: Operations empty")]
+#[should_panic(expected = "Multihop: Simulate Swap: Operations empty")]
 fn query_simulate_swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
@@ -435,7 +435,7 @@ fn query_simulate_swap_panics_with_no_operations() {
 }
 
 #[test]
-#[should_panic(expected = "Multihop: Operations empty")]
+#[should_panic(expected = "Multihop: Simulate reverse swap: Operations empty")]
 fn query_simulate_reverse_swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();

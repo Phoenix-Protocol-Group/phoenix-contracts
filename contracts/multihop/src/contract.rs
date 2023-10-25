@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Symbol, Vec};
 
 use crate::storage::{
     get_factory, is_initialized, save_factory, set_initialized, DataKey,
@@ -52,7 +52,14 @@ impl MultihopTrait for Multihop {
     }
 
     fn swap(env: Env, recipient: Address, operations: Vec<Swap>, amount: i128) {
-        verify_operations(&operations);
+        if let Some(err) = verify_operations(&env, &operations) {
+            if err.eq(&Symbol::new(&env, "operations_empty")) {
+                panic!("Multihop: Swap: Operations empty")
+            } else {
+                panic!("Multihop: Swap: Provided bad swap order")
+            }
+        };
+
         recipient.require_auth();
 
         // first offer amount is an input from the user,
@@ -77,7 +84,13 @@ impl MultihopTrait for Multihop {
     }
 
     fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse {
-        verify_operations(&operations);
+        if let Some(err) = verify_operations(&env, &operations) {
+            if err.eq(&Symbol::new(&env, "operations_empty")) {
+                panic!("Multihop: Simulate Swap: Operations empty")
+            } else {
+                panic!("Multihop: Simulate Swap: Provided bad swap order")
+            }
+        };
 
         let mut next_offer_amount: i128 = amount;
 
@@ -109,7 +122,14 @@ impl MultihopTrait for Multihop {
         operations: Vec<Swap>,
         amount: i128,
     ) -> SimulateReverseSwapResponse {
-        verify_operations(&operations);
+        if let Some(err) = verify_operations(&env, &operations) {
+            if err.eq(&Symbol::new(&env, "operations_empty")) {
+                panic!("Multihop: Simulate reverse swap: Operations empty")
+            } else {
+                panic!("Multihop: Simulate reverse swap: Provided bad swap order")
+            }
+        };
+
         let mut next_ask_amount: i128 = amount;
 
         let mut simulate_swap_response = SimulateReverseSwapResponse {

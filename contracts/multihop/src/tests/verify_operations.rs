@@ -1,37 +1,31 @@
 extern crate std;
 use crate::{storage::Swap, utils::verify_operations};
 
-use soroban_sdk::{testutils::Address as _, vec, Address, Env, Vec};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env, Symbol, Vec};
 
 #[test]
-#[should_panic(expected = "Multihop: Operations empty")]
+#[should_panic(expected = "Multihop: Swap: Operations empty")]
 fn verify_operations_should_fail_when_empty_operations() {
     let env = Env::default();
     let empty_vec = Vec::<Swap>::new(&env);
 
-    verify_operations(&empty_vec)
+    if let Some(err) = verify_operations(&env, &empty_vec) {
+        if err.eq(&Symbol::new(&env, "operations_empty")) {
+            panic!("Multihop: Swap: Operations empty")
+        } else {
+            panic!("Multihop: Swap: Provided bad swap order")
+        }
+    };
 }
 
 #[test]
 fn verify_operations_should_work() {
     let env = Env::default();
 
-    let mut token1 = Address::random(&env);
-    let mut token2 = Address::random(&env);
-    let mut token3 = Address::random(&env);
-    let mut token4 = Address::random(&env);
-
-    if token2 < token1 {
-        std::mem::swap(&mut token1, &mut token2);
-    }
-
-    if token3 < token2 {
-        std::mem::swap(&mut token2, &mut token3);
-    }
-
-    if token4 < token3 {
-        std::mem::swap(&mut token4, &mut token3);
-    }
+    let token1 = Address::random(&env);
+    let token2 = Address::random(&env);
+    let token3 = Address::random(&env);
+    let token4 = Address::random(&env);
 
     let swap1 = Swap {
         offer_asset: token1.clone(),
@@ -48,7 +42,7 @@ fn verify_operations_should_work() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    verify_operations(&operations);
+    verify_operations(&env, &operations);
 }
 
 #[test]
@@ -78,5 +72,11 @@ fn verify_operations_should_fail_when_bad_order_provided() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    verify_operations(&operations);
+    if let Some(err) = verify_operations(&env, &operations) {
+        if err.eq(&Symbol::new(&env, "operations_empty")) {
+            panic!("Multihop: Swap: Operations empty")
+        } else {
+            panic!("Multihop: Provided bad swap order")
+        }
+    };
 }
