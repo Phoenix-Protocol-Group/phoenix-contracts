@@ -1,22 +1,7 @@
 extern crate std;
-use crate::{storage::Swap, utils::verify_operations};
+use crate::{storage::Swap, utils::verify_swap};
 
-use soroban_sdk::{testutils::Address as _, vec, Address, Env, Symbol, Vec};
-
-#[test]
-#[should_panic(expected = "Multihop: Swap: Operations empty")]
-fn verify_operations_should_fail_when_empty_operations() {
-    let env = Env::default();
-    let empty_vec = Vec::<Swap>::new(&env);
-
-    if let Some(err) = verify_operations(&env, &empty_vec, true) {
-        if err.eq(&Symbol::new(&env, "operations_empty")) {
-            panic!("Multihop: Swap: Operations empty")
-        } else {
-            panic!("Multihop: Swap: Provided bad swap order")
-        }
-    };
-}
+use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 #[test]
 fn verify_operations_should_work() {
@@ -42,11 +27,11 @@ fn verify_operations_should_work() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    verify_operations(&env, &operations, true);
+    verify_swap(&operations);
 }
 
 #[test]
-#[should_panic(expected = "Multihop: Provided bad swap order")]
+#[should_panic(expected = "Multihop: Swap: Provided bad swap order")]
 fn verify_operations_should_fail_when_bad_order_provided() {
     let env = Env::default();
 
@@ -72,11 +57,5 @@ fn verify_operations_should_fail_when_bad_order_provided() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    if let Some(err) = verify_operations(&env, &operations, true) {
-        if err.eq(&Symbol::new(&env, "operations_empty")) {
-            panic!("Multihop: Swap: Operations empty")
-        } else {
-            panic!("Multihop: Provided bad swap order")
-        }
-    };
+    verify_swap(&operations);
 }

@@ -357,7 +357,7 @@ fn swap_three_different_pools_with_fees() {
 }
 
 #[test]
-#[should_panic(expected = "Multihop: Swap: Operations empty")]
+#[should_panic(expected = "Multihop: Swap: operations is empty!")]
 fn swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();

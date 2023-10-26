@@ -1,10 +1,10 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Symbol, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use crate::storage::{
     get_factory, is_initialized, save_factory, set_initialized, DataKey,
     SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
 };
-use crate::utils::verify_operations;
+use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, lp_contract};
 
 // Metadata that is added on to the WASM custom section
@@ -52,13 +52,10 @@ impl MultihopTrait for Multihop {
     }
 
     fn swap(env: Env, recipient: Address, operations: Vec<Swap>, amount: i128) {
-        if let Some(err) = verify_operations(&env, &operations, true) {
-            if err.eq(&Symbol::new(&env, "operations_empty")) {
-                panic!("Multihop: Swap: Operations empty")
-            } else {
-                panic!("Multihop: Swap: Provided bad swap order")
-            }
-        };
+        if operations.is_empty() {
+            panic!("Multihop: Swap: operations is empty!");
+        }
+        verify_swap(&operations);
 
         recipient.require_auth();
 
@@ -84,13 +81,11 @@ impl MultihopTrait for Multihop {
     }
 
     fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse {
-        if let Some(err) = verify_operations(&env, &operations, true) {
-            if err.eq(&Symbol::new(&env, "operations_empty")) {
-                panic!("Multihop: Simulate Swap: Operations empty")
-            } else {
-                panic!("Multihop: Simulate Swap: Provided bad swap order")
-            }
-        };
+        if operations.is_empty() {
+            panic!("Multihop: Simulate swap: operations empty");
+        }
+
+        verify_swap(&operations);
 
         let mut next_offer_amount: i128 = amount;
 
@@ -122,13 +117,11 @@ impl MultihopTrait for Multihop {
         operations: Vec<Swap>,
         amount: i128,
     ) -> SimulateReverseSwapResponse {
-        if let Some(err) = verify_operations(&env, &operations, false) {
-            if err.eq(&Symbol::new(&env, "operations_empty")) {
-                panic!("Multihop: Simulate reverse swap: Operations empty")
-            } else {
-                panic!("Multihop: Simulate reverse swap: Provided bad swap order")
-            }
-        };
+        if operations.is_empty() {
+            panic!("Multihop: Simulate reverse swap: operations empty");
+        }
+
+        verify_reverse_swap(&operations);
 
         let mut next_ask_amount: i128 = amount;
 
