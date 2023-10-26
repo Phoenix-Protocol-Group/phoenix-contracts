@@ -1,3 +1,7 @@
+ifeq (,$(BUILD_FLAGS))
+  DEPS = ../factory ../pool
+endif
+
 default: all
 
 all: lint build test
@@ -8,8 +12,9 @@ test:
 	cargo test
 
 build:
-	$(MAKE) -C ../factory build || break;
-	$(MAKE) -C ../pool build || break;
+	@for dir in $(DEPS) ; do \
+		$(MAKE) -C $$dir build || break; \
+	done
 	cargo build --target wasm32-unknown-unknown --release
 
 lint: fmt clippy
