@@ -1,5 +1,4 @@
 use crate::contract::{Factory, FactoryClient};
-use crate::tests::setup::lp_contract::WASM;
 use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{Address, BytesN, Env};
 #[allow(clippy::too_many_arguments)]
