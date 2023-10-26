@@ -1,3 +1,4 @@
+use crate::tests::setup::lp_contract::WASM;
 use crate::contract::{Factory, FactoryClient};
 use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{Address, BytesN, Env};
