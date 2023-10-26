@@ -1,3 +1,7 @@
+ifeq (,$(BUILD_FLAGS))
+  DEPS = ../stake ../pair
+endif
+
 default: all
 
 all: lint build test
@@ -6,8 +10,9 @@ test: build # because of token dependency
 	cargo test
 
 build:
-	$(MAKE) -C ../stake build || break;
-	$(MAKE) -C ../pair build || break;
+	@for dir in $(DEPS) ; do \
+		$(MAKE) -C $$dir build || break; \
+	done
 	cargo build --target wasm32-unknown-unknown --release
 
 lint: fmt clippy
