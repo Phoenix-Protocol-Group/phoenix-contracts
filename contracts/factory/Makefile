@@ -7,6 +7,7 @@ default: all
 all: lint build test
 
 test: build # because of token dependency
+	$(MAKE) -C ../multihop build || break;
 	cargo test
 
 build:
