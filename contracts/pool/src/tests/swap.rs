@@ -5,7 +5,9 @@ use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
-use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
+use crate::storage::{
+    Asset, PoolResponse, Referral, SimulateReverseSwapResponse, SimulateSwapResponse,
+};
 use decimal::Decimal;
 
 #[test]
@@ -49,7 +51,14 @@ fn simple_swap() {
     // true means "selling A token"
     // selling just one token with 1% max spread allowed
     let spread = 100i64; // 1% maximum spread allowed
-    pool.swap(&user1, &token1.address, &1, &None, &Some(spread));
+    pool.swap(
+        &user1,
+        &None::<Referral>,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+    );
     assert_eq!(
         env.auths(),
         [(
@@ -58,7 +67,15 @@ fn simple_swap() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     symbol_short!("swap"),
-                    (&user1, token1.address.clone(), 1_i128, None::<i64>, spread).into_val(&env)
+                    (
+                        &user1,
+                        None::<Referral>,
+                        token1.address.clone(),
+                        1_i128,
+                        None::<i64>,
+                        spread
+                    )
+                        .into_val(&env)
                 )),
                 sub_invocations: std::vec![
                     (AuthorizedInvocation {
@@ -98,7 +115,14 @@ fn simple_swap() {
 
     // false means selling B token
     // this time 100 units
-    let output_amount = pool.swap(&user1, &token2.address, &1_000, &None, &Some(spread));
+    let output_amount = pool.swap(
+        &user1,
+        &None::<Referral>,
+        &token2.address,
+        &1_000,
+        &None,
+        &Some(spread),
+    );
     let result = pool.query_pool_info();
     assert_eq!(
         result,
@@ -167,7 +191,14 @@ fn swap_with_high_fee() {
     let spread = 1_000; // 10% maximum spread allowed
 
     // let's swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
-    pool.swap(&user1, &token1.address, &100_000, &None, &Some(spread));
+    pool.swap(
+        &user1,
+        &None,
+        &token1.address,
+        &100_000,
+        &None,
+        &Some(spread),
+    );
 
     // This is XYK LP with constant product formula
     // Y_new = (X_in * Y_old) / (X_in + X_old)
