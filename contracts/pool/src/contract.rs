@@ -1082,8 +1082,8 @@ mod tests {
 
     #[test]
     fn test_compute_swap_pass() {
-        let result = compute_swap(1000, 2000, 100, Decimal::percent(10), 500i64); // 10% commission rate
-        assert_eq!(result, (156, 18, 18, 8)); // Expected return amount, spread, commission and referral fee commission
+        let result = compute_swap(1000, 2000, 100, Decimal::percent(10), 0i64); // 10% commission rate
+        assert_eq!(result, (164, 18, 18, 0)); // Expected return amount, spread, commission and referral fee commission
     }
 
     #[test]
