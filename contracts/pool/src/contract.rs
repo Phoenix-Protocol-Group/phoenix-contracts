@@ -39,6 +39,7 @@ pub trait LiquidityPoolTrait {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        max_referral_bps: i64,
         token_init_info: TokenInitInfo,
         stake_contract_info: StakeInitInfo,
     );
@@ -134,6 +135,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        max_referral_bps: i64,
         token_init_info: TokenInitInfo,
         stake_init_info: StakeInitInfo,
     ) {
@@ -199,7 +201,9 @@ impl LiquidityPoolTrait for LiquidityPool {
             fee_recipient,
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
+            max_referral_bps,
         };
+
         save_config(&env, config);
         utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);

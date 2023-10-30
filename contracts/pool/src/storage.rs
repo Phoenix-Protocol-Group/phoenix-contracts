@@ -47,6 +47,8 @@ pub struct Config {
     pub max_allowed_slippage_bps: i64,
     /// The maximum amount of spread (in bps) that is tolerated during swap
     pub max_allowed_spread_bps: i64,
+    /// The maximum allowed percentage (in bps) for referral fee
+    pub max_referral_bps: i64,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
