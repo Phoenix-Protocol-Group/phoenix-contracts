@@ -22,7 +22,6 @@ pub fn verify_reverse_swap(operations: &Vec<Swap>) {
 mod tests {
     use super::*;
     use crate::{storage::Swap, utils::verify_swap};
-    use soroban_sdk::arbitrary::std::dbg;
 
     use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
@@ -77,7 +76,6 @@ mod tests {
 
         let operations = vec![&env, swap1, swap2, swap3];
 
-        dbg!(&operations);
         verify_reverse_swap(&operations);
     }
 
