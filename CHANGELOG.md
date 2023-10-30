@@ -13,6 +13,7 @@ and this project adheres to
 - Pool/Pool stable: Replace `sell_a` parameter in simulate swap messages with `offer_asset` address ([#154])
 - Multihop: Implement simulate swap/reverse swap queries ([#147])
 - Factory: Initializes the Multihop contract upon initializing Factory ([#158])
+- Multihop: Checks if the list of Swaps being sent is not empty / is valid ([#159])
 
 ## Bug fixes
 
@@ -23,6 +24,7 @@ and this project adheres to
 [#147]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/147
 [#157]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/157
 [#158]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/158
+[#159]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/159
 
 ## [0.7.0] - 2023-10-10
 
