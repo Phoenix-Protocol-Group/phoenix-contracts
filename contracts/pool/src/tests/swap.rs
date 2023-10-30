@@ -147,6 +147,63 @@ fn simple_swap() {
 }
 
 #[test]
+#[should_panic(expected = "Pool: Swap: Trying to swap with more than the allowed referral fee")]
+fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    pool.provide_liquidity(
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+    );
+
+    let spread = 100i64; // 1% maximum spread allowed
+    let referral = Referral {
+        address: Address::random(&env),
+        // in tests/setup.rs we hardcoded the max referral fee
+        // to 5_000 bps (50%), here we try to set it to 10_000 bps (100%)
+        fee: 10_000,
+    };
+
+    pool.swap(
+        &user1,
+        &Some(referral),
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+    );
+}
+
+#[test]
 fn swap_with_high_fee() {
     let env = Env::default();
     env.mock_all_auths();

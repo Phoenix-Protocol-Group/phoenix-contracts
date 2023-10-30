@@ -92,6 +92,21 @@ pub struct Asset {
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ComputeSwap {
+    /// The amount that will be returned to the user, after all fees and spread has been taken into
+    /// account.
+    pub return_amount: i128,
+    /// The spread amount, that is the difference between expected and actual swap amount.
+    pub spread_amount: i128,
+    /// The commision amount is the fee that is charged by the pool for the swap service.
+    pub commission_amount: i128,
+    /// The referral fee is the fee that will be given back to the referral. `0` if no referral is
+    /// set.
+    pub referral_fee_amount: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Referral {
     /// Address of the referral
     pub address: Address,
