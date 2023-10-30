@@ -1114,6 +1114,22 @@ mod tests {
     }
 
     #[test]
+    fn test_compute_swap_pass_with_referral_fee() {
+        // 10% commission rate + 15% referral fee
+        // return_amount would be 164, but after we deduct 15% out of it we get to 139.4 rounded to
+        // the closest number 140
+        let result = compute_swap(1000, 2000, 100, Decimal::percent(10), 1_500i64);
+        let expected_compute_swap = ComputeSwap {
+            return_amount: 140,
+            spread_amount: 18,
+            commission_amount: 18,
+            referral_fee_amount: 24,
+        };
+
+        assert_eq!(result, expected_compute_swap); // Expected return amount, spread, commission and referral fee commission
+    }
+
+    #[test]
     fn test_compute_swap_full_commission() {
         let result = compute_swap(1000, 2000, 100, Decimal::one(), 0i64); // 100% commission rate should lead to return_amount being 0
         let expected_compute_swap = ComputeSwap {
