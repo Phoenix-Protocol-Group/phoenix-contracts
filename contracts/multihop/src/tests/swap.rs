@@ -76,7 +76,7 @@ fn swap_three_equal_pools_no_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &50i128);
+    multihop.swap(&recipient, &None, &operations, &50i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -122,7 +122,7 @@ fn swap_single_pool_no_fees() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &operations, &1_000);
+    multihop.swap(&recipient, &None, &operations, &1_000);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 4_000i128); // -1_000 token0
@@ -168,7 +168,7 @@ fn swap_single_pool_with_fees() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &operations, &300i128);
+    multihop.swap(&recipient, &None, &operations, &300i128);
 
     // 5. check if it goes according to plan
     // 1000 tokens initially
@@ -249,7 +249,7 @@ fn swap_three_different_pools_no_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &5_000i128);
+    multihop.swap(&recipient, &None, &operations, &5_000i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -329,7 +329,7 @@ fn swap_three_different_pools_with_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &10_000i128);
+    multihop.swap(&recipient, &None, &operations, &10_000i128);
 
     // we start swapping 10_000 tokens
 
@@ -373,5 +373,5 @@ fn swap_panics_with_no_operations() {
 
     let swap_vec = vec![&env];
 
-    multihop.swap(&recipient, &swap_vec, &50i128);
+    multihop.swap(&recipient, &None, &swap_vec, &50i128);
 }

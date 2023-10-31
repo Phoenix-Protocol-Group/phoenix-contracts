@@ -132,6 +132,7 @@ pub fn deploy_and_initialize_lp(
         max_allowed_spread_bps: 500,
         share_token_decimals: 7,
         swap_fee_bps: fees.unwrap_or(0i64),
+        max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,
     };
