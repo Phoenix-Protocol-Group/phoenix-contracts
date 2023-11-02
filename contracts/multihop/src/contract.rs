@@ -25,6 +25,8 @@ pub trait MultihopTrait {
         recipient: Address,
         referral: Option<Referral>,
         operations: Vec<Swap>,
+        max_belief_price: Option<i64>,
+        max_spread_bps: Option<i64>,
         amount: i128,
     );
 
@@ -63,6 +65,8 @@ impl MultihopTrait for Multihop {
         recipient: Address,
         referral: Option<Referral>,
         operations: Vec<Swap>,
+        max_belief_price: Option<i64>,
+        max_spread_bps: Option<i64>,
         amount: i128,
     ) {
         if operations.is_empty() {
@@ -89,8 +93,8 @@ impl MultihopTrait for Multihop {
                     &Some(referral),
                     &op.offer_asset,
                     &next_offer_amount,
-                    &None::<i64>,
-                    &Some(5000i64),
+                    &max_belief_price,
+                    &max_spread_bps,
                 );
             } else {
                 next_offer_amount = lp_client.swap(
@@ -98,8 +102,8 @@ impl MultihopTrait for Multihop {
                     &None,
                     &op.offer_asset,
                     &next_offer_amount,
-                    &None::<i64>,
-                    &Some(5000i64),
+                    &max_belief_price,
+                    &max_spread_bps,
                 );
             }
         });
