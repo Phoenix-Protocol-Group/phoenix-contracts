@@ -3,7 +3,7 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, En
 use num_integer::Roots;
 
 use crate::storage::utils::{is_initialized, set_initialized};
-use crate::storage::LiquidityPoolInfo;
+use crate::storage::{ComputeSwap, LiquidityPoolInfo, Referral};
 use crate::{
     stake_contract,
     storage::{
@@ -39,6 +39,7 @@ pub trait LiquidityPoolTrait {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        max_referral_bps: i64,
         token_init_info: TokenInitInfo,
         stake_contract_info: StakeInitInfo,
     );
@@ -63,6 +64,7 @@ pub trait LiquidityPoolTrait {
     fn swap(
         env: Env,
         sender: Address,
+        referral: Option<Referral>,
         offer_asset: Address,
         offer_amount: i128,
         belief_price: Option<i64>,
@@ -133,6 +135,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        max_referral_bps: i64,
         token_init_info: TokenInitInfo,
         stake_init_info: StakeInitInfo,
     ) {
@@ -198,7 +201,9 @@ impl LiquidityPoolTrait for LiquidityPool {
             fee_recipient,
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
+            max_referral_bps,
         };
+
         save_config(&env, config);
         utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);
@@ -265,6 +270,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 do_swap(
                     env.clone(),
                     sender.clone(),
+                    None,
                     config.clone().token_a,
                     a_for_swap,
                     None,
@@ -286,6 +292,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 do_swap(
                     env.clone(),
                     sender.clone(),
+                    None,
                     config.clone().token_b,
                     b_for_swap,
                     None,
@@ -352,6 +359,7 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn swap(
         env: Env,
         sender: Address,
+        referral: Option<Referral>,
         offer_asset: Address,
         offer_amount: i128,
         belief_price: Option<i64>,
@@ -364,6 +372,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         do_swap(
             env,
             sender,
+            referral,
             offer_asset,
             offer_amount,
             belief_price,
@@ -555,19 +564,22 @@ impl LiquidityPoolTrait for LiquidityPool {
             (pool_balance_b, pool_balance_a)
         };
 
-        let (ask_amount, spread_amount, commission_amount) = compute_swap(
+        let compute_swap: ComputeSwap = compute_swap(
             pool_balance_offer,
             pool_balance_ask,
             offer_amount,
             config.protocol_fee_rate(),
+            0i64,
         );
 
-        let total_return = ask_amount + commission_amount + spread_amount;
+        let total_return = compute_swap.return_amount
+            + compute_swap.commission_amount
+            + compute_swap.spread_amount;
 
         SimulateSwapResponse {
-            ask_amount,
-            spread_amount,
-            commission_amount,
+            ask_amount: compute_swap.return_amount,
+            commission_amount: compute_swap.commission_amount,
+            spread_amount: compute_swap.spread_amount,
             total_return,
         }
     }
@@ -605,12 +617,18 @@ impl LiquidityPoolTrait for LiquidityPool {
 fn do_swap(
     env: Env,
     sender: Address,
+    referral: Option<Referral>,
     offer_asset: Address,
     offer_amount: i128,
     belief_price: Option<i64>,
     max_spread: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
+    if let Some(referral) = &referral {
+        if referral.fee > config.max_referral_bps {
+            panic!("Pool: Swap: Trying to swap with more than the allowed referral fee");
+        }
+    }
 
     let belief_price = belief_price.map(Decimal::percent);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
@@ -624,11 +642,18 @@ fn do_swap(
         (pool_balance_b, pool_balance_a)
     };
 
-    let (return_amount, spread_amount, commission_amount) = compute_swap(
+    let referral_fee_bps = match referral {
+        Some(ref referral) => referral.clone().fee,
+        None => 0,
+    };
+
+    // 1. We calculate the referral_fee below. If none referral fee will be 0
+    let compute_swap: ComputeSwap = compute_swap(
         pool_balance_sell,
         pool_balance_buy,
         offer_amount,
         config.protocol_fee_rate(),
+        referral_fee_bps,
     );
 
     assert_max_spread(
@@ -636,8 +661,8 @@ fn do_swap(
         belief_price,
         max_spread,
         offer_amount,
-        return_amount + commission_amount,
-        spread_amount,
+        compute_swap.return_amount + compute_swap.commission_amount,
+        compute_swap.spread_amount,
     );
 
     // Transfer the amount being sold to the contract
@@ -658,26 +683,44 @@ fn do_swap(
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
         &sender,
-        &return_amount,
+        &compute_swap.return_amount,
     );
 
     // send commission to fee recipient
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
         &config.fee_recipient,
-        &commission_amount,
+        &compute_swap.commission_amount,
     );
+
+    // 2. If referral is present and return amount is larger than 0 we send referral fee commision
+    //    to fee recipient
+    if let Some(Referral { address, fee }) = referral {
+        if fee > 0 {
+            token_contract::Client::new(&env, &buy_token).transfer(
+                &env.current_contract_address(),
+                &address,
+                &compute_swap.referral_fee_amount,
+            );
+        }
+    }
 
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
             pool_balance_a + offer_amount,
-            pool_balance_b - commission_amount - return_amount,
+            pool_balance_b
+                - compute_swap.commission_amount
+                - compute_swap.referral_fee_amount
+                - compute_swap.return_amount,
         )
     } else {
         (
-            pool_balance_a - commission_amount - return_amount,
+            pool_balance_a
+                - compute_swap.commission_amount
+                - compute_swap.referral_fee_amount
+                - compute_swap.return_amount,
             pool_balance_b + offer_amount,
         )
     };
@@ -689,11 +732,14 @@ fn do_swap(
     env.events().publish(("swap", "offer_amount"), offer_amount);
     env.events().publish(("swap", "buy_token"), buy_token);
     env.events()
-        .publish(("swap", "return_amount"), return_amount);
+        .publish(("swap", "return_amount"), compute_swap.return_amount);
     env.events()
-        .publish(("swap", "spread_amount"), spread_amount);
-
-    return_amount
+        .publish(("swap", "spread_amount"), compute_swap.spread_amount);
+    env.events().publish(
+        ("swap", "referral_fee_amount"),
+        compute_swap.referral_fee_amount,
+    );
+    compute_swap.return_amount
 }
 
 /// This function divides the deposit in such a way that when swapping it for the other token,
@@ -875,17 +921,20 @@ pub fn assert_max_spread(
 /// - `ask_pool`: Total amount of ask assets in the pool.
 /// - `offer_amount`: Amount of offer assets to swap.
 /// - `commission_rate`: Total amount of fees charged for the swap.
+/// - `referral_fee`: Amount of fee for the referral
 ///
 /// Returns a tuple containing the following values:
 /// - The resulting amount of ask assets after the swap.
 /// - The spread amount, representing the difference between the expected and actual swap amounts.
 /// - The commission amount, representing the fees charged for the swap.
+/// - The referral comission fee.
 pub fn compute_swap(
     offer_pool: i128,
     ask_pool: i128,
     offer_amount: i128,
     commission_rate: Decimal,
-) -> (i128, i128, i128) {
+    referral_fee: i64,
+) -> ComputeSwap {
     // Calculate the cross product of offer_pool and ask_pool
     let cp: i128 = offer_pool * ask_pool;
 
@@ -893,7 +942,6 @@ pub fn compute_swap(
     // Return amount calculation based on the AMM model's invariant,
     // which ensures the product of the amounts of the two assets remains constant before and after a trade.
     let return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount));
-
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
     let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - return_amount;
 
@@ -901,8 +949,16 @@ pub fn compute_swap(
 
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
     let return_amount: i128 = return_amount - commission_amount;
+    let referral_fee_amount: i128 = return_amount * Decimal::bps(referral_fee);
 
-    (return_amount, spread_amount, commission_amount)
+    let return_amount: i128 = return_amount - referral_fee_amount;
+
+    ComputeSwap {
+        return_amount,
+        spread_amount,
+        commission_amount,
+        referral_fee_amount,
+    }
 }
 
 /// Returns an amount of offer assets for a specified amount of ask assets.
@@ -1046,14 +1102,44 @@ mod tests {
 
     #[test]
     fn test_compute_swap_pass() {
-        let result = compute_swap(1000, 2000, 100, Decimal::percent(10)); // 10% commission rate
-        assert_eq!(result, (164, 18, 18)); // Expected return amount, spread, and commission
+        let result = compute_swap(1000, 2000, 100, Decimal::percent(10), 0i64); // 10% commission rate
+        let expected_compute_swap = ComputeSwap {
+            return_amount: 164,
+            spread_amount: 18,
+            commission_amount: 18,
+            referral_fee_amount: 0,
+        };
+
+        assert_eq!(result, expected_compute_swap); // Expected return amount, spread, commission and referral fee commission
+    }
+
+    #[test]
+    fn test_compute_swap_pass_with_referral_fee() {
+        // 10% commission rate + 15% referral fee
+        // return_amount would be 164, but after we deduct 15% out of it we get to 139.4 rounded to
+        // the closest number 140
+        let result = compute_swap(1000, 2000, 100, Decimal::percent(10), 1_500i64);
+        let expected_compute_swap = ComputeSwap {
+            return_amount: 140,
+            spread_amount: 18,
+            commission_amount: 18,
+            referral_fee_amount: 24,
+        };
+
+        assert_eq!(result, expected_compute_swap); // Expected return amount, spread, commission and referral fee commission
     }
 
     #[test]
     fn test_compute_swap_full_commission() {
-        let result = compute_swap(1000, 2000, 100, Decimal::one()); // 100% commission rate should lead to return_amount being 0
-        assert_eq!(result, (0, 18, 182));
+        let result = compute_swap(1000, 2000, 100, Decimal::one(), 0i64); // 100% commission rate should lead to return_amount being 0
+        let expected_compute_swap = ComputeSwap {
+            return_amount: 0,
+            spread_amount: 18,
+            commission_amount: 182,
+            referral_fee_amount: 0,
+        };
+
+        assert_eq!(result, expected_compute_swap);
     }
 
     #[test]

@@ -47,6 +47,8 @@ pub struct Config {
     pub max_allowed_slippage_bps: i64,
     /// The maximum amount of spread (in bps) that is tolerated during swap
     pub max_allowed_spread_bps: i64,
+    /// The maximum allowed percentage (in bps) for referral fee
+    pub max_referral_bps: i64,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
@@ -86,6 +88,30 @@ pub struct Asset {
     pub address: Address,
     /// The total amount of those tokens in the pool
     pub amount: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ComputeSwap {
+    /// The amount that will be returned to the user, after all fees and spread has been taken into
+    /// account.
+    pub return_amount: i128,
+    /// The spread amount, that is the difference between expected and actual swap amount.
+    pub spread_amount: i128,
+    /// The commision amount is the fee that is charged by the pool for the swap service.
+    pub commission_amount: i128,
+    /// The referral fee is the fee that will be given back to the referral. `0` if no referral is
+    /// set.
+    pub referral_fee_amount: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Referral {
+    /// Address of the referral
+    pub address: Address,
+    /// fee in bps, later parsed to percentage
+    pub fee: i64,
 }
 
 /// This struct is used to return a query result with the total amount of LP tokens and assets in a specific pool.

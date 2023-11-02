@@ -53,6 +53,7 @@ fn confirm_stake_contract_deployment() {
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
+            max_referral_bps: 5_000,
         }
     );
 
@@ -116,6 +117,7 @@ fn second_pool_deployment_should_fail() {
         &fee_recipient,
         &max_allowed_slippage,
         &max_allowed_spread,
+        &500,
         &token_init_info,
         &stake_init_info,
     );
@@ -127,6 +129,7 @@ fn second_pool_deployment_should_fail() {
         &fee_recipient,
         &max_allowed_slippage,
         &max_allowed_spread,
+        &500,
         &token_init_info,
         &stake_init_info,
     );

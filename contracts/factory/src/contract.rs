@@ -84,6 +84,7 @@ impl FactoryTrait for Factory {
             lp_init_info.fee_recipient,
             lp_init_info.max_allowed_slippage_bps,
             lp_init_info.max_allowed_spread_bps,
+            lp_init_info.max_referral_bps,
             lp_init_info.token_init_info.clone(),
             lp_init_info.stake_init_info,
         )

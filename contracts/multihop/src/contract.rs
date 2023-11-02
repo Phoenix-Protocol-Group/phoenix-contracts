@@ -1,5 +1,6 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
+use crate::lp_contract::Referral;
 use crate::storage::{
     get_factory, is_initialized, save_factory, set_initialized, DataKey,
     SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
@@ -19,7 +20,13 @@ pub struct Multihop;
 pub trait MultihopTrait {
     fn initialize(env: Env, admin: Address, factory: Address);
 
-    fn swap(env: Env, recipient: Address, operations: Vec<Swap>, amount: i128);
+    fn swap(
+        env: Env,
+        recipient: Address,
+        referral: Option<Referral>,
+        operations: Vec<Swap>,
+        amount: i128,
+    );
 
     fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse;
 
@@ -51,7 +58,13 @@ impl MultihopTrait for Multihop {
             .publish(("initialize", "Multihop factory with admin: "), admin);
     }
 
-    fn swap(env: Env, recipient: Address, operations: Vec<Swap>, amount: i128) {
+    fn swap(
+        env: Env,
+        recipient: Address,
+        referral: Option<Referral>,
+        operations: Vec<Swap>,
+        amount: i128,
+    ) {
         if operations.is_empty() {
             panic!("Multihop: Swap: operations is empty!");
         }
@@ -70,13 +83,25 @@ impl MultihopTrait for Multihop {
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
 
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
-            next_offer_amount = lp_client.swap(
-                &recipient,
-                &op.offer_asset,
-                &next_offer_amount,
-                &None::<i64>,
-                &Some(5000i64),
-            );
+            if let Some(referral) = referral.clone() {
+                next_offer_amount = lp_client.swap(
+                    &recipient,
+                    &Some(referral),
+                    &op.offer_asset,
+                    &next_offer_amount,
+                    &None::<i64>,
+                    &Some(5000i64),
+                );
+            } else {
+                next_offer_amount = lp_client.swap(
+                    &recipient,
+                    &None,
+                    &op.offer_asset,
+                    &next_offer_amount,
+                    &None::<i64>,
+                    &Some(5000i64),
+                );
+            }
         });
     }
 

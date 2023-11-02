@@ -1,3 +1,4 @@
+use crate::lp_contract::Referral;
 use crate::storage::Swap;
 use crate::tests::setup::{
     deploy_and_initialize_factory, deploy_and_initialize_lp, deploy_and_mint_tokens,
@@ -76,11 +77,99 @@ fn swap_three_equal_pools_no_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &50i128);
+    multihop.swap(&recipient, &None, &operations, &50i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
     assert_eq!(token4.balance(&recipient), 50i128);
+}
+
+#[test]
+fn swap_three_equal_pools_no_fees_referral_fee() {
+    let env = Env::default();
+
+    let admin = Address::random(&env);
+
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+
+    // 1. deploy factory
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        1_000_000,
+        token2.address.clone(),
+        1_000_000,
+        None,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token2.address.clone(),
+        1_000_000,
+        token3.address.clone(),
+        1_000_000,
+        None,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token3.address.clone(),
+        1_000_000,
+        token4.address.clone(),
+        1_000_000,
+        None,
+    );
+
+    // 4. swap with multihop
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+    let recipient = Address::random(&env);
+    token1.mint(&recipient, &50i128);
+    assert_eq!(token1.balance(&recipient), 50i128);
+    assert_eq!(token4.balance(&recipient), 0i128);
+
+    let swap1 = Swap {
+        offer_asset: token1.address.clone(),
+        ask_asset: token2.address.clone(),
+    };
+    let swap2 = Swap {
+        offer_asset: token2.address.clone(),
+        ask_asset: token3.address.clone(),
+    };
+    let swap3 = Swap {
+        offer_asset: token3.address.clone(),
+        ask_asset: token4.address.clone(),
+    };
+
+    let operations = vec![&env, swap1, swap2, swap3];
+    let referral_addr = Address::random(&env);
+    let referral = Referral {
+        address: referral_addr.clone(),
+        fee: 1_000,
+    };
+
+    multihop.swap(&recipient, &Some(referral), &operations, &50i128);
+
+    // 5. check if it goes according to plan
+    assert_eq!(token1.balance(&recipient), 0i128);
+    assert_eq!(token4.balance(&recipient), 37i128);
+    // referral fee from first swap should be 5 (10% out of 50)
+    assert_eq!(token2.balance(&referral_addr), 5i128);
+    // referral fee from 2nd swap should be 4 (10% out of 45) rounded down
+    assert_eq!(token3.balance(&referral_addr), 4i128);
+    // referral fee from the last swap should also be 4 (10% out of 41) rounded down
+    assert_eq!(token4.balance(&referral_addr), 4i128);
 }
 
 #[test]
@@ -122,7 +211,7 @@ fn swap_single_pool_no_fees() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &operations, &1_000);
+    multihop.swap(&recipient, &None, &operations, &1_000);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 4_000i128); // -1_000 token0
@@ -168,7 +257,7 @@ fn swap_single_pool_with_fees() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &operations, &300i128);
+    multihop.swap(&recipient, &None, &operations, &300i128);
 
     // 5. check if it goes according to plan
     // 1000 tokens initially
@@ -249,7 +338,7 @@ fn swap_three_different_pools_no_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &5_000i128);
+    multihop.swap(&recipient, &None, &operations, &5_000i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -329,7 +418,7 @@ fn swap_three_different_pools_with_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &10_000i128);
+    multihop.swap(&recipient, &None, &operations, &10_000i128);
 
     // we start swapping 10_000 tokens
 
@@ -373,5 +462,5 @@ fn swap_panics_with_no_operations() {
 
     let swap_vec = vec![&env];
 
-    multihop.swap(&recipient, &swap_vec, &50i128);
+    multihop.swap(&recipient, &None, &swap_vec, &50i128);
 }

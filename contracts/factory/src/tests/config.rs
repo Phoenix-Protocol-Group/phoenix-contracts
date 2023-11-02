@@ -79,6 +79,7 @@ fn factory_successfully_inits_lp() {
         max_allowed_spread_bps: 500,
         share_token_decimals: 7,
         swap_fee_bps: 0,
+        max_referral_bps: 5_000,
         token_init_info: token_init_info.clone(),
         stake_init_info,
     };
@@ -96,6 +97,7 @@ fn factory_successfully_inits_lp() {
             fee_recipient: user,
             max_allowed_slippage_bps: 5_000,
             max_allowed_spread_bps: 500,
+            max_referral_bps: 5_000,
             pool_type: lp_contract::PairType::Xyk,
             share_token: share_token_address,
             stake_contract: stake_token_address,

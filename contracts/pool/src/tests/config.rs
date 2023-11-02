@@ -46,6 +46,7 @@ fn update_config() {
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
+            max_referral_bps: 5_000,
         }
     );
 
@@ -70,6 +71,7 @@ fn update_config() {
             fee_recipient: admin2.clone(),
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
+            max_referral_bps: 5_000,
         }
     );
 
@@ -87,6 +89,7 @@ fn update_config() {
             fee_recipient: admin2,
             max_allowed_slippage_bps: 5_000,
             max_allowed_spread_bps: 500,
+            max_referral_bps: 5_000,
         }
     );
 }
@@ -175,6 +178,7 @@ fn update_config_update_admin() {
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 3_000_000,
+            max_referral_bps: 5_000,
         }
     );
 }
