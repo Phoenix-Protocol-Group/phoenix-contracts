@@ -630,6 +630,8 @@ fn do_swap(
         }
     }
 
+    env.events()
+        .publish(("debug", "634"), max_spread.unwrap());
     let belief_price = belief_price.map(Decimal::percent);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
 
@@ -648,6 +650,7 @@ fn do_swap(
     };
 
     // 1. We calculate the referral_fee below. If none referral fee will be 0
+    env.events().publish(("debug", "653"), Some(()));
     let compute_swap: ComputeSwap = compute_swap(
         pool_balance_sell,
         pool_balance_buy,
@@ -656,6 +659,7 @@ fn do_swap(
         referral_fee_bps,
     );
 
+    env.events().publish(("debug", "662"), Some(()));
     assert_max_spread(
         &env,
         belief_price,
@@ -673,6 +677,7 @@ fn do_swap(
     };
 
     // transfer tokens to swap
+    env.events().publish(("debug", "680"), Some(()));
     token_contract::Client::new(&env, &sell_token).transfer(
         &sender,
         &env.current_contract_address(),
@@ -680,6 +685,7 @@ fn do_swap(
     );
 
     // return swapped tokens to user
+    env.events().publish(("debug", "688"), Some(()));
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
         &sender,
@@ -687,6 +693,7 @@ fn do_swap(
     );
 
     // send commission to fee recipient
+    env.events().publish(("debug", "696"), Some(()));
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
         &config.fee_recipient,
@@ -695,6 +702,8 @@ fn do_swap(
 
     // 2. If referral is present and return amount is larger than 0 we send referral fee commision
     //    to fee recipient
+    env.events()
+        .publish(("debug", "706"), compute_swap.spread_amount);
     if let Some(Referral { address, fee }) = referral {
         if fee > 0 {
             token_contract::Client::new(&env, &buy_token).transfer(
@@ -705,6 +714,7 @@ fn do_swap(
         }
     }
 
+    env.events().publish(("debug", "717"), Some(()));
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
     let (balance_a, balance_b) = if offer_asset == config.token_a {
@@ -739,6 +749,8 @@ fn do_swap(
         ("swap", "referral_fee_amount"),
         compute_swap.referral_fee_amount,
     );
+    env.events()
+        .publish(("debug: end of do_swap", "753"), compute_swap.spread_amount);
     compute_swap.return_amount
 }
 
@@ -895,23 +907,36 @@ pub fn assert_max_spread(
 ) {
     // Calculate the expected return if a belief price is provided
     let expected_return = belief_price.map(|price| offer_amount * price);
+    env.events().publish(("debug", "910"), Some(()));
 
     // Total return is the sum of the amount received and the spread
     let total_return = return_amount + spread_amount;
+    env.events().publish(("debug", "914"), Some(()));
 
     // Calculate the spread ratio, the fraction of the return that is due to spread
     // If the user has specified a belief price, use it to calculate the expected return
     // Otherwise, use the total return
     let spread_ratio = if let Some(expected_return) = expected_return {
+        env.events().publish(("debug", "920"), Some(()));
         Decimal::from_ratio(spread_amount, expected_return)
     } else {
+        env.events().publish(("debug", "923"), Some(()));
         Decimal::from_ratio(spread_amount, total_return)
     };
 
+    env.events().publish(("debug", "927"), Some(()));
+    env.events()
+        .publish(("debug", "929"), Decimal::to_string(&spread_ratio, env));
+    env.events()
+        .publish(("debug", "931"), Decimal::to_string(&max_spread, env));
+    env.events()
+        .publish(("debug", "933"), spread_ratio > max_spread);
     if spread_ratio > max_spread {
+        env.events().publish(("debug", "935"), Some(()));
         log!(env, "Spread exceeds maximum allowed");
         panic!("Pool: Assert max spread: spread exceeds maximum allowed");
     }
+    env.events().publish(("debug: assert max spread", "939"), Some(()));
 }
 
 /// Computes the result of a swap operation.

@@ -226,8 +226,8 @@ fn swap_single_pool_no_fees() {
 }
 
 #[test]
-// #[should_panic(expected = "Pool: Assert max spread: spread exceeds maximum allowed")]
-#[should_panic]
+#[should_panic(expected = "Pool: Assert max spread: spread exceeds maximum allowed")]
+// #[should_panic]
 fn swap_should_fail_when_spread_exceeds_the_limit() {
     let env = Env::default();
     let admin = Address::random(&env);
