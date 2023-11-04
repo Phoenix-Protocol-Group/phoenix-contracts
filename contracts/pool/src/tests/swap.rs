@@ -316,6 +316,49 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
 }
 
 #[test]
+#[should_panic(expected = "Pool: Assert max spread: spread exceeds maximum allowed")]
+fn swap_should_panic_with_bad_max_spread() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::random(&env);
+    let mut admin2 = Address::random(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::random(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &2_001_000);
+    pool.provide_liquidity(&user1, &Some(5000), &None, &Some(2_000_000), &None, &None);
+
+    // selling just one token with 1% max spread allowed
+    pool.swap(
+        &user1,
+        &None::<Referral>,
+        &token1.address,
+        &50,
+        &None,
+        &Some(50),
+    );
+}
+
+#[test]
 fn swap_with_high_fee() {
     let env = Env::default();
     env.mock_all_auths();
