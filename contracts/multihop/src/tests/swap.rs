@@ -5,7 +5,15 @@ use crate::tests::setup::{
     deploy_multihop_contract, deploy_token_contract,
 };
 
+use soroban_sdk::contracterror;
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum ContractError {
+    SpreadExceedsLimit = 1,
+}
 
 #[test]
 fn swap_three_equal_pools_no_fees() {
@@ -226,8 +234,8 @@ fn swap_single_pool_no_fees() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: Assert max spread: spread exceeds maximum allowed")]
-// #[should_panic]
+/// Asserting HostError, because of panic messages are not propagated and IIUC are normally compiled out
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn swap_should_fail_when_spread_exceeds_the_limit() {
     let env = Env::default();
     let admin = Address::random(&env);

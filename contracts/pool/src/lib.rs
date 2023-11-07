@@ -1,6 +1,7 @@
 #![no_std]
 mod contract;
 mod storage;
+mod contracterror;
 
 pub mod token_contract {
     // The import will code generate:
