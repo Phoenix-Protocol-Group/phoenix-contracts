@@ -1,4 +1,6 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, panic_with_error};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
+};
 
 use num_integer::Roots;
 
@@ -911,7 +913,7 @@ pub fn assert_max_spread(
 
     if spread_ratio > max_spread {
         log!(env, "Spread exceeds maximum allowed");
-        panic_with_error!(&env, ContractError::SpreadExceedsLimit);
+        panic_with_error!(env, ContractError::SpreadExceedsLimit);
     }
 }
 
@@ -1064,7 +1066,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "spread exceeds maximum allowed")]
+    #[should_panic(expected = "HostError: Error(Contract, #1)")]
     fn test_assert_max_spread_fail_max_spread_exceeded() {
         let env = Env::default();
 
@@ -1093,7 +1095,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "spread exceeds maximum allowed")]
+    #[should_panic(expected = "HostError: Error(Contract, #1)")]
     fn test_assert_max_spread_fail_no_belief_price_max_spread_exceeded() {
         let env = Env::default();
         // no belief price, max spread of 10%, offer amount of 10, return amount of 10, spread amount of 2
