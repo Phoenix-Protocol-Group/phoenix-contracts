@@ -5,7 +5,15 @@ use crate::tests::setup::{
     deploy_multihop_contract, deploy_token_contract,
 };
 
+use soroban_sdk::contracterror;
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum ContractError {
+    SpreadExceedsLimit = 1,
+}
 
 #[test]
 fn swap_three_equal_pools_no_fees() {
@@ -77,7 +85,7 @@ fn swap_three_equal_pools_no_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &None, &operations, &50i128);
+    multihop.swap(&recipient, &None, &operations, &None, &None, &50i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -159,7 +167,14 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
         fee: 1_000,
     };
 
-    multihop.swap(&recipient, &Some(referral), &operations, &50i128);
+    multihop.swap(
+        &recipient,
+        &Some(referral),
+        &operations,
+        &None,
+        &None,
+        &50i128,
+    );
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -211,11 +226,51 @@ fn swap_single_pool_no_fees() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &None, &operations, &1_000);
+    multihop.swap(&recipient, &None, &operations, &None, &None, &1_000);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 4_000i128); // -1_000 token0
     assert_eq!(token2.balance(&recipient), 1_000i128); // +1_000 token1
+}
+
+#[test]
+/// Asserting HostError, because of panic messages are not propagated and IIUC are normally compiled out
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
+fn swap_should_fail_when_spread_exceeds_the_limit() {
+    let env = Env::default();
+    let admin = Address::random(&env);
+
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
+    let token2 = deploy_and_mint_tokens(&env, &admin, 3_001_000i128);
+
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        5_000,
+        token2.address.clone(),
+        2_000_000,
+        None,
+    );
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+    let recipient = Address::random(&env);
+    token1.mint(&recipient, &5_000i128); // mints 50 token0 to recipient
+
+    let swap1 = Swap {
+        offer_asset: token1.address.clone(),
+        ask_asset: token2.address.clone(),
+    };
+
+    let operations = vec![&env, swap1];
+
+    multihop.swap(&recipient, &None, &operations, &None, &Some(50), &50);
 }
 
 #[test]
@@ -257,7 +312,7 @@ fn swap_single_pool_with_fees() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &None, &operations, &300i128);
+    multihop.swap(&recipient, &None, &operations, &None, &None, &300i128);
 
     // 5. check if it goes according to plan
     // 1000 tokens initially
@@ -338,7 +393,7 @@ fn swap_three_different_pools_no_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &None, &operations, &5_000i128);
+    multihop.swap(&recipient, &None, &operations, &None, &None, &5_000i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -418,7 +473,7 @@ fn swap_three_different_pools_with_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &None, &operations, &10_000i128);
+    multihop.swap(&recipient, &None, &operations, &None, &None, &10_000i128);
 
     // we start swapping 10_000 tokens
 
@@ -462,5 +517,5 @@ fn swap_panics_with_no_operations() {
 
     let swap_vec = vec![&env];
 
-    multihop.swap(&recipient, &None, &swap_vec, &50i128);
+    multihop.swap(&recipient, &None, &swap_vec, &None, &None, &50i128);
 }
