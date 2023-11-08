@@ -347,7 +347,7 @@ fn swap_should_panic_with_bad_max_spread() {
     token2.mint(&user1, &2_001_000);
     pool.provide_liquidity(&user1, &Some(5000), &None, &Some(2_000_000), &None, &None);
 
-    // selling just one token with 1% max spread allowed
+    // selling just one token with 1% max spread allowed and 50 bps max spread
     pool.swap(
         &user1,
         &None::<Referral>,
