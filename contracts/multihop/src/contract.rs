@@ -1,3 +1,4 @@
+extern crate std;
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use crate::lp_contract::Referral;
@@ -72,7 +73,10 @@ impl MultihopTrait for Multihop {
         if operations.is_empty() {
             panic!("Multihop: Swap: operations is empty!");
         }
+        std::println!("{}", "verify operations");
+        env.budget().reset_default();
         verify_swap(&operations);
+        env.budget().print();
 
         recipient.require_auth();
 
@@ -80,12 +84,20 @@ impl MultihopTrait for Multihop {
         // subsequent are the results of the previous swap
         let mut next_offer_amount: i128 = amount;
 
+        std::println!("{}", "make factory client");
+        env.budget().reset_default();
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
+        env.budget().print();
 
         operations.iter().for_each(|op| {
+            std::println!("{}", "factory query for lp");
+            env.budget().reset_default();
             let liquidity_pool_addr: Address = factory_client
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
+            env.budget().print();
 
+            std::println!("{}", "lp contract call for swap");
+            env.budget().reset_default();
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
             if let Some(referral) = referral.clone() {
                 next_offer_amount = lp_client.swap(
@@ -106,6 +118,7 @@ impl MultihopTrait for Multihop {
                     &max_spread_bps,
                 );
             }
+            env.budget().print();
         });
     }
 
