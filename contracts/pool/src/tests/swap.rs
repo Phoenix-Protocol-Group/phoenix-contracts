@@ -14,7 +14,7 @@ use decimal::Decimal;
 fn simple_swap() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    // env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -50,6 +50,7 @@ fn simple_swap() {
 
     // selling just one token with 1% max spread allowed
     let spread = 100i64; // 1% maximum spread allowed
+    // env.budget().reset_default();
     pool.swap(
         &user1,
         &None::<Referral>,
@@ -58,6 +59,7 @@ fn simple_swap() {
         &None,
         &Some(spread),
     );
+    // env.budget().print();
     assert_eq!(
         env.auths(),
         [(
@@ -148,7 +150,7 @@ fn simple_swap() {
 fn simple_swap_with_referral_fee() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    // env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -192,6 +194,7 @@ fn simple_swap_with_referral_fee() {
         fee: 1_000,
     };
 
+    // env.budget().reset_default();
     pool.swap(
         &user1,
         &Some(referral.clone()),
@@ -200,6 +203,7 @@ fn simple_swap_with_referral_fee() {
         &None,
         &Some(spread),
     );
+    // env.budget().print();
 
     // zero referral fee because amount is too low
     assert_eq!(token1.balance(&referral_addr.clone()), 0);
@@ -263,7 +267,7 @@ fn simple_swap_with_referral_fee() {
 fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    // env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -320,7 +324,7 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
 fn swap_should_panic_with_bad_max_spread() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    // env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -362,7 +366,7 @@ fn swap_should_panic_with_bad_max_spread() {
 fn swap_with_high_fee() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    // env.budget().reset_unlimited();
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
@@ -403,6 +407,7 @@ fn swap_with_high_fee() {
     let spread = 1_000; // 10% maximum spread allowed
 
     // let's swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
+    // env.budget().reset_default();
     pool.swap(
         &user1,
         &None,
@@ -411,6 +416,7 @@ fn swap_with_high_fee() {
         &None,
         &Some(spread),
     );
+    // env.budget().print();
 
     // This is XYK LP with constant product formula
     // Y_new = (X_in * Y_old) / (X_in + X_old)
@@ -445,7 +451,7 @@ fn swap_with_high_fee() {
 fn swap_simulation_even_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    // env.budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::random(&env));
     let mut token2 = deploy_token_contract(&env, &Address::random(&env));
@@ -479,7 +485,9 @@ fn swap_simulation_even_pool() {
 
     // let's simulate swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
     let offer_amount = 100_000i128;
+    // env.budget().reset_default();
     let result = pool.simulate_swap(&token1.address, &offer_amount);
+    // env.budget().print();
 
     // This is XYK LP with constant product formula
     // Y_new = (X_in * Y_old) / (X_in + X_old)
@@ -545,7 +553,7 @@ fn swap_simulation_even_pool() {
 fn swap_simulation_one_third_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    // env.budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::random(&env));
     let mut token2 = deploy_token_contract(&env, &Address::random(&env));
@@ -579,7 +587,9 @@ fn swap_simulation_one_third_pool() {
 
     // let's simulate swap 100_000 units of Token 1 in 1:3 pool with 5% protocol fee
     let offer_amount = 100_000i128;
+    // env.budget().reset_default();
     let result = pool.simulate_swap(&token1.address, &offer_amount);
+    // env.budget().print();
 
     // This is XYK LP with constant product formula
     // Y_new = (X_in * Y_old) / (X_in + X_old)

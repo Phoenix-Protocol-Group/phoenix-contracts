@@ -369,13 +369,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
     ) -> i128 {
-        std::println!("{}", "ONLY SWAP");
-        env.budget().reset_default();
         validate_int_parameters!(offer_amount);
 
         sender.require_auth();
 
-        let result = do_swap(
+        do_swap(
             env.clone(),
             sender,
             referral,
@@ -383,9 +381,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             offer_amount,
             belief_price,
             max_spread_bps,
-        );
-        env.budget().print();
-        result
+        )
     }
 
     fn withdraw_liquidity(
@@ -631,27 +627,27 @@ fn do_swap(
     belief_price: Option<i64>,
     max_spread: Option<i64>,
 ) -> i128 {
-    // std::println!("{}", "config and referral");
-    // env.budget().reset_default();
+    std::println!("{}", "config and referral");
+    env.budget().reset_default();
     let config = get_config(&env);
     if let Some(referral) = &referral {
         if referral.fee > config.max_referral_bps {
             panic!("Pool: Swap: Trying to swap with more than the allowed referral fee");
         }
     }
-    // env.budget().print();
+    env.budget().print();
 
-    // std::println!("{}", "max belief price and max spread");
-    // env.budget().reset_default();
+    std::println!("{}", "max belief price and max spread");
+    env.budget().reset_default();
     let belief_price = belief_price.map(Decimal::percent);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
-    // env.budget().print();
+    env.budget().print();
 
-    // std::println!("{}", "pool balance cost");
-    // env.budget().reset_default();
+    std::println!("{}", "pool balance cost");
+    env.budget().reset_default();
     let pool_balance_a = utils::get_pool_balance_a(&env);
     let pool_balance_b = utils::get_pool_balance_b(&env);
-    // env.budget().print();
+    env.budget().print();
 
     let (pool_balance_sell, pool_balance_buy) = if offer_asset == config.token_a {
         (pool_balance_a, pool_balance_b)
@@ -664,8 +660,8 @@ fn do_swap(
         None => 0,
     };
 
-    // std::println!("{}", "Compute swap");
-    // env.budget().reset_default();
+    std::println!("{}", "Compute swap");
+    env.budget().reset_default();
     // 1. We calculate the referral_fee below. If none referral fee will be 0
     let compute_swap: ComputeSwap = compute_swap(
         pool_balance_sell,
@@ -674,10 +670,10 @@ fn do_swap(
         config.protocol_fee_rate(),
         referral_fee_bps,
     );
-    // env.budget().print();
+    env.budget().print();
 
-    // std::println!("{}", "assert max spread");
-    // env.budget().reset_default();
+    std::println!("{}", "assert max spread");
+    env.budget().reset_default();
     assert_max_spread(
         &env,
         belief_price,
@@ -686,7 +682,7 @@ fn do_swap(
         compute_swap.return_amount + compute_swap.commission_amount,
         compute_swap.spread_amount,
     );
-    // env.budget().print();
+    env.budget().print();
     // Transfer the amount being sold to the contract
     let (sell_token, buy_token) = if offer_asset == config.clone().token_a {
         (config.clone().token_a, config.clone().token_b)
@@ -695,8 +691,8 @@ fn do_swap(
     };
 
     // transfer tokens to swap
-    // std::println!("{}", "first transfer");
-    // env.budget().reset_default();
+    std::println!("{}", "first transfer");
+    env.budget().reset_default();
     // let args: Vec<Val> = (sender.clone(), env.current_contract_address(), offer_amount).into_val(&env);
     // let res: Val = env.invoke_contract(&sell_token, &Symbol::new(&env, "transfer"), args);
     // using client::new
@@ -717,32 +713,32 @@ fn do_swap(
         &env.current_contract_address(),
         &offer_amount,
     );
-    // env.budget().print();
+    env.budget().print();
 
     // return swapped tokens to user
-    // std::println!("{}", "second transfer");
-    // env.budget().reset_default();
+    std::println!("{}", "second transfer");
+    env.budget().reset_default();
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
         &sender,
         &compute_swap.return_amount,
     );
-    // env.budget().print();
+    env.budget().print();
 
     // send commission to fee recipient
-    // std::println!("{}", "third transfer");
-    // env.budget().reset_default();
+    std::println!("{}", "third transfer");
+    env.budget().reset_default();
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
         &config.fee_recipient,
         &compute_swap.commission_amount,
     );
-    // env.budget().print();
+    env.budget().print();
 
     // 2. If referral is present and return amount is larger than 0 we send referral fee commision
     //    to fee recipient
-    // std::println!("{}", "if referral");
-    // env.budget().reset_default();
+    std::println!("{}", "if referral");
+    env.budget().reset_default();
     if let Some(Referral { address, fee }) = referral {
         if fee > 0 {
             token_contract::Client::new(&env, &buy_token).transfer(
@@ -752,12 +748,12 @@ fn do_swap(
             );
         }
     }
-    // env.budget().print();
+    env.budget().print();
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
 
-    // std::println!("{}", "set balance_a and balance_b");
-    // env.budget().reset_default();
+    std::println!("{}", "set balance_a and balance_b");
+    env.budget().reset_default();
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
             pool_balance_a + offer_amount,
@@ -775,17 +771,17 @@ fn do_swap(
             pool_balance_b + offer_amount,
         )
     };
-    // env.budget().print();
+    env.budget().print();
 
-    // std::println!("{}", "utils save");
-    // env.budget().reset_default();
+    std::println!("{}", "utils save");
+    env.budget().reset_default();
     utils::save_pool_balance_a(&env, balance_a);
     utils::save_pool_balance_b(&env, balance_b);
-    // env.budget().print();
+    env.budget().print();
 
 
-    // std::println!("{}", "logging");
-    // env.budget().reset_default();
+    std::println!("{}", "logging");
+    env.budget().reset_default();
     env.events().publish(("swap", "sender"), sender);
     env.events().publish(("swap", "sell_token"), sell_token);
     env.events().publish(("swap", "offer_amount"), offer_amount);
@@ -798,7 +794,7 @@ fn do_swap(
         ("swap", "referral_fee_amount"),
         compute_swap.referral_fee_amount,
     );
-    // env.budget().print();
+    env.budget().print();
     compute_swap.return_amount
 }
 
