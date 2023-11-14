@@ -1,5 +1,5 @@
 extern crate std;
-use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Symbol, Val, Vec, IntoVal};
 
 use crate::lp_contract::Referral;
 use crate::storage::{
@@ -98,25 +98,48 @@ impl MultihopTrait for Multihop {
 
             // std::println!("{}", "lp contract call for swap");
             // env.budget().reset_default();
+            // let res: Val = env.invoke_contract(&sell_token, &Symbol::new(&env, "transfer"), args);
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
             if let Some(referral) = referral.clone() {
-                next_offer_amount = lp_client.swap(
-                    &recipient,
-                    &Some(referral),
-                    &op.offer_asset,
-                    &next_offer_amount,
-                    &max_belief_price,
-                    &max_spread_bps,
-                );
+                let args: Vec<Val> = (
+                    recipient.clone(),
+                    Some(referral),
+                    op.offer_asset,
+                    next_offer_amount,
+                    max_belief_price,
+                    max_spread_bps,
+                )
+                    .into_val(&env);
+                next_offer_amount =
+                    env.invoke_contract(&liquidity_pool_addr, &Symbol::new(&env, "swap"), args);
+                // next_offer_amount = lp_client.swap(
+                //     &recipient,
+                //     &Some(referral),
+                //     &op.offer_asset,
+                //     &next_offer_amount,
+                //     &max_belief_price,
+                //     &max_spread_bps,
+                // );
             } else {
-                next_offer_amount = lp_client.swap(
-                    &recipient,
-                    &None,
-                    &op.offer_asset,
-                    &next_offer_amount,
-                    &max_belief_price,
-                    &max_spread_bps,
-                );
+                let args: Vec<Val> = (
+                    recipient.clone(),
+                    None::<Referral>,
+                    op.offer_asset,
+                    next_offer_amount,
+                    max_belief_price,
+                    max_spread_bps,
+                )
+                    .into_val(&env);
+                next_offer_amount =
+                    env.invoke_contract(&liquidity_pool_addr, &Symbol::new(&env, "swap"), args);
+                // next_offer_amount = lp_client.swap(
+                //     &recipient,
+                //     &None,
+                //     &op.offer_asset,
+                //     &next_offer_amount,
+                //     &max_belief_price,
+                //     &max_spread_bps,
+                // );
             }
             // env.budget().print();
         });

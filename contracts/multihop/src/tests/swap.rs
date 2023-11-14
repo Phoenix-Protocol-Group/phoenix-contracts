@@ -85,9 +85,9 @@ fn swap_three_equal_pools_no_fees() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    // env.budget().reset_default();
+    env.budget().reset_default();
     multihop.swap(&recipient, &None, &operations, &None, &None, &50i128);
-    // env.budget().print();
+    env.budget().print();
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
