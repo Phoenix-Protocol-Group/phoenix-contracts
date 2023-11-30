@@ -14,6 +14,7 @@ and this project adheres to
 - Multihop: Implement simulate swap/reverse swap queries ([#147])
 - Factory: Initializes the Multihop contract upon initializing Factory ([#158])
 - Multihop: Checks if the list of Swaps being sent is not empty / is valid ([#159])
+- Multihop: Adds a new parameter to SimulateSwapResponse and SimulateReverseSwapResponse, that keeps information about spread ([#168])
 
 ## Bug fixes
 
@@ -25,6 +26,7 @@ and this project adheres to
 [#157]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/157
 [#158]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/158
 [#159]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/159
+[#168]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/168
 
 ## [0.7.0] - 2023-10-10
 
