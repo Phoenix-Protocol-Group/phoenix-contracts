@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, vec, Address, Env, Vec};
 
 use crate::lp_contract::Referral;
 use crate::storage::{
@@ -121,6 +121,7 @@ impl MultihopTrait for Multihop {
         let mut simulate_swap_response = SimulateSwapResponse {
             ask_amount: 0,
             total_commission_amount: 0,
+            spread_amount: vec![&env],
         };
 
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
@@ -134,6 +135,9 @@ impl MultihopTrait for Multihop {
 
             simulate_swap_response.total_commission_amount += simulate_swap.commission_amount;
             simulate_swap_response.ask_amount = simulate_swap.ask_amount;
+            simulate_swap_response
+                .spread_amount
+                .push_back(simulate_swap.spread_amount);
 
             next_offer_amount = simulate_swap.ask_amount;
         });
@@ -157,6 +161,7 @@ impl MultihopTrait for Multihop {
         let mut simulate_swap_response = SimulateReverseSwapResponse {
             offer_amount: 0,
             total_commission_amount: 0,
+            spread_amount: vec![&env],
         };
 
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
@@ -172,6 +177,10 @@ impl MultihopTrait for Multihop {
             simulate_swap_response.total_commission_amount +=
                 simulate_reverse_swap.commission_amount;
             simulate_swap_response.offer_amount = simulate_reverse_swap.offer_amount;
+
+            simulate_swap_response
+                .spread_amount
+                .push_back(simulate_reverse_swap.spread_amount);
 
             next_ask_amount = simulate_reverse_swap.offer_amount;
         });
