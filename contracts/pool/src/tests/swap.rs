@@ -697,6 +697,9 @@ fn bug_issue_169() {
         }
     );
 
+    // 991020025 is the request, so 10% of that should be what's on the left hand side
+    assert_eq!(99102002, result.commission_amount);
+
     let result = pool.simulate_reverse_swap(&token1.address, &(output_amount - fees));
     let output_amount = 991020025i128;
     let fees = Decimal::percent(10) * output_amount;
