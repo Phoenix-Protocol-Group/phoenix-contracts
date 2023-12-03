@@ -663,7 +663,7 @@ fn bug_issue_169() {
         10_000i64,
     );
 
-    let initial_liquidity = 110358880127; // taken from the current amount of tokens in pool
+    let initial_liquidity = 110_358_880_127; // taken from the current amount of tokens in pool
     let user1 = Address::random(&env);
     token1.mint(&user1, &initial_liquidity);
     token2.mint(&user1, &initial_liquidity);
@@ -676,33 +676,34 @@ fn bug_issue_169() {
         &None,
     );
 
-    // simulating a swap with 100 units
-    let offer_amount = 100i128;
+    // simulating a swap with 1_000_000_000 units
+    let offer_amount = 1_000_000_000i128;
     let result = pool.simulate_swap(&token1.address, &offer_amount);
 
     // XYK pool formula as follows
     // Y_new = (X_in * Y_old) / (X_in + X_old)
-    // Y_new = (100 * 110358880127) / (100 + 110358880127)
-    // Y_new = 99.9999999094
-    let output_amount = 100i128; // rounding
+    // Y_new = (1_000_000_000 * 110358880127) / (1_000_000_000 + 110358880127)
+    // Y_new = 991020024.637 
+    // Y_rnd = 991020025
+    let output_amount = 991020025; // rounding
     let fees = Decimal::percent(10) * output_amount;
     assert_eq!(
         result,
         SimulateSwapResponse {
             ask_amount: output_amount - fees,
-            spread_amount: 0,
+            spread_amount: 8979975,
             commission_amount: fees,
-            total_return: 100,
+            total_return: 1000000000,
         }
     );
 
     let result = pool.simulate_reverse_swap(&token1.address, &(output_amount - fees));
-    let output_amount = 99i128;
+    let output_amount = 991020025i128;
     let fees = Decimal::percent(10) * output_amount;
     assert_eq!(
         result,
         SimulateReverseSwapResponse {
-            offer_amount: 99i128,
+            offer_amount: 1000000000i128,
             spread_amount: Decimal::from_ratio(offer_amount, initial_liquidity) * output_amount,
             commission_amount: fees,
         }
