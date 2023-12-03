@@ -639,3 +639,72 @@ fn swap_simulation_one_third_pool() {
         }
     );
 }
+
+#[test]
+fn bug_issue_169() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut token1 = deploy_token_contract(&env, &Address::random(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::random(&env));
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let swap_fees = 1_000i64; // 10% bps
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        Address::random(&env),
+        10_000i64,
+        10_000i64,
+    );
+
+    let initial_liquidity = 110358880127; // taken from the current amount of tokens in pool
+    let user1 = Address::random(&env);
+    token1.mint(&user1, &initial_liquidity);
+    token2.mint(&user1, &initial_liquidity);
+    pool.provide_liquidity(
+        &user1,
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &None,
+    );
+
+    // simulating a swap with 100 units
+    let offer_amount = 100i128;
+    let result = pool.simulate_swap(&token1.address, &offer_amount);
+
+    // XYK pool formula as follows
+    // Y_new = (X_in * Y_old) / (X_in + X_old)
+    // Y_new = (100 * 110358880127) / (100 + 110358880127)
+    // Y_new = 99.9999999094
+    let output_amount = 100i128; // rounding
+    let fees = Decimal::percent(10) * output_amount;
+    assert_eq!(
+        result,
+        SimulateSwapResponse {
+            ask_amount: output_amount - fees,
+            spread_amount: 0,
+            commission_amount: fees,
+            total_return: 100,
+        }
+    );
+
+    let result = pool.simulate_reverse_swap(&token1.address, &(output_amount - fees));
+    let output_amount = 99i128;
+    let fees = Decimal::percent(10) * output_amount;
+    assert_eq!(
+        result,
+        SimulateReverseSwapResponse {
+            offer_amount: 99i128,
+            spread_amount: Decimal::from_ratio(offer_amount, initial_liquidity) * output_amount,
+            commission_amount: fees,
+        }
+    );
+}
