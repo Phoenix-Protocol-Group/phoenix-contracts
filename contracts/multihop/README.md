@@ -38,7 +38,7 @@
 `void`
 
 **description:**
-`Takes a list of 'Swap' operations between the different pools and iterates over them, swapping the tokens in question.`
+`Takes a list of 'Swap' operations between the different pools and iterates over them, swapping the tokens in question by calling the pool contract.`
 
 <hr>
 
