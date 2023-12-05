@@ -1,9 +1,9 @@
 
 
-# MULTIHOP
+# FACTORY
 
 ## Main functionality
-```The main purpose of the multihop contract is to provide the tooling required for managing, creating, querying of liquidity pools.```
+```The main purpose of the factory contract is to provide the tooling required for managing, creating, querying of liquidity pools.```
 
 
 
