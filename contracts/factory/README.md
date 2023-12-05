@@ -1,5 +1,3 @@
-
-
 # FACTORY
 
 ## Main functionality
