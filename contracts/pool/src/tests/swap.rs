@@ -654,7 +654,6 @@ fn test_swap_fee_variants(swap_fees: i64, fee_percentage: i64, commission_fee: i
         std::mem::swap(&mut token1, &mut token2);
     }
 
-    let swap_fees = swap_fees; // 10% bps
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
@@ -688,13 +687,12 @@ fn test_swap_fee_variants(swap_fees: i64, fee_percentage: i64, commission_fee: i
     // Y_new = 991020024.637
     // Y_rnd = 991020025
     let output_amount = 991020025; // rounding
-    let fees;
 
-    if swap_fees < 100 {
-        fees = Decimal::bps(fee_percentage) * output_amount;
+    let fees = if swap_fees < 100 {
+        Decimal::bps(fee_percentage) * output_amount
     } else {
-        fees = Decimal::percent(fee_percentage) * output_amount;
-    }
+        Decimal::percent(fee_percentage) * output_amount
+    };
 
     assert_eq!(
         result,

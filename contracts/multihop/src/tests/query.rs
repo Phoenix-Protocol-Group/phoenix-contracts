@@ -48,7 +48,6 @@ fn simulate_swap_single_pool_no_fees() {
     assert_eq!(result.total_commission_amount, 0i128);
     assert_eq!(result.spread_amount, vec![&env, 0i128]);
 
-
     // simulate reverse swap for exact results
     let reverse_simulated_swap = multihop.simulate_reverse_swap(&operation, &2_000i128);
 
@@ -127,7 +126,10 @@ fn simulate_swap_three_equal_pools_no_fees() {
 
     assert_eq!(simulated_swap.ask_amount, 50i128);
     assert_eq!(simulated_swap.total_commission_amount, 0i128);
-    assert_eq!(simulated_swap.spread_amount, vec![&env, 0i128, 0i128, 0i128]);
+    assert_eq!(
+        simulated_swap.spread_amount,
+        vec![&env, 0i128, 0i128, 0i128]
+    );
 
     // simulate reverse swap for exact results
     let reverse_simulated_swap = multihop.simulate_reverse_swap(
@@ -151,7 +153,10 @@ fn simulate_swap_three_equal_pools_no_fees() {
 
     assert_eq!(reverse_simulated_swap.offer_amount, 50i128);
     assert_eq!(reverse_simulated_swap.total_commission_amount, 0i128);
-    assert_eq!(reverse_simulated_swap.spread_amount, vec![&env, 0i128, 0i128, 0i128]);
+    assert_eq!(
+        reverse_simulated_swap.spread_amount,
+        vec![&env, 0i128, 0i128, 0i128]
+    );
 }
 
 #[test]
@@ -276,7 +281,10 @@ fn simulate_swap_three_different_pools_no_fees() {
     // constant product formula starts to with which amoutns such as 5k
     assert_eq!(simulated_swap.ask_amount, 4_956i128);
     assert_eq!(simulated_swap.total_commission_amount, 0i128);
-    assert_eq!(simulated_swap.spread_amount, vec![&env, 24i128, 12i128, 8i128]);
+    assert_eq!(
+        simulated_swap.spread_amount,
+        vec![&env, 24i128, 12i128, 8i128]
+    );
 
     // simulate reverse swap returns same result
     let reverse_simulated_swap = multihop.simulate_reverse_swap(
@@ -300,7 +308,10 @@ fn simulate_swap_three_different_pools_no_fees() {
 
     assert_eq!(reverse_simulated_swap.offer_amount, 5_000i128);
     assert_eq!(reverse_simulated_swap.total_commission_amount, 0i128);
-    assert_eq!(reverse_simulated_swap.spread_amount, vec![&env, 8i128, 12i128, 24i128]);
+    assert_eq!(
+        reverse_simulated_swap.spread_amount,
+        vec![&env, 8i128, 12i128, 24i128]
+    );
 }
 
 #[test]
@@ -397,7 +408,10 @@ fn simulate_swap_three_different_pools_with_fees() {
     assert_eq!(simulated_swap.ask_amount, 203_143i128);
     // total_commission_amount = 1_980 + 5_253 + 22_571 = 29_804
     assert_eq!(simulated_swap.total_commission_amount, 29_804i128);
-    assert_eq!(simulated_swap.spread_amount, vec![&env, 198i128, 936i128, 10671i128]);
+    assert_eq!(
+        simulated_swap.spread_amount,
+        vec![&env, 198i128, 936i128, 10671i128]
+    );
 
     // simulate reverse swap returns same result
     let reverse_simulated_swap = multihop.simulate_reverse_swap(
@@ -422,7 +436,10 @@ fn simulate_swap_three_different_pools_with_fees() {
     // one difference due to rounding
     assert_eq!(reverse_simulated_swap.offer_amount, 9_999i128);
     assert_eq!(reverse_simulated_swap.total_commission_amount, 29_803i128);
-    assert_eq!(reverse_simulated_swap.spread_amount, vec![&env, 10671i128, 934i128, 197i128]);
+    assert_eq!(
+        reverse_simulated_swap.spread_amount,
+        vec![&env, 10671i128, 934i128, 197i128]
+    );
 }
 
 #[test]
