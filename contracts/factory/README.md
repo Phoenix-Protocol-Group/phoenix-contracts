@@ -9,8 +9,8 @@
 #### 1. initialize
 
 **params:**
-* admin: Address of the contract administrator to be
-* multihop_wasm_hash: wasm hash of the multihop contract to be deployed initially
+* admin: `Address` of the contract administrator to be
+* multihop_wasm_hash: `BytesN<32>` hash of the multihop contract to be deployed initially
 
 **return type:**
  void
@@ -23,7 +23,7 @@ Used for the initialization of the factory contract - this sets the factory cont
 #### 2.  create_liquidity_pool
 **params:**
 
-* lp_init_info: information for the new liquidity pool
+* lp_init_info: `LiquidityPoolInitInfo` struct representing information for the new liquidity pool
 
 **return type:**
 `Address` of the newly created liquidity pool
@@ -50,7 +50,7 @@ Queries for a list of all the liquidity pool addresses that have been created by
 
 **params:**
 
-* pool_address: Address of the liquidity pool we search for
+* pool_address: `Address` of the liquidity pool we search for
 
 **return type:**
 `LiquidityPoolInfo` Struct containing the information about a given liquidity pool.
@@ -78,8 +78,8 @@ Queries for all liquidity pools information that have been created by the called
 
 **params:**
 
-* token_a: Address of the first token in the pool
-* token_b: Address of the second token in the pool
+* token_a: `Address` of the first token in the pool
+* token_b: `Address` of the second token in the pool
 
 **return type:**
 `Address` of the found liquidity pool that holds the given token pair.
@@ -113,4 +113,3 @@ Queries for admin address of the called factory contract
 
 **description:**
 Queries for the config of the called factory contract
-
