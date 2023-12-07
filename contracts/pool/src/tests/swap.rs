@@ -640,10 +640,10 @@ fn swap_simulation_one_third_pool() {
     );
 }
 
-#[test_case(1_000i64, 10, 99102002 ; "when fee is 10%")]
-#[test_case(100, 1, 9910200 ; "when fee is 1%")]
-#[test_case(30, 30, 2973060 ; "when fee is 0.3%")]
-fn test_swap_fee_variants(swap_fees: i64, fee_percentage: i64, commission_fee: i128) {
+#[test_case(1_000i64, 99102002 ; "when fee is 10%")]
+#[test_case(100, 9910200 ; "when fee is 1%")]
+#[test_case(30, 2973060 ; "when fee is 0.3%")]
+fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -688,11 +688,7 @@ fn test_swap_fee_variants(swap_fees: i64, fee_percentage: i64, commission_fee: i
     // Y_rnd = 991020025
     let output_amount = 991020025; // rounding
 
-    let fees = if swap_fees < 100 {
-        Decimal::bps(fee_percentage) * output_amount
-    } else {
-        Decimal::percent(fee_percentage) * output_amount
-    };
+    let fees = Decimal::bps(swap_fees) * output_amount;
 
     assert_eq!(
         result,
