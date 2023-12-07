@@ -1,4 +1,3 @@
-
 # FACTORY
 
 ## Main functionality
