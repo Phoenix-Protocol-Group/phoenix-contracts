@@ -10,8 +10,8 @@
 
 **params:**
 
-* admin: Address of the contract administrator to be
-* factory: address of the factory contract to be deployed initially
+* admin: `Address` of the contract administrator to be
+* factory: `Address` of the factory contract to be deployed initially
 
 **return type:**
 void
@@ -25,12 +25,12 @@ Used for the initialization of the multihop contract - this sets the multihop co
 
 **params:**
 
-* recipient: Address of the contract that will receive the amount swapped.
-* referral: Optional address of the referral, that will get a referral commission bonus for the swap.
-* operations: A list of Swap struct, that holds both the addresses of the asked and offer assets.
-*  max_belief_price: Optional value for the maximum believ price that will be used for the swaps.
-* max_spread_bps: maximum permitted difference between the asked and offered price in BPS.
-* amount: The amount offered for swap
+* recipient: `Address` of the contract that will receive the amount swapped.
+* referral: `Option<Address>` of the referral, that will get a referral commission bonus for the swap.
+* operations: `Vec<Swap>` that holds both the addresses of the asked and offer assets.
+*  max_belief_price: `Option<i64>` value for the maximum believe price that will be used for the swaps.
+* max_spread_bps: `Option<i64>` maximum permitted difference between the asked and offered price in BPS.
+* amount: `i128` value representing the amount offered for swap
 
 **return type:**
 void
@@ -43,8 +43,8 @@ Takes a list of `Swap` operations between the different pools and iterates over 
 #### 3. simulate_swap
 **params:**
 
-* operations: A list of `Swap` structs, each holding the addresses of the asked and offer assets
-* amount: The amount that should be swapped
+* operations: `Vec<Swap>`holding the addresses of the asked and offer assets
+* amount: `i128` value representing the amount that should be swapped
 
 **return type:**
 `SimulateSwapResponse` containing the details of the swap
@@ -58,8 +58,8 @@ Dry runs a swap operation. This is useful when we want to display some additiona
 
 **params:**
 
-* operations: A list of `Swap` structs, each holding the addresses of the asked and offer assets
-* amount: The amount that should be swapped
+* operations: `Vec<Swap>` holding the addresses of the asked and offer assets
+* amount: `i128` value representing the amount that should be swapped
 
 **return type:**
 `SimulateReverseSwapResponse` containing the details of the same swap but in reverse
