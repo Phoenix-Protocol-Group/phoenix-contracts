@@ -1,8 +1,8 @@
 extern crate std;
-
 use pretty_assertions::assert_eq;
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
+use test_case::test_case;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{
@@ -635,6 +635,82 @@ fn swap_simulation_one_third_pool() {
             // offer_amount,
             offer_amount: 100_002i128, // rounding error
             spread_amount: Decimal::from_ratio(offer_amount, 3_000_000) * output_amount, // since it's 10% of the pool
+            commission_amount: fees,
+        }
+    );
+}
+
+#[test_case(1_000i64, 99102002 ; "when fee is 10%")]
+#[test_case(100, 9910200 ; "when fee is 1%")]
+#[test_case(30, 2973060 ; "when fee is 0.3%")]
+fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut token1 = deploy_token_contract(&env, &Address::random(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::random(&env));
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        Address::random(&env),
+        10_000i64,
+        10_000i64,
+    );
+
+    let initial_liquidity = 110_358_880_127; // taken from the current amount of tokens in pool
+    let user1 = Address::random(&env);
+    token1.mint(&user1, &initial_liquidity);
+    token2.mint(&user1, &initial_liquidity);
+    pool.provide_liquidity(
+        &user1,
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &None,
+    );
+
+    // simulating a swap with 1_000_000_000 units
+    let offer_amount = 1_000_000_000i128;
+    let result = pool.simulate_swap(&token1.address, &offer_amount);
+
+    // XYK pool formula as follows
+    // Y_new = (X_in * Y_old) / (X_in + X_old)
+    // Y_new = (1_000_000_000 * 110358880127) / (1_000_000_000 + 110358880127)
+    // Y_new = 991020024.637
+    // Y_rnd = 991020025
+    let output_amount = 991020025; // rounding
+
+    let fees = Decimal::bps(swap_fees) * output_amount;
+
+    assert_eq!(
+        result,
+        SimulateSwapResponse {
+            ask_amount: output_amount - fees,
+            spread_amount: 8979975,
+            commission_amount: fees,
+            total_return: 1000000000,
+        }
+    );
+
+    // 991020025 is the request, so 10% of that should be what's on the left hand side
+    assert_eq!(commission_fee, result.commission_amount);
+
+    let result = pool.simulate_reverse_swap(&token1.address, &(output_amount - fees));
+    let output_amount = 991020025i128;
+    // let fees = Decimal::percent(fee_percentage) * output_amount;
+    assert_eq!(
+        result,
+        SimulateReverseSwapResponse {
+            offer_amount: 1000000000i128,
+            spread_amount: Decimal::from_ratio(offer_amount, initial_liquidity) * output_amount,
             commission_amount: fees,
         }
     );
