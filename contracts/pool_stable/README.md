@@ -1,199 +1,198 @@
-# STABLE POOL
+# Dex Stable Pool
 
 ## Main functionality
-```This contract is being used for managing stable coins within the Phoenix DEX. It offers liquidity provision, trading assets and pool management functionalities.```
+This contract is being used for managing stable coins within the Phoenix DEX. It offers liquidity provision, trading assets and pool management functionalities.
 
 ## Main methods:
-#### 1. initialize
+`initialize`
 
-**params:**
-* admin: `Address` of the contract administrator to be.
-* share_token_decimals: `u32` value for the number of decimals to be used for the given contract.
-* swap_fee_bps: `i64` value for the comission fee for the network in the given stable liquidity pool.
-* fee_recipient: `Address` that will receive the aforementioned fee.
-* max_allowed_slippage_bps: `i64` value for the maximum allowed slippage for a swap, set in BPS.
-* max_allowed_spread_bps: `i64` value for the maximum allowed difference between the price at the current moment and the price on which the users agree to sell. Measured in BPS.
-* token_init_info: `TokenInitInfo` struct containing information for the initialization of one of the two tokens in the pool.
-* stake_contract_info: `StakeInitInfo` struct containing information for the initialization of the stake contract for the given stable liquidity pool.
+Params:
+- `admin`: `Address` of the contract administrator to be.
+- `share_token_decimals`: `u32` value for the number of decimals to be used for the given contract.
+- `swap_fee_bps`: `i64` value for the comission fee for the network in the given stable liquidity pool.
+- `fee_recipient`: `Address` that will receive the aforementioned fee.
+- `max_allowed_slippage_bps`: `i64` value for the maximum allowed slippage for a swap, set in BPS.
+- `max_allowed_spread_bps`: `i64` value for the maximum allowed difference between the price at the current moment and the price on which the users agree to sell. Measured in BPS.
+- `token_init_info`: `TokenInitInfo` struct containing information for the initialization of one of the two tokens in the pool.
+- `stake_contract_info`: `StakeInitInfo` struct containing information for the initialization of the stake contract for the given stable liquidity pool.
 
-**return type:**
+Return type:
 void
 
-**description:**
+Description:
 Used for the initialization of the stable liquidity pool contract - this sets the admin in Config, initializes both token contracts, that will be in the pool and also initializes the staking contract needed for providing liquidity.
 
 <hr>
 
-#### 2. provide_liquidity
+`provide_liquidity`
 
-**params:**
-* depositor: `Address` of the ledger calling the current method and providing liqudity for the pool
-* desired_a: Optional `i128` value for amount of the first asset that the depositor wants to provide in the pool.
-* min_a: Optional `i128` value for minimum amount of the first asset that the depositor wants to provide in the pool.
-* desired_b: Optional `i128` value for amount of the second asset that the depositor wants to provide in the pool.
-* min_b: Optional `i128` value for minimum amount of the second asset that the depositor wants to provide in the pool.
-* custom_slippage_bps: Optional `i64` value for amount measured in BPS for the slippage tolerance.
+Params:
+- `depositor`: `Address` of the ledger calling the current method and providing liqudity for the pool
+- `desired_a`: Optional `i128` value for amount of the first asset that the depositor wants to provide in the pool.
+- `min_a`: Optional `i128` value for minimum amount of the first asset that the depositor wants to provide in the pool.
+- `desired_b`: Optional `i128` value for amount of the second asset that the depositor wants to provide in the pool.
+- `min_b`: Optional `i128` value for minimum amount of the second asset that the depositor wants to provide in the pool.
+- `custom_slippage_bps`: Optional `i64` value for amount measured in BPS for the slippage tolerance.
 
-**return type:**
+Return type:
 void
 
-**description:**
+Description:
 Allows the users to deposit optional pairs of tokens in the pool and receive awards in return. The awards are calculated based on the amount of assets deposited in the pool.
 
 <hr>
 
-#### 3. swap
+`swap`
 
-**params:**
-* sender: `Address` of the user that requests the swap.
-* offer_asset: `Address` for the asset the user wants to swap.
-* offer_amount: `i128` amount that the user wants to swap.
-* belief_price: Optional `i64` value that represents that users belived/expected price per token.
-* max_spread_bps: Optional `i64` value representing maximum allowed spread/slippage for the swap.
+Params:
+- `sender`: `Address` of the user that requests the swap.
+- `offer_asset`: `Address` for the asset the user wants to swap.
+- `offer_amount`: `i128` amount that the user wants to swap.
+- `belief_price`: Optional `i64` value that represents that users belived/expected price per token.
+- `max_spread_bps`: Optional `i64` value representing maximum allowed spread/slippage for the swap.
 
-**return type:**
+Return type:
 i128
 
-**description:**
+Description:
 Exchanges one asset for another in the pool.
 
 <hr>
 
-#### 4. withdraw_liquidity
+`withdraw_liquidity`
 
-**params:**
-* recipient: `Address` that will receive the withdrawn liquidity.
-* share_amount: `i128` amount of shares that the user will remove from the stable liquidity pool.
-* min_a: `i128` amount of the first token.
-* min_b: `i128` amount of the second token.
+Params:
+- `recipient`: `Address` that will receive the withdrawn liquidity.
+- `share_amount`: `i128` amount of shares that the user will remove from the stable liquidity pool.
+- `min_a`: `i128` amount of the first token.
+- `min_b`: `i128` amount of the second token.
 
-**return type:**
+Return type:
 (i128, i128) tuple of the amount of the first and second token to be sent back to the user.
 
-**description:**
+Description:
 Allows for users to withdraw their liquidity out of a pool, forcing them to burn their share tokens in the given pool, before they can get the assets back.
 
 <hr>
 
-#### 5. update_config
+`update_config`
 
-**params:**
-* sender: `Address` of sender that wants to update the `Config`
-* new_admin: Optional `Address` of the new admin for the stable liquidity pool
-* total_fee_bps: Optional `i64` value for the total fees (in bps) charged by the pool
-* fee_recipient: Optional `Address` for the recipient of the swap commission fee
-* max_allowed_slippage_bps: Optional `i64` value the maximum allowed slippage for a swap, set in BPS.
-* max_allowed_spread_bps: Optional `i64` value for maximum allowed difference between the price at the current moment and the price on which the users agree to sell. Measured in BPS.
+Params:
+- `sender`: `Address` of sender that wants to update the `Config`
+- `new_admin`: Optional `Address` of the new admin for the stable liquidity pool
+- `total_fee_bps`: Optional `i64` value for the total fees (in bps) charged by the pool
+- `fee_recipient`: Optional `Address` for the recipient of the swap commission fee
+- `max_allowed_slippage_bps`: Optional `i64` value the maximum allowed slippage for a swap, set in BPS.
+- `max_allowed_spread_bps`: Optional `i64` value for maximum allowed difference between the price at the current moment and the price on which the users agree to sell. Measured in BPS.
 
-**return type:**
+Return type:
 void
 
-**description:**
+Description:
 Updates the stable liquidity pool `Config` information with new one.
 
 <hr>
 
-#### 6. upgrade 
+`upgrade` 
 
-**params:**
-* new_wasm_hash: `WASM hash` of the new stable liquidity pool contract
+Params:
+- `new_wasm_hash`: `WASM hash` of the new stable liquidity pool contract
 
-**return type:**
+Return type:
 void
 
-**description:**
+Description:
 Migration entrypoint
 
 <hr>
 
 ## Queries:
-#### 1. query_config
+`query_config`
 
-**params:**
-* None
+Params:
+None
 
-**return type:**
+Return type:
 `Config` struct.
 
-**description:**
+Description:
 Queries the contract `Config` 
 
 <hr>
 
-#### 2. query_share_token_address
+`query_share_token_address`
 
-**params:**
-* None
+Params:
+None
 
-**return type:**
+Return type:
 `Address` of the pool's share token.
 
-**description:**
+Description:
 Returns the address for the pool share token.
 
 <hr>
 
-#### 3. query_stake_contract_address
+`query_stake_contract_address`
 
-**params:**
-* None
+Params:
+None
 
-**return type:**
+Return type:
 `Address` of the pool's stake contract.
 
-**description:**
+Description:
 Returns the address for the pool stake contract. 
 
 <hr>
 
-#### 4. query_pool_info
+`query_pool_info`
 
-**params:**
-* None
+Params:
+None
 
-**return type:**
+Return type:
 `PoolResponse` struct represented by two token assets and share token.
 
-**description:**
+Description:
 Returns  the total amount of LP tokens and assets in a specific pool. 
 
 <hr>
 
-#### 5. query_pool_info_for_factory
+`query_pool_info_for_factory`
 
-**params:**
-* None
+Params:
+None
 
-**return type:**
+Return type:
 `LiquidityPoolInfo` struct representing information relevant for the stable liquidity pool.
 
-**description:**
+Description:
 Returns all the required information for a liquidity pool that is called by the factory contract. 
 <hr>
 
 
-#### 6. simulate_swap
+`simulate_swap`
 
-**params:**
-* offer_asset: `Address` of the token that the user wants to sell.
-* sell_amount: `i128` value for the total amount that the user wants to sell.
+Params:
+- `offer_asset`: `Address` of the token that the user wants to sell.
+- `sell_amount`: `i128` value for the total amount that the user wants to sell.
 
-**return type:**
+Return type:
 `SimulateSwapResponse` struct represented by `ask_amount: i128`, `commission_amount: i128`, `spread_amount: i128` and `total_return: i128`.
 
-**description:**
+Description:
 Simulate swap transaction. 
 <hr>
 
-#### 7. simulate_reverse_swap
+`simulate_reverse_swap`
 
-**params:**
-* ask_asset: `Address` of the token that the user wants to buy.
-* ask_amount: `i128` value for the total amount that the user wants to buy.
+Params:
+- `ask_asset`: `Address` of the token that the user wants to buy.
+- `ask_amount`: `i128` value for the total amount that the user wants to buy.
 
-**return type:**
+Return type:
 `SimulateReverseSwapResponse` struct represented by `offer_amount: i128`, `commission_amount: i128` and `spread_amount: i128`.
 
-**description:**
-Simulate reverse swap transaction. 
-<hr>
+Description:
+Simulate reverse swap transaction.
