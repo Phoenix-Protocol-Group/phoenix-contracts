@@ -3,7 +3,7 @@
 ## Main functionality
 This contract is being used for managing stable coins within the Phoenix DEX. It offers liquidity provision, trading assets and pool management functionalities.
 
-## Main methods:
+## Messages:
 `initialize`
 
 Params:
