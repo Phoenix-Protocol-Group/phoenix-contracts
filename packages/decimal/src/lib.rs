@@ -222,7 +222,7 @@ impl Decimal {
     }
 
     pub fn to_string(&self, env: &Env) -> String {
-        String::from_slice(env, alloc::format!("{}", self).as_str())
+        String::from_str(env, alloc::format!("{}", self).as_str())
     }
 }
 
