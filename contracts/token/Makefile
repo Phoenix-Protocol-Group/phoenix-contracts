@@ -6,10 +6,8 @@ test: build
 	cargo test
 
 build:
-	cargo build --target wasm32-unknown-unknown --release
-
-clippy:
-	cargo clippy --all-targets -- -D warnings
+	soroban contract build
+	@ls -l target/wasm32-unknown-unknown/release/*.wasm
 
 fmt:
 	cargo fmt --all
