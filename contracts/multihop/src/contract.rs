@@ -9,6 +9,8 @@ use crate::storage::{
 use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, lp_contract};
 
+use phoenix::referral::Referral;
+
 // Metadata that is added on to the WASM custom section
 contractmeta!(
     key = "Description",
