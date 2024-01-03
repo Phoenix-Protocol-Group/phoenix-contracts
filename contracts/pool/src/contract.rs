@@ -17,8 +17,9 @@ use crate::{
 };
 use decimal::Decimal;
 use phoenix::{
+    referral::Referral,
     utils::{assert_approx_ratio, StakeInitInfo, TokenInitInfo},
-    validate_int_parameters, referral::Referral
+    validate_int_parameters,
 };
 
 // Metadata that is added on to the WASM custom section
