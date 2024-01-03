@@ -13,6 +13,7 @@ crate-type = ["cdylib"]
 testutils = ["soroban-sdk/testutils"]
 
 [dependencies]
+phoenix = { workspace = true }
 soroban-sdk = { workspace = true }
 
 [dev_dependencies]

@@ -743,6 +743,7 @@ dependencies = [
 name = "phoenix-multihop"
 version = "0.7.0"
 dependencies = [
+ "phoenix",
  "soroban-sdk",
 ]
 
