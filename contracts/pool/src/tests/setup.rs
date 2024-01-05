@@ -1,4 +1,4 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String};
 
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
@@ -35,11 +35,21 @@ pub fn deploy_liquidity_pool_contract<'a>(
     max_allowed_slippage_bps: impl Into<Option<i64>>,
     max_allowed_spread_bps: impl Into<Option<i64>>,
 ) -> LiquidityPoolClient<'a> {
-    let admin = admin.into().unwrap_or(Address::random(env));
+    let admin = admin
+        .into()
+        .unwrap_or(Address::from_string(&String::from_str(
+            env,
+            "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        )));
     let pool = LiquidityPoolClient::new(env, &env.register_contract(None, LiquidityPool {}));
     let token_wasm_hash = install_token_wasm(env);
     let stake_wasm_hash = install_stake_wasm(env);
-    let fee_recipient = fee_recipient.into().unwrap_or_else(|| Address::random(env));
+    let fee_recipient = fee_recipient.into().unwrap_or_else(|| {
+        Address::from_string(&String::from_str(
+            env,
+            "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        ))
+    });
     let max_allowed_slippage = max_allowed_slippage_bps.into().unwrap_or(5_000); // 50% if not specified
     let max_allowed_spread = max_allowed_spread_bps.into().unwrap_or(500); // 5% if not specified
     let share_token_decimals = 7u32;
