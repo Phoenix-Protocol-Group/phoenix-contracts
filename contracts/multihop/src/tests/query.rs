@@ -12,7 +12,7 @@ fn simulate_swap_single_pool_no_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 100_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 200_000_000i128);
@@ -62,7 +62,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -165,7 +165,7 @@ fn simulate_swap_single_pool_with_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
@@ -217,7 +217,7 @@ fn simulate_swap_three_different_pools_no_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -320,7 +320,7 @@ fn simulate_swap_three_different_pools_with_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -447,7 +447,7 @@ fn simulate_swap_three_different_pools_with_fees() {
 fn query_simulate_swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
     let factory = Address::random(&env);
 
     let recipient = Address::random(&env);
@@ -467,7 +467,7 @@ fn query_simulate_swap_panics_with_no_operations() {
 fn query_simulate_reverse_swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
     let factory = Address::random(&env);
 
     let recipient = Address::random(&env);

@@ -20,7 +20,7 @@ pub enum ContractError {
 fn swap_three_equal_pools_no_fees() {
     let env = Env::default();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -101,7 +101,7 @@ fn swap_three_equal_pools_no_fees() {
 fn swap_three_equal_pools_no_fees_referral_fee() {
     let env = Env::default();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -197,7 +197,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
 #[test]
 fn swap_single_pool_no_fees() {
     let env = Env::default();
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -247,7 +247,7 @@ fn swap_single_pool_no_fees() {
 #[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn swap_should_fail_when_spread_exceeds_the_limit() {
     let env = Env::default();
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -287,7 +287,7 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
 #[test]
 fn swap_single_pool_with_fees() {
     let env = Env::default();
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -339,7 +339,7 @@ fn swap_single_pool_with_fees() {
 fn swap_three_different_pools_no_fees() {
     let env = Env::default();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -423,7 +423,7 @@ fn swap_three_different_pools_no_fees() {
 fn swap_three_different_pools_with_fees() {
     let env = Env::default();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -522,7 +522,7 @@ fn swap_three_different_pools_with_fees() {
 fn swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
     let factory = Address::random(&env);
 
     let recipient = Address::random(&env);

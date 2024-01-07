@@ -34,8 +34,8 @@ pub struct LiquidityPoolConfig {
 #[test]
 fn test_deploy_multiple_liquidity_pools() {
     let env = Env::default();
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
 
     let mut token1 = Address::random(&env);
     let mut token2 = Address::random(&env);
@@ -231,8 +231,8 @@ fn test_deploy_multiple_liquidity_pools() {
 #[should_panic(expected = "Factory: query_for_pool_by_token_pair failed: No liquidity pool found")]
 fn test_queries_by_tuple() {
     let env = Env::default();
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
 
     let mut token1 = Address::random(&env);
     let mut token2 = Address::random(&env);

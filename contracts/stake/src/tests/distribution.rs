@@ -14,8 +14,8 @@ fn add_distribution_and_distribute_reward() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -84,8 +84,8 @@ fn two_distributions() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
     let reward_token_2 = deploy_token_contract(&env, &admin);
@@ -200,11 +200,11 @@ fn four_users_with_different_stakes() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
-    let user2 = Address::random(&env);
-    let user3 = Address::random(&env);
-    let user4 = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
+    let user2 = Address::from_string(&String::from_str(&env, "CC7I4N5BYWO33MJ2G7OWZCAQ57SWETJOEUUR7GPVKMWKUXJFVBZWHOIR"));
+    let user3 = Address::from_string(&String::from_str(&env, "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH"));
+    let user4 = Address::from_string(&String::from_str(&env, "CB6ODXXWE24XPHGTAVRKHCGKAEQS56BQF6EA7Q3MNSODFDWALW2LYTWF"));
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -310,9 +310,9 @@ fn two_users_one_starts_after_distribution_begins() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
-    let user2 = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
+    let user2 = Address::from_string(&String::from_str(&env, "CC7I4N5BYWO33MJ2G7OWZCAQ57SWETJOEUUR7GPVKMWKUXJFVBZWHOIR"));
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -406,9 +406,9 @@ fn two_users_both_bonds_after_distribution_starts() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
-    let user2 = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
+    let user2 = Address::from_string(&String::from_str(&env, "CC7I4N5BYWO33MJ2G7OWZCAQ57SWETJOEUUR7GPVKMWKUXJFVBZWHOIR"));
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -531,7 +531,7 @@ fn fund_rewards_without_establishing_distribution() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -548,8 +548,8 @@ fn try_to_withdraw_rewards_without_bonding() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -606,7 +606,7 @@ fn fund_distribution_starting_before_current_timestamp() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -637,7 +637,7 @@ fn fund_distribution_with_reward_below_required_minimum() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -660,8 +660,8 @@ fn calculate_apr() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 

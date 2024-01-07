@@ -78,7 +78,7 @@ fn second_pool_stable_deployment_should_fail() {
 
     let mut admin1 = Address::random(&env);
     let mut admin2 = Address::random(&env);
-    let user = Address::random(&env);
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);

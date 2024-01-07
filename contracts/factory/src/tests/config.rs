@@ -11,7 +11,7 @@ use soroban_sdk::{Symbol, Vec};
 #[test]
 fn factory_successfully_inits_itself() {
     let env = Env::default();
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
@@ -23,7 +23,7 @@ fn factory_successfully_inits_multihop() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
@@ -38,10 +38,10 @@ fn factory_successfully_inits_multihop() {
 #[test]
 fn factory_successfully_inits_lp() {
     let env = Env::default();
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
     let mut token1_admin = Address::random(&env);
     let mut token2_admin = Address::random(&env);
-    let user = Address::random(&env);
+    let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
 
     let mut token1 = Address::random(&env);
     let mut token2 = Address::random(&env);
