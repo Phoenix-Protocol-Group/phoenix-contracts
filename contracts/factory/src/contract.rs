@@ -1,6 +1,6 @@
 use crate::storage::{
     get_config, is_initialized, save_config, set_initialized, Config, DataKey, LiquidityPoolInfo,
-    PairTupleKey,
+    LpAndStakeInfo, PairTupleKey,
 };
 use crate::utils::deploy_multihop_contract;
 use crate::{
@@ -59,6 +59,8 @@ pub trait FactoryTrait {
     fn get_admin(env: Env) -> Address;
 
     fn get_config(env: Env) -> Config;
+
+    fn get_lp_and_stake_info(env: Env) -> LpAndStakeInfo;
 }
 
 #[contractimpl]
@@ -274,6 +276,26 @@ impl FactoryTrait for Factory {
             .persistent()
             .get(&DataKey::Config)
             .expect("Factory: No multihop present in storage")
+    }
+
+    fn get_lp_and_stake_info(env: Env) -> LpAndStakeInfo {
+        let all_lp_vec_addresses = get_lp_vec(&env);
+        let mut result = Vec::new(&env);
+        for address in all_lp_vec_addresses {
+            let pool_response: LiquidityPoolInfo = env.invoke_contract(
+                &address,
+                &Symbol::new(&env, "query_pool_info_for_factory"),
+                Vec::new(&env),
+            );
+            // todo here we check if the lp balance is over 0
+            // make a call towards the stake contract to check the staked amount
+            result.push_back(pool_response);
+        }
+
+        LpAndStakeInfo {
+            lp_info: Vec::new(&env),
+            stake_info: Vec::new(&env),
+        }
     }
 }
 

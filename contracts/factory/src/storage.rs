@@ -37,6 +37,13 @@ pub struct Config {
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LpAndStakeInfo {
+    pub lp_info: Vec<Address>,
+    pub stake_info: Vec<Address>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Asset {
     /// Address of the asset
     pub address: Address,
@@ -54,6 +61,8 @@ pub struct PoolResponse {
     pub asset_b: Asset,
     /// The total amount of LP tokens currently issued
     pub asset_lp_share: Asset,
+    /// The address of the Stake contract for the liquidity pool
+    pub stake_address: Address,
 }
 
 #[contracttype]
