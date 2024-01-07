@@ -228,7 +228,6 @@ fn test_deploy_multiple_liquidity_pools() {
 }
 
 #[test]
-#[should_panic(expected = "Factory: query_for_pool_by_token_pair failed: No liquidity pool found")]
 fn test_queries_by_tuple() {
     let env = Env::default();
     let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
@@ -377,6 +376,14 @@ fn test_queries_by_tuple() {
     assert_eq!(first_lp_address_by_tuple, lp_contract_addr);
     assert_eq!(second_lp_address_by_tuple, second_lp_contract_addr);
     assert_eq!(third_lp_address_by_tuple, third_lp_contract_addr);
+}
 
-    factory.query_for_pool_by_token_pair(&Address::random(&env), &Address::random(&env));
+#[test]
+#[should_panic(expected = "Factory: query_for_pool_by_token_pair failed: No liquidity pool found")]
+fn test_queries_by_tuple() {
+    let env = Env::default();
+    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+
+    factory.query_for_pool_by_token_pair(&Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N")), &Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O")));
 }

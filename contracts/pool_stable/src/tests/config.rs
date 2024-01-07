@@ -119,7 +119,7 @@ fn update_config_unauthorized() {
     );
 
     pool.update_config(
-        &Address::random(&env),
+        &Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N")),
         &None,
         &Some(500i64), // 5% fees
         &Some(admin2.clone()),

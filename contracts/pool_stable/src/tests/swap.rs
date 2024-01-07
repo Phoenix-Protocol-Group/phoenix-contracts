@@ -204,8 +204,8 @@ fn swap_simulation_even_pool() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut token1 = deploy_token_contract(&env, &Address::random(&env));
-    let mut token2 = deploy_token_contract(&env, &Address::random(&env));
+    let mut token1 = deploy_token_contract(&env, &Address::from_string(&String::from_str(&env, "CAO3QRJ36VDS5IIA3XFO6EQTWFRDDB6SUYYXCKMTVIQRS75NSVLRRRRQ")));
+    let mut token2 = deploy_token_contract(&env, &Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX")));
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
@@ -216,7 +216,7 @@ fn swap_simulation_even_pool() {
         None,
         (&token1.address, &token2.address),
         swap_fees,
-        Address::random(&env),
+        Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N")),
         None,
         None,
     );
@@ -304,8 +304,8 @@ fn swap_simulation_one_third_pool() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut token1 = deploy_token_contract(&env, &Address::random(&env));
-    let mut token2 = deploy_token_contract(&env, &Address::random(&env));
+    let mut token1 = deploy_token_contract(&env, &Address::from_string(&String::from_str(&env, "CAO3QRJ36VDS5IIA3XFO6EQTWFRDDB6SUYYXCKMTVIQRS75NSVLRRRRQ")));
+    let mut token2 = deploy_token_contract(&env, &Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX")));
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
@@ -316,7 +316,7 @@ fn swap_simulation_one_third_pool() {
         None,
         (&token1.address, &token2.address),
         swap_fees,
-        Address::random(&env),
+        Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O")),
         None,
         None,
     );
