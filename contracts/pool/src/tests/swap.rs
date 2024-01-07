@@ -335,7 +335,6 @@ fn swap_should_panic_with_bad_max_spread() {
     env.budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
-    let mut admin1 = Address::from_string(&String::from_str(
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);

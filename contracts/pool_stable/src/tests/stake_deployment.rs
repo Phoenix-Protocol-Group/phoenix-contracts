@@ -16,14 +16,8 @@ fn confirm_stake_contract_deployment() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -31,10 +25,7 @@ fn confirm_stake_contract_deployment() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
+    let user1 = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -85,18 +76,9 @@ fn second_pool_stable_deployment_should_fail() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
-    let user = Address::from_string(&String::from_str(
-        &env,
-        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);

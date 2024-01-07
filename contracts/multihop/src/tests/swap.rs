@@ -69,10 +69,7 @@ fn swap_three_equal_pools_no_fees() {
 
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-    let recipient = Address::from_string(&String::from_str(
-        &env,
-        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
-    ));
+    let recipient = Address::generate(&env);
     token1.mint(&recipient, &50i128);
     assert_eq!(token1.balance(&recipient), 50i128);
     assert_eq!(token4.balance(&recipient), 0i128);
@@ -156,10 +153,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
 
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-    let recipient = Address::from_string(&String::from_str(
-        &env,
-        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
-    ));
+    let recipient = Address::generate(&env);
     token1.mint(&recipient, &50i128);
     assert_eq!(token1.balance(&recipient), 50i128);
     assert_eq!(token4.balance(&recipient), 0i128);
@@ -236,10 +230,7 @@ fn swap_single_pool_no_fees() {
 
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-    let recipient = Address::from_string(&String::from_str(
-        &env,
-        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
-    ));
+    let recipient = Address::generate(&env);
     token1.mint(&recipient, &5_000i128); // mints 50 token0 to recipient
     assert_eq!(token1.balance(&recipient), 5_000i128);
     assert_eq!(token2.balance(&recipient), 0i128);
@@ -290,10 +281,7 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-    let recipient = Address::from_string(&String::from_str(
-        &env,
-        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
-    ));
+    let recipient = Address::generate(&env);
     token1.mint(&recipient, &5_000i128); // mints 50 token0 to recipient
 
     let swap1 = Swap {
@@ -311,10 +299,7 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
 #[test]
 fn swap_single_pool_with_fees() {
     let env = Env::default();
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
+    let admin = Address::generate(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -338,10 +323,7 @@ fn swap_single_pool_with_fees() {
 
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-    let recipient = Address::from_string(&String::from_str(
-        &env,
-        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
-    ));
+    let recipient = Address::generate(&env);
     token1.mint(&recipient, &1000i128);
     assert_eq!(token1.balance(&recipient), 1000i128);
     assert_eq!(token2.balance(&recipient), 0i128);
@@ -369,10 +351,7 @@ fn swap_single_pool_with_fees() {
 fn swap_three_different_pools_no_fees() {
     let env = Env::default();
 
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
+    let admin = Address::generate(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -418,10 +397,7 @@ fn swap_three_different_pools_no_fees() {
 
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-    let recipient = Address::from_string(&String::from_str(
-        &env,
-        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
-    ));
+    let recipient = Address::generate(&env);
     token1.mint(&recipient, &5_000i128);
 
     assert_eq!(token1.balance(&recipient), 5_000i128);
@@ -508,10 +484,7 @@ fn swap_three_different_pools_with_fees() {
 
     // 4. swap with multihop
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
-    let recipient = Address::from_string(&String::from_str(
-        &env,
-        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
-    ));
+    let recipient = Address::generate(&env);
     token1.mint(&recipient, &10_000i128);
     assert_eq!(token1.balance(&recipient), 10_000i128);
 
@@ -564,19 +537,9 @@ fn swap_three_different_pools_with_fees() {
 fn swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
-    let factory = Address::from_string(&String::from_str(
-        &env,
-        "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
-    ));
-
-    let recipient = Address::from_string(&String::from_str(
-        &env,
-        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
-    ));
+    let admin = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let recipient = Address::generate(&env);
 
     let token = deploy_token_contract(&env, &admin);
     token.mint(&recipient, &50i128);
