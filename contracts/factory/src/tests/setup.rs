@@ -1,6 +1,7 @@
 use crate::contract::{Factory, FactoryClient};
 use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{Address, BytesN, Env};
+use soroban_sdk::{Address, BytesN, Env, String};
+
 #[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
     soroban_sdk::contractimport!(

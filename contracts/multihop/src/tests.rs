@@ -1,6 +1,6 @@
 use crate::contract::{Multihop, MultihopClient};
 use crate::tests::setup::deploy_factory_contract;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 mod query;
 mod setup;

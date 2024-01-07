@@ -7,7 +7,7 @@ use crate::tests::setup::{
 };
 
 use soroban_sdk::contracterror;
-use soroban_sdk::{testutils::Address as _, vec, Address, Env};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]

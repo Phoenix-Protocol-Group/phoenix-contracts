@@ -65,14 +65,8 @@ fn bond_too_few() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
-    ));
-    let user = Address::from_string(&String::from_str(
-        &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM22222222",
-    ));
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
@@ -87,14 +81,8 @@ fn bond_simple() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
-    ));
-    let user = Address::from_string(&String::from_str(
-        &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM22222222",
-    ));
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
@@ -209,6 +197,7 @@ fn unbond_wrong_user_stake_not_found() {
     let env = Env::default();
     env.mock_all_auths();
 
+<<<<<<< HEAD
     let admin = Address::from_string(&String::from_str(
         &env,
         "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
@@ -221,6 +210,11 @@ fn unbond_wrong_user_stake_not_found() {
         &env,
         "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF333333",
     ));
+=======
+    let admin = Address::from_string(&String::from_str(&env, "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H"));
+    let user = Address::from_string(&String::from_str(&env, "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH"));
+    let user2 = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
+>>>>>>> 59c1413 (Replace deprecated Address::random with ::from_string part 5)
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);

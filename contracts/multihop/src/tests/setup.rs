@@ -1,9 +1,8 @@
 use crate::contract::{Multihop, MultihopClient};
 use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
-use soroban_sdk::arbitrary::std;
-use soroban_sdk::testutils::Address as _;
-use soroban_sdk::{Address, Bytes, BytesN, Env};
+use soroban_sdk::testutils::{Address as _, arbitrary::std};
+use soroban_sdk::{Address, Bytes, BytesN, Env, String};
 
 pub mod factory {
     soroban_sdk::contractimport!(

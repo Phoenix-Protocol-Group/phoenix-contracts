@@ -4,7 +4,7 @@ use crate::tests::setup::{
     deploy_multihop_contract, deploy_token_contract,
 };
 
-use soroban_sdk::{testutils::Address as _, vec, Address, Env};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 #[test]
 fn simulate_swap_single_pool_no_fees() {

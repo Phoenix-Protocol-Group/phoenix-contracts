@@ -4,7 +4,7 @@ use super::setup::{
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::arbitrary::std;
-use soroban_sdk::{contracttype, testutils::Address as _, Address, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, testutils::Address as _, Address, Env, Symbol, Vec, String};
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -3,7 +3,7 @@ extern crate std;
 use pretty_assertions::assert_eq;
 
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, Symbol};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, Symbol, String};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::{

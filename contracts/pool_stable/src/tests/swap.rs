@@ -2,7 +2,7 @@ extern crate std;
 
 use pretty_assertions::assert_eq;
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, String, IntoVal};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};

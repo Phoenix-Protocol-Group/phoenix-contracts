@@ -1,4 +1,4 @@
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 use crate::{
     contract::{Staking, StakingClient},
