@@ -448,7 +448,7 @@ fn query_simulate_swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
-    let factory = Address::random(&env);
+    let factory = Address::from_string(&String::from_str(&env, "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"));
 
     let recipient = Address::from_string(&String::from_str(&env, "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX"));
 
@@ -468,7 +468,7 @@ fn query_simulate_reverse_swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
-    let factory = Address::random(&env);
+    let factory = Address::from_string(&String::from_str(&env, "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"));
 
     let recipient = Address::from_string(&String::from_str(&env, "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX"));
 

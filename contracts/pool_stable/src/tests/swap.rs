@@ -140,7 +140,7 @@ fn swap_with_high_fee() {
     let user1 = Address::from_string(&String::from_str(&env, "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH"));
 
     let swap_fees = 1_000i64; // 10% bps
-    let fee_recipient = Address::random(&env);
+    let fee_recipient = Address::from_string(&String::from_str(&env, "CC4W4EIZMCCUG2R5FHQGQDSBZY6S2V2CIIJQZ5XBXCKUVVSBR7HC6267"));
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,

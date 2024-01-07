@@ -66,7 +66,7 @@ pub fn deploy_multihop_contract<'a>(
     admin: impl Into<Option<Address>>,
     factory: &Address,
 ) -> MultihopClient<'a> {
-    let admin = admin.into().unwrap_or(Address::random(env));
+    let admin = admin.into().unwrap_or(Address::from_string(&String::from_str(&env, "CDALIOEQHREN5DJANC3O6WN3KF2MVRXAYAWCKF3XJIBQJTFVXJHI6HWE")));
 
     let multihop = MultihopClient::new(env, &env.register_contract(None, Multihop {}));
 

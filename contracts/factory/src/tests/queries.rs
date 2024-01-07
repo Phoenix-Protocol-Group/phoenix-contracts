@@ -37,12 +37,12 @@ fn test_deploy_multiple_liquidity_pools() {
     let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
     let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
 
-    let mut token1 = Address::random(&env);
-    let mut token2 = Address::random(&env);
-    let mut token3 = Address::random(&env);
-    let mut token4 = Address::random(&env);
-    let mut token5 = Address::random(&env);
-    let mut token6 = Address::random(&env);
+    let mut token1 = Address::from_string(&String::from_str(&env, "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H"));
+    let mut token2 = Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX"));
+    let mut token3 = Address::from_string(&String::from_str(&env, "CDWLHFNUQ2CM5WJKIFGEMY5LMXPARVKHD5FJONZTCPXKEYPCUT5PW2L2"));
+    let mut token4 = Address::from_string(&String::from_str(&env, "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"));
+    let mut token5 = Address::from_string(&String::from_str(&env, "CC4W4EIZMCCUG2R5FHQGQDSBZY6S2V2CIIJQZ5XBXCKUVVSBR7HC6267"));
+    let mut token6 = Address::from_string(&String::from_str(&env, "CCIEUAD63OGWJ3FKBI5SZG7HZ34PPYF4RCPWVB5SOP6G7FBBNAVPYHKW"));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -234,12 +234,12 @@ fn test_queries_by_tuple() {
     let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
     let user = Address::from_string(&String::from_str(&env, "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N"));
 
-    let mut token1 = Address::random(&env);
-    let mut token2 = Address::random(&env);
-    let mut token3 = Address::random(&env);
-    let mut token4 = Address::random(&env);
-    let mut token5 = Address::random(&env);
-    let mut token6 = Address::random(&env);
+    let mut token1 = Address::from_string(&String::from_str(&env, "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H"));
+    let mut token2 = Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX"));
+    let mut token3 = Address::from_string(&String::from_str(&env, "CDWLHFNUQ2CM5WJKIFGEMY5LMXPARVKHD5FJONZTCPXKEYPCUT5PW2L2"));
+    let mut token4 = Address::from_string(&String::from_str(&env, "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"));
+    let mut token5 = Address::from_string(&String::from_str(&env, "CC4W4EIZMCCUG2R5FHQGQDSBZY6S2V2CIIJQZ5XBXCKUVVSBR7HC6267"));
+    let mut token6 = Address::from_string(&String::from_str(&env, "CCIEUAD63OGWJ3FKBI5SZG7HZ34PPYF4RCPWVB5SOP6G7FBBNAVPYHKW"));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
