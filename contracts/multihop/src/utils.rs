@@ -1,4 +1,4 @@
-use soroban_sdk::Vec;
+use soroban_sdk::{String, Vec};
 
 use crate::storage::Swap;
 

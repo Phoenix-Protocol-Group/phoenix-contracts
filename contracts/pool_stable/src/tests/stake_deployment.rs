@@ -1,6 +1,6 @@
 extern crate std;
 use phoenix::utils::{StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{Address, Env, String};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::contract::{StableLiquidityPool, StableLiquidityPoolClient};

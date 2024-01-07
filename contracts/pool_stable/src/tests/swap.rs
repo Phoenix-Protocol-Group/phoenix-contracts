@@ -2,7 +2,7 @@ extern crate std;
 
 use pretty_assertions::assert_eq;
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, String};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
@@ -140,10 +140,7 @@ fn swap_with_high_fee() {
     let user1 = Address::generate(&env);
 
     let swap_fees = 1_000i64; // 10% bps
-    let fee_recipient = Address::from_string(&String::from_str(
-        &env,
-        "CC4W4EIZMCCUG2R5FHQGQDSBZY6S2V2CIIJQZ5XBXCKUVVSBR7HC6267",
-    ));
+    let fee_recipient = Address::generate(&env);
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         None,

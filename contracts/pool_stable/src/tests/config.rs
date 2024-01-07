@@ -1,5 +1,5 @@
 extern crate std;
-use soroban_sdk::{Address, Env, String};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Config, PairType};
@@ -119,10 +119,7 @@ fn update_config_unauthorized() {
     );
 
     pool.update_config(
-        &Address::from_string(&String::from_str(
-            &env,
-            "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-        )),
+        &Address::generate(&env),
         &None,
         &Some(500i64), // 5% fees
         &Some(admin2.clone()),
