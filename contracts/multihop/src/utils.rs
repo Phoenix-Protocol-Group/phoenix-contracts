@@ -29,10 +29,10 @@ mod tests {
     fn verify_operations_in_swap_should_work() {
         let env = Env::default();
 
-        let token1 = Address::random(&env);
-        let token2 = Address::random(&env);
-        let token3 = Address::random(&env);
-        let token4 = Address::random(&env);
+        let token1 = Address::from_string(&String::from_str(&env, "CDF2CJ26YHWB37JYTUFS722WJBJPG5OP5XN4TGZZPCEEUWHEIMGQG2O3"));
+        let token2 = Address::from_string(&String::from_str(&env, "CB64D3G7SM2RTH6JSGG34DDTFTQ5CFDKVDZJZSODMCX4NJ2HV2KN7OHT"));
+        let token3 = Address::from_string(&String::from_str(&env, "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH"));
+        let token4 = Address::from_string(&String::from_str(&env, "CBXBKAB6QIRUGTG77OQZHC46BIIPA5WDKIKZKPA2H7Q7CPKQ555W3EVB"));
 
         let swap1 = Swap {
             offer_asset: token1.clone(),
@@ -56,10 +56,10 @@ mod tests {
     fn verify_operations_in_reverse_swap_should_work() {
         let env = Env::default();
 
-        let token1 = Address::random(&env);
-        let token2 = Address::random(&env);
-        let token3 = Address::random(&env);
-        let token4 = Address::random(&env);
+        let token1 = Address::from_string(&String::from_str(&env, "CDF2CJ26YHWB37JYTUFS722WJBJPG5OP5XN4TGZZPCEEUWHEIMGQG2O3"));
+        let token2 = Address::from_string(&String::from_str(&env, "CB64D3G7SM2RTH6JSGG34DDTFTQ5CFDKVDZJZSODMCX4NJ2HV2KN7OHT"));
+        let token3 = Address::from_string(&String::from_str(&env, "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH"));
+        let token4 = Address::from_string(&String::from_str(&env, "CBXBKAB6QIRUGTG77OQZHC46BIIPA5WDKIKZKPA2H7Q7CPKQ555W3EVB"));
 
         let swap1 = Swap {
             offer_asset: token3.clone(),
@@ -84,10 +84,10 @@ mod tests {
     fn verify_operations_should_fail_when_bad_order_provided() {
         let env = Env::default();
 
-        let token1 = Address::random(&env);
-        let token2 = Address::random(&env);
-        let token3 = Address::random(&env);
-        let token4 = Address::random(&env);
+        let token1 = Address::from_string(&String::from_str(&env, "CDF2CJ26YHWB37JYTUFS722WJBJPG5OP5XN4TGZZPCEEUWHEIMGQG2O3"));
+        let token2 = Address::from_string(&String::from_str(&env, "CB64D3G7SM2RTH6JSGG34DDTFTQ5CFDKVDZJZSODMCX4NJ2HV2KN7OHT"));
+        let token3 = Address::from_string(&String::from_str(&env, "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH"));
+        let token4 = Address::from_string(&String::from_str(&env, "CBXBKAB6QIRUGTG77OQZHC46BIIPA5WDKIKZKPA2H7Q7CPKQ555W3EVB"));
 
         let swap1 = Swap {
             offer_asset: token1.clone(),
@@ -108,10 +108,10 @@ mod tests {
     fn verify_operations_reverse_swap_should_fail_when_bad_order_provided() {
         let env = Env::default();
 
-        let token1 = Address::random(&env);
-        let token2 = Address::random(&env);
-        let token3 = Address::random(&env);
-        let token4 = Address::random(&env);
+        let token1 = Address::from_string(&String::from_str(&env, "CDF2CJ26YHWB37JYTUFS722WJBJPG5OP5XN4TGZZPCEEUWHEIMGQG2O3"));
+        let token2 = Address::from_string(&String::from_str(&env, "CB64D3G7SM2RTH6JSGG34DDTFTQ5CFDKVDZJZSODMCX4NJ2HV2KN7OHT"));
+        let token3 = Address::from_string(&String::from_str(&env, "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH"));
+        let token4 = Address::from_string(&String::from_str(&env, "CBXBKAB6QIRUGTG77OQZHC46BIIPA5WDKIKZKPA2H7Q7CPKQ555W3EVB"));
 
         let swap1 = Swap {
             offer_asset: token1.clone(),
