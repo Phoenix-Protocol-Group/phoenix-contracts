@@ -3,7 +3,7 @@ extern crate std;
 use pretty_assertions::assert_eq;
 
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, String, Symbol};
+use soroban_sdk::{symbol_short, Address, Env, IntoVal, String, Symbol};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
@@ -20,11 +20,11 @@ fn provide_liqudity() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7X2222222222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -35,7 +35,7 @@ fn provide_liqudity() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM33333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -141,11 +141,11 @@ fn withdraw_liquidity() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJE2222222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -156,7 +156,7 @@ fn withdraw_liquidity() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF533333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -254,11 +254,11 @@ fn provide_liqudity_single_asset_on_empty_pool() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEO222222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -269,7 +269,7 @@ fn provide_liqudity_single_asset_on_empty_pool() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM33333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -303,11 +303,11 @@ fn provide_liqudity_single_asset_equal() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOML2222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -318,7 +318,7 @@ fn provide_liqudity_single_asset_equal() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJE3333333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -380,11 +380,11 @@ fn provide_liqudity_single_asset_equal_with_fees() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM22222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -395,7 +395,7 @@ fn provide_liqudity_single_asset_equal_with_fees() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJ33333333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_liquidity_pool_contract(
@@ -466,11 +466,11 @@ fn provide_liqudity_single_asset_one_third() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM22222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -481,7 +481,7 @@ fn provide_liqudity_single_asset_one_third() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOML3333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -539,11 +539,11 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM22222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -554,7 +554,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOML3333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_liquidity_pool_contract(
@@ -609,11 +609,11 @@ fn provide_liqudity_too_high_fees() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEO222222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -644,11 +644,11 @@ fn swap_with_no_amounts() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM22222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -659,7 +659,7 @@ fn swap_with_no_amounts() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM33333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -688,11 +688,11 @@ fn withdraw_liqudity_below_min() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM22222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -703,7 +703,7 @@ fn withdraw_liqudity_below_min() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM33333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(

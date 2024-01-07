@@ -1,5 +1,5 @@
 extern crate std;
-use soroban_sdk::{testutils::Address as _, Address, Env, String};
+use soroban_sdk::{Address, Env, String};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Config, PairType};
@@ -12,11 +12,11 @@ fn update_config() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJE2222222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -27,7 +27,7 @@ fn update_config() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOM33333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -111,11 +111,11 @@ fn update_config_unauthorized() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJ22222222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -126,7 +126,7 @@ fn update_config_unauthorized() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEO333333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -142,7 +142,7 @@ fn update_config_unauthorized() {
     pool.update_config(
         &Address::from_string(&String::from_str(
             &env,
-            "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEO444444444",
+            "CCWOWNUBYTZTUEVNMA3KYCNQKBJ23QUSSJTVSLTFWVAJMZKLCDO37JVI",
         )),
         &None,
         &Some(500i64), // 5% fees
@@ -160,11 +160,11 @@ fn update_config_update_admin() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7X2222222222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -175,7 +175,7 @@ fn update_config_update_admin() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XA333333333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -221,11 +221,11 @@ fn update_config_too_high_fees() {
 
     let mut admin1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
     ));
     let mut admin2 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJE2222222222",
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
     ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -236,7 +236,7 @@ fn update_config_too_high_fees() {
     }
     let user1 = Address::from_string(&String::from_str(
         &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJE3333333333",
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
     ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
