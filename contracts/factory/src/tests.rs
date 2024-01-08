@@ -1,5 +1,5 @@
 use crate::contract::{Factory, FactoryClient};
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 use self::setup::install_multihop_wasm;
 

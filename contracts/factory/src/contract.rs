@@ -197,7 +197,7 @@ fn validate_token_info(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::BytesN;
+    use soroban_sdk::{String, BytesN};
 
     #[test]
     #[should_panic(
@@ -206,14 +206,11 @@ mod tests {
     fn validate_token_info_should_fail_on_token_a_less_than_token_b() {
         let env = Env::default();
 
-        let contract1 = BytesN::from_array(&env, &[1u8; 0x20]);
-        let contract2 = BytesN::from_array(&env, &[0u8; 0x20]);
-
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_contract_id(&contract1);
-        let token_b = Address::from_contract_id(&contract2);
+        let token_a = Address::from_string(&String::from_str(&env, "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H"));
+        let token_b = Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX"));
 
         let token_init_info = TokenInitInfo {
             token_a,
@@ -237,14 +234,11 @@ mod tests {
     fn validate_token_info_should_fail_on_min_bond_less_than_zero() {
         let env = Env::default();
 
-        let contract1 = BytesN::from_array(&env, &[0u8; 0x20]);
-        let contract2 = BytesN::from_array(&env, &[1u8; 0x20]);
-
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_contract_id(&contract1);
-        let token_b = Address::from_contract_id(&contract2);
+        let token_a = Address::from_string(&String::from_str(&env, "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H"));
+        let token_b = Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX"));
 
         let token_init_info = TokenInitInfo {
             token_a,
@@ -267,14 +261,11 @@ mod tests {
     fn validate_token_info_should_fail_on_min_reward_less_than_zero() {
         let env = Env::default();
 
-        let contract1 = BytesN::from_array(&env, &[0u8; 0x20]);
-        let contract2 = BytesN::from_array(&env, &[1u8; 0x20]);
-
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_contract_id(&contract1);
-        let token_b = Address::from_contract_id(&contract2);
+        let token_a = Address::from_string(&String::from_str(&env, "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H"));
+        let token_b = Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX"));
 
         let token_init_info = TokenInitInfo {
             token_a,

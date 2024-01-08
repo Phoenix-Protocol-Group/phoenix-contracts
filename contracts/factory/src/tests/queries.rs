@@ -3,8 +3,7 @@ use super::setup::{
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
-use soroban_sdk::arbitrary::std;
-use soroban_sdk::{contracttype, testutils::Address as _, Address, Env, Symbol, Vec, String};
+use soroban_sdk::{contracttype, testutils::arbitrary::std, Address, Env, Symbol, Vec, String};
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -380,7 +379,7 @@ fn test_queries_by_tuple() {
 
 #[test]
 #[should_panic(expected = "Factory: query_for_pool_by_token_pair failed: No liquidity pool found")]
-fn test_queries_by_tuple() {
+fn test_queries_by_tuple_errors() {
     let env = Env::default();
     let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
     let factory = deploy_factory_contract(&env, Some(admin.clone()));

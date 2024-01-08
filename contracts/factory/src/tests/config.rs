@@ -4,8 +4,7 @@ use super::setup::{
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
-use soroban_sdk::arbitrary::std;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::arbitrary::std, Address, Env, String};
 use soroban_sdk::{Symbol, Vec};
 
 #[test]
