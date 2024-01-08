@@ -127,7 +127,8 @@ fn provide_liqudity() {
             asset_lp_share: Asset {
                 address: share_token_address,
                 amount: 100i128
-            }
+            },
+            stake_address: Address::random(&env),
         }
     );
 }
@@ -228,6 +229,7 @@ fn withdraw_liquidity() {
                 address: share_token_address,
                 amount: 50i128,
             },
+            stake_address: Address::random(&env),
         }
     );
 

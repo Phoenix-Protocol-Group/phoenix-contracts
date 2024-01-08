@@ -559,6 +559,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 address: config.share_token,
                 amount: utils::get_total_shares(&env),
             },
+            stake_address: config.stake_contract,
         }
     }
 

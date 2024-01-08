@@ -1,6 +1,6 @@
 use crate::storage::{
     get_config, is_initialized, save_config, set_initialized, Config, DataKey, LiquidityPoolInfo,
-    LpAndStakeInfo, PairTupleKey,
+    LpAndStakeInfo, LpShareInfo, PairTupleKey, StakeInfo, StakedResponse,
 };
 use crate::utils::deploy_multihop_contract;
 use crate::{
@@ -10,8 +10,8 @@ use crate::{
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use phoenix::validate_bps;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, String, Symbol, Val,
-    Vec,
+    contract, contractimpl, contractmeta, log, vec, Address, BytesN, Env, IntoVal, String, Symbol,
+    Val, Vec,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -60,7 +60,7 @@ pub trait FactoryTrait {
 
     fn get_config(env: Env) -> Config;
 
-    fn get_lp_and_stake_info(env: Env) -> LpAndStakeInfo;
+    fn get_lp_and_stake_info(env: Env, sender: Address) -> LpAndStakeInfo;
 }
 
 #[contractimpl]
@@ -278,23 +278,42 @@ impl FactoryTrait for Factory {
             .expect("Factory: No multihop present in storage")
     }
 
-    fn get_lp_and_stake_info(env: Env) -> LpAndStakeInfo {
+    fn get_lp_and_stake_info(env: Env, caller: Address) -> LpAndStakeInfo {
         let all_lp_vec_addresses = get_lp_vec(&env);
-        let mut result = Vec::new(&env);
+        let mut lp_share_info: Vec<LpShareInfo> = Vec::new(&env);
+        let mut stake_info: Vec<StakeInfo> = Vec::new(&env);
+
         for address in all_lp_vec_addresses {
-            let pool_response: LiquidityPoolInfo = env.invoke_contract(
+            let response: LiquidityPoolInfo = env.invoke_contract(
                 &address,
                 &Symbol::new(&env, "query_pool_info_for_factory"),
                 Vec::new(&env),
             );
             // todo here we check if the lp balance is over 0
+            if response.pool_response.asset_lp_share.amount > 0 {
+                lp_share_info.push_back(LpShareInfo {
+                    owner: caller.clone(),
+                    amount: response.pool_response.asset_lp_share.amount,
+                })
+            }
+
+            let args: Val = caller.into_val(&env);
             // make a call towards the stake contract to check the staked amount
-            result.push_back(pool_response);
+            let stake_response: StakedResponse = env.invoke_contract(
+                &response.pool_response.stake_address,
+                &Symbol::new(&env, "query_staked"),
+                vec![&env, args],
+            );
+
+            stake_info.push_back(StakeInfo {
+                owner: caller.clone(),
+                stakes: stake_response.stakes,
+            })
         }
 
         LpAndStakeInfo {
-            lp_info: Vec::new(&env),
-            stake_info: Vec::new(&env),
+            lp_share_info,
+            stake_info,
         }
     }
 }
