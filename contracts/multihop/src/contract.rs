@@ -4,10 +4,9 @@ use soroban_sdk::{contract, contractimpl, contractmeta, vec, Address, Env, Vec};
 // use crate::lp_contract::Referral;
 use crate::storage::{
     get_factory, is_initialized, save_factory, set_initialized, DataKey,
-    SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
-};
+    SimulateReverseSwapResponse, SimulateSwapResponse, Swap, Referral};
 use crate::utils::{verify_reverse_swap, verify_swap};
-use crate::{factory_contract, lp_contract, lp_contract::Referral};
+use crate::{factory_contract, lp_contract};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
