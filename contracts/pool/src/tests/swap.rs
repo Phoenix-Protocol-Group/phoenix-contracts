@@ -5,9 +5,8 @@ use soroban_sdk::{symbol_short, Address, Env, IntoVal, String};
 use test_case::test_case;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
-use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
+use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse, Referral};
 use decimal::Decimal;
-use phoenix::referral::Referral;
 
 #[test]
 fn simple_swap() {

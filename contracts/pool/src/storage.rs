@@ -105,6 +105,15 @@ pub struct ComputeSwap {
     pub referral_fee_amount: i128,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Referral {
+    /// Address of the referral
+    pub address: Address,
+    /// fee in bps, later parsed to percentage
+    pub fee: i64,
+}
+
 /// This struct is used to return a query result with the total amount of LP tokens and assets in a specific pool.
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
