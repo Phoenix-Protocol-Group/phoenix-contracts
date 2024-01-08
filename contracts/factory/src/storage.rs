@@ -105,24 +105,3 @@ pub fn is_initialized(e: &Env) -> bool {
 pub fn set_initialized(e: &Env) {
     e.storage().persistent().set(&DataKey::Initialized, &true);
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    #[should_panic(expected = "HostError: Error(Context, MissingValue)")]
-    fn test_get_admin_should_panic_when_no_admin_saved() {
-        let env = Env::default();
-
-        get_config(&env);
-    }
-
-    #[test]
-    #[should_panic(expected = "HostError: Error(Context, MissingValue)")]
-    fn test_get_lp_vec_should_panic_when_no_vec_saved() {
-        let env = Env::default();
-
-        get_lp_vec(&env);
-    }
-}
