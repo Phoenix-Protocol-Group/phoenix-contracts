@@ -128,7 +128,7 @@ fn provide_liqudity() {
                 address: share_token_address,
                 amount: 100i128
             },
-            stake_address: Address::random(&env),
+            stake_address: result.clone().stake_address,
         }
     );
 }
@@ -229,7 +229,7 @@ fn withdraw_liquidity() {
                 address: share_token_address,
                 amount: 50i128,
             },
-            stake_address: Address::random(&env),
+            stake_address: result.clone().stake_address,
         }
     );
 

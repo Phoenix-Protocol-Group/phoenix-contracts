@@ -115,7 +115,7 @@ fn simple_swap() {
                 address: share_token_address.clone(),
                 amount: 1_000_000i128,
             },
-            stake_address: Address::random(&env),
+            stake_address: result.clone().stake_address,
         }
     );
     assert_eq!(token1.balance(&user1), 999); // -1 from the swap
@@ -147,7 +147,7 @@ fn simple_swap() {
                 address: share_token_address,
                 amount: 1_000_000i128, // this has not changed
             },
-            stake_address: Address::random(&env),
+            stake_address: result.clone().stake_address,
         }
     );
     assert_eq!(output_amount, 1000);
@@ -240,7 +240,7 @@ fn simple_swap_with_referral_fee() {
                 address: share_token_address.clone(),
                 amount: 1_000_000i128,
             },
-            stake_address: Address::random(&env),
+            stake_address: result.clone().stake_address,
         }
     );
 
@@ -271,7 +271,7 @@ fn simple_swap_with_referral_fee() {
                 address: share_token_address,
                 amount: 1_000_000i128, // this has not changed
             },
-            stake_address: Address::random(&env),
+            stake_address: result.clone().stake_address,
         }
     );
     assert_eq!(output_amount, 900);
@@ -467,7 +467,7 @@ fn swap_with_high_fee() {
                 address: pool.query_share_token_address(),
                 amount: 1_000_000i128,
             },
-            stake_address: Address::random(&env),
+            stake_address: result.clone().stake_address,
         }
     );
     // 10% fees are deducted from the swap result and sent to fee recipient address
