@@ -1,7 +1,4 @@
-use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    vec, Address, Env, String,
-};
+use soroban_sdk::{testutils::Ledger, vec, Address, Env, String};
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
