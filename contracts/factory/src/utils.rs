@@ -1,4 +1,4 @@
-use soroban_sdk::{xdr::ToXdr, Address, Bytes, BytesN, Env, IntoVal, String, Symbol, Val, Vec};
+use soroban_sdk::{xdr::ToXdr, Address, Bytes, BytesN, Env, IntoVal, Symbol, Val, Vec};
 
 pub fn deploy_lp_contract(
     env: &Env,
