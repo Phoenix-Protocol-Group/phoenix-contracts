@@ -256,10 +256,7 @@ fn swap_single_pool_no_fees() {
 #[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn swap_should_fail_when_spread_exceeds_the_limit() {
     let env = Env::default();
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
+    let admin = Address::generate(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -435,10 +432,7 @@ fn swap_three_different_pools_no_fees() {
 fn swap_three_different_pools_with_fees() {
     let env = Env::default();
 
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
+    let admin = Address::generate(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
