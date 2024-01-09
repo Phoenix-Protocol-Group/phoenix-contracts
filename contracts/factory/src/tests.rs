@@ -14,7 +14,10 @@ fn test_deploy_factory_twice_should_fail() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::from_string(&String::from_str(&env, "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O"));
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
 
     let multihop = FactoryClient::new(&env, &env.register_contract(None, Factory {}));
     let multihop_wasm_hash = install_multihop_wasm(&env);

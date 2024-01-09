@@ -5,7 +5,9 @@ use soroban_sdk::{symbol_short, Address, Env, IntoVal, String};
 use test_case::test_case;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
-use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse, Referral};
+use crate::storage::{
+    Asset, PoolResponse, Referral, SimulateReverseSwapResponse, SimulateSwapResponse,
+};
 use decimal::Decimal;
 
 #[test]

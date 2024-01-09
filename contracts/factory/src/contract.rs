@@ -197,7 +197,7 @@ fn validate_token_info(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::{String, BytesN, Bytes, testutils::Address as _};
+    use soroban_sdk::{testutils::Address as _, Bytes, BytesN, String};
 
     #[test]
     #[should_panic(
@@ -209,8 +209,14 @@ mod tests {
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX"));
-        let token_b = Address::from_string(&String::from_str(&env, "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN"));
+        let token_a = Address::from_string(&String::from_str(
+            &env,
+            "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
+        ));
+        let token_b = Address::from_string(&String::from_str(
+            &env,
+            "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN",
+        ));
 
         let token_init_info = TokenInitInfo {
             token_a,
@@ -237,8 +243,14 @@ mod tests {
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_string(&String::from_str(&env, "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN"));
-        let token_b = Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX"));
+        let token_a = Address::from_string(&String::from_str(
+            &env,
+            "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN",
+        ));
+        let token_b = Address::from_string(&String::from_str(
+            &env,
+            "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
+        ));
 
         let token_init_info = TokenInitInfo {
             token_a,
@@ -264,8 +276,14 @@ mod tests {
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_string(&String::from_str(&env, "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN"));
-        let token_b = Address::from_string(&String::from_str(&env, "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX"));
+        let token_a = Address::from_string(&String::from_str(
+            &env,
+            "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN",
+        ));
+        let token_b = Address::from_string(&String::from_str(
+            &env,
+            "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
+        ));
 
         let token_init_info = TokenInitInfo {
             token_a,
