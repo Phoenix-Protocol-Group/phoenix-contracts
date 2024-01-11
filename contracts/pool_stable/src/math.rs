@@ -103,7 +103,7 @@ fn calculate_step(
 /// y**2 + y * (sum' - (A*n**n - 1) * D / (A * n**n)) = D ** (n + 1) / (n ** (2 * n) * prod' * A)
 ///
 /// y**2 + b*y = c
-pub(crate) fn calc_y(amp: u128, new_amount: Decimal, xp: &[Decimal], target_precision: u8) -> u128 {
+pub(crate) fn calc_y(amp: u128, new_amount: Decimal, xp: &[Decimal], target_precision: u8) -> i128 {
     let d = compute_d(amp, xp);
     let leverage = Decimal::from_ratio(amp as i128, 1u8) * N_COINS;
     let amp_prec = Decimal::from_ratio(AMP_PRECISION, 1u8);
@@ -118,7 +118,7 @@ pub(crate) fn calc_y(amp: u128, new_amount: Decimal, xp: &[Decimal], target_prec
         y_prev = y;
         y = (y.pow(2) + c) / (y * N_COINS + b - d);
         if (y - y_prev).abs() <= TOL {
-            return y.to_i128_with_precision(target_precision) as u128;
+            return y.to_i128_with_precision(target_precision);
         }
     }
 

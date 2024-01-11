@@ -5,7 +5,7 @@ use num_integer::Roots;
 use crate::storage::utils::{is_initialized, set_initialized};
 use crate::storage::StableLiquidityPoolInfo;
 use crate::{
-    math::{compute_current_amp, compute_d, AMP_PRECISION},
+    math::{calc_y, compute_current_amp, compute_d, AMP_PRECISION},
     stake_contract,
     storage::{
         get_amp, get_config, save_amp, save_config, utils, validate_fee_bps, AmplifierParameters,
@@ -518,6 +518,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         };
 
         let (ask_amount, spread_amount, commission_amount) = compute_swap(
+            &env,
             pool_balance_offer,
             pool_balance_ask,
             offer_amount,
@@ -587,6 +588,7 @@ fn do_swap(
     };
 
     let (return_amount, spread_amount, commission_amount) = compute_swap(
+        &env,
         pool_balance_sell,
         pool_balance_buy,
         offer_amount,
@@ -843,26 +845,29 @@ pub fn assert_max_spread(
 /// - The spread amount, representing the difference between the expected and actual swap amounts.
 /// - The commission amount, representing the fees charged for the swap.
 pub fn compute_swap(
+    env: &Env,
     offer_pool: i128,
     ask_pool: i128,
     offer_amount: i128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    // Calculate the cross product of offer_pool and ask_pool
-    let cp: i128 = offer_pool * ask_pool;
+    let amp_parameters = get_amp(&env).unwrap();
+    let amp = compute_current_amp(&env, &amp_parameters);
 
-    // Calculate the resulting amount of ask assets after the swap
-    // Return amount calculation based on the AMM model's invariant,
-    // which ensures the product of the amounts of the two assets remains constant before and after a trade.
-    let return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount));
+    let new_ask_pool = calc_y(
+        amp as u128,
+        Decimal::from_atomics(offer_pool + offer_amount, 6),
+        &[
+            Decimal::from_atomics(offer_pool, 6),
+            Decimal::from_atomics(ask_pool, 6),
+        ],
+        6,
+    );
 
-    // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - return_amount;
-
-    let commission_amount: i128 = return_amount * commission_rate;
-
-    // Deduct the commission (minus the part that goes to the protocol) from the return amount
-    let return_amount: i128 = return_amount - commission_amount;
+    let return_amount = ask_pool - new_ask_pool;
+    // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
+    let spread_amount = offer_amount - return_amount;
+    let commission_amount = return_amount * commission_rate;
 
     (return_amount, spread_amount, commission_amount)
 }
