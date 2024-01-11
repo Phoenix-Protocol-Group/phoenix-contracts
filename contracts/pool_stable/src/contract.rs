@@ -5,10 +5,11 @@ use num_integer::Roots;
 use crate::storage::utils::{is_initialized, set_initialized};
 use crate::storage::StableLiquidityPoolInfo;
 use crate::{
+    math::{compute_current_amp, compute_d, AMP_PRECISION},
     stake_contract,
     storage::{
-        get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse,
+        get_amp, get_config, save_amp, save_config, utils, validate_fee_bps, AmplifierParameters,
+        Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
@@ -17,6 +18,9 @@ use phoenix::{
     utils::{is_approx_ratio, StakeInitInfo, TokenInitInfo},
     validate_int_parameters,
 };
+
+// Minimum amount of initial LP shares to mint
+const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1000;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -39,6 +43,7 @@ pub trait StableLiquidityPoolTrait {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        amp: u64,
         token_init_info: TokenInitInfo,
         stake_contract_info: StakeInitInfo,
     );
@@ -49,10 +54,8 @@ pub trait StableLiquidityPoolTrait {
     fn provide_liquidity(
         env: Env,
         depositor: Address,
-        desired_a: Option<i128>,
-        min_a: Option<i128>,
-        desired_b: Option<i128>,
-        min_b: Option<i128>,
+        desired_a: i128,
+        desired_b: i128,
         custom_slippage_bps: Option<i64>,
     );
 
@@ -133,6 +136,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        amp: u64,
         token_init_info: TokenInitInfo,
         stake_init_info: StakeInitInfo,
     ) {
@@ -200,6 +204,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             max_allowed_spread_bps,
         };
         save_config(&env, config);
+        let current_time = env.ledger().timestamp();
+        save_amp(
+            &env,
+            AmplifierParameters {
+                init_amp: amp * AMP_PRECISION,
+                init_amp_time: current_time,
+                next_amp: amp * AMP_PRECISION,
+                next_amp_time: current_time,
+            },
+        );
         utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
@@ -214,20 +228,18 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     fn provide_liquidity(
         env: Env,
         sender: Address,
-        desired_a: Option<i128>,
-        min_a: Option<i128>,
-        desired_b: Option<i128>,
-        min_b: Option<i128>,
+        desired_a: i128,
+        desired_b: i128,
         custom_slippage_bps: Option<i64>,
     ) {
-        validate_int_parameters!(desired_a, min_a, desired_b, min_b);
+        validate_int_parameters!(desired_a, desired_b);
 
         // sender needs to authorize the deposit
         sender.require_auth();
 
         let config = get_config(&env);
-        let pool_balance_a = utils::get_pool_balance_a(&env);
-        let pool_balance_b = utils::get_pool_balance_b(&env);
+        let old_balance_a = utils::get_pool_balance_a(&env);
+        let old_balance_b = utils::get_pool_balance_b(&env);
 
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
@@ -236,104 +248,54 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             }
         }
 
-        // Check if both tokens are provided, one token is provided, or none are provided
-        let amounts = match (desired_a, desired_b) {
-            // Both tokens are provided
-            (Some(a), Some(b)) if a > 0 && b > 0 => {
-                // Calculate deposit amounts
-                utils::get_deposit_amounts(
-                    &env,
-                    a,
-                    min_a,
-                    b,
-                    min_b,
-                    pool_balance_a,
-                    pool_balance_b,
-                    Decimal::bps(custom_slippage_bps.unwrap_or(100)),
-                )
+        let amp_parameters = get_amp(&env).unwrap(); // FIXME: This is minor, but add some
+                                                     // validation to AMP parameters
+        let amp = compute_current_amp(&env, &amp_parameters);
+
+        // Invariant (D) after deposit added
+        let new_balance_a = desired_a + old_balance_a;
+        let new_balance_b = desired_b + old_balance_b;
+        let new_invariant = compute_d(
+            amp as u128,
+            &[
+                Decimal::from_atomics(new_balance_a, 6),
+                Decimal::from_atomics(new_balance_b, 6),
+            ],
+        );
+
+        let total_shares = utils::get_total_shares(&env);
+        let shares = if total_shares == 0 {
+            let share = new_invariant.to_i128_with_precision(7) - MINIMUM_LIQUIDITY_AMOUNT;
+            if share == 0 {
+                panic!("Pool: ProvideLiquidity: Liquidity amount is too low");
             }
-            // Only token A is provided
-            (Some(a), None) if a > 0 => {
-                let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
-                    &env,
-                    &config,
-                    pool_balance_a,
-                    pool_balance_b,
-                    a,
-                    &config.token_a,
-                );
-                do_swap(
-                    env.clone(),
-                    sender.clone(),
-                    config.clone().token_a,
-                    a_for_swap,
-                    None,
-                    None,
-                );
-                // return: rest of Token A amount, simulated result of swap of portion A
-                (a - a_for_swap, b_from_swap)
-            }
-            // Only token B is provided
-            (None, Some(b)) if b > 0 => {
-                let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
-                    &env,
-                    &config,
-                    pool_balance_a,
-                    pool_balance_b,
-                    b,
-                    &config.token_b,
-                );
-                do_swap(
-                    env.clone(),
-                    sender.clone(),
-                    config.clone().token_b,
-                    b_for_swap,
-                    None,
-                    None,
-                );
-                // return: simulated result of swap of portion B, rest of Token B amount
-                (a_from_swap, b - b_for_swap)
-            }
-            // None or invalid amounts are provided
-            _ => {
-                log!(
-                    &env,
-                    "At least one token must be provided and must be bigger then 0!"
-                );
-                panic!("Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!");
-            }
+            share
+        } else {
+            let initial_invariant = compute_d(
+                amp as u128,
+                &[
+                    Decimal::from_atomics(old_balance_a, 6),
+                    Decimal::from_atomics(old_balance_b, 6),
+                ],
+            );
+            // Calculate the proportion of the change in invariant
+            (Decimal::from_ratio((new_invariant - initial_invariant) * total_shares, 1)
+                / initial_invariant)
+                .to_i128_with_precision(7)
         };
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
         // Move tokens from client's wallet to the contract
-        token_a_client.transfer(&sender, &env.current_contract_address(), &(amounts.0));
-        token_b_client.transfer(&sender, &env.current_contract_address(), &(amounts.1));
-
-        let pool_balance_a = utils::get_pool_balance_a(&env);
-        let pool_balance_b = utils::get_pool_balance_b(&env);
+        token_a_client.transfer(&sender, &env.current_contract_address(), &(desired_a));
+        token_b_client.transfer(&sender, &env.current_contract_address(), &(desired_b));
 
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, &config.token_a);
         let balance_b = utils::get_balance(&env, &config.token_b);
-        let total_shares = utils::get_total_shares(&env);
 
-        let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
-            let shares_a = (balance_a * total_shares) / pool_balance_a;
-            let shares_b = (balance_b * total_shares) / pool_balance_b;
-            shares_a.min(shares_b)
-        } else {
-            // In case of empty pool, just produce X*Y shares
-            (balance_a * balance_b).sqrt()
-        };
-
-        utils::mint_shares(
-            &env,
-            &config.share_token,
-            &sender,
-            new_total_shares - total_shares,
-        );
+        utils::mint_shares(&env, &config.share_token, &sender, shares);
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
@@ -342,11 +304,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env.events()
             .publish(("provide_liquidity", "token_a"), &config.token_a);
         env.events()
-            .publish(("provide_liquidity", "token_a-amount"), amounts.0);
+            .publish(("provide_liquidity", "token_a-amount"), desired_a);
         env.events()
             .publish(("provide_liquidity", "token_b"), &config.token_b);
         env.events()
-            .publish(("provide_liquidity", "token_b-amount"), amounts.1);
+            .publish(("provide_liquidity", "token_b-amount"), desired_b);
     }
 
     fn swap(
