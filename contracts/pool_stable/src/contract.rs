@@ -549,6 +549,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         };
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
+            &env,
             pool_balance_offer,
             pool_balance_ask,
             ask_amount,
@@ -742,25 +743,30 @@ pub fn compute_swap(
 /// * **ask_amount** amount of ask assets to swap to.
 /// * **commission_rate** total amount of fees charged for the swap.
 pub fn compute_offer_amount(
+    env: &Env,
     offer_pool: i128,
     ask_pool: i128,
     ask_amount: i128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    // Calculate the cross product of offer_pool and ask_pool
-    let cp: i128 = offer_pool * ask_pool;
+    let amp_parameters = get_amp(&env).unwrap();
+    let amp = compute_current_amp(&env, &amp_parameters);
 
-    // Calculate one minus the commission rate
+    let new_offer_pool = calc_y(
+        amp as u128,
+        Decimal::from_atomics(ask_pool - ask_amount, 6),
+        &[
+            Decimal::from_atomics(offer_pool, 6),
+            Decimal::from_atomics(ask_pool, 6),
+        ],
+        6,
+    );
+
+    let offer_amount = new_offer_pool - offer_pool;
+
     let one_minus_commission = Decimal::one() - commission_rate;
-
-    // Calculate the inverse of one minus the commission rate
     let inv_one_minus_commission = Decimal::one() / one_minus_commission;
-
-    // Calculate the resulting amount of ask assets after the swap
-    let offer_amount: i128 = cp / (ask_pool - (ask_amount * inv_one_minus_commission)) - offer_pool;
-
     let ask_before_commission = ask_amount * inv_one_minus_commission;
-
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
     let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_before_commission;
 
