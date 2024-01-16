@@ -1,6 +1,7 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, vec, Address, Env, Vec};
 
-use crate::lp_contract::Referral;
+// FIXM: Disable Referral struct
+// use crate::lp_contract::Referral;
 use crate::storage::{
     get_factory, is_initialized, save_factory, set_initialized, DataKey,
     SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
@@ -23,7 +24,8 @@ pub trait MultihopTrait {
     fn swap(
         env: Env,
         recipient: Address,
-        referral: Option<Referral>,
+        // FIXM: Disable Referral struct
+        // referral: Option<Referral>,
         operations: Vec<Swap>,
         max_belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
@@ -63,7 +65,8 @@ impl MultihopTrait for Multihop {
     fn swap(
         env: Env,
         recipient: Address,
-        referral: Option<Referral>,
+        // FIXM: Disable Referral struct
+        // referral: Option<Referral>,
         operations: Vec<Swap>,
         max_belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
@@ -87,16 +90,17 @@ impl MultihopTrait for Multihop {
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
 
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
-            if let Some(referral) = referral.clone() {
-                next_offer_amount = lp_client.swap(
-                    &recipient,
-                    &Some(referral),
-                    &op.offer_asset,
-                    &next_offer_amount,
-                    &max_belief_price,
-                    &max_spread_bps,
-                );
-            } else {
+            // FIXM: Disable Referral struct
+            // if let Some(referral) = referral.clone() {
+            //     next_offer_amount = lp_client.swap(
+            //         &recipient,
+            //         &Some(referral),
+            //         &op.offer_asset,
+            //         &next_offer_amount,
+            //         &max_belief_price,
+            //         &max_spread_bps,
+            //     );
+            // } else {
                 next_offer_amount = lp_client.swap(
                     &recipient,
                     &None,
@@ -105,7 +109,7 @@ impl MultihopTrait for Multihop {
                     &max_belief_price,
                     &max_spread_bps,
                 );
-            }
+            // }
         });
     }
 

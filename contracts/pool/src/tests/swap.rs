@@ -6,7 +6,7 @@ use test_case::test_case;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{
-    Asset, PoolResponse, Referral, SimulateReverseSwapResponse, SimulateSwapResponse,
+    Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
 };
 use decimal::Decimal;
 
@@ -52,7 +52,8 @@ fn simple_swap() {
     let spread = 100i64; // 1% maximum spread allowed
     pool.swap(
         &user1,
-        &None::<Referral>,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
         &token1.address,
         &1,
         &None,
@@ -68,7 +69,8 @@ fn simple_swap() {
                     symbol_short!("swap"),
                     (
                         &user1,
-                        None::<Referral>,
+        // FIXM: Disable Referral struct
+                        // None::<Referral>,
                         token1.address.clone(),
                         1_i128,
                         None::<i64>,
@@ -115,7 +117,8 @@ fn simple_swap() {
     // this time 100 units
     let output_amount = pool.swap(
         &user1,
-        &None::<Referral>,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
         &token2.address,
         &1_000,
         &None,
@@ -187,14 +190,15 @@ fn simple_swap_with_referral_fee() {
     // selling just one token with 1% max spread allowed
     let spread = 100i64; // 1% maximum spread allowed
                          // selling with 10% fee for the big guy
-    let referral = Referral {
-        address: referral_addr.clone(),
-        fee: 1_000,
-    };
+        // FIXM: Disable Referral struct
+    // let referral = Referral {
+    //     address: referral_addr.clone(),
+    //     fee: 1_000,
+    // };
 
     pool.swap(
         &user1,
-        &Some(referral.clone()),
+    //     &Some(referral.clone()),
         &token1.address,
         &1,
         &None,
@@ -298,16 +302,17 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
     );
 
     let spread = 100i64; // 1% maximum spread allowed
-    let referral = Referral {
-        address: Address::random(&env),
-        // in tests/setup.rs we hardcoded the max referral fee
-        // to 5_000 bps (50%), here we try to set it to 10_000 bps (100%)
-        fee: 10_000,
-    };
+        // FIXM: Disable Referral struct
+    // let referral = Referral {
+    //     address: Address::random(&env),
+    //     // in tests/setup.rs we hardcoded the max referral fee
+    //     // to 5_000 bps (50%), here we try to set it to 10_000 bps (100%)
+    //     fee: 10_000,
+    // };
 
     pool.swap(
         &user1,
-        &Some(referral),
+    //     &Some(referral),
         &token1.address,
         &1,
         &None,
@@ -348,9 +353,9 @@ fn swap_should_panic_with_bad_max_spread() {
     pool.provide_liquidity(&user1, &Some(5000), &None, &Some(2_000_000), &None, &None);
 
     // selling just one token with 1% max spread allowed and 50 bps max spread
+    // FIXM: Disable Referral struct
     pool.swap(
         &user1,
-        &None::<Referral>,
         &token1.address,
         &50,
         &None,
