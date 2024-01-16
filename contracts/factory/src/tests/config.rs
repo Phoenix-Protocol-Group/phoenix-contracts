@@ -134,7 +134,7 @@ fn factory_successfully_inits_lp() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "Factory: Create Liquidity Pool: You are not authorized to create liquidity pools!")]
 fn factory_fails_to_init_lp_when_authorized_address_not_present() {
     let env = Env::default();
     let admin = Address::random(&env);
