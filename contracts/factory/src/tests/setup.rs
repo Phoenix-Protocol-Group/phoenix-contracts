@@ -40,8 +40,8 @@ pub fn deploy_factory_contract<'a>(
     let factory = FactoryClient::new(env, &env.register_contract(None, Factory {}));
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![
-        &env,
-        Address::from_contract_id(&BytesN::from_array(&env, &[0u8; 0x20])),
+        env,
+        Address::from_contract_id(&BytesN::from_array(env, &[0u8; 0x20])),
     ];
 
     factory.initialize(&admin, &multihop_wasm_hash, &whitelisted_accounts);
