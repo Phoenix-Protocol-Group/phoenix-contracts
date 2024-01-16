@@ -19,9 +19,18 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
 pub struct Factory;
 
 pub trait FactoryTrait {
-    fn initialize(env: Env, admin: Address, multihop_wasm_hash: BytesN<32>);
+    fn initialize(
+        env: Env,
+        admin: Address,
+        multihop_wasm_hash: BytesN<32>,
+        whitelisted_accounts: Vec<Address>,
+    );
 
-    fn create_liquidity_pool(env: Env, lp_init_info: LiquidityPoolInitInfo) -> Address;
+    fn create_liquidity_pool(
+        env: Env,
+        lp_init_info: LiquidityPoolInitInfo,
+        caller: Address,
+    ) -> Address;
 
     fn query_pools(env: Env) -> Vec<Address>;
 
@@ -38,9 +47,18 @@ pub trait FactoryTrait {
 
 #[contractimpl]
 impl FactoryTrait for Factory {
-    fn initialize(env: Env, admin: Address, multihop_wasm_hash: BytesN<32>) {
+    fn initialize(
+        env: Env,
+        admin: Address,
+        multihop_wasm_hash: BytesN<32>,
+        whitelisted_accounts: Vec<Address>,
+    ) {
         if is_initialized(&env) {
             panic!("Factory: Initialize: initializing contract twice is not allowed");
+        }
+
+        if whitelisted_accounts.is_empty() {
+            panic!("Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.")
         }
 
         set_initialized(&env);
@@ -53,6 +71,7 @@ impl FactoryTrait for Factory {
             Config {
                 admin: admin.clone(),
                 multihop_address,
+                whitelisted_accounts,
             },
         );
 
@@ -62,7 +81,18 @@ impl FactoryTrait for Factory {
             .publish(("initialize", "LP factory contract"), admin);
     }
 
-    fn create_liquidity_pool(env: Env, lp_init_info: LiquidityPoolInitInfo) -> Address {
+    fn create_liquidity_pool(
+        env: Env,
+        lp_init_info: LiquidityPoolInitInfo,
+        caller: Address,
+    ) -> Address {
+        caller.require_auth();
+        if !get_config(&env).whitelisted_accounts.contains(caller) {
+            panic!(
+                "Factory: Create Liquidity Pool: You are not authorized to create liquidity pools!"
+            )
+        };
+
         validate_token_info(
             &env,
             &lp_init_info.token_init_info,

@@ -28,6 +28,8 @@ impl TryFromVal<Env, DataKey> for Val {
 pub struct Config {
     pub admin: Address,
     pub multihop_address: Address,
+    /// A vec of whitelisted addresses that can create liquidity pools
+    pub whitelisted_accounts: Vec<Address>,
 }
 
 #[contracttype]
