@@ -91,7 +91,6 @@ pub trait LiquidityPoolTrait {
     #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
-        sender: Address,
         new_admin: Option<Address>,
         total_fee_bps: Option<i64>,
         fee_recipient: Option<Address>,
@@ -463,7 +462,6 @@ impl LiquidityPoolTrait for LiquidityPool {
     #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
-        sender: Address,
         new_admin: Option<Address>,
         total_fee_bps: Option<i64>,
         fee_recipient: Option<Address>,
@@ -471,9 +469,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
     ) {
-        if sender != utils::get_admin(&env) {
-            panic!("Pool: UpdateConfig: Unauthorized");
-        }
+        let admin: Address = utils::get_admin(&env);
+        admin.require_auth();
 
         let mut config = get_config(&env);
 

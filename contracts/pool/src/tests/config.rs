@@ -52,7 +52,6 @@ fn update_config() {
 
     // update fees and recipient
     pool.update_config(
-        &admin1,
         &None,
         &Some(500i64), // 5% fees
         &Some(admin2.clone()),
@@ -77,15 +76,7 @@ fn update_config() {
     );
 
     // update slippage and spread
-    pool.update_config(
-        &admin1,
-        &None,
-        &None,
-        &None,
-        &Some(5_000i64),
-        &Some(500),
-        &None,
-    );
+    pool.update_config(&None, &None, &None, &Some(5_000i64), &Some(500));
     assert_eq!(
         pool.query_config(),
         Config {
@@ -104,10 +95,9 @@ fn update_config() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: UpdateConfig: Unauthorize")]
+#[should_panic]
 fn update_config_unauthorized() {
     let env = Env::default();
-    env.mock_all_auths();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -131,7 +121,6 @@ fn update_config_unauthorized() {
     );
 
     pool.update_config(
-        &Address::generate(&env),
         &None,
         &Some(500i64), // 5% fees
         &Some(admin2.clone()),
@@ -169,21 +158,13 @@ fn update_config_update_admin() {
     );
 
     // update admin to new admin
-    pool.update_config(
-        &admin1,
-        &Some(admin2.clone()),
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-    );
+    pool.update_config(&Some(admin2.clone()), &None, &None, &None, &None);
 
     let share_token_address = pool.query_share_token_address();
     let stake_token_address = pool.query_stake_contract_address();
 
     // now update succeeds
-    pool.update_config(&admin2, &None, &None, &None, &None, &Some(3_000_000), &None);
+    pool.update_config(&None, &None, &None, &None, &Some(3_000_000));
     assert_eq!(
         pool.query_config(),
         Config {
@@ -230,7 +211,6 @@ fn update_config_too_high_fees() {
 
     // update fees and recipient
     pool.update_config(
-        &admin1,
         &None,
         &Some(10_100i64), // 101% fees
         &Some(admin2.clone()),
