@@ -139,7 +139,10 @@ pub fn deploy_and_initialize_lp(
         stake_init_info,
     };
 
-    let lp = factory.create_liquidity_pool(&lp_init_info, &Address::from_contract_id(&BytesN::from_array(env, &[0u8; 0x20])));
+    let lp = factory.create_liquidity_pool(
+        &lp_init_info,
+        &Address::from_contract_id(&BytesN::from_array(env, &[0u8; 0x20])),
+    );
 
     let lp_client = lp_contract::Client::new(env, &lp);
     lp_client.provide_liquidity(
