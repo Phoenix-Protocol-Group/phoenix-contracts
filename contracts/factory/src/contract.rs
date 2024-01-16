@@ -137,7 +137,7 @@ impl FactoryTrait for Factory {
     }
 
     fn query_for_pool_by_token_pair(env: Env, token_a: Address, token_b: Address) -> Address {
-        let pool_result: Option<Address> = env.storage().instance().get(&PairTupleKey {
+        let pool_result: Option<Address> = env.storage().persistent().get(&PairTupleKey {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
         });
@@ -146,7 +146,7 @@ impl FactoryTrait for Factory {
             return addr;
         }
 
-        let reverted_pool_resul: Option<Address> = env.storage().instance().get(&PairTupleKey {
+        let reverted_pool_resul: Option<Address> = env.storage().persistent().get(&PairTupleKey {
             token_a: token_b,
             token_b: token_a,
         });
