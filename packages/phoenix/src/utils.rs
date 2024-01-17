@@ -44,7 +44,6 @@ pub struct StakeInitInfo {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LiquidityPoolInitInfo {
     pub admin: Address,
-    pub lp_wasm_hash: BytesN<32>,
     pub share_token_decimals: u32,
     pub swap_fee_bps: i64,
     pub fee_recipient: Address,

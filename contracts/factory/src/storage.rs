@@ -28,6 +28,7 @@ impl TryFromVal<Env, DataKey> for Val {
 pub struct Config {
     pub admin: Address,
     pub multihop_address: Address,
+    pub lp_wasm_hash: soroban_sdk::BytesN<32>,
     /// A vec of whitelisted addresses that can create liquidity pools
     pub whitelisted_accounts: Vec<Address>,
 }

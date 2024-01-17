@@ -23,6 +23,7 @@ pub trait FactoryTrait {
         env: Env,
         admin: Address,
         multihop_wasm_hash: BytesN<32>,
+        lp_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
     );
 
@@ -51,6 +52,7 @@ impl FactoryTrait for Factory {
         env: Env,
         admin: Address,
         multihop_wasm_hash: BytesN<32>,
+        lp_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
     ) {
         if is_initialized(&env) {
@@ -71,6 +73,7 @@ impl FactoryTrait for Factory {
             Config {
                 admin: admin.clone(),
                 multihop_address,
+                lp_wasm_hash,
                 whitelisted_accounts,
             },
         );
@@ -99,9 +102,11 @@ impl FactoryTrait for Factory {
             &lp_init_info.stake_init_info,
         );
 
+        let lp_wasm_hash = get_config(&env).lp_wasm_hash;
+
         let lp_contract_address = deploy_lp_contract(
             &env,
-            lp_init_info.lp_wasm_hash,
+            lp_wasm_hash,
             &lp_init_info.token_init_info.token_a,
             &lp_init_info.token_init_info.token_b,
         );
