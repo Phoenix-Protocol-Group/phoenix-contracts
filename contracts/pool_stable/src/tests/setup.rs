@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 use crate::{
     contract::{StableLiquidityPool, StableLiquidityPoolClient},

@@ -6,7 +6,7 @@ use num_integer::Roots;
 
 use crate::contracterror::ContractError;
 use crate::storage::utils::{is_initialized, set_initialized};
-use crate::storage::{ComputeSwap, LiquidityPoolInfo, Referral};
+use crate::storage::{ComputeSwap, LiquidityPoolInfo};
 use crate::{
     stake_contract,
     storage::{
