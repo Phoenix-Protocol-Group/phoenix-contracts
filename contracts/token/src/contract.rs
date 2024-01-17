@@ -22,6 +22,7 @@ pub struct Token;
 #[contractimpl]
 impl Token {
     pub fn initialize(e: Env, admin: Address, decimal: u32, name: String, symbol: String) {
+        #[allow(dead_code)]
         if has_administrator(&e) {
             panic!("already initialized")
         }
@@ -40,6 +41,7 @@ impl Token {
         )
     }
 
+    #[allow(dead_code)]
     pub fn mint(e: Env, to: Address, amount: i128) {
         check_nonnegative_amount(amount);
         let admin = read_administrator(&e);
@@ -53,6 +55,7 @@ impl Token {
         TokenUtils::new(&e).events().mint(admin, to, amount);
     }
 
+    #[allow(dead_code)]
     pub fn set_admin(e: Env, new_admin: Address) {
         let admin = read_administrator(&e);
         admin.require_auth();
