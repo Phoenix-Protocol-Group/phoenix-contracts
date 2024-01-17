@@ -41,6 +41,17 @@ pub fn deploy_factory_contract<'a>(
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![env, admin.clone()];
 
-    factory.initialize(&admin, &multihop_wasm_hash, &whitelisted_accounts);
+    let lp_wasm_hash = install_lp_contract(env);
+    let stake_wasm_hash = install_stake_wasm(env);
+    let token_wasm_hash = install_token_wasm(env);
+
+    factory.initialize(
+        &admin,
+        &multihop_wasm_hash,
+        &lp_wasm_hash,
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &whitelisted_accounts,
+    );
     factory
 }

@@ -92,7 +92,18 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Clie
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![env, admin.clone()];
 
-    factory_client.initialize(&admin.clone(), &multihop_wasm_hash, &whitelisted_accounts);
+    let lp_wasm_hash = install_lp_contract(env);
+    let stake_wasm_hash = install_stake_wasm(env);
+    let token_wasm_hash = install_token_wasm(env);
+
+    factory_client.initialize(
+        &admin.clone(),
+        &multihop_wasm_hash,
+        &lp_wasm_hash,
+        &stake_wasm_hash,
+        &token_wasm_hash,
+    &whitelisted_accounts,
+    );
     factory_client
 }
 
@@ -115,12 +126,10 @@ pub fn deploy_and_initialize_lp(
     }
 
     let token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(env),
         token_a: token_a.clone(),
         token_b: token_b.clone(),
     };
     let stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(env),
         min_bond: 10i128,
         max_distributions: 10u32,
         min_reward: 5i128,

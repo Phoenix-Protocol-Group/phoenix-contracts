@@ -24,6 +24,8 @@ pub trait FactoryTrait {
         admin: Address,
         multihop_wasm_hash: BytesN<32>,
         lp_wasm_hash: BytesN<32>,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
     );
 
@@ -53,6 +55,8 @@ impl FactoryTrait for Factory {
         admin: Address,
         multihop_wasm_hash: BytesN<32>,
         lp_wasm_hash: BytesN<32>,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
     ) {
         if is_initialized(&env) {
@@ -74,6 +78,8 @@ impl FactoryTrait for Factory {
                 admin: admin.clone(),
                 multihop_address,
                 lp_wasm_hash,
+                stake_wasm_hash,
+                token_wasm_hash,
                 whitelisted_accounts,
             },
         );
@@ -103,6 +109,8 @@ impl FactoryTrait for Factory {
         );
 
         let lp_wasm_hash = get_config(&env).lp_wasm_hash;
+        let stake_wasm_hash = get_config(&env).stake_wasm_hash;
+        let token_wasm_hash = get_config(&env).token_wasm_hash;
 
         let lp_contract_address = deploy_lp_contract(
             &env,
@@ -113,15 +121,9 @@ impl FactoryTrait for Factory {
 
         let init_fn: Symbol = Symbol::new(&env, "initialize");
         let init_fn_args: Vec<Val> = (
-            lp_init_info.admin,
-            lp_init_info.share_token_decimals,
-            lp_init_info.swap_fee_bps,
-            lp_init_info.fee_recipient,
-            lp_init_info.max_allowed_slippage_bps,
-            lp_init_info.max_allowed_spread_bps,
-            lp_init_info.max_referral_bps,
-            lp_init_info.token_init_info.clone(),
-            lp_init_info.stake_init_info,
+            stake_wasm_hash,
+            token_wasm_hash,
+            lp_init_info.clone(),
         )
             .into_val(&env);
 
@@ -241,9 +243,6 @@ mod tests {
     fn validate_token_info_should_fail_on_token_a_less_than_token_b() {
         let env = Env::default();
 
-        let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
-        let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
-
         let token_a = Address::from_string(&String::from_str(
             &env,
             "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
@@ -253,17 +252,12 @@ mod tests {
             "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN",
         ));
 
-        let token_init_info = TokenInitInfo {
-            token_a,
-            token_b,
-            token_wasm_hash,
-        };
+        let token_init_info = TokenInitInfo { token_a, token_b };
 
         let stake_init_info = StakeInitInfo {
             max_distributions: 10,
             min_bond: 10,
             min_reward: 10,
-            stake_wasm_hash,
         };
         validate_token_info(&env, &token_init_info, &stake_init_info);
     }
@@ -281,17 +275,12 @@ mod tests {
         let token_a = Address::generate(&env);
         let token_b = Address::generate(&env);
 
-        let token_init_info = TokenInitInfo {
-            token_a,
-            token_b,
-            token_wasm_hash,
-        };
+        let token_init_info = TokenInitInfo { token_a, token_b };
 
         let stake_init_info = StakeInitInfo {
             max_distributions: 10,
             min_bond: 0,
             min_reward: 10,
-            stake_wasm_hash,
         };
 
         validate_token_info(&env, &token_init_info, &stake_init_info);
@@ -308,17 +297,12 @@ mod tests {
         let token_a = Address::generate(&env);
         let token_b = Address::generate(&env);
 
-        let token_init_info = TokenInitInfo {
-            token_a,
-            token_b,
-            token_wasm_hash,
-        };
+        let token_init_info = TokenInitInfo { token_a, token_b };
 
         let stake_init_info = StakeInitInfo {
             max_distributions: 10,
             min_bond: 10,
             min_reward: 0,
-            stake_wasm_hash,
         };
         validate_token_info(&env, &token_init_info, &stake_init_info);
     }

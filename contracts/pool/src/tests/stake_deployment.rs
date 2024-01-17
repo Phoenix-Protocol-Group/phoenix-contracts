@@ -1,5 +1,5 @@
 extern crate std;
-use phoenix::utils::{StakeInitInfo, TokenInitInfo};
+use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
@@ -96,41 +96,30 @@ fn second_pool_deployment_should_fail() {
     let fee_recipient = user;
     let max_allowed_slippage = 5_000i64; // 50% if not specified
     let max_allowed_spread = 500i64; // 5% if not specified
-    let share_token_decimals = 7u32;
 
     let token_init_info = TokenInitInfo {
-        token_wasm_hash,
         token_a: token1.address.clone(),
         token_b: token2.address.clone(),
     };
     let stake_init_info = StakeInitInfo {
-        stake_wasm_hash,
         min_bond: 10i128,
         max_distributions: 10u32,
         min_reward: 5i128,
     };
 
-    pool.initialize(
-        &admin1,
-        &share_token_decimals,
-        &0i64,
-        &fee_recipient,
-        &max_allowed_slippage,
-        &max_allowed_spread,
-        &500,
-        &token_init_info,
-        &stake_init_info,
-    );
+    let lp_init_info = LiquidityPoolInitInfo {
+        admin: admin1,
+        share_token_decimals: 7u32,
+        swap_fee_bps: 0i64,
+        fee_recipient,
+        max_allowed_slippage_bps: max_allowed_slippage,
+        max_allowed_spread_bps: max_allowed_spread,
+        max_referral_bps: 500,
+        token_init_info,
+        stake_init_info,
+    };
 
-    pool.initialize(
-        &admin1,
-        &share_token_decimals,
-        &0i64,
-        &fee_recipient,
-        &max_allowed_slippage,
-        &max_allowed_spread,
-        &500,
-        &token_init_info,
-        &stake_init_info,
-    );
+    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &lp_init_info);
+
+    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &lp_init_info);
 }

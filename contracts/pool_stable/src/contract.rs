@@ -1,3 +1,4 @@
+use phoenix::utils::LiquidityPoolInitInfo;
 use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal};
 
 use crate::storage::utils::{is_initialized, set_initialized};
@@ -36,15 +37,9 @@ pub trait StableLiquidityPoolTrait {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
-        admin: Address,
-        share_token_decimals: u32,
-        swap_fee_bps: i64,
-        fee_recipient: Address,
-        max_allowed_slippage_bps: i64,
-        max_allowed_spread_bps: i64,
-        amp: u64,
-        token_init_info: TokenInitInfo,
-        stake_contract_info: StakeInitInfo,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        lp_init_info: LiquidityPoolInitInfo,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -129,28 +124,29 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
-        admin: Address,
-        share_token_decimals: u32,
-        swap_fee_bps: i64,
-        fee_recipient: Address,
-        max_allowed_slippage_bps: i64,
-        max_allowed_spread_bps: i64,
-        amp: u64,
-        token_init_info: TokenInitInfo,
-        stake_init_info: StakeInitInfo,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        lp_init_info: LiquidityPoolInitInfo,
     ) {
         if is_initialized(&env) {
             panic!("Pool stable: Initialize: initializing contract twice is not allowed");
         }
+
+        let admin = lp_init_info.admin;
+        let share_token_decimals = lp_init_info.share_token_decimals;
+        let swap_fee_bps = lp_init_info.swap_fee_bps;
+        let fee_recipient = lp_init_info.fee_recipient;
+        let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
+        let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
+        let token_init_info = lp_init_info.token_init_info;
+        let stake_init_info = lp_init_info.stake_init_info;
 
         set_initialized(&env);
 
         // Token info
         let token_a = token_init_info.token_a;
         let token_b = token_init_info.token_b;
-        let token_wasm_hash = token_init_info.token_wasm_hash;
         // Contract info
-        let stake_wasm_hash = stake_init_info.stake_wasm_hash;
         let min_bond = stake_init_info.min_bond;
         let max_distributions = stake_init_info.max_distributions;
         let min_reward = stake_init_info.min_reward;

@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, ConversionError, Env, TryFromVal, Val, Vec};
+use soroban_sdk::{contracttype, Address, BytesN, ConversionError, Env, TryFromVal, Val, Vec};
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -28,8 +28,9 @@ impl TryFromVal<Env, DataKey> for Val {
 pub struct Config {
     pub admin: Address,
     pub multihop_address: Address,
-    pub lp_wasm_hash: soroban_sdk::BytesN<32>,
-    /// A vec of whitelisted addresses that can create liquidity pools
+    pub lp_wasm_hash: BytesN<32>,
+    pub stake_wasm_hash: BytesN<32>,
+    pub token_wasm_hash: BytesN<32>,
     pub whitelisted_accounts: Vec<Address>,
 }
 

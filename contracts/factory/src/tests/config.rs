@@ -1,4 +1,4 @@
-use super::setup::{deploy_factory_contract, install_stake_wasm, install_token_wasm, lp_contract};
+use super::setup::{deploy_factory_contract, lp_contract};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::{
@@ -132,12 +132,10 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
     assert_eq!(factory.get_admin(), admin);
 
     let token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(&env),
         token_a: token1,
         token_b: token2,
     };
     let stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(&env),
         min_bond: 10i128,
         max_distributions: 10u32,
         min_reward: 5i128,
