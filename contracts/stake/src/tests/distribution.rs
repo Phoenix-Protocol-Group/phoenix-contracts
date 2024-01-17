@@ -757,7 +757,7 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_slice(&env, "0")
+                    amount: String::from_str(&env, "0")
                 }
             ]
         }
@@ -775,7 +775,7 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_slice(&env, "100")
+                    amount: String::from_str(&env, "100")
                 }
             ]
         }
@@ -800,7 +800,7 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_slice(&env, "150")
+                    amount: String::from_str(&env, "150")
                 }
             ]
         }

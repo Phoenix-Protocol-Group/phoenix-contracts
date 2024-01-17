@@ -1,7 +1,7 @@
 use crate::contract::{Multihop, MultihopClient};
 use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
-use soroban_sdk::testutils::{arbitrary::std, Address as _};
+use soroban_sdk::testutils::arbitrary::std;
 use soroban_sdk::{Address, Bytes, BytesN, Env, String};
 
 pub mod factory {
@@ -68,7 +68,7 @@ pub fn deploy_multihop_contract<'a>(
     let admin = admin
         .into()
         .unwrap_or(Address::from_string(&String::from_str(
-            &env,
+            env,
             "CDALIOEQHREN5DJANC3O6WN3KF2MVRXAYAWCKF3XJIBQJTFVXJHI6HWE",
         )));
 

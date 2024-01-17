@@ -197,7 +197,7 @@ fn validate_token_info(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::{testutils::Address as _, Bytes, BytesN, String};
+    use soroban_sdk::{BytesN, String};
 
     #[test]
     #[should_panic(

@@ -22,7 +22,7 @@ pub fn deploy_staking_contract<'a>(
     let admin = admin
         .into()
         .unwrap_or(Address::from_string(&String::from_str(
-            &env,
+            env,
             "CDALIOEQHREN5DJANC3O6WN3KF2MVRXAYAWCKF3XJIBQJTFVXJHI6HWE",
         )));
     let staking = StakingClient::new(env, &env.register_contract(None, Staking {}));

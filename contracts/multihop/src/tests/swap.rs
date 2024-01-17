@@ -178,7 +178,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
-    let referral_addr = Address::random(&env);
+    let referral_addr = Address::generate(&env);
     // FIXM: Disable Referral struct
     // let referral = Referral {
     //     address: referral_addr.clone(),
