@@ -88,6 +88,7 @@ pub trait LiquidityPoolTrait {
 
     // Allows admin address set during initialization to change some parameters of the
     // configuration
+    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         sender: Address,
@@ -459,6 +460,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         (return_amount_a, return_amount_b)
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         sender: Address,

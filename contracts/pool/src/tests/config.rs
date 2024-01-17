@@ -58,6 +58,7 @@ fn update_config() {
         &Some(admin2.clone()),
         &None,
         &None,
+        &Some(1_000i64),
     );
     assert_eq!(
         pool.query_config(),
@@ -71,12 +72,20 @@ fn update_config() {
             fee_recipient: admin2.clone(),
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
-            max_referral_bps: 5_000,
+            max_referral_bps: 1_000,
         }
     );
 
     // update slippage and spread
-    pool.update_config(&admin1, &None, &None, &None, &Some(5_000i64), &Some(500));
+    pool.update_config(
+        &admin1,
+        &None,
+        &None,
+        &None,
+        &Some(5_000i64),
+        &Some(500),
+        &None,
+    );
     assert_eq!(
         pool.query_config(),
         Config {
@@ -89,7 +98,7 @@ fn update_config() {
             fee_recipient: admin2,
             max_allowed_slippage_bps: 5_000,
             max_allowed_spread_bps: 500,
-            max_referral_bps: 5_000,
+            max_referral_bps: 1_000,
         }
     );
 }
@@ -128,6 +137,7 @@ fn update_config_unauthorized() {
         &Some(admin2.clone()),
         &None,
         &None,
+        &None,
     );
 }
 
@@ -159,13 +169,21 @@ fn update_config_update_admin() {
     );
 
     // update admin to new admin
-    pool.update_config(&admin1, &Some(admin2.clone()), &None, &None, &None, &None);
+    pool.update_config(
+        &admin1,
+        &Some(admin2.clone()),
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+    );
 
     let share_token_address = pool.query_share_token_address();
     let stake_token_address = pool.query_stake_contract_address();
 
     // now update succeeds
-    pool.update_config(&admin2, &None, &None, &None, &None, &Some(3_000_000));
+    pool.update_config(&admin2, &None, &None, &None, &None, &Some(3_000_000), &None);
     assert_eq!(
         pool.query_config(),
         Config {
@@ -216,6 +234,7 @@ fn update_config_too_high_fees() {
         &None,
         &Some(10_100i64), // 101% fees
         &Some(admin2.clone()),
+        &None,
         &None,
         &None,
     );
