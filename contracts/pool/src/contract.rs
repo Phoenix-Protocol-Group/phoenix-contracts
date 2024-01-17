@@ -17,7 +17,6 @@ use crate::{
 };
 use decimal::Decimal;
 use phoenix::{
-    referral::Referral,
     utils::{assert_approx_ratio, StakeInitInfo, TokenInitInfo},
     validate_int_parameters,
 };

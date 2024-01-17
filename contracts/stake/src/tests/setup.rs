@@ -19,7 +19,7 @@ pub fn deploy_staking_contract<'a>(
     admin: impl Into<Option<Address>>,
     lp_token: &Address,
 ) -> StakingClient<'a> {
-    let admin = admin.into().unwrap_or(Address::generate(&env));
+    let admin = admin.into().unwrap_or(Address::generate(env));
     let staking = StakingClient::new(env, &env.register_contract(None, Staking {}));
 
     staking.initialize(&admin, lp_token, &MIN_BOND, &MAX_DISTRIBUTIONS, &MIN_REWARD);

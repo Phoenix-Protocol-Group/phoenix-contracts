@@ -304,8 +304,8 @@ fn swap_simulation_one_third_pool() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut token1 = deploy_token_contract(&env, Address::generate(&env));
-    let mut token2 = deploy_token_contract(&env, Address::generate(&env));
+    let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }

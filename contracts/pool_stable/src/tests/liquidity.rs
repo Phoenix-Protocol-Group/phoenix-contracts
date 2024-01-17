@@ -135,7 +135,7 @@ fn withdraw_liquidity() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -239,7 +239,7 @@ fn provide_liqudity_single_asset_on_empty_pool() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -279,7 +279,7 @@ fn provide_liqudity_single_asset_equal() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -347,7 +347,7 @@ fn provide_liqudity_single_asset_equal_with_fees() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -424,7 +424,7 @@ fn provide_liqudity_single_asset_one_third() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -488,7 +488,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -549,7 +549,6 @@ fn provide_liqudity_too_high_fees() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -579,7 +578,7 @@ fn swap_with_no_amounts() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -614,7 +613,7 @@ fn withdraw_liqudity_below_min() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);

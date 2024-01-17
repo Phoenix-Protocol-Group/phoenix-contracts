@@ -1,13 +1,15 @@
 extern crate std;
 use pretty_assertions::assert_eq;
-use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
-use soroban_sdk::{symbol_short, Address, Env, IntoVal, String};
+use soroban_sdk::{
+    symbol_short,
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    Address, Env, IntoVal, String,
+};
 use test_case::test_case;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
 use decimal::Decimal;
-use phoenix::referral::Referral;
 
 #[test]
 fn simple_swap() {
@@ -335,6 +337,7 @@ fn swap_should_panic_with_bad_max_spread() {
     env.budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);

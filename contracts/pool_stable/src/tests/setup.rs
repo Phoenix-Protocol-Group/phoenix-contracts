@@ -35,7 +35,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     max_allowed_slippage_bps: impl Into<Option<i64>>,
     max_allowed_spread_bps: impl Into<Option<i64>>,
 ) -> StableLiquidityPoolClient<'a> {
-    let admin = admin.into().unwrap_or(Address::generate(&env));
+    let admin = admin.into().unwrap_or(Address::generate(env));
     let pool =
         StableLiquidityPoolClient::new(env, &env.register_contract(None, StableLiquidityPool {}));
     let token_wasm_hash = install_token_wasm(env);

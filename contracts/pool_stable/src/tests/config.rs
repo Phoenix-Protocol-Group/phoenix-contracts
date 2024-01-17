@@ -98,7 +98,7 @@ fn update_config_unauthorized() {
     env.mock_all_auths();
 
     let mut admin1 = Address::generate(&env);
-    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
     let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -135,7 +135,7 @@ fn update_config_update_admin() {
     env.budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
-    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
     let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
@@ -186,7 +186,7 @@ fn update_config_too_high_fees() {
     env.mock_all_auths();
 
     let mut admin1 = Address::generate(&env);
-    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
     let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
