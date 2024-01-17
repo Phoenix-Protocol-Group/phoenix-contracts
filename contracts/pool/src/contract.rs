@@ -96,6 +96,7 @@ pub trait LiquidityPoolTrait {
         fee_recipient: Option<Address>,
         max_allowed_slippage_bps: Option<i64>,
         max_allowed_spread_bps: Option<i64>,
+        max_referral_bps: Option<i64>,
     );
 
     // Migration entrypoint
@@ -466,6 +467,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         fee_recipient: Option<Address>,
         max_allowed_slippage_bps: Option<i64>,
         max_allowed_spread_bps: Option<i64>,
+        max_referral_bps: Option<i64>,
     ) {
         if sender != utils::get_admin(&env) {
             panic!("Pool: UpdateConfig: Unauthorized");
@@ -490,6 +492,9 @@ impl LiquidityPoolTrait for LiquidityPool {
         }
         if let Some(max_allowed_spread_bps) = max_allowed_spread_bps {
             config.max_allowed_spread_bps = max_allowed_spread_bps;
+        }
+        if let Some(max_referral_bps) = max_referral_bps {
+            config.max_referral_bps = max_referral_bps;
         }
 
         save_config(&env, config);
