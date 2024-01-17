@@ -167,7 +167,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
 
     let operations = vec![&env, swap1, swap2, swap3];
     let referral_addr = Address::random(&env);
-// FIXM: Disable Referral struct
+    // FIXM: Disable Referral struct
     // let referral = Referral {
     //     address: referral_addr.clone(),
     //     fee: 1_000,
@@ -181,13 +181,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
     //     &None,
     //     &50i128,
     // );
-    multihop.swap(
-        &recipient,
-        &operations,
-        &None,
-        &None,
-        &50i128,
-    );
+    multihop.swap(&recipient, &operations, &None, &None, &50i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);

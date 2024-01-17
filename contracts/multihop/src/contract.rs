@@ -101,14 +101,14 @@ impl MultihopTrait for Multihop {
             //         &max_spread_bps,
             //     );
             // } else {
-                next_offer_amount = lp_client.swap(
-                    &recipient,
-                    &None,
-                    &op.offer_asset,
-                    &next_offer_amount,
-                    &max_belief_price,
-                    &max_spread_bps,
-                );
+            next_offer_amount = lp_client.swap(
+                &recipient,
+                &None,
+                &op.offer_asset,
+                &next_offer_amount,
+                &max_belief_price,
+                &max_spread_bps,
+            );
             // }
         });
     }
