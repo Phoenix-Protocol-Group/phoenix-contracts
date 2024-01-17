@@ -1,7 +1,11 @@
 use crate::contract::{Multihop, MultihopClient};
 use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
+use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
+    Address, Bytes, BytesN, Env,
+};
+use soroban_sdk::{vec, String};
 
 pub mod factory {
     soroban_sdk::contractimport!(
@@ -88,7 +92,10 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Clie
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![
         env,
-        Address::from_contract_id(&BytesN::from_array(env, &[0u8; 0x20])),
+        Address::from_string(&String::from_str(
+            env,
+            "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+        )),
     ];
 
     factory_client.initialize(&admin.clone(), &multihop_wasm_hash, &whitelisted_accounts);
@@ -141,7 +148,10 @@ pub fn deploy_and_initialize_lp(
 
     let lp = factory.create_liquidity_pool(
         &lp_init_info,
-        &Address::from_contract_id(&BytesN::from_array(env, &[0u8; 0x20])),
+        &Address::from_string(&String::from_str(
+            env,
+            "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+        )),
     );
 
     let lp_client = lp_contract::Client::new(env, &lp);
