@@ -130,15 +130,18 @@ impl Decimal {
     /// ## Examples
     ///
     /// ```
-    /// # use your_crate_name::Decimal;  // <-- Adjust to your actual crate name or module path
+    /// # use decimal::Decimal;
+    /// use soroban_sdk::{String, Env};
+    ///
+    /// let e = Env::default();
     /// let a = Decimal::from_atomics(1234, 3);
-    /// assert_eq!(a.to_string(), "1.234");
+    /// assert_eq!(a.to_string(&e), String::from_slice(&e, "1.234"));
     ///
     /// let a = Decimal::from_atomics(1234, 0);
-    /// assert_eq!(a.to_string(), "1234");
+    /// assert_eq!(a.to_string(&e), String::from_slice(&e, "1234"));
     ///
     /// let a = Decimal::from_atomics(1, 18);
-    /// assert_eq!(a.to_string(), "0.000000000000000001");
+    /// assert_eq!(a.to_string(&e), String::from_slice(&e, "0.000000000000000001"));
     /// ```
     pub fn from_atomics(atomics: i128, decimal_places: i32) -> Self {
         const TEN: i128 = 10;

@@ -6,7 +6,7 @@ use num_integer::Roots;
 
 use crate::contracterror::ContractError;
 use crate::storage::utils::{is_initialized, set_initialized};
-use crate::storage::{ComputeSwap, LiquidityPoolInfo, Referral};
+use crate::storage::{ComputeSwap, LiquidityPoolInfo};
 use crate::{
     stake_contract,
     storage::{
@@ -67,7 +67,8 @@ pub trait LiquidityPoolTrait {
     fn swap(
         env: Env,
         sender: Address,
-        referral: Option<Referral>,
+        // FIXM: Disable Referral struct
+        // referral: Option<Referral>,
         offer_asset: Address,
         offer_amount: i128,
         belief_price: Option<i64>,
@@ -273,7 +274,8 @@ impl LiquidityPoolTrait for LiquidityPool {
                 do_swap(
                     env.clone(),
                     sender.clone(),
-                    None,
+                    // FIXM: Disable Referral struct
+                    // None,
                     config.clone().token_a,
                     a_for_swap,
                     None,
@@ -295,7 +297,8 @@ impl LiquidityPoolTrait for LiquidityPool {
                 do_swap(
                     env.clone(),
                     sender.clone(),
-                    None,
+                    // FIXM: Disable Referral struct
+                    // None,
                     config.clone().token_b,
                     b_for_swap,
                     None,
@@ -362,7 +365,8 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn swap(
         env: Env,
         sender: Address,
-        referral: Option<Referral>,
+        // FIXM: Disable Referral struct
+        // referral: Option<Referral>,
         offer_asset: Address,
         offer_amount: i128,
         belief_price: Option<i64>,
@@ -375,7 +379,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         do_swap(
             env,
             sender,
-            referral,
+            // referral,
             offer_asset,
             offer_amount,
             belief_price,
@@ -620,18 +624,20 @@ impl LiquidityPoolTrait for LiquidityPool {
 fn do_swap(
     env: Env,
     sender: Address,
-    referral: Option<Referral>,
+    // FIXM: Disable Referral struct
+    // referral: Option<Referral>,
     offer_asset: Address,
     offer_amount: i128,
     belief_price: Option<i64>,
     max_spread: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
-    if let Some(referral) = &referral {
-        if referral.fee > config.max_referral_bps {
-            panic!("Pool: Swap: Trying to swap with more than the allowed referral fee");
-        }
-    }
+    // FIXM: Disable Referral struct
+    // if let Some(referral) = &referral {
+    //     if referral.fee > config.max_referral_bps {
+    //         panic!("Pool: Swap: Trying to swap with more than the allowed referral fee");
+    //     }
+    // }
 
     let belief_price = belief_price.map(Decimal::percent);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
@@ -645,10 +651,12 @@ fn do_swap(
         (pool_balance_b, pool_balance_a)
     };
 
-    let referral_fee_bps = match referral {
-        Some(ref referral) => referral.clone().fee,
-        None => 0,
-    };
+    // FIXM: Disable Referral struct
+    // let referral_fee_bps = match referral {
+    //     Some(ref referral) => referral.clone().fee,
+    //     None => 0,
+    // };
+    let referral_fee_bps = 0;
 
     // 1. We calculate the referral_fee below. If none referral fee will be 0
     let compute_swap: ComputeSwap = compute_swap(
@@ -698,15 +706,16 @@ fn do_swap(
 
     // 2. If referral is present and return amount is larger than 0 we send referral fee commision
     //    to fee recipient
-    if let Some(Referral { address, fee }) = referral {
-        if fee > 0 {
-            token_contract::Client::new(&env, &buy_token).transfer(
-                &env.current_contract_address(),
-                &address,
-                &compute_swap.referral_fee_amount,
-            );
-        }
-    }
+    // FIXM: Disable Referral struct
+    // if let Some(Referral { address, fee }) = referral {
+    //     if fee > 0 {
+    //         token_contract::Client::new(&env, &buy_token).transfer(
+    //             &env.current_contract_address(),
+    //             &address,
+    //             &compute_swap.referral_fee_amount,
+    //         );
+    //     }
+    // }
 
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
