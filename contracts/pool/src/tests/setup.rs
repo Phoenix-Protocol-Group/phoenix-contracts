@@ -1,4 +1,4 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
@@ -41,7 +41,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
     let stake_wasm_hash = install_stake_wasm(env);
     let fee_recipient = fee_recipient
         .into()
-        .unwrap_or_else(|| Address::generate(&env));
+        .unwrap_or_else(|| Address::generate(env));
     let max_allowed_slippage = max_allowed_slippage_bps.into().unwrap_or(5_000); // 50% if not specified
     let max_allowed_spread = max_allowed_spread_bps.into().unwrap_or(500); // 5% if not specified
     let share_token_decimals = 7u32;

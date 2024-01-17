@@ -1,6 +1,6 @@
 extern crate std;
 use phoenix::utils::{StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{testutils::Address as _, Address, Env, String};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
@@ -80,7 +80,7 @@ fn second_pool_deployment_should_fail() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
-    let mut user = Address::generate(&env);
+    let user = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
