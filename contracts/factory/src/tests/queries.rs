@@ -3,7 +3,11 @@ use super::setup::{
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
-use soroban_sdk::{contracttype, testutils::arbitrary::std, Address, Env, String, Symbol, Vec};
+use soroban_sdk::{
+    contracttype,
+    testutils::{arbitrary::std, Address as _},
+    Address, Env, Symbol, Vec,
+};
 
 #[contracttype]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -33,39 +37,15 @@ pub struct LiquidityPoolConfig {
 #[test]
 fn test_deploy_multiple_liquidity_pools() {
     let env = Env::default();
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
-    let user = Address::from_string(&String::from_str(
-        &env,
-        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-    ));
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
 
-    let mut token1 = Address::from_string(&String::from_str(
-        &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
-    ));
-    let mut token2 = Address::from_string(&String::from_str(
-        &env,
-        "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
-    ));
-    let mut token3 = Address::from_string(&String::from_str(
-        &env,
-        "CDWLHFNUQ2CM5WJKIFGEMY5LMXPARVKHD5FJONZTCPXKEYPCUT5PW2L2",
-    ));
-    let mut token4 = Address::from_string(&String::from_str(
-        &env,
-        "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
-    ));
-    let mut token5 = Address::from_string(&String::from_str(
-        &env,
-        "CC4W4EIZMCCUG2R5FHQGQDSBZY6S2V2CIIJQZ5XBXCKUVVSBR7HC6267",
-    ));
-    let mut token6 = Address::from_string(&String::from_str(
-        &env,
-        "CCIEUAD63OGWJ3FKBI5SZG7HZ34PPYF4RCPWVB5SOP6G7FBBNAVPYHKW",
-    ));
+    let mut token1 = Address::generate(&env);
+    let mut token2 = Address::generate(&env);
+    let mut token3 = Address::generate(&env);
+    let mut token4 = Address::generate(&env);
+    let mut token5 = Address::generate(&env);
+    let mut token6 = Address::generate(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -253,39 +233,15 @@ fn test_deploy_multiple_liquidity_pools() {
 #[test]
 fn test_queries_by_tuple() {
     let env = Env::default();
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
-    let user = Address::from_string(&String::from_str(
-        &env,
-        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-    ));
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
 
-    let mut token1 = Address::from_string(&String::from_str(
-        &env,
-        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
-    ));
-    let mut token2 = Address::from_string(&String::from_str(
-        &env,
-        "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
-    ));
-    let mut token3 = Address::from_string(&String::from_str(
-        &env,
-        "CDWLHFNUQ2CM5WJKIFGEMY5LMXPARVKHD5FJONZTCPXKEYPCUT5PW2L2",
-    ));
-    let mut token4 = Address::from_string(&String::from_str(
-        &env,
-        "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
-    ));
-    let mut token5 = Address::from_string(&String::from_str(
-        &env,
-        "CC4W4EIZMCCUG2R5FHQGQDSBZY6S2V2CIIJQZ5XBXCKUVVSBR7HC6267",
-    ));
-    let mut token6 = Address::from_string(&String::from_str(
-        &env,
-        "CCIEUAD63OGWJ3FKBI5SZG7HZ34PPYF4RCPWVB5SOP6G7FBBNAVPYHKW",
-    ));
+    let mut token1 = Address::generate(&env);
+    let mut token2 = Address::generate(&env);
+    let mut token3 = Address::generate(&env);
+    let mut token4 = Address::generate(&env);
+    let mut token5 = Address::generate(&env);
+    let mut token6 = Address::generate(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -429,20 +385,8 @@ fn test_queries_by_tuple() {
 #[should_panic(expected = "Factory: query_for_pool_by_token_pair failed: No liquidity pool found")]
 fn test_queries_by_tuple_errors() {
     let env = Env::default();
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
+    let admin = Address::generate(&env);
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
-    factory.query_for_pool_by_token_pair(
-        &Address::from_string(&String::from_str(
-            &env,
-            "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-        )),
-        &Address::from_string(&String::from_str(
-            &env,
-            "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-        )),
-    );
+    factory.query_for_pool_by_token_pair(&Address::generate(&env), &Address::generate(&env));
 }

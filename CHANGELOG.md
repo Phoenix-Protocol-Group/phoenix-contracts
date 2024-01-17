@@ -6,6 +6,10 @@ and this project adheres to
 
 ## [Unreleased]
 
+## Changed
+
+- Update soroban-sdk version from v20.0.3 to v20.1.0 ([#193])
+
 ## [0.8.0] - 2024-01-17
 
 ## Changed

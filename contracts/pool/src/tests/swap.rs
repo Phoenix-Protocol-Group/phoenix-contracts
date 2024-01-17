@@ -1,7 +1,10 @@
 extern crate std;
 use pretty_assertions::assert_eq;
-use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
-use soroban_sdk::{symbol_short, Address, Env, IntoVal, String};
+use soroban_sdk::{
+    symbol_short,
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    Address, Env, IntoVal,
+};
 use test_case::test_case;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
@@ -14,14 +17,8 @@ fn simple_swap() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -29,10 +26,7 @@ fn simple_swap() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-    ));
+    let user1 = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -162,14 +156,8 @@ fn simple_swap_with_referral_fee() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -177,14 +165,8 @@ fn simple_swap_with_referral_fee() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-    ));
-    let referral_addr = Address::from_string(&String::from_str(
-        &env,
-        "CCWOWNUBYTZTUEVNMA3KYCNQKBJ23QUSSJTVSLTFWVAJMZKLCDO37JVI",
-    ));
+    let user1 = Address::generate(&env);
+    let referral_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -210,12 +192,13 @@ fn simple_swap_with_referral_fee() {
 
     // selling just one token with 1% max spread allowed
     let spread = 100i64; // 1% maximum spread allowed
-                         // selling with 10% fee for the big guy
-                         // FIXM: Disable Referral struct
-                         // let referral = Referral {
-                         //     address: referral_addr.clone(),
-                         //     fee: 1_000,
-                         // };
+
+    // selling with 10% fee for the big guy
+    // FIXM: Disable Referral struct
+    // let referral = Referral {
+    //     address: referral_addr.clone(),
+    //     fee: 1_000,
+    // };
 
     pool.swap(
         &user1,
@@ -294,14 +277,8 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -309,10 +286,7 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-    ));
+    let user1 = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -362,14 +336,8 @@ fn swap_should_panic_with_bad_max_spread() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -377,10 +345,7 @@ fn swap_should_panic_with_bad_max_spread() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-    ));
+    let user1 = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -407,14 +372,8 @@ fn swap_with_high_fee() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -422,16 +381,10 @@ fn swap_with_high_fee() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-    ));
+    let user1 = Address::generate(&env);
 
     let swap_fees = 1_000i64; // 10% bps
-    let fee_recipient = Address::from_string(&String::from_str(
-        &env,
-        "CCWOWNUBYTZTUEVNMA3KYCNQKBJ23QUSSJTVSLTFWVAJMZKLCDO37JVI",
-    ));
+    let fee_recipient = Address::generate(&env);
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
@@ -503,20 +456,8 @@ fn swap_simulation_even_pool() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut token1 = deploy_token_contract(
-        &env,
-        &Address::from_string(&String::from_str(
-            &env,
-            "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-        )),
-    );
-    let mut token2 = deploy_token_contract(
-        &env,
-        &Address::from_string(&String::from_str(
-            &env,
-            "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-        )),
-    );
+    let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
@@ -527,19 +468,13 @@ fn swap_simulation_even_pool() {
         None,
         (&token1.address, &token2.address),
         swap_fees,
-        Address::from_string(&String::from_str(
-            &env,
-            "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-        )),
+        Address::generate(&env),
         None,
         None,
     );
 
     let initial_liquidity = 1_000_000i128;
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CCWOWNUBYTZTUEVNMA3KYCNQKBJ23QUSSJTVSLTFWVAJMZKLCDO37JVI",
-    ));
+    let user1 = Address::generate(&env);
     token1.mint(&user1, &initial_liquidity);
     token2.mint(&user1, &initial_liquidity);
     pool.provide_liquidity(
@@ -621,20 +556,8 @@ fn swap_simulation_one_third_pool() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut token1 = deploy_token_contract(
-        &env,
-        &Address::from_string(&String::from_str(
-            &env,
-            "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-        )),
-    );
-    let mut token2 = deploy_token_contract(
-        &env,
-        &Address::from_string(&String::from_str(
-            &env,
-            "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-        )),
-    );
+    let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
@@ -645,19 +568,13 @@ fn swap_simulation_one_third_pool() {
         None,
         (&token1.address, &token2.address),
         swap_fees,
-        Address::from_string(&String::from_str(
-            &env,
-            "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-        )),
+        Address::generate(&env),
         None,
         None,
     );
 
     let initial_liquidity = 1_000_000i128;
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CCWOWNUBYTZTUEVNMA3KYCNQKBJ23QUSSJTVSLTFWVAJMZKLCDO37JVI",
-    ));
+    let user1 = Address::generate(&env);
     token1.mint(&user1, &initial_liquidity);
     token2.mint(&user1, &(3 * initial_liquidity));
     pool.provide_liquidity(
@@ -740,20 +657,8 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut token1 = deploy_token_contract(
-        &env,
-        &Address::from_string(&String::from_str(
-            &env,
-            "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-        )),
-    );
-    let mut token2 = deploy_token_contract(
-        &env,
-        &Address::from_string(&String::from_str(
-            &env,
-            "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-        )),
-    );
+    let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
@@ -763,19 +668,13 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
         None,
         (&token1.address, &token2.address),
         swap_fees,
-        Address::from_string(&String::from_str(
-            &env,
-            "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
-        )),
+        Address::generate(&env),
         10_000i64,
         10_000i64,
     );
 
     let initial_liquidity = 110_358_880_127; // taken from the current amount of tokens in pool
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CCWOWNUBYTZTUEVNMA3KYCNQKBJ23QUSSJTVSLTFWVAJMZKLCDO37JVI",
-    ));
+    let user1 = Address::generate(&env);
     token1.mint(&user1, &initial_liquidity);
     token2.mint(&user1, &initial_liquidity);
     pool.provide_liquidity(

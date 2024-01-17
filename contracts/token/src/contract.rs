@@ -23,6 +23,7 @@ pub struct Token;
 impl Token {
     #[allow(dead_code)]
     pub fn initialize(e: Env, admin: Address, decimal: u32, name: String, symbol: String) {
+        #[allow(dead_code)]
         if has_administrator(&e) {
             panic!("already initialized")
         }

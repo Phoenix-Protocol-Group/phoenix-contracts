@@ -2,8 +2,11 @@ extern crate std;
 
 use pretty_assertions::assert_eq;
 
-use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, String, Symbol};
+use soroban_sdk::{
+    symbol_short,
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    Address, Env, IntoVal, Symbol,
+};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::{
@@ -130,14 +133,9 @@ fn withdraw_liquidity() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -145,10 +143,6 @@ fn withdraw_liquidity() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -243,14 +237,9 @@ fn provide_liqudity_single_asset_on_empty_pool() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -258,10 +247,6 @@ fn provide_liqudity_single_asset_on_empty_pool() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -292,14 +277,9 @@ fn provide_liqudity_single_asset_equal() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -307,10 +287,6 @@ fn provide_liqudity_single_asset_equal() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -369,14 +345,9 @@ fn provide_liqudity_single_asset_equal_with_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -384,10 +355,6 @@ fn provide_liqudity_single_asset_equal_with_fees() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -455,14 +422,9 @@ fn provide_liqudity_single_asset_one_third() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -470,10 +432,6 @@ fn provide_liqudity_single_asset_one_third() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -528,14 +486,9 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -543,10 +496,6 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -598,14 +547,8 @@ fn provide_liqudity_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -633,14 +576,9 @@ fn swap_with_no_amounts() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -648,10 +586,6 @@ fn swap_with_no_amounts() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -677,14 +611,9 @@ fn withdraw_liqudity_below_min() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let mut admin1 = Address::from_string(&String::from_str(
-        &env,
-        "CALWS6SICRS42D6CANHJKDHFJWXL7M64W4MMV2TK4CQG5XTB2E5MYB44",
-    ));
-    let mut admin2 = Address::from_string(&String::from_str(
-        &env,
-        "CA6UCNJZDNEGR5QBZ5QSXZZO5FULEZNM6QIHRRABLX6WH4KIFF4OUIYN",
-    ));
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -692,10 +621,6 @@ fn withdraw_liqudity_below_min() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::from_string(&String::from_str(
-        &env,
-        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
-    ));
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
