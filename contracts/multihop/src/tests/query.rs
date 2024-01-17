@@ -4,7 +4,7 @@ use crate::tests::setup::{
     deploy_multihop_contract, deploy_token_contract,
 };
 
-use soroban_sdk::{testutils::Address as _, vec, Address, Env};
+use soroban_sdk::{vec, Address, Env, String};
 
 #[test]
 fn simulate_swap_single_pool_no_fees() {
@@ -12,7 +12,10 @@ fn simulate_swap_single_pool_no_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 100_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 200_000_000i128);
@@ -62,7 +65,10 @@ fn simulate_swap_three_equal_pools_no_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -165,7 +171,10 @@ fn simulate_swap_single_pool_with_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
@@ -217,7 +226,10 @@ fn simulate_swap_three_different_pools_no_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -320,7 +332,10 @@ fn simulate_swap_three_different_pools_with_fees() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -447,10 +462,19 @@ fn simulate_swap_three_different_pools_with_fees() {
 fn query_simulate_swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let factory = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
+    let factory = Address::from_string(&String::from_str(
+        &env,
+        "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+    ));
 
-    let recipient = Address::random(&env);
+    let recipient = Address::from_string(&String::from_str(
+        &env,
+        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
+    ));
 
     let token = deploy_token_contract(&env, &admin);
     token.mint(&recipient, &50i128);
@@ -467,10 +491,19 @@ fn query_simulate_swap_panics_with_no_operations() {
 fn query_simulate_reverse_swap_panics_with_no_operations() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let factory = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
+    let factory = Address::from_string(&String::from_str(
+        &env,
+        "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+    ));
 
-    let recipient = Address::random(&env);
+    let recipient = Address::from_string(&String::from_str(
+        &env,
+        "CCDS5FMXB4M7HP7E6SCYAQASHLL2SG4OPZL3BNORDXVYMOCVG2WRYYZX",
+    ));
 
     let token = deploy_token_contract(&env, &admin);
     token.mint(&recipient, &50i128);

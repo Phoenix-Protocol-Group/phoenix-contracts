@@ -412,7 +412,7 @@ impl StakingTrait for Staking {
             if total_rewards_power == 0 {
                 aprs.push_back(AnnualizedReward {
                     asset: distribution_address.clone(),
-                    amount: String::from_slice(&env, "0"),
+                    amount: String::from_str(&env, "0"),
                 });
                 continue;
             }

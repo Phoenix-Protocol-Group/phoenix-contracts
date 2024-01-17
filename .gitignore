@@ -17,3 +17,5 @@ target/
 /artifacts/
 
 cobertura.xml
+
+**/test_snapshots

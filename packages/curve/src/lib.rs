@@ -460,7 +460,6 @@ impl PiecewiseLinear {
         // map to full coordinates
         let mut steps = soroban_sdk::Vec::new(env);
         for x_val in x {
-            let x_val = x_val;
             steps.push_back(Step {
                 time: x_val,
                 value: self.value(x_val) + other.value(x_val),

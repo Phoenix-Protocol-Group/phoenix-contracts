@@ -29,10 +29,10 @@ mod tests {
     fn verify_operations_in_swap_should_work() {
         let env = Env::default();
 
-        let token1 = Address::random(&env);
-        let token2 = Address::random(&env);
-        let token3 = Address::random(&env);
-        let token4 = Address::random(&env);
+        let token1 = Address::generate(&env);
+        let token2 = Address::generate(&env);
+        let token3 = Address::generate(&env);
+        let token4 = Address::generate(&env);
 
         let swap1 = Swap {
             offer_asset: token1.clone(),
@@ -56,10 +56,10 @@ mod tests {
     fn verify_operations_in_reverse_swap_should_work() {
         let env = Env::default();
 
-        let token1 = Address::random(&env);
-        let token2 = Address::random(&env);
-        let token3 = Address::random(&env);
-        let token4 = Address::random(&env);
+        let token1 = Address::generate(&env);
+        let token2 = Address::generate(&env);
+        let token3 = Address::generate(&env);
+        let token4 = Address::generate(&env);
 
         let swap1 = Swap {
             offer_asset: token3.clone(),
@@ -84,10 +84,10 @@ mod tests {
     fn verify_operations_should_fail_when_bad_order_provided() {
         let env = Env::default();
 
-        let token1 = Address::random(&env);
-        let token2 = Address::random(&env);
-        let token3 = Address::random(&env);
-        let token4 = Address::random(&env);
+        let token1 = Address::generate(&env);
+        let token2 = Address::generate(&env);
+        let token3 = Address::generate(&env);
+        let token4 = Address::generate(&env);
 
         let swap1 = Swap {
             offer_asset: token1.clone(),
@@ -108,10 +108,10 @@ mod tests {
     fn verify_operations_reverse_swap_should_fail_when_bad_order_provided() {
         let env = Env::default();
 
-        let token1 = Address::random(&env);
-        let token2 = Address::random(&env);
-        let token3 = Address::random(&env);
-        let token4 = Address::random(&env);
+        let token1 = Address::generate(&env);
+        let token2 = Address::generate(&env);
+        let token3 = Address::generate(&env);
+        let token4 = Address::generate(&env);
 
         let swap1 = Swap {
             offer_asset: token1.clone(),

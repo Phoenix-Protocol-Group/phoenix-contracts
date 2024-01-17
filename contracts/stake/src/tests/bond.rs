@@ -1,7 +1,7 @@
 use pretty_assertions::assert_eq;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
-    vec, Address, Env,
+    vec, Address, Env, String,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
@@ -16,7 +16,10 @@ fn initializa_staking_contract() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+    ));
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
@@ -44,7 +47,10 @@ fn test_deploying_stake_twice_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+    ));
     let lp_token = deploy_token_contract(&env, &admin);
 
     let first = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
@@ -59,8 +65,8 @@ fn bond_too_few() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
@@ -75,8 +81,8 @@ fn bond_simple() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
@@ -107,9 +113,9 @@ fn unbond_simple() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
-    let user2 = Address::random(&env);
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let user2 = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
@@ -165,7 +171,10 @@ fn initializing_contract_sets_total_staked_var() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
+    let admin = Address::from_string(&String::from_str(
+        &env,
+        "GCHM6Y4BYTUJZQ4KABLTC73IWDZNFBZ2NML5W4AQG7XAJEOMLF5I774H",
+    ));
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
@@ -179,9 +188,9 @@ fn unbond_wrong_user_stake_not_found() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let user = Address::random(&env);
-    let user2 = Address::random(&env);
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let user2 = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);

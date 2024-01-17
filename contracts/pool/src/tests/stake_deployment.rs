@@ -1,6 +1,6 @@
 extern crate std;
 use phoenix::utils::{StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{Address, Env, String};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
@@ -17,8 +17,14 @@ fn confirm_stake_contract_deployment() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::random(&env);
-    let mut admin2 = Address::random(&env);
+    let mut admin1 = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
+    let mut admin2 = Address::from_string(&String::from_str(
+        &env,
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
+    ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -26,7 +32,10 @@ fn confirm_stake_contract_deployment() {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
     }
-    let user1 = Address::random(&env);
+    let user1 = Address::from_string(&String::from_str(
+        &env,
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
+    ));
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -78,9 +87,18 @@ fn second_pool_deployment_should_fail() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let mut admin1 = Address::random(&env);
-    let mut admin2 = Address::random(&env);
-    let user = Address::random(&env);
+    let mut admin1 = Address::from_string(&String::from_str(
+        &env,
+        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
+    ));
+    let mut admin2 = Address::from_string(&String::from_str(
+        &env,
+        "CAM3XZFCVAG6KJQUIAW2YWCGZQJ6CR6QIAQ5MAWU7GMM4ZZZCJ7JVDSH",
+    ));
+    let user = Address::from_string(&String::from_str(
+        &env,
+        "CDUK25UHLE7LUDQZ4UTTNWMXABJHW76Q74SKOK6BMWGKDHIJ6MIBOK6N",
+    ));
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);

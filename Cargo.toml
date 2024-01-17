@@ -13,8 +13,8 @@ curve = { path = "./packages/curve"}
 decimal = { path = "./packages/decimal"}
 phoenix = { path = "./packages/phoenix"}
 num-integer = { version = "0.1.45", default-features = false, features = ["i128"] }
-soroban-sdk = "20.0.0-rc2"
-soroban-token-sdk = "20.0.0-rc2"
+soroban-sdk = "20.0.3"
+soroban-token-sdk = "20.0.3"
 test-case = "3.1"
 pretty_assertions = "1.4.0"
 
