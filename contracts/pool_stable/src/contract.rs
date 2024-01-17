@@ -344,7 +344,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env.events()
             .publish(("provide_liquidity", "token_a-amount"), amounts.0);
         env.events()
-            .publish(("provide_liquidity", "token_a"), &config.token_b);
+            .publish(("provide_liquidity", "token_b"), &config.token_b);
         env.events()
             .publish(("provide_liquidity", "token_b-amount"), amounts.1);
     }
