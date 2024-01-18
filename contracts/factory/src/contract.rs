@@ -89,7 +89,7 @@ impl FactoryTrait for Factory {
         caller.require_auth();
         if !get_config(&env).whitelisted_accounts.contains(caller) {
             panic!(
-                "Factory: Create Liquidity Pool: You are not authorized to create liquidity pools!"
+                "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
             )
         };
 
