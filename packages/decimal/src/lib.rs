@@ -121,8 +121,8 @@ impl Decimal {
 
     /// Creates a decimal from a number of atomic units and the number
     /// of decimal places. The inputs will be converted internally to form
-    /// a decimal with 18 decimal places. So the input 123 and 2 will create
-    /// the decimal 1.23.
+    /// a decimal with 18 decimal places. So the input 1234 and 3 will create
+    /// the decimal 1.234.
     ///
     /// Using 18 decimal places is slightly more efficient than other values
     /// as no internal conversion is necessary.
@@ -130,7 +130,7 @@ impl Decimal {
     /// ## Examples
     ///
     /// ```
-    /// # use decimal::Decimal;
+    /// use decimal::Decimal;
     /// use soroban_sdk::{String, Env};
     ///
     /// let e = Env::default();

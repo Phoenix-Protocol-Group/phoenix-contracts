@@ -18,7 +18,7 @@ macro_rules! validate_int_parameters {
     };
 }
 
-pub fn assert_approx_ratio(a: Decimal, b: Decimal, tolerance: Decimal) -> bool {
+pub fn is_approx_ratio(a: Decimal, b: Decimal, tolerance: Decimal) -> bool {
     let diff = (a - b).abs();
     diff <= tolerance
 }
@@ -104,7 +104,7 @@ mod tests {
         let a = Decimal::from_ratio(100, 101);
         let b = Decimal::from_ratio(100, 100);
         let tolerance = Decimal::percent(3);
-        assert!(assert_approx_ratio(a, b, tolerance));
+        assert!(is_approx_ratio(a, b, tolerance));
     }
 
     #[test]
@@ -112,7 +112,7 @@ mod tests {
         let a = Decimal::from_ratio(100, 100);
         let b = Decimal::from_ratio(100, 100);
         let tolerance = Decimal::percent(3);
-        assert!(assert_approx_ratio(a, b, tolerance));
+        assert!(is_approx_ratio(a, b, tolerance));
     }
 
     #[test]
@@ -120,6 +120,6 @@ mod tests {
         let a = Decimal::from_ratio(100, 104);
         let b = Decimal::from_ratio(100, 100);
         let tolerance = Decimal::percent(3);
-        assert!(!assert_approx_ratio(a, b, tolerance));
+        assert!(!is_approx_ratio(a, b, tolerance));
     }
 }

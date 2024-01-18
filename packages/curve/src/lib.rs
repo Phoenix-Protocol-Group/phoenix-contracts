@@ -1,5 +1,5 @@
 // Most of this code is taken from the wynd-utils crate, which is licensed under the Apache
-// License Apache 2.0 - https://github.com/wynddao/wynd-contracts
+// License Apache 2.0 - https://github.com/wynddao/wynddao/
 
 #![no_std]
 
