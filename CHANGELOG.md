@@ -13,6 +13,12 @@ and this project adheres to
 
 [#200]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/200
 
+## Added
+
+- Adds a new macro that validates the bps arguments value ([#199])
+
+[#199]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/199
+
 ## [0.8.0] - 2024-01-17
 
 ## Changed
