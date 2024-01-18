@@ -18,6 +18,19 @@ macro_rules! validate_int_parameters {
     };
 }
 
+// Validate all bps to be between the range 0..10_000
+macro_rules! validate_bps {
+    ($($value:expr),+) => {
+        const MIN_BPS: i64 = 0;
+        const MAX_BPS: i64 = 10_000;
+        $(
+            if $value < MIN_BPS || $value > MAX_BPS {
+                panic!("The value {} is out of range. Must be between {}‱ and {}‱", $value, MIN_BPS, MAX_BPS);
+            }
+        )+
+    }
+}
+
 pub fn is_approx_ratio(a: Decimal, b: Decimal, tolerance: Decimal) -> bool {
     let diff = (a - b).abs();
     diff <= tolerance
@@ -118,5 +131,22 @@ mod tests {
         let b = Decimal::from_ratio(100, 100);
         let tolerance = Decimal::percent(3);
         assert!(!is_approx_ratio(a, b, tolerance));
+    }
+
+    #[test]
+    #[should_panic(expected = "The value -1 is out of range. Must be between 0‱ and 10000‱")]
+    fn test_below_min() {
+        validate_bps!(-1);
+    }
+
+    #[test]
+    #[should_panic(expected = "The value 10001 is out of range. Must be between 0‱ and 10000‱")]
+    fn test_above_max() {
+        validate_bps!(10_001);
+    }
+
+    #[test]
+    fn test_valid_range() {
+        validate_bps!(0, 5000, 10_000);
     }
 }
