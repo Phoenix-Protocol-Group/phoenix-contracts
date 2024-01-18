@@ -144,17 +144,11 @@ pub mod utils {
     }
 
     pub fn deploy_stake_contract(e: &Env, stake_wasm_hash: BytesN<32>) -> Address {
-        let deployer = e.current_contract_address();
-
-        if deployer != e.current_contract_address() {
-            deployer.require_auth();
-        }
-
         let salt = Bytes::new(e);
         let salt = e.crypto().sha256(&salt);
 
         e.deployer()
-            .with_address(deployer, salt)
+            .with_current_contract(salt)
             .deploy(stake_wasm_hash)
     }
 
