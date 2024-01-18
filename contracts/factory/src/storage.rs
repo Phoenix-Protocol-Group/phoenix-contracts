@@ -72,13 +72,13 @@ pub fn get_config(env: &Env) -> Config {
 
 pub fn get_lp_vec(env: &Env) -> Vec<Address> {
     env.storage()
-        .instance()
+        .persistent()
         .get(&DataKey::LpVec)
         .expect("Factory: get_lp_vec: Liquidity Pool vector not found")
 }
 
 pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
-    env.storage().instance().set(&DataKey::LpVec, &lp_info);
+    env.storage().persistent().set(&DataKey::LpVec, &lp_info);
 }
 
 pub fn save_lp_vec_with_tuple_as_key(
@@ -86,7 +86,7 @@ pub fn save_lp_vec_with_tuple_as_key(
     tuple_pool: (&Address, &Address),
     lp_address: &Address,
 ) {
-    env.storage().instance().set(
+    env.storage().persistent().set(
         &PairTupleKey {
             token_a: tuple_pool.0.clone(),
             token_b: tuple_pool.1.clone(),
