@@ -295,7 +295,7 @@ pub mod utils {
         let amount_b = {
             let mut amount_b = desired_a * pool_balance_b / pool_balance_a;
             if amount_b > desired_b {
-                // If the amount is within 1% of the desired amount, we accept it
+                // If the amount is within the set threshold of the desired amount, we accept it
                 if Decimal::from_ratio(amount_b, desired_b) - Decimal::one() <= allowed_slippage {
                     amount_b = desired_b;
                 } else {

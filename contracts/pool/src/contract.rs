@@ -17,7 +17,7 @@ use crate::{
 };
 use decimal::Decimal;
 use phoenix::{
-    utils::{assert_approx_ratio, StakeInitInfo, TokenInitInfo},
+    utils::{is_approx_ratio, StakeInitInfo, TokenInitInfo},
     validate_int_parameters,
 };
 
@@ -821,7 +821,7 @@ fn split_deposit_based_on_pool_ratio(
         };
 
         // If the resulting ratio is approximately equal (1%) to the target ratio, break the loop
-        if assert_approx_ratio(ratio, target_ratio, Decimal::percent(1)) {
+        if is_approx_ratio(ratio, target_ratio, Decimal::percent(1)) {
             break;
         }
         // Update boundaries for the next iteration of the binary search
