@@ -7,7 +7,7 @@ use crate::tests::setup::{
 };
 
 use soroban_sdk::contracterror;
-use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env, };
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -20,10 +20,7 @@ pub enum ContractError {
 fn swap_three_equal_pools_no_fees() {
     let env = Env::default();
 
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
+    let admin = Address::generate(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -104,10 +101,7 @@ fn swap_three_equal_pools_no_fees() {
 fn swap_three_equal_pools_no_fees_referral_fee() {
     let env = Env::default();
 
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
+    let admin = Address::generate(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -203,10 +197,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
 #[test]
 fn swap_single_pool_no_fees() {
     let env = Env::default();
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
+    let admin = Address::generate(&env);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
