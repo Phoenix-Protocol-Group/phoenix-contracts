@@ -9,7 +9,8 @@ use crate::{
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
+    contract, contractimpl, contractmeta, log, Address, BytesN, Env,
+    IntoVal, Symbol, Val, Vec,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -227,7 +228,7 @@ fn validate_token_info(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::{BytesN, String};
+    use soroban_sdk::{testutils::Address as _, Address, BytesN, String};
 
     #[test]
     #[should_panic(
@@ -273,14 +274,8 @@ mod tests {
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_string(&String::from_str(
-            &env,
-            "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN",
-        ));
-        let token_b = Address::from_string(&String::from_str(
-            &env,
-            "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
-        ));
+        let token_a = Address::generate(&env);
+        let token_b = Address::generate(&env);
 
         let token_init_info = TokenInitInfo {
             token_a,
@@ -306,14 +301,8 @@ mod tests {
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_string(&String::from_str(
-            &env,
-            "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN",
-        ));
-        let token_b = Address::from_string(&String::from_str(
-            &env,
-            "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
-        ));
+        let token_a = Address::generate(&env);
+        let token_b = Address::generate(&env);
 
         let token_init_info = TokenInitInfo {
             token_a,

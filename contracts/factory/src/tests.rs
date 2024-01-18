@@ -1,5 +1,5 @@
 use crate::contract::{Factory, FactoryClient};
-use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 use self::setup::install_multihop_wasm;
 
@@ -14,10 +14,7 @@ fn test_deploy_factory_twice_should_fail() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let admin = Address::from_string(&String::from_str(
-        &env,
-        "CBT4WEAHQ72AYRD7WZFNYE6HGZEIX25754NG37LBLXTTRMWKQNKIUR6O",
-    ));
+    let admin = Address::generate(&env);
 
     let auth_user = Address::generate(&env);
     let multihop = FactoryClient::new(&env, &env.register_contract(None, Factory {}));
