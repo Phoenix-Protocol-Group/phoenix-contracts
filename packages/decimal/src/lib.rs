@@ -321,7 +321,7 @@ impl FromStr for Decimal {
         if let Some(fractional_part) = parts_iter.next() {
             let fractional: i128 = fractional_part.parse().expect("Error parsing fractional");
             let exp = Self::DECIMAL_PLACES - fractional_part.len() as i32;
-            assert!(exp >= 0, "Too many fractional digits");
+            assert!(exp >= 0, "There must be at least one fractional digit");
             let fractional_factor = 10i128.pow(exp as u32);
             atomics += fractional * fractional_factor;
         }
