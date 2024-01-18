@@ -9,8 +9,7 @@ use crate::{
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, BytesN, Env,
-    IntoVal, Symbol, Val, Vec,
+    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
 };
 
 // Metadata that is added on to the WASM custom section
