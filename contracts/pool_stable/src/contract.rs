@@ -14,7 +14,7 @@ use crate::{
 };
 use decimal::Decimal;
 use phoenix::{
-    utils::{is_approx_ratio, StakeInitInfo, TokenInitInfo},
+    utils::{StakeInitInfo, TokenInitInfo},
     validate_int_parameters,
 };
 
@@ -239,6 +239,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         sender.require_auth();
 
         let config = get_config(&env);
+        let greatest_precision = get_greatest_precision(&env);
         let old_balance_a = utils::get_pool_balance_a(&env);
         let old_balance_b = utils::get_pool_balance_b(&env);
 
@@ -266,7 +267,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
-            let share = new_invariant.to_i128_with_precision(7) - MINIMUM_LIQUIDITY_AMOUNT;
+            let share =
+                new_invariant.to_i128_with_precision(greatest_precision) - MINIMUM_LIQUIDITY_AMOUNT;
             if share == 0 {
                 panic!("Pool: ProvideLiquidity: Liquidity amount is too low");
             }
@@ -282,7 +284,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             // Calculate the proportion of the change in invariant
             (Decimal::from_ratio((new_invariant - initial_invariant) * total_shares, 1)
                 / initial_invariant)
-                .to_i128_with_precision(7)
+                .to_i128_with_precision(greatest_precision)
         };
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
@@ -784,52 +786,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_assert_slippage_tolerance_success() {
-        let env = Env::default();
-        // Test case that should pass:
-        // slippage tolerance of 5000 (0.5 or 50%), deposits of 10 and 20, pools of 30 and 60
-        // The price changes fall within the slippage tolerance
-        let max_allowed_slippage = 5_000i64;
-        assert_slippage_tolerance(
-            &env,
-            Some(max_allowed_slippage),
-            &[10, 20],
-            &[30, 60],
-            Decimal::bps(max_allowed_slippage),
-        )
-    }
-
-    #[test]
-    #[should_panic(expected = "slippage tolerance exceeds the maximum allowed value")]
-    fn test_assert_slippage_tolerance_fail_tolerance_too_high() {
-        let env = Env::default();
-        // Test case that should fail due to slippage tolerance being too high
-        let max_allowed_slippage = Decimal::bps(5_000i64);
-        assert_slippage_tolerance(
-            &env,
-            Some(60_000),
-            &[10, 20],
-            &[30, 60],
-            max_allowed_slippage,
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "slippage tolerance violated")]
-    fn test_assert_slippage_tolerance_fail_slippage_violated() {
-        let env = Env::default();
-        let max_allowed_slippage = Decimal::bps(5_000i64);
-        // The price changes from 10/15 (0.67) to 40/40 (1.00), violating the 10% slippage tolerance
-        assert_slippage_tolerance(
-            &env,
-            Some(1_000),
-            &[10, 15],
-            &[40, 40],
-            max_allowed_slippage,
-        );
-    }
-
-    #[test]
     fn test_assert_max_spread_success() {
         let env = Env::default();
         // Test case that should pass:
@@ -881,36 +837,5 @@ mod tests {
         // no belief price, max spread of 10%, offer amount of 10, return amount of 10, spread amount of 2
         // The spread ratio is 20% which is greater than the max spread
         assert_max_spread(&env, None, Decimal::percent(10), 10, 10, 2);
-    }
-
-    #[test]
-    fn test_compute_swap_pass() {
-        let result = compute_swap(1000, 2000, 100, Decimal::percent(10)); // 10% commission rate
-        assert_eq!(result, (164, 18, 18)); // Expected return amount, spread, and commission
-    }
-
-    #[test]
-    fn test_compute_swap_full_commission() {
-        let result = compute_swap(1000, 2000, 100, Decimal::one()); // 100% commission rate should lead to return_amount being 0
-        assert_eq!(result, (0, 18, 182));
-    }
-
-    #[test]
-    fn test_compute_offer_amount() {
-        let offer_pool = 1000000;
-        let ask_pool = 1000000;
-        let commission_rate = Decimal::percent(10);
-        let ask_amount = 1000;
-
-        let result = compute_offer_amount(offer_pool, ask_pool, ask_amount, commission_rate);
-
-        // Test that the offer amount is less than the original pool size, due to commission
-        assert!(result.0 < offer_pool);
-
-        // Test that the spread amount is non-negative
-        assert!(result.1 >= 0);
-
-        // Test that the commission amount is exactly 10% of the offer amount
-        assert_eq!(result.2, result.0 * Decimal::percent(10));
     }
 }

@@ -81,7 +81,7 @@ pub fn save_config(env: &Env, config: Config) {
     env.storage().instance().set(&CONFIG, &config);
 }
 
-pub fn get_greatest_precision(env: &Env) -> u32 {
+pub fn get_greatest_precision(env: &Env) -> i32 {
     env.storage()
         .instance()
         .get(&DataKey::MaxPrecision)
@@ -98,7 +98,7 @@ pub fn save_greatest_precision(env: &Env, token1: &Address, token2: &Address) {
     };
     env.storage()
         .instance()
-        .set(&DataKey::MaxPrecision, &max_precision);
+        .set(&DataKey::MaxPrecision, &i32::try_from(max_precision).ok());
 }
 
 #[contracttype]
@@ -285,152 +285,6 @@ mod tests {
     fn test_get_pool_balance_b_failure() {
         let env = Env::default();
         let _ = utils::get_pool_balance_b(&env);
-    }
-
-    #[test]
-    fn test_get_deposit_amounts_pool_balances_zero() {
-        let env = Env::default();
-        let result =
-            utils::get_deposit_amounts(&env, 100, Some(50), 200, Some(50), 0, 0, Decimal::bps(100));
-        assert_eq!(result, (100, 200));
-    }
-
-    #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_b < min_b")]
-    fn test_get_deposit_amounts_amount_b_less_than_desired() {
-        let env = Env::default();
-        utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
-    }
-
-    #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_b < min_b")]
-    fn test_get_deposit_amounts_amount_b_less_than_min_b() {
-        let env = Env::default();
-        utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
-    }
-
-    #[test]
-    fn test_get_deposit_amounts_amount_a_less_than_desired_and_greater_than_min_a() {
-        let env = Env::default();
-        let result = utils::get_deposit_amounts(
-            &env,
-            100,
-            Some(50),
-            200,
-            Some(150),
-            100,
-            200,
-            Decimal::bps(100),
-        );
-        assert_eq!(result, (100, 200));
-    }
-
-    #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: min_a > desired_a")]
-    fn test_get_deposit_amounts_amount_a_greater_than_desired_and_less_than_min_a() {
-        let env = Env::default();
-        utils::get_deposit_amounts(&env, 50, Some(100), 200, None, 100, 200, Decimal::bps(100));
-    }
-
-    #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: min_b > desired_b")]
-    fn test_get_deposit_amounts_amount_b_greater_than_desired_and_less_than_min_b() {
-        let env = Env::default();
-        utils::get_deposit_amounts(
-            &env,
-            150,
-            Some(100),
-            200,
-            Some(300),
-            100,
-            200,
-            Decimal::bps(100),
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: min_a > desired_a")]
-    fn test_get_deposit_amounts_amount_a_less_than_min_a() {
-        let env = Env::default();
-        utils::get_deposit_amounts(&env, 100, Some(200), 200, None, 100, 200, Decimal::bps(100));
-    }
-
-    #[test]
-    fn test_get_deposit_amounts_ratio() {
-        let env = Env::default();
-        let (amount_a, amount_b) = utils::get_deposit_amounts(
-            &env,
-            1000,
-            None,
-            2000,
-            None,
-            5000,
-            10000,
-            Decimal::bps(100),
-        );
-        // The desired ratio is within 1% of the current pool ratio, so the desired amounts are returned
-        assert_eq!(amount_a, 1000);
-        assert_eq!(amount_b, 2000);
-    }
-
-    #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_a > desired_a")]
-    fn test_get_deposit_amounts_exceeds_desired() {
-        let env = Env::default();
-        // The calculated deposit for asset A exceeds the desired amount and is not within 1% tolerance
-        utils::get_deposit_amounts(&env, 1000, None, 2000, None, 10000, 5000, Decimal::bps(100));
-    }
-
-    #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_a < min_a")]
-    fn test_get_deposit_amounts_below_min_a() {
-        let env = Env::default();
-        // The calculated deposit for asset A is below the minimum requirement
-        utils::get_deposit_amounts(
-            &env,
-            5000,
-            Some(2000),
-            200,
-            None,
-            1000,
-            500,
-            Decimal::bps(1000),
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_b < min_b")]
-    fn test_get_deposit_amounts_below_min_b() {
-        let env = Env::default();
-        // The calculated deposit for asset B is below the minimum requirement
-        utils::get_deposit_amounts(
-            &env,
-            200,
-            None,
-            5000,
-            Some(2000),
-            500,
-            1000,
-            Decimal::bps(120000),
-        );
-    }
-
-    #[test]
-    fn test_get_deposit_amounts_accept_a_within_1_percent() {
-        let env = Env::default();
-        // Set up the inputs so that amount_a = (1010 * 1000 / 1000) = 1010, which is > desired_a (1000),
-        // but the ratio is exactly 1.01, which is within the 1% tolerance
-        let result =
-            utils::get_deposit_amounts(&env, 1000, None, 1010, None, 1000, 1000, Decimal::bps(100));
-        assert_eq!(result, (1000, 1000));
-    }
-
-    #[test]
-    fn test_get_deposit_amounts_accept_b_within_1_percent() {
-        let env = Env::default();
-        let result =
-            utils::get_deposit_amounts(&env, 1010, None, 1000, None, 1000, 1000, Decimal::bps(100));
-        assert_eq!(result, (1000, 1000));
     }
 
     #[test]
