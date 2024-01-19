@@ -720,8 +720,8 @@ pub fn compute_swap(
     offer_amount: i128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    let amp_parameters = get_amp(&env).unwrap();
-    let amp = compute_current_amp(&env, &amp_parameters);
+    let amp_parameters = get_amp(env).unwrap();
+    let amp = compute_current_amp(env, &amp_parameters);
 
     let new_ask_pool = calc_y(
         amp as u128,
@@ -754,8 +754,8 @@ pub fn compute_offer_amount(
     ask_amount: i128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    let amp_parameters = get_amp(&env).unwrap();
-    let amp = compute_current_amp(&env, &amp_parameters);
+    let amp_parameters = get_amp(env).unwrap();
+    let amp = compute_current_amp(env, &amp_parameters);
 
     let new_offer_pool = calc_y(
         amp as u128,

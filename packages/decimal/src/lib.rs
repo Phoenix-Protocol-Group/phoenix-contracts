@@ -218,9 +218,7 @@ impl Decimal {
         let precision = precision.into();
 
         let divisor = 10i128.pow((self.decimal_places() - precision) as u32);
-        let result = value / divisor;
-
-        result.into()
+        value / divisor
     }
 
     fn multiply_ratio(&self, numerator: Decimal, denominator: Decimal) -> Decimal {

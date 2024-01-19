@@ -5,11 +5,11 @@ use crate::storage::AmplifierParameters;
 use decimal::Decimal;
 
 // TODO: Those parameters will be used for updating AMP function later
-#[allow(clippy::dead_code)]
+#[allow(dead_code)]
 pub const MAX_AMP: u64 = 1_000_000;
-#[allow(clippy::dead_code)]
+#[allow(dead_code)]
 pub const MAX_AMP_CHANGE: u64 = 10;
-#[allow(clippy::dead_code)]
+#[allow(dead_code)]
 pub const MIN_AMP_CHANGING_TIME: u64 = 86400;
 pub const AMP_PRECISION: u64 = 100;
 
