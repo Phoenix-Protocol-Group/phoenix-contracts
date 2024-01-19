@@ -135,18 +135,18 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "The value -1 is out of range. Must be between 0‱ and 10000‱")]
-    fn test_below_min() {
-        validate_bps!(-1);
+    fn validate_bps_below_min() {
+        validate_bps!(-1, 300, 5_000, 8_534);
     }
 
     #[test]
     #[should_panic(expected = "The value 10001 is out of range. Must be between 0‱ and 10000‱")]
-    fn test_above_max() {
-        validate_bps!(10_001);
+    fn validate_bps_above_max() {
+        validate_bps!(100, 10_001, 31_3134, 348);
     }
 
     #[test]
-    fn test_valid_range() {
-        validate_bps!(0, 5000, 10_000);
+    fn bps_valid_range() {
+        validate_bps!(0, 5_000, 7_500, 10_000);
     }
 }
