@@ -108,9 +108,10 @@ impl FactoryTrait for Factory {
             &lp_init_info.stake_init_info,
         );
 
-        let lp_wasm_hash = get_config(&env).lp_wasm_hash;
-        let stake_wasm_hash = get_config(&env).stake_wasm_hash;
-        let token_wasm_hash = get_config(&env).token_wasm_hash;
+        let config = get_config(&env);
+        let lp_wasm_hash = config.lp_wasm_hash;
+        let stake_wasm_hash = config.stake_wasm_hash;
+        let token_wasm_hash = config.token_wasm_hash;
 
         let lp_contract_address = deploy_lp_contract(
             &env,
