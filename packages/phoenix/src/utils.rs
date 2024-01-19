@@ -26,7 +26,7 @@ macro_rules! validate_bps {
         const MAX_BPS: i64 = 10_000;
         $(
             if $value < MIN_BPS || $value > MAX_BPS {
-                panic!("The value {} is out of range. Must be between {}‱ and {}‱", $value, MIN_BPS, MAX_BPS);
+                panic!("The value {} is out of range. Must be between {} and {} bps.", $value, MIN_BPS, MAX_BPS);
             }
         )+
     }
@@ -135,13 +135,13 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "The value -1 is out of range. Must be between 0‱ and 10000‱")]
+    #[should_panic(expected = "The value -1 is out of range. Must be between 0 and 10000 bps.")]
     fn validate_bps_below_min() {
         validate_bps!(-1, 300, 5_000, 8_534);
     }
 
     #[test]
-    #[should_panic(expected = "The value 10001 is out of range. Must be between 0‱ and 10000‱")]
+    #[should_panic(expected = "The value 10001 is out of range. Must be between 0 and 10000 bps.")]
     fn validate_bps_above_max() {
         validate_bps!(100, 10_001, 31_3134, 348);
     }
