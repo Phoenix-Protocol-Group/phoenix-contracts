@@ -19,6 +19,7 @@ macro_rules! validate_int_parameters {
 }
 
 // Validate all bps to be between the range 0..10_000
+#[macro_export]
 macro_rules! validate_bps {
     ($($value:expr),+) => {
         const MIN_BPS: i64 = 0;

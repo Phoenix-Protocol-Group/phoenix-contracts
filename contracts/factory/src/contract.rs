@@ -8,6 +8,7 @@ use crate::{
     utils::deploy_lp_contract,
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use phoenix::validate_bps;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
 };
@@ -118,6 +119,13 @@ impl FactoryTrait for Factory {
             lp_wasm_hash,
             &lp_init_info.token_init_info.token_a,
             &lp_init_info.token_init_info.token_b,
+        );
+
+        validate_bps!(
+            lp_init_info.swap_fee_bps,
+            lp_init_info.max_allowed_slippage_bps,
+            lp_init_info.max_allowed_spread_bps,
+            lp_init_info.max_referral_bps
         );
 
         let init_fn: Symbol = Symbol::new(&env, "initialize");
