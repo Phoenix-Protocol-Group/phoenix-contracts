@@ -17,10 +17,7 @@ use crate::{
     token_contract,
 };
 use decimal::Decimal;
-use phoenix::{
-    utils::{is_approx_ratio, StakeInitInfo, TokenInitInfo},
-    validate_int_parameters,
-};
+use phoenix::{utils::is_approx_ratio, validate_int_parameters};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
