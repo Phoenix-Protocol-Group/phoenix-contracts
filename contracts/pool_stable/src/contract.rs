@@ -6,8 +6,9 @@ use crate::{
     math::{calc_y, compute_current_amp, compute_d, AMP_PRECISION},
     stake_contract,
     storage::{
-        get_amp, get_config, save_amp, save_config, utils, validate_fee_bps, AmplifierParameters,
-        Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
+        get_amp, get_config, get_greatest_precision, save_amp, save_config,
+        save_greatest_precision, utils, validate_fee_bps, AmplifierParameters, Asset, Config,
+        PairType, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
@@ -161,6 +162,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 "Pool: Initialize: First token must be alphabetically smaller than second token"
             );
         }
+
+        save_greatest_precision(&env, &token_a, &token_b);
 
         if !(0..=10_000).contains(&swap_fee_bps) {
             log!(&env, "Fees must be between 0 and 100%");

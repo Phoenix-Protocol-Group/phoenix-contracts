@@ -15,6 +15,7 @@ pub enum DataKey {
     Admin = 3,
     Initialized = 4,
     Amp = 5,
+    MaxPrecision = 6,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -78,6 +79,26 @@ pub fn get_config(env: &Env) -> Config {
 
 pub fn save_config(env: &Env, config: Config) {
     env.storage().instance().set(&CONFIG, &config);
+}
+
+pub fn get_greatest_precision(env: &Env) -> u32 {
+    env.storage()
+        .instance()
+        .get(&DataKey::MaxPrecision)
+        .unwrap()
+}
+
+pub fn save_greatest_precision(env: &Env, token1: &Address, token2: &Address) {
+    let precision1 = token_contract::Client::new(env, token1).decimals();
+    let precision2 = token_contract::Client::new(env, token2).decimals();
+    let max_precision: u32 = if precision1 > precision2 {
+        precision1
+    } else {
+        precision2
+    };
+    env.storage()
+        .instance()
+        .set(&DataKey::MaxPrecision, &max_precision);
 }
 
 #[contracttype]
