@@ -52,7 +52,6 @@ fn update_config() {
 
     // update fees and recipient
     pool.update_config(
-        &admin1,
         &None,
         &Some(500i64), // 5% fees
         &Some(admin2.clone()),
@@ -77,15 +76,7 @@ fn update_config() {
     );
 
     // update slippage and spread
-    pool.update_config(
-        &admin1,
-        &None,
-        &None,
-        &None,
-        &Some(5_000i64),
-        &Some(500),
-        &None,
-    );
+    pool.update_config(&None, &None, &None, &None, &Some(5_000i64), &Some(500));
     assert_eq!(
         pool.query_config(),
         Config {
@@ -96,18 +87,17 @@ fn update_config() {
             pool_type: PairType::Xyk,
             total_fee_bps: 500,
             fee_recipient: admin2,
-            max_allowed_slippage_bps: 5_000,
-            max_allowed_spread_bps: 500,
-            max_referral_bps: 1_000,
+            max_allowed_slippage_bps: 500,
+            max_allowed_spread_bps: 5_000,
+            max_referral_bps: 500,
         }
     );
 }
 
 #[test]
-#[should_panic(expected = "Pool: UpdateConfig: Unauthorize")]
+#[should_panic(expected = "Error(Auth, InvalidAction)")]
 fn update_config_unauthorized() {
     let env = Env::default();
-    env.mock_all_auths();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -131,7 +121,6 @@ fn update_config_unauthorized() {
     );
 
     pool.update_config(
-        &Address::generate(&env),
         &None,
         &Some(500i64), // 5% fees
         &Some(admin2.clone()),
@@ -169,21 +158,13 @@ fn update_config_update_admin() {
     );
 
     // update admin to new admin
-    pool.update_config(
-        &admin1,
-        &Some(admin2.clone()),
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-    );
+    pool.update_config(&Some(admin2.clone()), &None, &None, &None, &None, &None);
 
     let share_token_address = pool.query_share_token_address();
     let stake_token_address = pool.query_stake_contract_address();
 
     // now update succeeds
-    pool.update_config(&admin2, &None, &None, &None, &None, &Some(3_000_000), &None);
+    pool.update_config(&Some(admin2.clone()), &None, &None, &None, &None, &None);
     assert_eq!(
         pool.query_config(),
         Config {
@@ -195,7 +176,7 @@ fn update_config_update_admin() {
             total_fee_bps: 0,
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
-            max_allowed_spread_bps: 3_000_000,
+            max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
         }
     );
@@ -230,7 +211,6 @@ fn update_config_too_high_fees() {
 
     // update fees and recipient
     pool.update_config(
-        &admin1,
         &None,
         &Some(10_100i64), // 101% fees
         &Some(admin2.clone()),
