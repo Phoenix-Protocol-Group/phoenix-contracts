@@ -2,7 +2,7 @@ use crate::contract::{Factory, FactoryClient};
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 use self::setup::{
-    install_lp_contract, install_multihop_wasm, install_stake_wasm, install_token_wasm,
+    install_lp_contract, install_multihop_wasm, install_stake_wasm, install_token_wasm, deploy_factory_contract,
 };
 
 mod config;
@@ -24,6 +24,8 @@ fn test_deploy_factory_twice_should_fail() {
     let lp_wasm_hash = install_lp_contract(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
+
+    let factory = deploy_factory_contract(&env, admin.clone());
 
     factory.initialize(
         &admin,

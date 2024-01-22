@@ -56,23 +56,18 @@ fn factory_successfully_inits_lp() {
     assert_eq!(factory.get_admin(), admin);
 
     let token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(&env),
         token_a: token1,
         token_b: token2,
     };
     let stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(&env),
         min_bond: 10i128,
         max_distributions: 10u32,
         min_reward: 5i128,
     };
 
-    let lp_wasm_hash = install_lp_contract(&env);
-
     let lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
-        lp_wasm_hash,
         max_allowed_slippage_bps: 5_000,
         max_allowed_spread_bps: 500,
         share_token_decimals: 7,

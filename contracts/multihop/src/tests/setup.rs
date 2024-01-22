@@ -102,7 +102,7 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Clie
         &lp_wasm_hash,
         &stake_wasm_hash,
         &token_wasm_hash,
-    &whitelisted_accounts,
+        &whitelisted_accounts,
     );
     factory_client
 }
