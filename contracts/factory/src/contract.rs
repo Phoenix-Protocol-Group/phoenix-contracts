@@ -19,9 +19,18 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
 pub struct Factory;
 
 pub trait FactoryTrait {
-    fn initialize(env: Env, admin: Address, multihop_wasm_hash: BytesN<32>);
+    fn initialize(
+        env: Env,
+        admin: Address,
+        multihop_wasm_hash: BytesN<32>,
+        whitelisted_accounts: Vec<Address>,
+    );
 
-    fn create_liquidity_pool(env: Env, lp_init_info: LiquidityPoolInitInfo) -> Address;
+    fn create_liquidity_pool(
+        env: Env,
+        lp_init_info: LiquidityPoolInitInfo,
+        caller: Address,
+    ) -> Address;
 
     fn query_pools(env: Env) -> Vec<Address>;
 
@@ -38,9 +47,18 @@ pub trait FactoryTrait {
 
 #[contractimpl]
 impl FactoryTrait for Factory {
-    fn initialize(env: Env, admin: Address, multihop_wasm_hash: BytesN<32>) {
+    fn initialize(
+        env: Env,
+        admin: Address,
+        multihop_wasm_hash: BytesN<32>,
+        whitelisted_accounts: Vec<Address>,
+    ) {
         if is_initialized(&env) {
             panic!("Factory: Initialize: initializing contract twice is not allowed");
+        }
+
+        if whitelisted_accounts.is_empty() {
+            panic!("Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.")
         }
 
         set_initialized(&env);
@@ -53,6 +71,7 @@ impl FactoryTrait for Factory {
             Config {
                 admin: admin.clone(),
                 multihop_address,
+                whitelisted_accounts,
             },
         );
 
@@ -62,7 +81,18 @@ impl FactoryTrait for Factory {
             .publish(("initialize", "LP factory contract"), admin);
     }
 
-    fn create_liquidity_pool(env: Env, lp_init_info: LiquidityPoolInitInfo) -> Address {
+    fn create_liquidity_pool(
+        env: Env,
+        lp_init_info: LiquidityPoolInitInfo,
+        caller: Address,
+    ) -> Address {
+        caller.require_auth();
+        if !get_config(&env).whitelisted_accounts.contains(caller) {
+            panic!(
+                "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
+            )
+        };
+
         validate_token_info(
             &env,
             &lp_init_info.token_init_info,
@@ -197,7 +227,7 @@ fn validate_token_info(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::{BytesN, String};
+    use soroban_sdk::{testutils::Address as _, Address, BytesN, String};
 
     #[test]
     #[should_panic(
@@ -243,14 +273,8 @@ mod tests {
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_string(&String::from_str(
-            &env,
-            "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN",
-        ));
-        let token_b = Address::from_string(&String::from_str(
-            &env,
-            "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
-        ));
+        let token_a = Address::generate(&env);
+        let token_b = Address::generate(&env);
 
         let token_init_info = TokenInitInfo {
             token_a,
@@ -276,14 +300,8 @@ mod tests {
         let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
         let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
-        let token_a = Address::from_string(&String::from_str(
-            &env,
-            "CAOUDQCLN3BYHH4L7GSH3OSQJFVELHKOEVKOPBENVIGZ6WZ5ZRHFC5LN",
-        ));
-        let token_b = Address::from_string(&String::from_str(
-            &env,
-            "CBGJMPOZ573XUTIRRFWGWTGSIAOGKJRVMIKBTFYEWTEIU7AEDWKDYMUX",
-        ));
+        let token_a = Address::generate(&env);
+        let token_b = Address::generate(&env);
 
         let token_init_info = TokenInitInfo {
             token_a,

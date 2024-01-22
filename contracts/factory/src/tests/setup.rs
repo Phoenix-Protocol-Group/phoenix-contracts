@@ -1,7 +1,5 @@
 use crate::contract::{Factory, FactoryClient};
-
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
-
+use soroban_sdk::{testutils::Address as _, vec, Address, BytesN, Env};
 #[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
     soroban_sdk::contractimport!(
@@ -41,7 +39,8 @@ pub fn deploy_factory_contract<'a>(
     let admin = admin.into().unwrap_or(Address::generate(env));
     let factory = FactoryClient::new(env, &env.register_contract(None, Factory {}));
     let multihop_wasm_hash = install_multihop_wasm(env);
+    let whitelisted_accounts = vec![env, admin.clone()];
 
-    factory.initialize(&admin, &multihop_wasm_hash);
+    factory.initialize(&admin, &multihop_wasm_hash, &whitelisted_accounts);
     factory
 }
