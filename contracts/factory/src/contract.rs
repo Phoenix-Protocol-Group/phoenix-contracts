@@ -121,12 +121,8 @@ impl FactoryTrait for Factory {
         );
 
         let init_fn: Symbol = Symbol::new(&env, "initialize");
-        let init_fn_args: Vec<Val> = (
-            stake_wasm_hash,
-            token_wasm_hash,
-            lp_init_info.clone(),
-        )
-            .into_val(&env);
+        let init_fn_args: Vec<Val> =
+            (stake_wasm_hash, token_wasm_hash, lp_init_info.clone()).into_val(&env);
 
         env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
 
@@ -235,7 +231,7 @@ fn validate_token_info(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::{testutils::Address as _, Address, BytesN, String};
+    use soroban_sdk::{testutils::Address as _, Address, String};
 
     #[test]
     #[should_panic(
@@ -270,9 +266,6 @@ mod tests {
     fn validate_token_info_should_fail_on_min_bond_less_than_zero() {
         let env = Env::default();
 
-        let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
-        let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
-
         let token_a = Address::generate(&env);
         let token_b = Address::generate(&env);
 
@@ -291,9 +284,6 @@ mod tests {
     #[should_panic(expected = "Factory: validate_token_info failed: min reward too small")]
     fn validate_token_info_should_fail_on_min_reward_less_than_zero() {
         let env = Env::default();
-
-        let token_wasm_hash = BytesN::from_array(&env, &[8u8; 0x20]);
-        let stake_wasm_hash = BytesN::from_array(&env, &[15u8; 0x20]);
 
         let token_a = Address::generate(&env);
         let token_b = Address::generate(&env);
