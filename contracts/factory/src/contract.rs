@@ -166,20 +166,17 @@ impl FactoryTrait for Factory {
 
         let mut whitelisted_accounts = config.whitelisted_accounts;
 
-        if !to_add.is_empty() {
-            to_add.into_iter().for_each(|addr| {
+        to_add.into_iter().for_each(|addr| {
+            if !whitelisted_accounts.contains(addr.clone()) {
                 whitelisted_accounts.push_back(addr);
-            });
-        }
+            }
+        });
 
-        if !to_remove.is_empty() {
-            to_remove.into_iter().for_each(|addr| {
-                let contains_addr_idx = whitelisted_accounts.first_index_of(addr);
-                if let Some(found_addr_idx) = contains_addr_idx {
-                    whitelisted_accounts.remove(found_addr_idx);
-                }
-            })
-        }
+        to_remove.into_iter().for_each(|addr| {
+            if let Some(id) = whitelisted_accounts.iter().position(|x| x == addr) {
+                whitelisted_accounts.remove(id as u32);
+            }
+        });
 
         save_config(
             &env,

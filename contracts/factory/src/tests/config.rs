@@ -165,7 +165,7 @@ fn successfully_updates_new_list_of_whitelisted_accounts() {
     let factory = deploy_factory_contract(&env, admin.clone());
 
     let to_add = vec![&env, first_wl_addr.clone(), second_wl_addr.clone()];
-    factory.update_whitelisted_accounts(&to_add, &vec![&env], &admin.clone());
+    factory.update_whitelisted_accounts(&admin.clone(), &to_add, &vec![&env]);
     // query for first whitelisted address
     let config = factory.get_config();
 
@@ -173,7 +173,7 @@ fn successfully_updates_new_list_of_whitelisted_accounts() {
 
     let to_remove = vec![&env, admin.clone()];
 
-    factory.update_whitelisted_accounts(&vec![&env], &to_remove, &admin);
+    factory.update_whitelisted_accounts(&admin, &vec![&env], &to_remove);
 
     let config = factory.get_config();
 
@@ -193,10 +193,48 @@ fn doesn_not_change_whitelisted_accounts_when_removing_non_existent() {
 
     let to_remove = vec![&env, Address::generate(&env)];
 
-    factory.update_whitelisted_accounts(&vec![&env], &to_remove, &admin.clone());
+    factory.update_whitelisted_accounts(&admin.clone(), &vec![&env], &to_remove);
 
     let config = factory.get_config();
 
     assert!(config.whitelisted_accounts.contains(admin));
     assert!(config.whitelisted_accounts.len() == 1);
+}
+
+#[test]
+fn test_add_vec_with_duplicates_should_be_handled_correctly() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let first_wl_addr = Address::generate(&env);
+    let dupe_of_first_wl_addr = first_wl_addr.clone();
+    let second_wl_addr = Address::generate(&env);
+    let dupe_second_wl_addr = second_wl_addr.clone();
+
+    let factory = deploy_factory_contract(&env, admin.clone());
+
+    let to_add = vec![
+        &env,
+        first_wl_addr.clone(),
+        dupe_of_first_wl_addr.clone(),
+        second_wl_addr.clone(),
+        dupe_second_wl_addr.clone(),
+    ];
+
+    factory.update_whitelisted_accounts(&admin.clone(), &to_add, &vec![&env]);
+    let config = factory.get_config();
+
+    assert!(config.whitelisted_accounts.contains(first_wl_addr.clone()));
+    assert!(config.whitelisted_accounts.len() == 3);
+
+    let to_remove = vec![&env, admin.clone()];
+
+    factory.update_whitelisted_accounts(&admin, &vec![&env], &to_remove);
+
+    let config = factory.get_config();
+
+    assert!(config.whitelisted_accounts.contains(first_wl_addr));
+    assert!(config.whitelisted_accounts.contains(second_wl_addr));
+    assert!(config.whitelisted_accounts.len() == 2);
 }
