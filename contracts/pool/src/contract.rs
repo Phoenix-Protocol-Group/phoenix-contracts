@@ -34,17 +34,8 @@ pub trait LiquidityPoolTrait {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
-        // admin: Address,
-        // share_token_decimals: u32,
-        // swap_fee_bps: i64,
-        // fee_recipient: Address,
-        // max_allowed_slippage_bps: i64,
-        // max_allowed_spread_bps: i64,
-        // max_referral_bps: i64,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
-        // token_init_info: TokenInitInfo,
-        // stake_contract_info: StakeInitInfo,
         lp_init_info: LiquidityPoolInitInfo,
     );
 
@@ -135,17 +126,8 @@ impl LiquidityPoolTrait for LiquidityPool {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
-        // admin: Address,
-        // share_token_decimals: u32,
-        // swap_fee_bps: i64,
-        // fee_recipient: Address,
-        // max_allowed_slippage_bps: i64,
-        // max_allowed_spread_bps: i64,
-        // max_referral_bps: i64,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
-        // token_init_info: TokenInitInfo,
-        // stake_init_info: StakeInitInfo,
         lp_init_info: LiquidityPoolInitInfo,
     ) {
         if is_initialized(&env) {

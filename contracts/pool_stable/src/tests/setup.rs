@@ -68,14 +68,6 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     };
 
     pool.initialize(
-        // &admin,
-        // &share_token_decimals,
-        // &swap_fees,
-        // &fee_recipient,
-        // &max_allowed_slippage,
-        // &max_allowed_spread,
-        // &token_init_info,
-        // &stake_init_info,
         &stake_wasm_hash,
         &token_wasm_hash,
         &lp_init_info,
