@@ -1,22 +1,25 @@
 use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal};
 
-use num_integer::Roots;
-
 use crate::storage::utils::{is_initialized, set_initialized};
 use crate::storage::StableLiquidityPoolInfo;
 use crate::{
+    math::{calc_y, compute_current_amp, compute_d, AMP_PRECISION},
     stake_contract,
     storage::{
-        get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse,
+        get_amp, get_config, get_greatest_precision, save_amp, save_config,
+        save_greatest_precision, utils, validate_fee_bps, AmplifierParameters, Asset, Config,
+        PairType, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
 use decimal::Decimal;
 use phoenix::{
-    utils::{is_approx_ratio, StakeInitInfo, TokenInitInfo},
+    utils::{StakeInitInfo, TokenInitInfo},
     validate_int_parameters,
 };
+
+// Minimum amount of initial LP shares to mint
+const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1000;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -39,6 +42,7 @@ pub trait StableLiquidityPoolTrait {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        amp: u64,
         token_init_info: TokenInitInfo,
         stake_contract_info: StakeInitInfo,
     );
@@ -49,10 +53,8 @@ pub trait StableLiquidityPoolTrait {
     fn provide_liquidity(
         env: Env,
         depositor: Address,
-        desired_a: Option<i128>,
-        min_a: Option<i128>,
-        desired_b: Option<i128>,
-        min_b: Option<i128>,
+        desired_a: i128,
+        desired_b: i128,
         custom_slippage_bps: Option<i64>,
     );
 
@@ -133,6 +135,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         fee_recipient: Address,
         max_allowed_slippage_bps: i64,
         max_allowed_spread_bps: i64,
+        amp: u64,
         token_init_info: TokenInitInfo,
         stake_init_info: StakeInitInfo,
     ) {
@@ -159,6 +162,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 "Pool: Initialize: First token must be alphabetically smaller than second token"
             );
         }
+
+        save_greatest_precision(&env, &token_a, &token_b);
 
         if !(0..=10_000).contains(&swap_fee_bps) {
             log!(&env, "Fees must be between 0 and 100%");
@@ -200,6 +205,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             max_allowed_spread_bps,
         };
         save_config(&env, config);
+        let current_time = env.ledger().timestamp();
+        save_amp(
+            &env,
+            AmplifierParameters {
+                init_amp: amp * AMP_PRECISION,
+                init_amp_time: current_time,
+                next_amp: amp * AMP_PRECISION,
+                next_amp_time: current_time,
+            },
+        );
         utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
@@ -214,20 +229,19 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     fn provide_liquidity(
         env: Env,
         sender: Address,
-        desired_a: Option<i128>,
-        min_a: Option<i128>,
-        desired_b: Option<i128>,
-        min_b: Option<i128>,
+        desired_a: i128,
+        desired_b: i128,
         custom_slippage_bps: Option<i64>,
     ) {
-        validate_int_parameters!(desired_a, min_a, desired_b, min_b);
+        validate_int_parameters!(desired_a, desired_b);
 
         // sender needs to authorize the deposit
         sender.require_auth();
 
         let config = get_config(&env);
-        let pool_balance_a = utils::get_pool_balance_a(&env);
-        let pool_balance_b = utils::get_pool_balance_b(&env);
+        let greatest_precision = get_greatest_precision(&env);
+        let old_balance_a = utils::get_pool_balance_a(&env);
+        let old_balance_b = utils::get_pool_balance_b(&env);
 
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
@@ -236,104 +250,55 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             }
         }
 
-        // Check if both tokens are provided, one token is provided, or none are provided
-        let amounts = match (desired_a, desired_b) {
-            // Both tokens are provided
-            (Some(a), Some(b)) if a > 0 && b > 0 => {
-                // Calculate deposit amounts
-                utils::get_deposit_amounts(
-                    &env,
-                    a,
-                    min_a,
-                    b,
-                    min_b,
-                    pool_balance_a,
-                    pool_balance_b,
-                    Decimal::bps(custom_slippage_bps.unwrap_or(100)),
-                )
+        let amp_parameters = get_amp(&env).unwrap(); // FIXME: This is minor, but add some
+                                                     // validation to AMP parameters
+        let amp = compute_current_amp(&env, &amp_parameters);
+
+        // Invariant (D) after deposit added
+        let new_balance_a = desired_a + old_balance_a;
+        let new_balance_b = desired_b + old_balance_b;
+        let new_invariant = compute_d(
+            amp as u128,
+            &[
+                Decimal::from_atomics(new_balance_a, 6),
+                Decimal::from_atomics(new_balance_b, 6),
+            ],
+        );
+
+        let total_shares = utils::get_total_shares(&env);
+        let shares = if total_shares == 0 {
+            let share =
+                new_invariant.to_i128_with_precision(greatest_precision) - MINIMUM_LIQUIDITY_AMOUNT;
+            if share == 0 {
+                panic!("Pool: ProvideLiquidity: Liquidity amount is too low");
             }
-            // Only token A is provided
-            (Some(a), None) if a > 0 => {
-                let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
-                    &env,
-                    &config,
-                    pool_balance_a,
-                    pool_balance_b,
-                    a,
-                    &config.token_a,
-                );
-                do_swap(
-                    env.clone(),
-                    sender.clone(),
-                    config.clone().token_a,
-                    a_for_swap,
-                    None,
-                    None,
-                );
-                // return: rest of Token A amount, simulated result of swap of portion A
-                (a - a_for_swap, b_from_swap)
-            }
-            // Only token B is provided
-            (None, Some(b)) if b > 0 => {
-                let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
-                    &env,
-                    &config,
-                    pool_balance_a,
-                    pool_balance_b,
-                    b,
-                    &config.token_b,
-                );
-                do_swap(
-                    env.clone(),
-                    sender.clone(),
-                    config.clone().token_b,
-                    b_for_swap,
-                    None,
-                    None,
-                );
-                // return: simulated result of swap of portion B, rest of Token B amount
-                (a_from_swap, b - b_for_swap)
-            }
-            // None or invalid amounts are provided
-            _ => {
-                log!(
-                    &env,
-                    "At least one token must be provided and must be bigger then 0!"
-                );
-                panic!("Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!");
-            }
+            share
+        } else {
+            let initial_invariant = compute_d(
+                amp as u128,
+                &[
+                    Decimal::from_atomics(old_balance_a, 6),
+                    Decimal::from_atomics(old_balance_b, 6),
+                ],
+            );
+            // Calculate the proportion of the change in invariant
+            (Decimal::from_ratio((new_invariant - initial_invariant) * total_shares, 1)
+                / initial_invariant)
+                .to_i128_with_precision(greatest_precision)
         };
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
         // Move tokens from client's wallet to the contract
-        token_a_client.transfer(&sender, &env.current_contract_address(), &(amounts.0));
-        token_b_client.transfer(&sender, &env.current_contract_address(), &(amounts.1));
-
-        let pool_balance_a = utils::get_pool_balance_a(&env);
-        let pool_balance_b = utils::get_pool_balance_b(&env);
+        token_a_client.transfer(&sender, &env.current_contract_address(), &(desired_a));
+        token_b_client.transfer(&sender, &env.current_contract_address(), &(desired_b));
 
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, &config.token_a);
         let balance_b = utils::get_balance(&env, &config.token_b);
-        let total_shares = utils::get_total_shares(&env);
 
-        let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
-            let shares_a = (balance_a * total_shares) / pool_balance_a;
-            let shares_b = (balance_b * total_shares) / pool_balance_b;
-            shares_a.min(shares_b)
-        } else {
-            // In case of empty pool, just produce X*Y shares
-            (balance_a * balance_b).sqrt()
-        };
-
-        utils::mint_shares(
-            &env,
-            &config.share_token,
-            &sender,
-            new_total_shares - total_shares,
-        );
+        utils::mint_shares(&env, &config.share_token, &sender, shares);
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
@@ -342,11 +307,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env.events()
             .publish(("provide_liquidity", "token_a"), &config.token_a);
         env.events()
-            .publish(("provide_liquidity", "token_a-amount"), amounts.0);
+            .publish(("provide_liquidity", "token_a-amount"), desired_a);
         env.events()
             .publish(("provide_liquidity", "token_b"), &config.token_b);
         env.events()
-            .publish(("provide_liquidity", "token_b-amount"), amounts.1);
+            .publish(("provide_liquidity", "token_b-amount"), desired_b);
     }
 
     fn swap(
@@ -556,6 +521,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         };
 
         let (ask_amount, spread_amount, commission_amount) = compute_swap(
+            &env,
             pool_balance_offer,
             pool_balance_ask,
             offer_amount,
@@ -588,6 +554,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         };
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
+            &env,
             pool_balance_offer,
             pool_balance_ask,
             ask_amount,
@@ -625,6 +592,7 @@ fn do_swap(
     };
 
     let (return_amount, spread_amount, commission_amount) = compute_swap(
+        &env,
         pool_balance_sell,
         pool_balance_buy,
         offer_amount,
@@ -696,141 +664,6 @@ fn do_swap(
     return_amount
 }
 
-/// This function divides the deposit in such a way that when swapping it for the other token,
-/// the resulting amounts of tokens maintain the current pool's ratio.
-/// * `a_pool` - The current amount of Token A in the liquidity pool.
-/// * `b_pool` - The current amount of Token B in the liquidity pool.
-/// * `deposit` - The total amount of tokens that the user wants to deposit into the liquidity pool.
-/// * `sell_a` - A boolean that indicates whether the deposit is in Token A (if true) or in Token B (if false).
-/// # Returns
-/// * A tuple `(final_offer_amount, final_ask_amount)`, where `final_offer_amount` is the amount of deposit tokens
-///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.
-fn split_deposit_based_on_pool_ratio(
-    env: &Env,
-    config: &Config,
-    a_pool: i128,
-    b_pool: i128,
-    deposit: i128,
-    offer_asset: &Address,
-) -> (i128, i128) {
-    // Validate the inputs
-    if a_pool <= 0 || b_pool <= 0 || deposit <= 0 {
-        log!(env, "Both pools and deposit must be a positive!");
-        panic!(
-            "Pool: split_deposit_based_on_pool_ratio: Both pools and deposit must be a positive!"
-        );
-    }
-
-    // Calculate the current ratio in the pool
-    let target_ratio = Decimal::from_ratio(b_pool, a_pool);
-    // Define boundaries for binary search algorithm
-    let mut low = 0;
-    let mut high = deposit;
-
-    // Tolerance is the smallest difference in deposit that we care about
-    let tolerance = 500;
-
-    let mut final_offer_amount = deposit; // amount of deposit tokens to be swapped
-    let mut final_ask_amount = 0; // amount of other tokens to be received
-
-    while high - low > tolerance {
-        let mid = (low + high) / 2; // Calculate middle point
-
-        // Simulate swap to get amount of other tokens to be received for `mid` amount of deposit tokens
-        let SimulateSwapResponse {
-            ask_amount,
-            spread_amount: _,
-            commission_amount: _,
-            total_return: _,
-        } = StableLiquidityPool::simulate_swap(env.clone(), offer_asset.clone(), mid);
-
-        // Update final amounts
-        final_offer_amount = mid;
-        final_ask_amount = ask_amount;
-
-        // Calculate the ratio that would result from swapping `mid` deposit tokens
-        let ratio = if offer_asset == &config.token_a {
-            Decimal::from_ratio(ask_amount, deposit - mid)
-        } else {
-            Decimal::from_ratio(deposit - mid, ask_amount)
-        };
-
-        // If the resulting ratio is approximately equal (1%) to the target ratio, break the loop
-        if is_approx_ratio(ratio, target_ratio, Decimal::percent(1)) {
-            break;
-        }
-        // Update boundaries for the next iteration of the binary search
-        if ratio > target_ratio {
-            if offer_asset == &config.token_a {
-                high = mid;
-            } else {
-                low = mid;
-            }
-        } else if offer_asset == &config.token_a {
-            low = mid;
-        } else {
-            high = mid;
-        };
-    }
-    (final_offer_amount, final_ask_amount)
-}
-
-/// This function asserts that the slippage does not exceed the provided tolerance.
-/// # Arguments
-/// * `slippage_tolerance` - An optional user-provided slippage tolerance as basis points.
-/// * `deposits` - The amounts of tokens that the user deposits into each of the two pools.
-/// * `pools` - The amounts of tokens in each of the two pools before the deposit.
-/// * `max_allowed_slippage` - The maximum allowed slippage as a decimal.
-/// # Returns
-/// * An error if the slippage exceeds the tolerance or if the tolerance itself exceeds the maximum allowed,
-///   otherwise Ok.
-#[allow(dead_code)]
-fn assert_slippage_tolerance(
-    env: &Env,
-    slippage_tolerance: Option<i64>,
-    deposits: &[i128; 2],
-    pools: &[i128; 2],
-    max_allowed_slippage: Decimal,
-) {
-    let default_slippage = Decimal::percent(1); // Representing 1% as the default slippage tolerance
-
-    // If user provided a slippage tolerance, convert it from basis points to a decimal
-    // Otherwise, use the default slippage tolerance
-    let slippage_tolerance = if let Some(slippage_tolerance) = slippage_tolerance {
-        Decimal::bps(slippage_tolerance)
-    } else {
-        default_slippage
-    };
-    if slippage_tolerance > max_allowed_slippage {
-        log!(env, "Slippage tolerance exceeds the maximum allowed value");
-        panic!(
-            "Pool: Assert slippage tolerance: slippage tolerance exceeds the maximum allowed value"
-        );
-    }
-
-    // Calculate the limit below which the deposit-to-pool ratio must not fall for each token
-    let one_minus_slippage_tolerance = Decimal::one() - slippage_tolerance;
-    let deposits: [i128; 2] = [deposits[0], deposits[1]];
-    let pools: [i128; 2] = [pools[0], pools[1]];
-
-    // Ensure each price does not change more than what the slippage tolerance allows
-    if deposits[0] * pools[1] * one_minus_slippage_tolerance
-        > deposits[1] * pools[0] * Decimal::one()
-        || deposits[1] * pools[0] * one_minus_slippage_tolerance
-            > deposits[0] * pools[1] * Decimal::one()
-    {
-        log!(
-            env,
-            "Slippage tolerance violated. Deposits: 0: {} 1: {}, Pools: 0: {} 1: {}",
-            deposits[0],
-            deposits[1],
-            pools[0],
-            pools[1]
-        );
-        panic!("Pool: Assert slippage tolerance: slippage tolerance violated");
-    }
-}
-
 /// This function asserts that the spread (slippage) does not exceed a given maximum.
 /// * `belief_price` - An optional user-provided belief price, i.e., the expected price per token.
 /// * `max_spread` - The maximum allowed spread (slippage) as a fraction of the return amount.
@@ -881,26 +714,29 @@ pub fn assert_max_spread(
 /// - The spread amount, representing the difference between the expected and actual swap amounts.
 /// - The commission amount, representing the fees charged for the swap.
 pub fn compute_swap(
+    env: &Env,
     offer_pool: i128,
     ask_pool: i128,
     offer_amount: i128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    // Calculate the cross product of offer_pool and ask_pool
-    let cp: i128 = offer_pool * ask_pool;
+    let amp_parameters = get_amp(env).unwrap();
+    let amp = compute_current_amp(env, &amp_parameters);
 
-    // Calculate the resulting amount of ask assets after the swap
-    // Return amount calculation based on the AMM model's invariant,
-    // which ensures the product of the amounts of the two assets remains constant before and after a trade.
-    let return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount));
+    let new_ask_pool = calc_y(
+        amp as u128,
+        Decimal::from_atomics(offer_pool + offer_amount, 6),
+        &[
+            Decimal::from_atomics(offer_pool, 6),
+            Decimal::from_atomics(ask_pool, 6),
+        ],
+        6,
+    );
 
-    // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - return_amount;
-
-    let commission_amount: i128 = return_amount * commission_rate;
-
-    // Deduct the commission (minus the part that goes to the protocol) from the return amount
-    let return_amount: i128 = return_amount - commission_amount;
+    let return_amount = ask_pool - new_ask_pool;
+    // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
+    let spread_amount = offer_amount - return_amount;
+    let commission_amount = return_amount * commission_rate;
 
     (return_amount, spread_amount, commission_amount)
 }
@@ -912,25 +748,30 @@ pub fn compute_swap(
 /// * **ask_amount** amount of ask assets to swap to.
 /// * **commission_rate** total amount of fees charged for the swap.
 pub fn compute_offer_amount(
+    env: &Env,
     offer_pool: i128,
     ask_pool: i128,
     ask_amount: i128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    // Calculate the cross product of offer_pool and ask_pool
-    let cp: i128 = offer_pool * ask_pool;
+    let amp_parameters = get_amp(env).unwrap();
+    let amp = compute_current_amp(env, &amp_parameters);
 
-    // Calculate one minus the commission rate
+    let new_offer_pool = calc_y(
+        amp as u128,
+        Decimal::from_atomics(ask_pool - ask_amount, 6),
+        &[
+            Decimal::from_atomics(offer_pool, 6),
+            Decimal::from_atomics(ask_pool, 6),
+        ],
+        6,
+    );
+
+    let offer_amount = new_offer_pool - offer_pool;
+
     let one_minus_commission = Decimal::one() - commission_rate;
-
-    // Calculate the inverse of one minus the commission rate
     let inv_one_minus_commission = Decimal::one() / one_minus_commission;
-
-    // Calculate the resulting amount of ask assets after the swap
-    let offer_amount: i128 = cp / (ask_pool - (ask_amount * inv_one_minus_commission)) - offer_pool;
-
     let ask_before_commission = ask_amount * inv_one_minus_commission;
-
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
     let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_before_commission;
 
@@ -943,52 +784,6 @@ pub fn compute_offer_amount(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_assert_slippage_tolerance_success() {
-        let env = Env::default();
-        // Test case that should pass:
-        // slippage tolerance of 5000 (0.5 or 50%), deposits of 10 and 20, pools of 30 and 60
-        // The price changes fall within the slippage tolerance
-        let max_allowed_slippage = 5_000i64;
-        assert_slippage_tolerance(
-            &env,
-            Some(max_allowed_slippage),
-            &[10, 20],
-            &[30, 60],
-            Decimal::bps(max_allowed_slippage),
-        )
-    }
-
-    #[test]
-    #[should_panic(expected = "slippage tolerance exceeds the maximum allowed value")]
-    fn test_assert_slippage_tolerance_fail_tolerance_too_high() {
-        let env = Env::default();
-        // Test case that should fail due to slippage tolerance being too high
-        let max_allowed_slippage = Decimal::bps(5_000i64);
-        assert_slippage_tolerance(
-            &env,
-            Some(60_000),
-            &[10, 20],
-            &[30, 60],
-            max_allowed_slippage,
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "slippage tolerance violated")]
-    fn test_assert_slippage_tolerance_fail_slippage_violated() {
-        let env = Env::default();
-        let max_allowed_slippage = Decimal::bps(5_000i64);
-        // The price changes from 10/15 (0.67) to 40/40 (1.00), violating the 10% slippage tolerance
-        assert_slippage_tolerance(
-            &env,
-            Some(1_000),
-            &[10, 15],
-            &[40, 40],
-            max_allowed_slippage,
-        );
-    }
 
     #[test]
     fn test_assert_max_spread_success() {
@@ -1042,36 +837,5 @@ mod tests {
         // no belief price, max spread of 10%, offer amount of 10, return amount of 10, spread amount of 2
         // The spread ratio is 20% which is greater than the max spread
         assert_max_spread(&env, None, Decimal::percent(10), 10, 10, 2);
-    }
-
-    #[test]
-    fn test_compute_swap_pass() {
-        let result = compute_swap(1000, 2000, 100, Decimal::percent(10)); // 10% commission rate
-        assert_eq!(result, (164, 18, 18)); // Expected return amount, spread, and commission
-    }
-
-    #[test]
-    fn test_compute_swap_full_commission() {
-        let result = compute_swap(1000, 2000, 100, Decimal::one()); // 100% commission rate should lead to return_amount being 0
-        assert_eq!(result, (0, 18, 182));
-    }
-
-    #[test]
-    fn test_compute_offer_amount() {
-        let offer_pool = 1000000;
-        let ask_pool = 1000000;
-        let commission_rate = Decimal::percent(10);
-        let ask_amount = 1000;
-
-        let result = compute_offer_amount(offer_pool, ask_pool, ask_amount, commission_rate);
-
-        // Test that the offer amount is less than the original pool size, due to commission
-        assert!(result.0 < offer_pool);
-
-        // Test that the spread amount is non-negative
-        assert!(result.1 >= 0);
-
-        // Test that the commission amount is exactly 10% of the offer amount
-        assert_eq!(result.2, result.0 * Decimal::percent(10));
     }
 }

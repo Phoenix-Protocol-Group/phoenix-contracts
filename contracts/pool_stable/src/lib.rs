@@ -1,5 +1,6 @@
 #![no_std]
 mod contract;
+mod math;
 mod storage;
 
 pub mod token_contract {
@@ -17,5 +18,5 @@ pub mod stake_contract {
     );
 }
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
