@@ -36,6 +36,13 @@ pub trait FactoryTrait {
         caller: Address,
     ) -> Address;
 
+    fn update_whitelisted_accounts(
+        env: Env,
+        sender: Address,
+        to_add: Vec<Address>,
+        to_remove: Vec<Address>,
+    );
+
     fn query_pools(env: Env) -> Vec<Address>;
 
     fn query_pool_details(env: Env, pool_address: Address) -> LiquidityPoolInfo;
@@ -147,6 +154,45 @@ impl FactoryTrait for Factory {
             .publish(("create", "liquidity_pool"), &lp_contract_address);
 
         lp_contract_address
+    }
+
+    fn update_whitelisted_accounts(
+        env: Env,
+        sender: Address,
+        to_add: Vec<Address>,
+        to_remove: Vec<Address>,
+    ) {
+        sender.require_auth();
+
+        let config = get_config(&env);
+
+        if config.admin != sender {
+            panic!(
+                "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
+            )
+        };
+
+        let mut whitelisted_accounts = config.whitelisted_accounts;
+
+        to_add.into_iter().for_each(|addr| {
+            if !whitelisted_accounts.contains(addr.clone()) {
+                whitelisted_accounts.push_back(addr);
+            }
+        });
+
+        to_remove.into_iter().for_each(|addr| {
+            if let Some(id) = whitelisted_accounts.iter().position(|x| x == addr) {
+                whitelisted_accounts.remove(id as u32);
+            }
+        });
+
+        save_config(
+            &env,
+            Config {
+                whitelisted_accounts,
+                ..config
+            },
+        )
     }
 
     fn query_pools(env: Env) -> Vec<Address> {
