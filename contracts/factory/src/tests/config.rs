@@ -3,7 +3,7 @@ use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
-    Address, Env, Symbol, Vec,
+    vec, Address, Env, Symbol, Vec,
 };
 
 #[test]
@@ -151,4 +151,33 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
     let unauthorized_addr = Address::generate(&env);
 
     factory.create_liquidity_pool(&lp_init_info, &unauthorized_addr);
+}
+
+#[test]
+fn successfully_updates_new_list_of_whitelisted_accounts() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let first_wl_addr = Address::generate(&env);
+    let second_wl_addr = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, admin.clone());
+
+    factory.update_whitelisted_accounts(
+        &vec![&env, admin.clone(), first_wl_addr.clone()],
+        &admin.clone(),
+    );
+    // query for first whitelisted address
+    let config = factory.get_config();
+    assert!(config.whitelisted_accounts.contains(first_wl_addr.clone()));
+
+    let new_list = vec![&env, first_wl_addr.clone(), second_wl_addr.clone()];
+    factory.update_whitelisted_accounts(&new_list, &admin);
+
+    let config = factory.get_config();
+
+    assert!(config.whitelisted_accounts.contains(first_wl_addr));
+    assert!(config.whitelisted_accounts.contains(second_wl_addr));
+    assert!(config.whitelisted_accounts.len() == 2);
 }
