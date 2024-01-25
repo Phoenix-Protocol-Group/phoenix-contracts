@@ -14,7 +14,7 @@ use crate::{
     token_contract,
 };
 use decimal::Decimal;
-use phoenix::{utils::is_approx_ratio, validate_int_parameters};
+use phoenix::validate_int_parameters;
 
 // Minimum amount of initial LP shares to mint
 const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1000;
@@ -36,6 +36,7 @@ pub trait StableLiquidityPoolTrait {
         env: Env,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
+        amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
     );
 
@@ -123,6 +124,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env: Env,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
+        amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
     ) {
         if is_initialized(&env) {
