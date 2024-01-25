@@ -25,9 +25,10 @@ macro_rules! validate_bps {
         const MIN_BPS: i64 = 0;
         const MAX_BPS: i64 = 10_000;
         $(
-            if $value < MIN_BPS || $value > MAX_BPS {
-                panic!("The value {} is out of range. Must be between {} and {} bps.", $value, MIN_BPS, MAX_BPS);
-            }
+            // if $value < MIN_BPS || $value > MAX_BPS {
+            //     panic!("The value {} is out of range. Must be between {} and {} bps.", $value, MIN_BPS, MAX_BPS);
+            // }
+            assert!((MIN_BPS..=MAX_BPS).contains(&$value), "The value {} is out of range. Must be between {} and {} bps.", $value, MIN_BPS, MAX_BPS);
         )+
     }
 }

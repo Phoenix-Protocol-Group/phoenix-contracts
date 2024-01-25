@@ -542,7 +542,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: Initialize: Fees must be between 0 and 100%")]
+#[should_panic(expected = "The value 10001 is out of range. Must be between 0 and 10000 bps.")]
 fn provide_liqudity_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();
