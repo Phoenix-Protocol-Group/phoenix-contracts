@@ -1,6 +1,4 @@
-use super::setup::{
-    deploy_factory_contract, install_lp_contract, install_stake_wasm, install_token_wasm,
-};
+use super::setup::deploy_factory_contract;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::{
@@ -65,47 +63,38 @@ fn test_deploy_multiple_liquidity_pools() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let first_token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(&env),
         token_a: token1.clone(),
         token_b: token2.clone(),
     };
     let first_stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(&env),
         min_bond: 10i128,
         max_distributions: 10u32,
         min_reward: 5i128,
     };
 
     let second_token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(&env),
         token_a: token3.clone(),
         token_b: token4.clone(),
     };
     let second_stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(&env),
         min_bond: 5i128,
         max_distributions: 5u32,
         min_reward: 2i128,
     };
 
     let third_token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(&env),
         token_a: token5.clone(),
         token_b: token6.clone(),
     };
     let third_stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(&env),
         min_bond: 6i128,
         max_distributions: 6u32,
         min_reward: 3i128,
     };
 
-    let lp_wasm_hash = install_lp_contract(&env);
-
     let first_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
-        lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5_000,
         max_allowed_spread_bps: 500,
         share_token_decimals: 7,
@@ -118,7 +107,6 @@ fn test_deploy_multiple_liquidity_pools() {
     let second_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
-        lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
         share_token_decimals: 6,
@@ -131,7 +119,6 @@ fn test_deploy_multiple_liquidity_pools() {
     let third_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
-        lp_wasm_hash,
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
         share_token_decimals: 6,
@@ -262,47 +249,38 @@ fn test_queries_by_tuple() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let first_token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(&env),
         token_a: token1.clone(),
         token_b: token2.clone(),
     };
     let first_stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(&env),
         min_bond: 10i128,
         max_distributions: 10u32,
         min_reward: 5i128,
     };
 
     let second_token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(&env),
         token_a: token3.clone(),
         token_b: token4.clone(),
     };
     let second_stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(&env),
         min_bond: 5i128,
         max_distributions: 5u32,
         min_reward: 2i128,
     };
 
     let third_token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(&env),
         token_a: token5.clone(),
         token_b: token6.clone(),
     };
     let third_stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(&env),
         min_bond: 6i128,
         max_distributions: 6u32,
         min_reward: 3i128,
     };
 
-    let lp_wasm_hash = install_lp_contract(&env);
-
     let first_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
-        lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5_000,
         max_allowed_spread_bps: 500,
         share_token_decimals: 7,
@@ -315,7 +293,6 @@ fn test_queries_by_tuple() {
     let second_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
-        lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
         share_token_decimals: 6,
@@ -328,7 +305,6 @@ fn test_queries_by_tuple() {
     let third_lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
-        lp_wasm_hash,
         max_allowed_slippage_bps: 4_000,
         max_allowed_spread_bps: 400,
         share_token_decimals: 6,

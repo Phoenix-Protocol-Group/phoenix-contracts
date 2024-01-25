@@ -1,5 +1,5 @@
 use decimal::Decimal;
-use soroban_sdk::{contracttype, Address, BytesN};
+use soroban_sdk::{contracttype, Address};
 
 // Validate if int value is bigger then 0
 #[macro_export]
@@ -26,7 +26,6 @@ pub fn is_approx_ratio(a: Decimal, b: Decimal, tolerance: Decimal) -> bool {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TokenInitInfo {
-    pub token_wasm_hash: BytesN<32>,
     pub token_a: Address,
     pub token_b: Address,
 }
@@ -34,7 +33,6 @@ pub struct TokenInitInfo {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StakeInitInfo {
-    pub stake_wasm_hash: BytesN<32>,
     pub min_bond: i128,
     pub max_distributions: u32,
     pub min_reward: i128,
@@ -44,7 +42,6 @@ pub struct StakeInitInfo {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LiquidityPoolInitInfo {
     pub admin: Address,
-    pub lp_wasm_hash: BytesN<32>,
     pub share_token_decimals: u32,
     pub swap_fee_bps: i64,
     pub fee_recipient: Address,

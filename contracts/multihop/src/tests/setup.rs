@@ -92,7 +92,18 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Clie
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![env, admin.clone()];
 
-    factory_client.initialize(&admin.clone(), &multihop_wasm_hash, &whitelisted_accounts);
+    let lp_wasm_hash = install_lp_contract(env);
+    let stake_wasm_hash = install_stake_wasm(env);
+    let token_wasm_hash = install_token_wasm(env);
+
+    factory_client.initialize(
+        &admin.clone(),
+        &multihop_wasm_hash,
+        &lp_wasm_hash,
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &whitelisted_accounts,
+    );
     factory_client
 }
 
@@ -108,7 +119,6 @@ pub fn deploy_and_initialize_lp(
     fees: Option<i64>,
 ) {
     // 2. create liquidity pool from factory
-    let lp_wasm_hash = install_lp_contract(env);
 
     if token_b < token_a {
         std::mem::swap(&mut token_a, &mut token_b);
@@ -116,12 +126,10 @@ pub fn deploy_and_initialize_lp(
     }
 
     let token_init_info = TokenInitInfo {
-        token_wasm_hash: install_token_wasm(env),
         token_a: token_a.clone(),
         token_b: token_b.clone(),
     };
     let stake_init_info = StakeInitInfo {
-        stake_wasm_hash: install_stake_wasm(env),
         min_bond: 10i128,
         max_distributions: 10u32,
         min_reward: 5i128,
@@ -130,7 +138,6 @@ pub fn deploy_and_initialize_lp(
     let lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: admin.clone(),
-        lp_wasm_hash: lp_wasm_hash.clone(),
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 500,
         share_token_decimals: 7,

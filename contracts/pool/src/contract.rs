@@ -1,3 +1,4 @@
+use phoenix::utils::LiquidityPoolInitInfo;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
 };
@@ -16,10 +17,7 @@ use crate::{
     token_contract,
 };
 use decimal::Decimal;
-use phoenix::{
-    utils::{is_approx_ratio, StakeInitInfo, TokenInitInfo},
-    validate_int_parameters,
-};
+use phoenix::{utils::is_approx_ratio, validate_int_parameters};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -36,15 +34,9 @@ pub trait LiquidityPoolTrait {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
-        admin: Address,
-        share_token_decimals: u32,
-        swap_fee_bps: i64,
-        fee_recipient: Address,
-        max_allowed_slippage_bps: i64,
-        max_allowed_spread_bps: i64,
-        max_referral_bps: i64,
-        token_init_info: TokenInitInfo,
-        stake_contract_info: StakeInitInfo,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        lp_init_info: LiquidityPoolInitInfo,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -134,28 +126,30 @@ impl LiquidityPoolTrait for LiquidityPool {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
-        admin: Address,
-        share_token_decimals: u32,
-        swap_fee_bps: i64,
-        fee_recipient: Address,
-        max_allowed_slippage_bps: i64,
-        max_allowed_spread_bps: i64,
-        max_referral_bps: i64,
-        token_init_info: TokenInitInfo,
-        stake_init_info: StakeInitInfo,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        lp_init_info: LiquidityPoolInitInfo,
     ) {
         if is_initialized(&env) {
             panic!("Liquidity Pool: Initialize: initializing contract twice is not allowed");
         }
+
+        let admin = lp_init_info.admin;
+        let share_token_decimals = lp_init_info.share_token_decimals;
+        let swap_fee_bps = lp_init_info.swap_fee_bps;
+        let fee_recipient = lp_init_info.fee_recipient;
+        let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
+        let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
+        let max_referral_bps = lp_init_info.max_referral_bps;
+        let token_init_info = lp_init_info.token_init_info;
+        let stake_init_info = lp_init_info.stake_init_info;
 
         set_initialized(&env);
 
         // Token info
         let token_a = token_init_info.token_a;
         let token_b = token_init_info.token_b;
-        let token_wasm_hash = token_init_info.token_wasm_hash;
         // Contract info
-        let stake_wasm_hash = stake_init_info.stake_wasm_hash;
         let min_bond = stake_init_info.min_bond;
         let max_distributions = stake_init_info.max_distributions;
         let min_reward = stake_init_info.min_reward;
