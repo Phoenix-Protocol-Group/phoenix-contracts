@@ -37,7 +37,8 @@ pub trait FactoryTrait {
 
     fn update_whitelisted_accounts(
         env: Env,
-        new_whitelisted_accounts: Vec<Address>,
+        to_add: Vec<Address>,
+        to_remove: Vec<Address>,
         caller: Address,
     );
 
@@ -149,7 +150,8 @@ impl FactoryTrait for Factory {
 
     fn update_whitelisted_accounts(
         env: Env,
-        new_whitelisted_accounts: Vec<Address>,
+        to_add: Vec<Address>,
+        to_remove: Vec<Address>,
         caller: Address,
     ) {
         caller.require_auth();
@@ -162,14 +164,27 @@ impl FactoryTrait for Factory {
             )
         };
 
-        if new_whitelisted_accounts.is_empty() {
-            panic!("Factory: Update: there must be at least one whitelisted account able to create liquidity pools.")
+        let mut whitelisted_accounts = config.whitelisted_accounts;
+
+        if !to_add.is_empty() {
+            to_add.into_iter().for_each(|addr| {
+                whitelisted_accounts.push_back(addr);
+            });
+        }
+
+        if !to_remove.is_empty() {
+            to_remove.into_iter().for_each(|addr| {
+                let contains_addr_idx = whitelisted_accounts.first_index_of(addr);
+                if let Some(found_addr_idx) = contains_addr_idx {
+                    whitelisted_accounts.remove(found_addr_idx);
+                }
+            })
         }
 
         save_config(
             &env,
             Config {
-                whitelisted_accounts: new_whitelisted_accounts,
+                whitelisted_accounts,
                 ..config
             },
         )

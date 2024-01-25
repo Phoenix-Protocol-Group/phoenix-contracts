@@ -164,20 +164,39 @@ fn successfully_updates_new_list_of_whitelisted_accounts() {
 
     let factory = deploy_factory_contract(&env, admin.clone());
 
-    factory.update_whitelisted_accounts(
-        &vec![&env, admin.clone(), first_wl_addr.clone()],
-        &admin.clone(),
-    );
+    let to_add = vec![&env, first_wl_addr.clone(), second_wl_addr.clone()];
+    factory.update_whitelisted_accounts(&to_add, &vec![&env], &admin.clone());
     // query for first whitelisted address
     let config = factory.get_config();
+
     assert!(config.whitelisted_accounts.contains(first_wl_addr.clone()));
 
-    let new_list = vec![&env, first_wl_addr.clone(), second_wl_addr.clone()];
-    factory.update_whitelisted_accounts(&new_list, &admin);
+    let to_remove = vec![&env, admin.clone()];
+
+    factory.update_whitelisted_accounts(&vec![&env], &to_remove, &admin);
 
     let config = factory.get_config();
 
     assert!(config.whitelisted_accounts.contains(first_wl_addr));
     assert!(config.whitelisted_accounts.contains(second_wl_addr));
     assert!(config.whitelisted_accounts.len() == 2);
+}
+
+#[test]
+fn doesn_not_change_whitelisted_accounts_when_removing_non_existent() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, admin.clone());
+
+    let to_remove = vec![&env, Address::generate(&env)];
+
+    factory.update_whitelisted_accounts(&vec![&env], &to_remove, &admin.clone());
+
+    let config = factory.get_config();
+
+    assert!(config.whitelisted_accounts.contains(admin));
+    assert!(config.whitelisted_accounts.len() == 1);
 }
