@@ -17,7 +17,7 @@ use crate::{
     token_contract,
 };
 use decimal::Decimal;
-use phoenix::{utils::is_approx_ratio, validate_int_parameters};
+use phoenix::{utils::is_approx_ratio, validate_bps, validate_int_parameters};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -143,6 +143,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         let max_referral_bps = lp_init_info.max_referral_bps;
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
+
+        validate_bps!(
+            swap_fee_bps,
+            max_allowed_slippage_bps,
+            max_allowed_spread_bps,
+            max_referral_bps
+        );
 
         set_initialized(&env);
 

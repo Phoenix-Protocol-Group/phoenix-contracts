@@ -14,7 +14,7 @@ use crate::{
     token_contract,
 };
 use decimal::Decimal;
-use phoenix::validate_int_parameters;
+use phoenix::{validate_bps, validate_int_parameters};
 
 // Minimum amount of initial LP shares to mint
 const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1000;
@@ -140,6 +140,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
 
+        validate_bps!(
+            swap_fee_bps,
+            max_allowed_slippage_bps,
+            max_allowed_spread_bps
+        );
         set_initialized(&env);
 
         // Token info
