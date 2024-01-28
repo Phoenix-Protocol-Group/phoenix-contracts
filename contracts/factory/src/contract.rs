@@ -1,6 +1,6 @@
 use crate::storage::{
-    get_config, is_initialized, save_config, set_initialized, Config, DataKey, LiquidityPoolInfo,
-    LpAndStakeInfo, LpShareInfo, PairTupleKey, StakeInfo, StakedResponse,
+    get_config, is_initialized, save_config, set_initialized, Asset, Config, DataKey,
+    LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
 };
 use crate::utils::deploy_multihop_contract;
 use crate::{
@@ -39,6 +39,7 @@ pub trait FactoryTrait {
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
+        sender: Address,
     ) -> Address;
 
     fn update_whitelisted_accounts(
@@ -60,7 +61,7 @@ pub trait FactoryTrait {
 
     fn get_config(env: Env) -> Config;
 
-    fn get_lp_and_stake_info(env: Env, sender: Address) -> LpAndStakeInfo;
+    fn get_user_portfolio(env: Env, sender: Address) -> UserPortfolio;
 }
 
 #[contractimpl]
@@ -114,9 +115,10 @@ impl FactoryTrait for Factory {
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
+        sender: Address,
     ) -> Address {
-        caller.require_auth();
-        if !get_config(&env).whitelisted_accounts.contains(caller) {
+        sender.require_auth();
+        if !get_config(&env).whitelisted_accounts.contains(sender) {
             panic!(
                 "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
             )
@@ -278,44 +280,77 @@ impl FactoryTrait for Factory {
             .expect("Factory: No multihop present in storage")
     }
 
-    fn get_lp_and_stake_info(env: Env, caller: Address) -> LpAndStakeInfo {
-        let all_lp_vec_addresses = get_lp_vec(&env);
-        let mut lp_share_info: Vec<LpShareInfo> = Vec::new(&env);
-        let mut stake_info: Vec<StakeInfo> = Vec::new(&env);
+    fn get_user_portfolio(env: Env, sender: Address) -> UserPortfolio {
+        let initialized_pools = get_lp_vec(&env);
+        let mut lp_portfolio: Vec<LpPortfolio> = Vec::new(&env);
+        let mut stake_portfolio: Vec<StakePortfolio> = Vec::new(&env);
 
-        for address in all_lp_vec_addresses {
+        for address in initialized_pools {
             let response: LiquidityPoolInfo = env.invoke_contract(
                 &address,
                 &Symbol::new(&env, "query_pool_info_for_factory"),
                 Vec::new(&env),
             );
-            // todo here we check if the lp balance is over 0
-            if response.pool_response.asset_lp_share.amount > 0 {
-                lp_share_info.push_back(LpShareInfo {
-                    owner: caller.clone(),
-                    amount: response.pool_response.asset_lp_share.amount,
-                })
-            }
 
-            let args: Val = caller.into_val(&env);
+            let asset_addr = response.pool_response.asset_a.address.clone();
+            let bsset_addr = response.pool_response.asset_b.address.clone();
+
+            let (asset_amount_available_for_user, bsset_amount_available_for_user) =
+                get_token_amount_per_liquidity_pool(&env, &asset_addr, &bsset_addr, &sender);
+
+            let asset_a = Asset {
+                address: asset_addr,
+                amount: asset_amount_available_for_user,
+            };
+
+            let asset_b = Asset {
+                address: bsset_addr,
+                amount: bsset_amount_available_for_user,
+            };
+
+            lp_portfolio.push_back(LpPortfolio {
+                assets: (asset_a, asset_b),
+            });
+
             // make a call towards the stake contract to check the staked amount
             let stake_response: StakedResponse = env.invoke_contract(
                 &response.pool_response.stake_address,
                 &Symbol::new(&env, "query_staked"),
-                vec![&env, args],
+                vec![&env, sender.into_val(&env)],
             );
 
-            stake_info.push_back(StakeInfo {
-                owner: caller.clone(),
+            stake_portfolio.push_back(StakePortfolio {
+                stake_token: response.pool_response.stake_address,
                 stakes: stake_response.stakes,
             })
         }
 
-        LpAndStakeInfo {
-            lp_share_info,
-            stake_info,
+        UserPortfolio {
+            lp_portfolio,
+            stake_portfolio,
         }
     }
+}
+
+fn get_token_amount_per_liquidity_pool(
+    env: &Env,
+    asset_addr: &Address,
+    bsset_addr: &Address,
+    sender: &Address,
+) -> (i128, i128) {
+    let asset_amount = env.invoke_contract(
+        asset_addr,
+        &Symbol::new(env, "balance"),
+        vec![env, sender.clone().into_val(env)],
+    );
+
+    let bsset_amount = env.invoke_contract(
+        bsset_addr,
+        &Symbol::new(env, "balance"),
+        vec![env, sender.clone().into_val(env)],
+    );
+
+    (asset_amount, bsset_amount)
 }
 
 fn validate_token_info(

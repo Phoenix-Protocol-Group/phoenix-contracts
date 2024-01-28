@@ -37,22 +37,21 @@ pub struct Config {
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LpAndStakeInfo {
-    pub lp_share_info: Vec<LpShareInfo>,
-    pub stake_info: Vec<StakeInfo>,
+pub struct UserPortfolio {
+    pub lp_portfolio: Vec<LpPortfolio>,
+    pub stake_portfolio: Vec<StakePortfolio>,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LpShareInfo {
-    pub owner: Address,
-    pub amount: i128,
+pub struct LpPortfolio {
+    pub assets: (Asset, Asset),
 }
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct StakeInfo {
-    pub owner: Address,
+pub struct StakePortfolio {
+    pub stake_token: Address,
     pub stakes: Vec<Stake>,
 }
 

@@ -1,10 +1,11 @@
-use super::setup::deploy_factory_contract;
+use super::setup::{deploy_factory_contract, deploy_token_contract, install_token_wasm};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use soroban_sdk::testutils::arbitrary::std::dbg;
 
 use soroban_sdk::{
     contracttype,
     testutils::{arbitrary::std, Address as _},
-    Address, Env, String, Symbol, Vec,
+    Address, Env, IntoVal, String, Symbol, Val, Vec,
 };
 
 #[contracttype]
@@ -389,4 +390,110 @@ fn test_queries_by_tuple_errors() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     factory.query_for_pool_by_token_pair(&Address::generate(&env), &Address::generate(&env));
+}
+
+#[test]
+fn test_query_token_amount_per_liquidity_pool_per_user() {
+    let env = Env::default();
+
+    let admin = Address::generate(&env);
+    let fee_recipient = Address::generate(&env);
+    let user_1 = Address::generate(&env);
+    let user_2 = Address::generate(&env);
+    let user_3 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    let mut token3 = deploy_token_contract(&env, &admin);
+    let mut token4 = deploy_token_contract(&env, &admin);
+    let mut token5 = deploy_token_contract(&env, &admin);
+    let mut token6 = deploy_token_contract(&env, &admin);
+
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    if token4.address < token3.address {
+        std::mem::swap(&mut token3, &mut token4);
+    }
+
+    if token6.address < token5.address {
+        std::mem::swap(&mut token5, &mut token6);
+    }
+
+    token1.mint(&user_1, &10_000i128);
+    token2.mint(&user_1, &10_000i128);
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+
+    let first_token_init_info = TokenInitInfo {
+        token_a: token1.address.clone(),
+        token_b: token2.address.clone(),
+    };
+    let first_stake_init_info = StakeInitInfo {
+        min_bond: 1i128,
+        max_distributions: 100u32,
+        min_reward: 1i128,
+    };
+
+    let first_lp_init_info = LiquidityPoolInitInfo {
+        admin: admin.clone(),
+        fee_recipient: fee_recipient.clone(),
+        max_allowed_slippage_bps: 100,
+        max_allowed_spread_bps: 100,
+        share_token_decimals: 7,
+        swap_fee_bps: 0,
+        max_referral_bps: 0,
+        token_init_info: first_token_init_info.clone(),
+        stake_init_info: first_stake_init_info,
+    };
+
+    let lp_contract_addr = factory.create_liquidity_pool(&first_lp_init_info, &admin.clone());
+
+    let first_result = factory.query_pool_details(&lp_contract_addr);
+    let share_token_addr: Address = env.invoke_contract(
+        &lp_contract_addr,
+        &Symbol::new(&env, "query_share_token_address"),
+        Vec::new(&env),
+    );
+    let first_lp_config: LiquidityPoolConfig = env.invoke_contract(
+        &lp_contract_addr,
+        &Symbol::new(&env, "query_config"),
+        Vec::new(&env),
+    );
+
+    // testing the liquidity providing
+
+    dbg!(lp_contract_addr.clone());
+    dbg!(user_1.clone());
+
+    // this is just to test why it always fail
+    // let init_fn_args: Vec<Val> =
+    //     (token1.address, 10).into_val(&env);
+    // env.invoke_contract::<Val>(
+    //     &lp_contract_addr,
+    //     &Symbol::new(&env, "simulate_swap"),
+    //     init_fn_args,
+    // );
+
+    let init_fn_args: Vec<Val> = (
+        user_1.clone(),
+        Some(100),
+        Some(100),
+        Some(100),
+        Some(100),
+        None::<i128>,
+    )
+        .into_val(&env);
+    env.invoke_contract::<Val>(
+        &lp_contract_addr,
+        &Symbol::new(&env, "provide_liquidity"),
+        init_fn_args,
+    );
+
+    let result = factory.get_user_portfolio(&user_1);
+    dbg!(result);
 }
