@@ -8,8 +8,12 @@ use soroban_sdk::{
 use test_case::test_case;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
-use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
-use soroban_decimal::Decimal;
+use crate::{
+    storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse},
+    token_contract,
+};
+use decimal::Decimal;
+use phoenix::assert_approx_eq;
 
 #[test]
 fn simple_swap() {
@@ -782,6 +786,8 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let user2 = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
