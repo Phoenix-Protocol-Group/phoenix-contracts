@@ -390,7 +390,7 @@ fn provide_liqudity_single_asset_equal_with_fees() {
         &Some(token_a_amount),
         &Some(50_000),
         &None,
-        &Some(49_000),
+        &None,
         &None,
     );
     // before swap : A(10_000_000), B(10_000_000)

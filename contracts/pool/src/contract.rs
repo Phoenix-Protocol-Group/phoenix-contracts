@@ -265,6 +265,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             }
             // Only token A is provided
             (Some(a), None) if a > 0 => {
+                // @audit
                 let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
                     &env,
                     &config,
@@ -273,21 +274,24 @@ impl LiquidityPoolTrait for LiquidityPool {
                     a,
                     &config.token_a,
                 );
-                do_swap(
+                let actual_b_from_swap = do_swap(
                     env.clone(),
                     sender.clone(),
-                    // FIXM: Disable Referral struct
+                    // FIXME: Disable Referral struct
                     // None,
                     config.clone().token_a,
                     a_for_swap,
                     None,
                     None,
                 );
-                // return: rest of Token A amount, simulated result of swap of portion A
-                (a - a_for_swap, b_from_swap)
+                if (actual_b_from_swap - b_from_swap).abs() > 1 {
+                    panic!("Off by more than rounding error! a: {}, b: {}", actual_b_from_swap, b_from_swap);
+                }
+                (a - a_for_swap, actual_b_from_swap)
             }
             // Only token B is provided
             (None, Some(b)) if b > 0 => {
+                // @audit
                 let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
                     &env,
                     &config,
@@ -296,18 +300,20 @@ impl LiquidityPoolTrait for LiquidityPool {
                     b,
                     &config.token_b,
                 );
-                do_swap(
+                let actual_a_from_swap = do_swap(
                     env.clone(),
                     sender.clone(),
-                    // FIXM: Disable Referral struct
+                    // FIXME: Disable Referral struct
                     // None,
                     config.clone().token_b,
                     b_for_swap,
                     None,
                     None,
                 );
-                // return: simulated result of swap of portion B, rest of Token B amount
-                (a_from_swap, b - b_for_swap)
+                if (actual_a_from_swap - a_from_swap).abs() > 1 {
+                    panic!("Off by more than rounding error!");
+                }
+                (actual_a_from_swap, b - b_for_swap)
             }
             // None or invalid amounts are provided
             _ => {
