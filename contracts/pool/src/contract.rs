@@ -9,18 +9,18 @@ use crate::{
     error::ContractError,
     stake_contract,
     storage::{
-        get_config, save_config,
-        utils::{self, get_admin, is_initialized, set_initialized},
+        get_config, save_config, utils,
+        utils::{is_initialized, set_initialized},
         validate_fee_bps, Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
+use decimal::Decimal;
 use phoenix::{
     utils::{is_approx_ratio, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
-use soroban_decimal::Decimal;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -31,7 +31,6 @@ contractmeta!(
 #[contract]
 pub struct LiquidityPool;
 
-#[allow(dead_code)]
 pub trait LiquidityPoolTrait {
     // Sets the token contract addresses for this pool
     // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token
@@ -71,8 +70,7 @@ pub trait LiquidityPoolTrait {
         // referral: Option<Referral>,
         offer_asset: Address,
         offer_amount: i128,
-        // Minimum amount of the ask token user expects to receive
-        ask_asset_min_amount: Option<i128>,
+        belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
     ) -> i128;
 
@@ -129,8 +127,6 @@ pub trait LiquidityPoolTrait {
     ) -> SimulateReverseSwapResponse;
 
     fn query_share(env: Env, amount: i128) -> (Asset, Asset);
-
-    fn query_total_issued_lp(env: Env) -> i128;
 }
 
 #[contractimpl]
@@ -216,7 +212,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             &min_reward,
             &manager,
             &factory_addr,
-            &stake_init_info.max_complexity,
         );
 
         let config = Config {
@@ -267,7 +262,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             if custom_slippage > config.max_allowed_slippage_bps {
                 log!(
                     &env,
-                    "Pool: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage tolerance"
+                    "Pool: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage toleranc"
                 );
                 panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
             }
@@ -288,61 +283,63 @@ impl LiquidityPoolTrait for LiquidityPool {
                     Decimal::bps(custom_slippage_bps.unwrap_or(100)),
                 )
             }
-            // TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
-            // Providing liquidity with a single token is temporarily disabled
-            // // Only token A is provided
-            // (Some(a), None) if a > 0 => {
-            //     let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
-            //         &env,
-            //         &config,
-            //         pool_balance_a,
-            //         pool_balance_b,
-            //         a,
-            //         &config.token_a,
-            //     );
-            //     do_swap(
-            //         env.clone(),
-            //         sender.clone(),
-            //         // FIXM: Disable Referral struct
-            //         // None,
-            //         config.clone().token_a,
-            //         a_for_swap,
-            //         // expected amount of ask token from swap
-            //         Some(b_from_swap),
-            //         None,
-            //     );
-            //     // return: rest of Token A amount, simulated result of swap of portion A
-            //     (a - a_for_swap, b_from_swap)
-            // }
-            // // Only token B is provided
-            // (None, Some(b)) if b > 0 => {
-            //     let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
-            //         &env,
-            //         &config,
-            //         pool_balance_a,
-            //         pool_balance_b,
-            //         b,
-            //         &config.token_b,
-            //     );
-            //     do_swap(
-            //         env.clone(),
-            //         sender.clone(),
-            //         // FIXM: Disable Referral struct
-            //         // None,
-            //         config.clone().token_b,
-            //         b_for_swap,
-            //         // expected amount of ask token from swap
-            //         Some(a_from_swap),
-            //         None,
-            //     );
-            //     // return: simulated result of swap of portion B, rest of Token B amount
-            //     (a_from_swap, b - b_for_swap)
-            // }
+            // Only token A is provided
+            (Some(a), None) if a > 0 => {
+                // @audit
+                let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
+                    &env,
+                    &config,
+                    pool_balance_a,
+                    pool_balance_b,
+                    a,
+                    &config.token_a,
+                );
+                let actual_b_from_swap = do_swap(
+                    env.clone(),
+                    sender.clone(),
+                    // FIXME: Disable Referral struct
+                    // None,
+                    config.clone().token_a,
+                    a_for_swap,
+                    None,
+                    None,
+                );
+                if (actual_b_from_swap - b_from_swap).abs() > 1 {
+                    panic!("Off by more than rounding error! a: {}, b: {}", actual_b_from_swap, b_from_swap);
+                }
+                (a - a_for_swap, actual_b_from_swap)
+            }
+            // Only token B is provided
+            (None, Some(b)) if b > 0 => {
+                // @audit
+                let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
+                    &env,
+                    &config,
+                    pool_balance_a,
+                    pool_balance_b,
+                    b,
+                    &config.token_b,
+                );
+                let actual_a_from_swap = do_swap(
+                    env.clone(),
+                    sender.clone(),
+                    // FIXME: Disable Referral struct
+                    // None,
+                    config.clone().token_b,
+                    b_for_swap,
+                    None,
+                    None,
+                );
+                if (actual_a_from_swap - a_from_swap).abs() > 1 {
+                    panic!("Off by more than rounding error!");
+                }
+                (actual_a_from_swap, b - b_for_swap)
+            }
             // None or invalid amounts are provided
             _ => {
                 log!(
                     &env,
-                        "Pool: ProvideLiquidity: Both tokens must be provided and must be bigger then 0!"
+                        "Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!"
                 );
                 panic_with_error!(
                     env,
@@ -402,7 +399,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         // referral: Option<Referral>,
         offer_asset: Address,
         offer_amount: i128,
-        ask_asset_min_amount: Option<i128>,
+        belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
     ) -> i128 {
         validate_int_parameters!(offer_amount);
@@ -415,7 +412,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             // referral,
             offer_asset,
             offer_amount,
-            ask_asset_min_amount,
+            belief_price,
             max_spread_bps,
         )
     }
@@ -692,21 +689,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             },
         )
     }
-
-    fn query_total_issued_lp(env: Env) -> i128 {
-        utils::get_total_shares(&env)
-    }
-}
-
-#[contractimpl]
-impl LiquidityPool {
-    #[allow(dead_code)]
-    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
-        let admin = get_admin(&env);
-        admin.require_auth();
-
-        env.deployer().update_current_contract_wasm(new_wasm_hash);
-    }
 }
 
 fn do_swap(
@@ -716,7 +698,7 @@ fn do_swap(
     // referral: Option<Referral>,
     offer_asset: Address,
     offer_amount: i128,
-    ask_asset_min_amount: Option<i128>,
+    belief_price: Option<i64>,
     max_spread: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
@@ -734,6 +716,7 @@ fn do_swap(
         }
     }
 
+    let belief_price = belief_price.map(Decimal::percent);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
 
     let pool_balance_a = utils::get_pool_balance_a(&env);
@@ -764,23 +747,15 @@ fn do_swap(
         referral_fee_bps,
     );
 
-    if let Some(ask_asset_min_amount) = ask_asset_min_amount {
-        if ask_asset_min_amount > compute_swap.return_amount {
-            log!(
-                &env,
-                "Pool: do_swap: Return amount is smaller then expected minimum amount"
-            );
-            panic_with_error!(&env, ContractError::SwapMinReceivedBiggerThanReturn);
-        }
-    }
-
     let total_return_amount = compute_swap.return_amount
         + compute_swap.commission_amount
         + compute_swap.referral_fee_amount;
 
     assert_max_spread(
         &env,
+        belief_price,
         max_spread,
+        offer_amount,
         total_return_amount,
         compute_swap.spread_amount,
     );
@@ -872,9 +847,6 @@ fn do_swap(
 /// # Returns
 /// * A tuple `(final_offer_amount, final_ask_amount)`, where `final_offer_amount` is the amount of deposit tokens
 ///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.
-///
-// TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
-#[allow(dead_code)]
 fn split_deposit_based_on_pool_ratio(
     env: &Env,
     config: &Config,
@@ -995,14 +967,35 @@ fn assert_slippage_tolerance(
 }
 
 /// This function asserts that the spread (slippage) does not exceed a given maximum.
+/// * `belief_price` - An optional user-provided belief price, i.e., the expected price per token.
 /// * `max_spread` - The maximum allowed spread (slippage) as a fraction of the return amount.
+/// * `offer_amount` - The amount of tokens that the user offers to swap.
 /// * `return_amount` - The amount of tokens that the user receives in return.
 /// * `spread_amount` - The spread (slippage) amount, i.e., the difference between the expected and actual return.
 /// # Returns
 /// * An error if the spread exceeds the maximum allowed, otherwise Ok.
-pub fn assert_max_spread(env: &Env, max_spread: Decimal, return_amount: i128, spread_amount: i128) {
+pub fn assert_max_spread(
+    env: &Env,
+    belief_price: Option<Decimal>,
+    max_spread: Decimal,
+    offer_amount: i128,
+    return_amount: i128,
+    spread_amount: i128,
+) {
+    // Calculate the expected return if a belief price is provided
+    let expected_return = belief_price.map(|price| offer_amount * price);
+
+    // Total return is the sum of the amount received and the spread
+    let total_return = return_amount + spread_amount;
+
     // Calculate the spread ratio, the fraction of the return that is due to spread
-    let spread_ratio = Decimal::from_ratio(spread_amount, return_amount);
+    // If the user has specified a belief price, use it to calculate the expected return
+    // Otherwise, use the total return
+    let spread_ratio = if let Some(expected_return) = expected_return {
+        Decimal::from_ratio(spread_amount, expected_return)
+    } else {
+        Decimal::from_ratio(spread_amount, total_return)
+    };
 
     if spread_ratio > max_spread {
         log!(env, "Pool: Spread exceeds maximum allowed");
@@ -1095,7 +1088,6 @@ pub fn compute_offer_amount(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::{testutils::Address as _, Address};
 
     #[test]
     fn test_assert_slippage_tolerance_success() {
@@ -1147,9 +1139,16 @@ mod tests {
     fn test_assert_max_spread_success() {
         let env = Env::default();
         // Test case that should pass:
-        // max spread of 10%, offer amount of 100k, return amount of 100k and 1 unit, spread amount of 1
+        // belief price of 2.0, max spread of 10%, offer amount of 100k, return amount of 100k and 1 unit, spread amount of 1
         // The spread ratio is 10% which is equal to the max spread
-        assert_max_spread(&env, Decimal::percent(10), 100_001, 1);
+        assert_max_spread(
+            &env,
+            Some(Decimal::percent(200)),
+            Decimal::percent(10),
+            100_000,
+            100_001,
+            1,
+        );
     }
 
     #[test]
@@ -1157,28 +1156,37 @@ mod tests {
     fn test_assert_max_spread_fail_max_spread_exceeded() {
         let env = Env::default();
 
+        let belief_price = Some(Decimal::percent(250)); // belief price is 2.5
         let max_spread = Decimal::percent(10); // 10% is the maximum allowed spread
+        let offer_amount = 100;
         let return_amount = 100; // These values are chosen such that the spread ratio will be more than 10%
         let spread_amount = 35;
 
-        assert_max_spread(&env, max_spread, return_amount, spread_amount);
+        assert_max_spread(
+            &env,
+            belief_price,
+            max_spread,
+            offer_amount,
+            return_amount,
+            spread_amount,
+        );
     }
 
     #[test]
     fn test_assert_max_spread_success_no_belief_price() {
         let env = Env::default();
-        // max spread of 100 (0.1 or 10%), return amount of 10, spread amount of 1
+        // no belief price, max spread of 100 (0.1 or 10%), offer amount of 10, return amount of 10, spread amount of 1
         // The spread ratio is 10% which is equal to the max spread
-        assert_max_spread(&env, Decimal::percent(10), 10, 1);
+        assert_max_spread(&env, None, Decimal::percent(10), 10, 10, 1);
     }
 
     #[test]
     #[should_panic(expected = "HostError: Error(Contract, #1)")]
     fn test_assert_max_spread_fail_no_belief_price_max_spread_exceeded() {
         let env = Env::default();
-        // max spread of 10%, return amount of 10, spread amount of 2
+        // no belief price, max spread of 10%, offer amount of 10, return amount of 10, spread amount of 2
         // The spread ratio is 20% which is greater than the max spread
-        assert_max_spread(&env, Decimal::percent(10), 10, 2);
+        assert_max_spread(&env, None, Decimal::percent(10), 10, 10, 2);
     }
 
     #[test]
@@ -1240,32 +1248,5 @@ mod tests {
 
         // Test that the commission amount is exactly 10% of the offer amount
         assert_eq!(result.2, result.0 * Decimal::percent(10));
-    }
-
-    #[should_panic(expected = "Pool: Token offered to swap not found in Pool")]
-    #[test]
-    fn should_panic_when_splitting_non_existent_token() {
-        let env = Env::default();
-        let config = &Config {
-            token_a: Address::generate(&env),
-            token_b: Address::generate(&env),
-            share_token: Address::generate(&env),
-            stake_contract: Address::generate(&env),
-            pool_type: PairType::Xyk,
-            total_fee_bps: 0i64,
-            fee_recipient: Address::generate(&env),
-            max_allowed_slippage_bps: 100i64,
-            max_allowed_spread_bps: 100i64,
-            max_referral_bps: 1_000i64,
-        };
-        split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
-    }
-
-    #[test]
-    fn assert_slippage_tolerance_with_none_as_tolerance() {
-        let env = Env::default();
-
-        // assert slippage tolerance with None as tolerance should pass as well
-        assert_slippage_tolerance(&env, None::<i64>, &[10, 20], &[30, 60], Decimal::bps(5_000));
     }
 }
