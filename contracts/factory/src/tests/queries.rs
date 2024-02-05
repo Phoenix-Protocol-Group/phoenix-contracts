@@ -2,6 +2,7 @@ use super::setup::{deploy_factory_contract, deploy_token_contract, install_token
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::testutils::arbitrary::std::dbg;
 
+use soroban_sdk::vec;
 use soroban_sdk::{
     contracttype,
     testutils::{arbitrary::std, Address as _},
@@ -425,7 +426,22 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
     }
 
     token1.mint(&user_1, &10_000i128);
+    let user1_token1_balance: i128 = env.invoke_contract(
+        &token1.address,
+        &Symbol::new(&env, "balance"),
+        vec![&env, user_1.into_val(&env)],
+    );
+
+    assert_eq!(user1_token1_balance, 10_000i128);
+
     token2.mint(&user_1, &10_000i128);
+    let user1_token2_balance: i128 = env.invoke_contract(
+        &token2.address,
+        &Symbol::new(&env, "balance"),
+        vec![&env, user_1.into_val(&env)],
+    );
+
+    assert_eq!(user1_token2_balance, 10_000i128);
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
