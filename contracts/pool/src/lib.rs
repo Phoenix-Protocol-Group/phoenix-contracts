@@ -1,6 +1,6 @@
 #![no_std]
 mod contract;
-mod contracterror;
+mod error;
 mod storage;
 
 pub mod token_contract {

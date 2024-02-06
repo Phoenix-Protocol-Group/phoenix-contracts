@@ -1,23 +1,25 @@
-use phoenix::utils::LiquidityPoolInitInfo;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
 };
 
 use num_integer::Roots;
 
-use crate::contracterror::ContractError;
-use crate::storage::utils::{is_initialized, set_initialized};
-use crate::storage::{ComputeSwap, LiquidityPoolInfo};
 use crate::{
+    error::ContractError,
     stake_contract,
     storage::{
-        get_config, save_config, utils, validate_fee_bps, Asset, Config, PairType, PoolResponse,
+        get_config, save_config, utils,
+        utils::{is_initialized, set_initialized},
+        validate_fee_bps, Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
 use decimal::Decimal;
-use phoenix::{validate_bps, validate_int_parameters};
+use phoenix::{
+    utils::{is_approx_ratio, LiquidityPoolInitInfo},
+    validate_bps, validate_int_parameters,
+};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -243,7 +245,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
             if custom_slippage > config.max_allowed_slippage_bps {
-                panic!("Pool: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage tolerance");
+                panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
             }
         }
 
@@ -321,7 +323,10 @@ impl LiquidityPoolTrait for LiquidityPool {
                     &env,
                     "At least one token must be provided and must be bigger then 0!"
                 );
-                panic!("Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!");
+                panic_with_error!(
+                    env,
+                    ContractError::ProvideLiquidityAtLeastOneTokenMustBeBiggerThenZero
+                );
             }
         };
 
@@ -432,9 +437,10 @@ impl LiquidityPoolTrait for LiquidityPool {
                 return_amount_a,
                 return_amount_b
             );
-            panic!(
-                "Pool: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied!"
-            )
+            panic_with_error!(
+                env,
+                ContractError::WithdrawLiquidityMinimumAmountOfAOrBIsNotSatisfied
+            );
         }
 
         // burn shares
@@ -785,8 +791,9 @@ fn split_deposit_based_on_pool_ratio(
     // Validate the inputs
     if a_pool <= 0 || b_pool <= 0 || deposit <= 0 {
         log!(env, "Both pools and deposit must be a positive!");
-        panic!(
-            "Pool: split_deposit_based_on_pool_ratio: Both pools and deposit must be a positive!"
+        panic_with_error!(
+            env,
+            ContractError::SplitDepositBothPoolsAndDepositMustBePositive
         );
     }
 

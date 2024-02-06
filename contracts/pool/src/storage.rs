@@ -1,9 +1,9 @@
 use soroban_sdk::{
-    contracttype, log, symbol_short, xdr::ToXdr, Address, Bytes, BytesN, ConversionError, Env,
-    Symbol, TryFromVal, Val,
+    contracttype, log, panic_with_error, symbol_short, xdr::ToXdr, Address, Bytes, BytesN,
+    ConversionError, Env, Symbol, TryFromVal, Val,
 };
 
-use crate::token_contract;
+use crate::{error::ContractError, token_contract};
 use decimal::Decimal;
 
 #[derive(Clone, Copy)]
@@ -58,7 +58,10 @@ const MAX_TOTAL_FEE_BPS: i64 = 10_000;
 pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> i64 {
     if total_fee_bps > MAX_TOTAL_FEE_BPS {
         log!(env, "Total fees cannot be greater than 100%");
-        panic!("Pool: Validate fee bps: total fees cannot be greater than 100%")
+        panic_with_error!(
+            env,
+            ContractError::ValidateFeeBpsTotalFeesCantBeGreaterThen100
+        );
     }
     total_fee_bps
 }
@@ -247,12 +250,12 @@ pub mod utils {
 
         if let Some(min_a) = min_a {
             if min_a > desired_a {
-                panic!("Pool: Get deposit amounts: min_a > desired_a");
+                panic_with_error!(env, ContractError::GetDepositAmountsMinABiggerThenDesiredA);
             }
         }
         if let Some(min_b) = min_b {
             if min_b > desired_b {
-                panic!("Pool: Get deposit amounts: min_b > desired_b");
+                panic_with_error!(env, ContractError::GetDepositAmountsMinABiggerThenDesiredA);
             }
         }
 
@@ -269,7 +272,10 @@ pub mod utils {
                         amount_a,
                         desired_a,
                     );
-                    panic!("Pool: Get deposit amounts: amount_a > desired_a");
+                    panic_with_error!(
+                        env,
+                        ContractError::GetDepositAmountsAmountABiggerThenDesiredA
+                    );
                 }
             };
             if let Some(min_a) = min_a {
@@ -280,7 +286,7 @@ pub mod utils {
                         amount_a,
                         min_a
                     );
-                    panic!("Pool: Get deposit amounts: amount_a < min_a");
+                    panic_with_error!(env, ContractError::GetDepositAmountsAmountALessThenMinA);
                 }
             }
             amount_a
@@ -299,7 +305,10 @@ pub mod utils {
                 amount_b,
                 desired_b,
             );
-                    panic!("Pool: Get deposit amounts: amount_b > desired_b");
+                    panic_with_error!(
+                        env,
+                        ContractError::GetDepositAmountsAmountBBiggerThenDesiredB
+                    );
                 }
             };
             if let Some(min_b) = min_b {
@@ -310,7 +319,7 @@ pub mod utils {
                 amount_b,
                 min_b
             );
-                    panic!("Pool: Get deposit amounts: amount_b < min_b");
+                    panic_with_error!(env, ContractError::GetDepositAmountsAmountBLessThenMinB);
                 }
             }
             amount_b
