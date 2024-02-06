@@ -90,12 +90,13 @@ soroban contract invoke \
     -- \
     initialize \
     --admin $ADMIN_ADDRESS \
-    --multihop_wasm_hash $MULTIHOP
-    --lp_wasm_hash $PAIR_WASM_HASH
-    --stake_wasm_hash $STAKE_WASM_HASH
-    --token_wasm_hash $TOKEN_WASM_HASH
+    --multihop_wasm_hash $MULTIHOP \
+    --lp_wasm_hash $PAIR_WASM_HASH \
+    --stake_wasm_hash $STAKE_WASM_HASH \
+    --token_wasm_hash $TOKEN_WASM_HASH \
+    --whitelisted_accounts "[ \"${ADMIN_ADDRESS}\" ]"
 
-echo "Factory initia/MUlized. " + $FACTORY_ADDR
+echo "Factory initialized. " + $FACTORY_ADDR
 
 echo "Initialize the token contracts..."
 
@@ -132,6 +133,7 @@ soroban contract invoke \
     --network testnet \
     -- \
     create_liquidity_pool \
+    --caller $ADMIN_ADDRESS \
     --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"share_token_decimals\": 7, \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3 } }"
 
 echo "Query pair address..."
@@ -171,7 +173,7 @@ soroban contract invoke \
 echo "Liquidity provided."
 
 # Continue with the rest of the commands
-echo "Bond tokens to stake contract..."
+echo "Query stake contract address..."
 
 STAKE_ADDR=$(soroban contract invoke \
     --id $PAIR_ADDR \
@@ -180,6 +182,7 @@ STAKE_ADDR=$(soroban contract invoke \
     -- \
     query_stake_contract_address | jq -r '.')
 
+echo "Bond tokens to stake contract..."
 # Bond token in stake contract
 soroban contract invoke \
     --id $STAKE_ADDR \
@@ -254,6 +257,7 @@ soroban contract invoke \
     --network testnet \
     -- \
     create_liquidity_pool \
+    --caller $ADMIN_ADDRESS \
     --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"share_token_decimals\": 7, \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3 } }"
 
 PAIR_ADDR=$(soroban contract invoke \
