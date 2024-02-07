@@ -3,7 +3,7 @@ use pretty_assertions::assert_eq;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
-    Address, Env, IntoVal,
+    Address, Env, IntoVal, String,
 };
 use test_case::test_case;
 
