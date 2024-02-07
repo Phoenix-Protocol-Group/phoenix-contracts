@@ -10,8 +10,10 @@ and this project adheres to
 
 - Update soroban-sdk version from v20.0.3 to v20.1.0 ([#193])
 - Fixes documentation and naming ([#200])
+- Multihop: adds a new field in the Swap struct, that hold max_belief_price ([234])
 
 [#200]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/200
+[#234]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/234
 
 ## Added
 
