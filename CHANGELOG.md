@@ -19,6 +19,12 @@ and this project adheres to
 
 [#199]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/199
 
+## Bug fixes
+
+- Pool stable: Fixes an error in the compute_swap function, where commission isn't deducted ([233])
+
+[#233]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/233
+
 ## [0.8.0] - 2024-01-17
 
 ## Changed
