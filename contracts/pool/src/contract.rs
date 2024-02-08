@@ -583,6 +583,10 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn simulate_swap(env: Env, offer_asset: Address, offer_amount: i128) -> SimulateSwapResponse {
         let config = get_config(&env);
 
+        if offer_asset != config.token_a && offer_asset != config.token_b {
+            panic!("Trying to swap wrong asset. Aborting..")
+        }
+
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
         let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
@@ -618,6 +622,10 @@ impl LiquidityPoolTrait for LiquidityPool {
     ) -> SimulateReverseSwapResponse {
         let config = get_config(&env);
 
+        if ask_asset != config.token_a && ask_asset != config.token_b {
+            panic!("Trying to swap wrong asset. Aborting..")
+        }
+
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
         let (pool_balance_offer, pool_balance_ask) = if ask_asset == config.token_b {
@@ -652,6 +660,9 @@ fn do_swap(
     max_spread: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
+    if offer_asset != config.token_a && offer_asset != config.token_b {
+        panic!("Trying to swap wrong asset. Aborting..")
+    }
     // FIXM: Disable Referral struct
     // if let Some(referral) = &referral {
     //     if referral.fee > config.max_referral_bps {
@@ -801,6 +812,11 @@ fn split_deposit_based_on_pool_ratio(
     deposit: i128,
     offer_asset: &Address,
 ) -> (i128, i128) {
+    // check if offer_asset is one of the two tokens in the pool
+    if offer_asset != &config.token_a && offer_asset != &config.token_b {
+        panic!("Trying an operation with wrong asset. Aborting..")
+    }
+
     // Validate the inputs
     if a_pool <= 0 || b_pool <= 0 || deposit <= 0 {
         log!(

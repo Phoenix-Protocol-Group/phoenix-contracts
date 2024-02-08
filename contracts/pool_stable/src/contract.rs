@@ -514,6 +514,10 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     fn simulate_swap(env: Env, offer_asset: Address, offer_amount: i128) -> SimulateSwapResponse {
         let config = get_config(&env);
 
+        if offer_asset != config.token_a && offer_asset != config.token_b {
+            panic!("Trying to swap wrong asset. Aborting..")
+        }
+
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
         let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
@@ -546,6 +550,10 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         ask_amount: i128,
     ) -> SimulateReverseSwapResponse {
         let config = get_config(&env);
+
+        if offer_asset != config.token_a && offer_asset != config.token_b {
+            panic!("Trying to swap wrong asset. Aborting..")
+        }
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
@@ -580,6 +588,10 @@ fn do_swap(
     max_spread: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
+
+    if offer_asset != config.token_a && offer_asset != config.token_b {
+        panic!("Trying to swap wrong asset. Aborting..")
+    }
 
     if let Some(max_spread) = max_spread {
         if !(0..=config.max_allowed_spread_bps).contains(&max_spread) {
