@@ -111,7 +111,7 @@ impl MultihopTrait for Multihop {
 
         let mut simulate_swap_response = SimulateSwapResponse {
             ask_amount: 0,
-            total_commission_amount: 0,
+            total_commission_amount: vec![&env],
             spread_amount: vec![&env],
         };
 
@@ -124,7 +124,9 @@ impl MultihopTrait for Multihop {
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
             let simulate_swap = lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
 
-            simulate_swap_response.total_commission_amount += simulate_swap.commission_amount;
+            simulate_swap_response
+                .total_commission_amount
+                .push_back(simulate_swap.commission_amount);
             simulate_swap_response.ask_amount = simulate_swap.ask_amount;
             simulate_swap_response
                 .spread_amount
@@ -151,7 +153,7 @@ impl MultihopTrait for Multihop {
 
         let mut simulate_swap_response = SimulateReverseSwapResponse {
             offer_amount: 0,
-            total_commission_amount: 0,
+            total_commission_amount: vec![&env],
             spread_amount: vec![&env],
         };
 
@@ -165,8 +167,9 @@ impl MultihopTrait for Multihop {
             let simulate_reverse_swap =
                 lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
 
-            simulate_swap_response.total_commission_amount +=
-                simulate_reverse_swap.commission_amount;
+            simulate_swap_response
+                .total_commission_amount
+                .push_back(simulate_reverse_swap.commission_amount);
             simulate_swap_response.offer_amount = simulate_reverse_swap.offer_amount;
 
             simulate_swap_response
