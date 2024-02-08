@@ -582,6 +582,12 @@ fn do_swap(
 ) -> i128 {
     let config = get_config(&env);
 
+    if let Some(max_spread) = max_spread {
+        if !(0..=config.max_allowed_spread_bps).contains(&max_spread) {
+            panic!("max spread is out of bounds")
+        }
+    }
+
     let belief_price = belief_price.map(Decimal::percent);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
 
