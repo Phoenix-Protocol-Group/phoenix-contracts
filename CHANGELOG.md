@@ -28,8 +28,10 @@ and this project adheres to
 ## Added
 
 - Adds a new macro that validates the bps arguments value ([#199])
+- Pool and Pool stable: adds missing validation of max_spread in do_swap ([#239])
 
 [#199]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/199
+[#239]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/239
 
 ## Bug fixes
 
