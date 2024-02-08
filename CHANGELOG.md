@@ -14,6 +14,7 @@ and this project adheres to
 - Fixes incorrect assignment of total_fee_bps in both pool and pool stable ([235])
 - Pool: adds a missed part of return_amount argument ([#238])
 - Pool: Replace panic! with panic_with_error! to provide more contextual information ([#206])
+- Multihop: changes total_commission_amount type in SimulateSwap and SimulateReverseSwap ([#236])
 - Multihop: removes unnecessary unwrap of a value ([#240])
 
 [#200]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/200
@@ -21,6 +22,7 @@ and this project adheres to
 [#235]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/235
 [#238]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/238
 [#206]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/206
+[#236]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/236
 [#240]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/240
 
 ## Added
