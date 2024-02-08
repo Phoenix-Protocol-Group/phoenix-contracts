@@ -500,7 +500,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 amount: utils::get_total_shares(&env),
             },
         };
-        let total_fee_bps = config.max_allowed_spread_bps;
+        let total_fee_bps = config.total_fee_bps;
 
         StableLiquidityPoolInfo {
             pool_address: env.current_contract_address(),
