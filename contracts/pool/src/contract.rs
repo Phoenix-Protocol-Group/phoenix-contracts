@@ -672,12 +672,16 @@ fn do_swap(
         referral_fee_bps,
     );
 
+    let total_return_amount = compute_swap.return_amount
+        + compute_swap.commission_amount
+        + compute_swap.referral_fee_amount;
+
     assert_max_spread(
         &env,
         belief_price,
         max_spread,
         offer_amount,
-        compute_swap.return_amount + compute_swap.commission_amount,
+        total_return_amount,
         compute_swap.spread_amount,
     );
 

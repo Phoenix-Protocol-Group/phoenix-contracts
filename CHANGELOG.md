@@ -10,8 +10,10 @@ and this project adheres to
 
 - Update soroban-sdk version from v20.0.3 to v20.1.0 ([#193])
 - Fixes documentation and naming ([#200])
+- Pool: adds a missed part of return_amount argument ([#238])
 
 [#200]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/200
+[#238]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/238
 
 ## Added
 
