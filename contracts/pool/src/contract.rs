@@ -245,6 +245,10 @@ impl LiquidityPoolTrait for LiquidityPool {
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
             if custom_slippage > config.max_allowed_slippage_bps {
+                log!(
+                    &env,
+                    "Pool: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage toleranc"
+                );
                 panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
             }
         }
@@ -315,7 +319,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             _ => {
                 log!(
                     &env,
-                    "At least one token must be provided and must be bigger then 0!"
+                        "Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!"
                 );
                 panic_with_error!(
                     env,
@@ -425,7 +429,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         if return_amount_a < min_a || return_amount_b < min_b {
             log!(
                 &env,
-                "Minimum amount of token_a or token_b is not satisfied! min_a: {}, min_b: {}, return_amount_a: {}, return_amount_b: {}",
+                "Pool: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied! min_a: {}, min_b: {}, return_amount_a: {}, return_amount_b: {}",
                 min_a,
                 min_b,
                 return_amount_a,
@@ -788,7 +792,10 @@ fn split_deposit_based_on_pool_ratio(
 ) -> (i128, i128) {
     // Validate the inputs
     if a_pool <= 0 || b_pool <= 0 || deposit <= 0 {
-        log!(env, "Both pools and deposit must be a positive!");
+        log!(
+            env,
+            "Pool: split_deposit_based_on_pool_ratio: Both pools and deposit must be a positive!"
+        );
         panic_with_error!(
             env,
             ContractError::SplitDepositBothPoolsAndDepositMustBePositive
