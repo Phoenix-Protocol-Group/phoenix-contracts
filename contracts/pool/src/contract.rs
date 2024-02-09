@@ -4,6 +4,9 @@ use soroban_sdk::{
 
 use num_integer::Roots;
 
+use crate::error::ContractError;
+use crate::storage::utils::{is_initialized, set_initialized};
+use crate::storage::{ComputeSwap, LiquidityPoolInfo};
 use crate::{
     error::ContractError,
     stake_contract,
@@ -809,7 +812,7 @@ fn split_deposit_based_on_pool_ratio(
 ) -> (i128, i128) {
     // check if offer_asset is one of the two tokens in the pool
     if offer_asset != &config.token_a && offer_asset != &config.token_b {
-        panic!("Trying an operation with wrong asset. Aborting..")
+        panic_with_error!(env, ContractError::AssetNotInPool);
     }
 
     // Validate the inputs

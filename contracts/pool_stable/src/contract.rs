@@ -3,7 +3,7 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
 };
 
-use crate::contracterror::ContractError;
+use crate::error::ContractError;
 use crate::storage::utils::{is_initialized, set_initialized};
 use crate::storage::StableLiquidityPoolInfo;
 use crate::{
