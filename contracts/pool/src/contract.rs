@@ -584,7 +584,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let config = get_config(&env);
 
         if offer_asset != config.token_a && offer_asset != config.token_b {
-            panic!("Trying to swap wrong asset. Aborting..")
+            panic_with_error!(env, ContractError::AssetNotInPool);
         }
 
         let pool_balance_a = utils::get_pool_balance_a(&env);

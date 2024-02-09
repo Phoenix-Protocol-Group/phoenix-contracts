@@ -1,6 +1,9 @@
 use phoenix::utils::LiquidityPoolInitInfo;
-use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
+};
 
+use crate::contracterror::ContractError;
 use crate::storage::utils::{is_initialized, set_initialized};
 use crate::storage::StableLiquidityPoolInfo;
 use crate::{
@@ -515,7 +518,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let config = get_config(&env);
 
         if offer_asset != config.token_a && offer_asset != config.token_b {
-            panic!("Trying to swap wrong asset. Aborting..")
+            panic_with_error!(env, ContractError::AssetNotInPool);
         }
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
