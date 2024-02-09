@@ -842,17 +842,6 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
         None,
     );
 
-    token1.mint(&user1, &1_001_000);
-    token2.mint(&user1, &1_001_000);
-    pool.provide_liquidity(
-        &user1,
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &None,
-    );
-
     // selling just one token with 1% max spread allowed
     let spread = 100i64; // 1% maximum spread allowed
     pool.swap(
