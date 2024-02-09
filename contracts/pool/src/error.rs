@@ -22,4 +22,5 @@ pub enum ContractError {
     TotalSharesEqualZero = 13,
     DesiredAmountsBelowOrEqualZero = 14,
     MinAmountsBelowZero = 15,
+    AssetNotInPool = 16,
 }

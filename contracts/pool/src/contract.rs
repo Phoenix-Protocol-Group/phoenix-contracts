@@ -4,9 +4,6 @@ use soroban_sdk::{
 
 use num_integer::Roots;
 
-use crate::error::ContractError;
-use crate::storage::utils::{is_initialized, set_initialized};
-use crate::storage::{ComputeSwap, LiquidityPoolInfo};
 use crate::{
     error::ContractError,
     stake_contract,

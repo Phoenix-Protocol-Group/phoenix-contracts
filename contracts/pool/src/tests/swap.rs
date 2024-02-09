@@ -813,7 +813,7 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #2)")]
+#[should_panic(expected = "HostError: Error(Contract, #13)")]
 fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();
