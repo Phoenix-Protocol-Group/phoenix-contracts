@@ -30,7 +30,7 @@ and this project adheres to
 ## Added
 
 - Adds a new macro that validates the bps arguments value ([#199])
-- Pool and Pool stable: adds check if the swapped token is actualy one of the two tokens in the liquidity pool ([#237])
+- Pool and Pool stable: extend check if the swapped token is within pool ([#237])
 
 [#199]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/199
 [#237]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/237
