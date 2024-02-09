@@ -27,7 +27,6 @@ pub trait MultihopTrait {
         // FIXM: Disable Referral struct
         // referral: Option<Referral>,
         operations: Vec<Swap>,
-        max_belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
         amount: i128,
     );
@@ -68,7 +67,6 @@ impl MultihopTrait for Multihop {
         // FIXM: Disable Referral struct
         // referral: Option<Referral>,
         operations: Vec<Swap>,
-        max_belief_price: Option<i64>,
         max_spread_bps: Option<i64>,
         amount: i128,
     ) {
@@ -105,7 +103,7 @@ impl MultihopTrait for Multihop {
                 &recipient,
                 &op.offer_asset,
                 &next_offer_amount,
-                &max_belief_price,
+                &op.max_belief_price,
                 &max_spread_bps,
             );
             // }

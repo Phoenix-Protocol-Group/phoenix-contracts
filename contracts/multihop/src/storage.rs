@@ -5,6 +5,7 @@ use soroban_sdk::{contracttype, Address, Env, Vec};
 pub struct Swap {
     pub ask_asset: Address,
     pub offer_asset: Address,
+    pub max_belief_price: Option<i64>,
 }
 
 #[derive(Clone)]

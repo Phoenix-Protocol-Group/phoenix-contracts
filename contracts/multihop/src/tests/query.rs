@@ -38,6 +38,7 @@ fn simulate_swap_single_pool_no_fees() {
         Swap {
             offer_asset: token1.address.clone(),
             ask_asset: token2.address.clone(),
+            max_belief_price: None::<i64>,
         },
     ];
 
@@ -111,14 +112,17 @@ fn simulate_swap_three_equal_pools_no_fees() {
             Swap {
                 offer_asset: token1.address.clone(),
                 ask_asset: token2.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token2.address.clone(),
                 ask_asset: token3.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token3.address.clone(),
                 ask_asset: token4.address.clone(),
+                max_belief_price: None::<i64>,
             },
         ],
         &50i128,
@@ -138,14 +142,17 @@ fn simulate_swap_three_equal_pools_no_fees() {
             Swap {
                 offer_asset: token3.address.clone(),
                 ask_asset: token4.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token2.address.clone(),
                 ask_asset: token3.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token1.address.clone(),
                 ask_asset: token2.address.clone(),
+                max_belief_price: None::<i64>,
             },
         ],
         &50i128,
@@ -191,6 +198,7 @@ fn simulate_swap_single_pool_with_fees() {
         Swap {
             offer_asset: token1.address.clone(),
             ask_asset: token2.address.clone(),
+            max_belief_price: None::<i64>,
         },
     ];
 
@@ -265,14 +273,17 @@ fn simulate_swap_three_different_pools_no_fees() {
             Swap {
                 offer_asset: token1.address.clone(),
                 ask_asset: token2.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token2.address.clone(),
                 ask_asset: token3.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token3.address.clone(),
                 ask_asset: token4.address.clone(),
+                max_belief_price: None::<i64>,
             },
         ],
         &5_000i128,
@@ -293,14 +304,17 @@ fn simulate_swap_three_different_pools_no_fees() {
             Swap {
                 offer_asset: token3.address.clone(),
                 ask_asset: token4.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token2.address.clone(),
                 ask_asset: token3.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token1.address.clone(),
                 ask_asset: token2.address.clone(),
+                max_belief_price: None::<i64>,
             },
         ],
         &4_956i128,
@@ -369,14 +383,17 @@ fn simulate_swap_three_different_pools_with_fees() {
             Swap {
                 offer_asset: token1.address.clone(),
                 ask_asset: token2.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token2.address.clone(),
                 ask_asset: token3.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token3.address.clone(),
                 ask_asset: token4.address.clone(),
+                max_belief_price: None::<i64>,
             },
         ],
         &10_000i128,
@@ -420,14 +437,17 @@ fn simulate_swap_three_different_pools_with_fees() {
             Swap {
                 offer_asset: token3.address.clone(),
                 ask_asset: token4.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token2.address.clone(),
                 ask_asset: token3.address.clone(),
+                max_belief_price: None::<i64>,
             },
             Swap {
                 offer_asset: token1.address.clone(),
                 ask_asset: token2.address.clone(),
+                max_belief_price: None::<i64>,
             },
         ],
         &203_143i128,

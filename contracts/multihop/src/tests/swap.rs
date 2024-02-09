@@ -74,21 +74,24 @@ fn swap_three_equal_pools_no_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
+        max_belief_price: None::<i64>,
     };
     let swap2 = Swap {
         offer_asset: token2.address.clone(),
         ask_asset: token3.address.clone(),
+        max_belief_price: None::<i64>,
     };
     let swap3 = Swap {
         offer_asset: token3.address.clone(),
         ask_asset: token4.address.clone(),
+        max_belief_price: None::<i64>,
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &None, &50i128);
-    multihop.swap(&recipient, &operations, &None, &None, &50i128);
+    multihop.swap(&recipient, &operations, &None, &50i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -155,14 +158,17 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
+        max_belief_price: None::<i64>,
     };
     let swap2 = Swap {
         offer_asset: token2.address.clone(),
         ask_asset: token3.address.clone(),
+        max_belief_price: None::<i64>,
     };
     let swap3 = Swap {
         offer_asset: token3.address.clone(),
         ask_asset: token4.address.clone(),
+        max_belief_price: None::<i64>,
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
@@ -181,7 +187,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
     //     &None,
     //     &50i128,
     // );
-    multihop.swap(&recipient, &operations, &None, &None, &50i128);
+    multihop.swap(&recipient, &operations, &None, &50i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -229,13 +235,14 @@ fn swap_single_pool_no_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
+        max_belief_price: None::<i64>,
     };
 
     let operations = vec![&env, swap1];
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, /*&None,*/ &operations, &None, &None, &50i128);
-    multihop.swap(&recipient, &operations, &None, &None, &1_000);
+    multihop.swap(&recipient, &operations, &None, &1_000);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 4_000i128); // -1_000 token0
@@ -275,13 +282,14 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
+        max_belief_price: None::<i64>,
     };
 
     let operations = vec![&env, swap1];
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &Some(50), &50);
-    multihop.swap(&recipient, &operations, &None, &Some(50), &50);
+    multihop.swap(&recipient, &operations, &Some(50), &50);
 }
 
 #[test]
@@ -319,13 +327,14 @@ fn swap_single_pool_with_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
+        max_belief_price: None::<i64>,
     };
 
     let operations = vec![&env, swap1];
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &None, &300i128);
-    multihop.swap(&recipient, &operations, &None, &None, &300i128);
+    multihop.swap(&recipient, &operations, &None, &300i128);
 
     // 5. check if it goes according to plan
     // 1000 tokens initially
@@ -394,21 +403,24 @@ fn swap_three_different_pools_no_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
+        max_belief_price: None::<i64>,
     };
     let swap2 = Swap {
         offer_asset: token2.address.clone(),
         ask_asset: token3.address.clone(),
+        max_belief_price: None::<i64>,
     };
     let swap3 = Swap {
         offer_asset: token3.address.clone(),
         ask_asset: token4.address.clone(),
+        max_belief_price: None::<i64>,
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &None, &5_000i128);
-    multihop.swap(&recipient, &operations, &None, &None, &5_000i128);
+    multihop.swap(&recipient, &operations, &None, &5_000i128);
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -476,21 +488,24 @@ fn swap_three_different_pools_with_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
+        max_belief_price: None::<i64>,
     };
     let swap2 = Swap {
         offer_asset: token2.address.clone(),
         ask_asset: token3.address.clone(),
+        max_belief_price: None::<i64>,
     };
     let swap3 = Swap {
         offer_asset: token3.address.clone(),
         ask_asset: token4.address.clone(),
+        max_belief_price: None::<i64>,
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &None, &10_000i128);
-    multihop.swap(&recipient, &operations, &None, &None, &10_000i128);
+    multihop.swap(&recipient, &operations, &None, &10_000i128);
 
     // we start swapping 10_000 tokens
 
@@ -535,5 +550,87 @@ fn swap_panics_with_no_operations() {
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &swap_vec, &None, &None, &50i128);
-    multihop.swap(&recipient, &swap_vec, &None, &None, &50i128);
+    multihop.swap(&recipient, &swap_vec, &None, &50i128);
+}
+
+#[test]
+fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
+    let env = Env::default();
+
+    let admin = Address::generate(&env);
+
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        1_000_000,
+        token2.address.clone(),
+        1_000_000,
+        None,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token2.address.clone(),
+        2_000_000,
+        token3.address.clone(),
+        2_000_000,
+        None,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token3.address.clone(),
+        3_000_000,
+        token4.address.clone(),
+        3_000_000,
+        None,
+    );
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+    let recipient = Address::generate(&env);
+    token1.mint(&recipient, &5_000i128);
+
+    let swap1 = Swap {
+        offer_asset: token1.address.clone(),
+        ask_asset: token2.address.clone(),
+        max_belief_price: Some(1_050),
+    };
+    let swap2 = Swap {
+        offer_asset: token2.address.clone(),
+        ask_asset: token3.address.clone(),
+        max_belief_price: Some(2_100),
+    };
+    let swap3 = Swap {
+        offer_asset: token3.address.clone(),
+        ask_asset: token4.address.clone(),
+        max_belief_price: Some(3_150),
+    };
+
+    let operations = vec![&env, swap1, swap2, swap3];
+
+    multihop.swap(&recipient, &operations, &None, &5_000i128);
+
+    assert_eq!(
+        token1.balance(&recipient),
+        0i128,
+        "token1 balance incorrect"
+    );
+    assert_eq!(
+        token4.balance(&recipient),
+        4_956i128,
+        "token4 balance incorrect"
+    );
 }
