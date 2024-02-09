@@ -11,15 +11,23 @@ and this project adheres to
 - Update soroban-sdk version from v20.0.3 to v20.1.0 ([#193])
 - Fixes documentation and naming ([#200])
 - Fixes incorrect assignment of total_fee_bps in both pool and pool stable ([235])
+- Pool: adds a missed part of return_amount argument ([#238])
 
 [#200]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/200
 [#235]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/235
+[#238]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/238
 
 ## Added
 
 - Adds a new macro that validates the bps arguments value ([#199])
 
 [#199]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/199
+
+## Bug fixes
+
+- Pool stable: Fixes an error in the compute_swap function, where commission isn't deducted ([233])
+
+[#233]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/233
 
 ## [0.8.0] - 2024-01-17
 
