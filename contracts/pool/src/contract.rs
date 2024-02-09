@@ -583,16 +583,14 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn simulate_swap(env: Env, offer_asset: Address, offer_amount: i128) -> SimulateSwapResponse {
         let config = get_config(&env);
 
-        if offer_asset != config.token_a && offer_asset != config.token_b {
-            panic_with_error!(env, ContractError::AssetNotInPool);
-        }
-
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
         let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
             (pool_balance_a, pool_balance_b)
-        } else {
+        } else if offer_asset == config.token_b {
             (pool_balance_b, pool_balance_a)
+        } else {
+            panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
         let compute_swap: ComputeSwap = compute_swap(
@@ -622,16 +620,14 @@ impl LiquidityPoolTrait for LiquidityPool {
     ) -> SimulateReverseSwapResponse {
         let config = get_config(&env);
 
-        if ask_asset != config.token_a && ask_asset != config.token_b {
-            panic!("Trying to swap wrong asset. Aborting..")
-        }
-
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
         let (pool_balance_offer, pool_balance_ask) = if ask_asset == config.token_b {
             (pool_balance_a, pool_balance_b)
-        } else {
+        } else if ask_asset == config.token_a {
             (pool_balance_b, pool_balance_a)
+        } else {
+            panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
@@ -660,9 +656,6 @@ fn do_swap(
     max_spread: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
-    if offer_asset != config.token_a && offer_asset != config.token_b {
-        panic!("Trying to swap wrong asset. Aborting..")
-    }
     // FIXM: Disable Referral struct
     // if let Some(referral) = &referral {
     //     if referral.fee > config.max_referral_bps {
@@ -684,8 +677,10 @@ fn do_swap(
 
     let (pool_balance_sell, pool_balance_buy) = if offer_asset == config.token_a {
         (pool_balance_a, pool_balance_b)
-    } else {
+    } else if offer_asset == config.token_b {
         (pool_balance_b, pool_balance_a)
+    } else {
+        panic_with_error!(env, ContractError::AssetNotInPool);
     };
 
     // FIXM: Disable Referral struct
