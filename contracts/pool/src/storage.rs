@@ -1,9 +1,9 @@
 use soroban_sdk::{
-    contracttype, log, symbol_short, xdr::ToXdr, Address, Bytes, BytesN, ConversionError, Env,
-    Symbol, TryFromVal, Val,
+    contracttype, log, panic_with_error, symbol_short, xdr::ToXdr, Address, Bytes, BytesN,
+    ConversionError, Env, Symbol, TryFromVal, Val,
 };
 
-use crate::token_contract;
+use crate::{error::ContractError, token_contract};
 use decimal::Decimal;
 
 #[derive(Clone, Copy)]
@@ -57,8 +57,14 @@ const MAX_TOTAL_FEE_BPS: i64 = 10_000;
 /// This method is used to check fee bps.
 pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> i64 {
     if total_fee_bps > MAX_TOTAL_FEE_BPS {
-        log!(env, "Total fees cannot be greater than 100%");
-        panic!("Pool: Validate fee bps: total fees cannot be greater than 100%")
+        log!(
+            env,
+            "Pool: Validate fee bps: Total fees cannot be greater than 100%"
+        );
+        panic_with_error!(
+            env,
+            ContractError::ValidateFeeBpsTotalFeesCantBeGreaterThen100
+        );
     }
     total_fee_bps
 }
@@ -247,12 +253,12 @@ pub mod utils {
 
         if let Some(min_a) = min_a {
             if min_a > desired_a {
-                panic!("Pool: Get deposit amounts: min_a > desired_a");
+                panic_with_error!(env, ContractError::GetDepositAmountsMinABiggerThenDesiredA);
             }
         }
         if let Some(min_b) = min_b {
             if min_b > desired_b {
-                panic!("Pool: Get deposit amounts: min_b > desired_b");
+                panic_with_error!(env, ContractError::GetDepositAmountsMinABiggerThenDesiredA);
             }
         }
 
@@ -265,22 +271,25 @@ pub mod utils {
                 } else {
                     log!(
                         env,
-                        "Deposit amount for asset A ({}) is invalid. It exceeds the desired amount ({})",
+                        "Pool: Get deposit amounts: Deposit amount for asset A ({}) is invalid. It exceeds the desired amount ({})",
                         amount_a,
                         desired_a,
                     );
-                    panic!("Pool: Get deposit amounts: amount_a > desired_a");
+                    panic_with_error!(
+                        env,
+                        ContractError::GetDepositAmountsAmountABiggerThenDesiredA
+                    );
                 }
             };
             if let Some(min_a) = min_a {
                 if amount_a < min_a {
                     log!(
                         env,
-                        "Deposit amount for asset A ({}) is invalid. It falls below the minimum requirement ({})",
+                        "Pool: Get deposit amounts: Deposit amount for asset A ({}) is invalid. It falls below the minimum requirement ({})",
                         amount_a,
                         min_a
                     );
-                    panic!("Pool: Get deposit amounts: amount_a < min_a");
+                    panic_with_error!(env, ContractError::GetDepositAmountsAmountALessThenMinA);
                 }
             }
             amount_a
@@ -295,22 +304,25 @@ pub mod utils {
                 } else {
                     log!(
                 env,
-                "Deposit amount for asset B ({}) is invalid. It exceeds the desired amount ({})",
+                "Pool: Get deposit amounts: Deposit amount for asset B ({}) is invalid. It exceeds the desired amount ({})",
                 amount_b,
                 desired_b,
             );
-                    panic!("Pool: Get deposit amounts: amount_b > desired_b");
+                    panic_with_error!(
+                        env,
+                        ContractError::GetDepositAmountsAmountBBiggerThenDesiredB
+                    );
                 }
             };
             if let Some(min_b) = min_b {
                 if amount_b < min_b {
                     log!(
                 env,
-                "Deposit amount for asset B ({}) is invalid. It falls below the minimum requirement ({})",
+                "Pool: Get deposit amounts: Deposit amount for asset B ({}) is invalid. It falls below the minimum requirement ({})",
                 amount_b,
                 min_b
             );
-                    panic!("Pool: Get deposit amounts: amount_b < min_b");
+                    panic_with_error!(env, ContractError::GetDepositAmountsAmountBLessThenMinB);
                 }
             }
             amount_b
@@ -372,14 +384,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_b < min_b")]
+    #[should_panic(expected = "Error(Contract, #12)")]
     fn test_get_deposit_amounts_amount_b_less_than_desired() {
         let env = Env::default();
         utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_b < min_b")]
+    #[should_panic(expected = "Error(Contract, #12)")]
     fn test_get_deposit_amounts_amount_b_less_than_min_b() {
         let env = Env::default();
         utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
@@ -402,14 +414,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: min_a > desired_a")]
+    #[should_panic(expected = "Error(Contract, #7)")]
     fn test_get_deposit_amounts_amount_a_greater_than_desired_and_less_than_min_a() {
         let env = Env::default();
         utils::get_deposit_amounts(&env, 50, Some(100), 200, None, 100, 200, Decimal::bps(100));
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: min_b > desired_b")]
+    #[should_panic(expected = "Error(Contract, #7)")]
     fn test_get_deposit_amounts_amount_b_greater_than_desired_and_less_than_min_b() {
         let env = Env::default();
         utils::get_deposit_amounts(
@@ -425,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: min_a > desired_a")]
+    #[should_panic(expected = "Error(Contract, #7)")]
     fn test_get_deposit_amounts_amount_a_less_than_min_a() {
         let env = Env::default();
         utils::get_deposit_amounts(&env, 100, Some(200), 200, None, 100, 200, Decimal::bps(100));
@@ -450,7 +462,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_a > desired_a")]
+    #[should_panic(expected = "Error(Contract, #9)")]
     fn test_get_deposit_amounts_exceeds_desired() {
         let env = Env::default();
         // The calculated deposit for asset A exceeds the desired amount and is not within 1% tolerance
@@ -458,7 +470,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_a < min_a")]
+    #[should_panic(expected = "Error(Contract, #10)")]
     fn test_get_deposit_amounts_below_min_a() {
         let env = Env::default();
         // The calculated deposit for asset A is below the minimum requirement
@@ -475,7 +487,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Get deposit amounts: amount_b < min_b")]
+    #[should_panic(expected = "Error(Contract, #12)")]
     fn test_get_deposit_amounts_below_min_b() {
         let env = Env::default();
         // The calculated deposit for asset B is below the minimum requirement
@@ -521,7 +533,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "total fees cannot be greater than 100%")]
+    #[should_panic(expected = "Pool: Validate fee bps: Total fees cannot be greater than 100%")]
     fn test_invalidate_fee_bps() {
         let env = Env::default();
         validate_fee_bps(&env, 10_001);

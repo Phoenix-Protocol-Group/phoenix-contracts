@@ -500,7 +500,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 amount: utils::get_total_shares(&env),
             },
         };
-        let total_fee_bps = config.max_allowed_spread_bps;
+        let total_fee_bps = config.total_fee_bps;
 
         StableLiquidityPoolInfo {
             pool_address: env.current_contract_address(),
@@ -710,7 +710,7 @@ pub fn assert_max_spread(
 /// - `commission_rate`: Total amount of fees charged for the swap.
 ///
 /// Returns a tuple containing the following values:
-/// - The resulting amount of ask assets after the swap.
+/// - The resulting amount of ask assets after the swap minus the commission amount.
 /// - The spread amount, representing the difference between the expected and actual swap amounts.
 /// - The commission amount, representing the fees charged for the swap.
 pub fn compute_swap(
@@ -737,6 +737,8 @@ pub fn compute_swap(
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = offer_amount - return_amount;
     let commission_amount = return_amount * commission_rate;
+    // Because of issue #211
+    let return_amount = return_amount - commission_amount;
 
     (return_amount, spread_amount, commission_amount)
 }
