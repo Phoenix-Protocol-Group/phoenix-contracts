@@ -12,10 +12,12 @@ and this project adheres to
 - Fixes documentation and naming ([#200])
 - Fixes incorrect assignment of total_fee_bps in both pool and pool stable ([235])
 - Pool: adds a missed part of return_amount argument ([#238])
+- Pool: Replace panic! with panic_with_error! to provide more contextual information ([#206])
 
 [#200]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/200
 [#235]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/235
 [#238]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/238
+[#206]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/206
 
 ## Added
 
