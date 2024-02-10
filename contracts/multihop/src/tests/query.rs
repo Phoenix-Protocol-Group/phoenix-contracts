@@ -644,40 +644,40 @@ fn simulate_swap_three_different_pools_with_fees() {
     );
 }
 
-// #[test]
-// #[should_panic(expected = "Multihop: Simulate swap: operations empty")]
-// fn query_simulate_swap_panics_with_no_operations() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//     let admin = Address::generate(&env);
-//     let factory = Address::generate(&env);
-//     let recipient = Address::generate(&env);
+#[test]
+#[should_panic(expected = "Multihop: Simulate swap: operations empty")]
+fn query_simulate_swap_panics_with_no_operations() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let recipient = Address::generate(&env);
 
-//     let token = deploy_token_contract(&env, &admin);
-//     token.mint(&recipient, &50i128);
+    let token = deploy_token_contract(&env, &admin);
+    token.mint(&recipient, &50i128);
 
-//     let multihop = deploy_multihop_contract(&env, admin, &factory);
+    let multihop = deploy_multihop_contract(&env, admin, &factory);
 
-//     let swap_vec = vec![&env];
+    let swap_vec = vec![&env];
 
-//     multihop.simulate_swap(&swap_vec, &50i128);
-// }
+    multihop.simulate_swap(&swap_vec, &50i128);
+}
 
-// #[test]
-// #[should_panic(expected = "Multihop: Simulate reverse swap: operations empty")]
-// fn query_simulate_reverse_swap_panics_with_no_operations() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//     let admin = Address::generate(&env);
-//     let factory = Address::generate(&env);
-//     let recipient = Address::generate(&env);
+#[test]
+#[should_panic(expected = "Multihop: Simulate reverse swap: operations empty")]
+fn query_simulate_reverse_swap_panics_with_no_operations() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let recipient = Address::generate(&env);
 
-//     let token = deploy_token_contract(&env, &admin);
-//     token.mint(&recipient, &50i128);
+    let token = deploy_token_contract(&env, &admin);
+    token.mint(&recipient, &50i128);
 
-//     let multihop = deploy_multihop_contract(&env, admin, &factory);
+    let multihop = deploy_multihop_contract(&env, admin, &factory);
 
-//     let swap_vec = vec![&env];
+    let swap_vec = vec![&env];
 
-//     multihop.simulate_reverse_swap(&swap_vec, &50i128);
-// }
+    multihop.simulate_reverse_swap(&swap_vec, &50i128);
+}
