@@ -1,7 +1,7 @@
 use crate::storage::Swap;
 use crate::tests::setup::{
     create_token_contract_with_metadata, deploy_and_initialize_factory, deploy_and_initialize_lp,
-    deploy_and_mint_tokens, deploy_multihop_contract, deploy_token_contract,
+    deploy_multihop_contract, deploy_token_contract,
 };
 
 use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
@@ -632,7 +632,7 @@ fn simulate_swap_three_different_pools_with_fees() {
     assert_eq!(
         reverse_simulated_swap.commission_amount,
         vec![
-            &env, 
+            &env,
             (String::from_str(&env, "GZY"), 22571i128),
             (String::from_str(&env, "WZY"), 5252i128),
             (String::from_str(&env, "BZY"), 1980i128),

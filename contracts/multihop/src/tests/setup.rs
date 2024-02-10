@@ -19,9 +19,16 @@ pub mod token_contract {
     );
 }
 
-pub fn create_token_contract_with_metadata<'a>(env: &Env, admin: &Address, decimals: u32, name: String, symbol: String) -> token_contract::Client<'a> {
-    let token = token_contract::Client::new(env, &env.register_contract_wasm(None, token_contract::WASM));
-    token.initialize(&admin, &decimals, &name.into_val(env), &symbol.into_val(env));
+pub fn create_token_contract_with_metadata<'a>(
+    env: &Env,
+    admin: &Address,
+    decimals: u32,
+    name: String,
+    symbol: String,
+) -> token_contract::Client<'a> {
+    let token =
+        token_contract::Client::new(env, &env.register_contract_wasm(None, token_contract::WASM));
+    token.initialize(admin, &decimals, &name.into_val(env), &symbol.into_val(env));
     token
 }
 
