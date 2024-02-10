@@ -111,7 +111,7 @@ impl MultihopTrait for Multihop {
 
         let mut simulate_swap_response = SimulateSwapResponse {
             ask_amount: 0,
-            total_commission_amount: vec![&env],
+            commission_amount: vec![&env],
             spread_amount: vec![&env],
         };
 
@@ -129,7 +129,7 @@ impl MultihopTrait for Multihop {
             let token_symbol = token_client.symbol();
 
             simulate_swap_response
-                .total_commission_amount
+                .commission_amount
                 .push_back((token_symbol, simulated_swap.commission_amount));
             simulate_swap_response.ask_amount = simulated_swap.ask_amount;
             simulate_swap_response
@@ -157,7 +157,7 @@ impl MultihopTrait for Multihop {
 
         let mut simulate_swap_response = SimulateReverseSwapResponse {
             offer_amount: 0,
-            total_commission_amount: vec![&env],
+            commission_amount: vec![&env],
             spread_amount: vec![&env],
         };
 
@@ -176,7 +176,7 @@ impl MultihopTrait for Multihop {
             let token_symbol = token_client.symbol();
 
             simulate_swap_response
-                .total_commission_amount
+                .commission_amount
                 .push_back((token_symbol, simulated_reverse_swap.commission_amount));
             simulate_swap_response.offer_amount = simulated_reverse_swap.offer_amount;
 
