@@ -7,7 +7,7 @@ use crate::storage::{
     SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
-use crate::{factory_contract, lp_contract};
+use crate::{factory_contract, lp_contract, token_contract};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -122,17 +122,21 @@ impl MultihopTrait for Multihop {
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
 
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
-            let simulate_swap = lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
+            let simulated_swap = lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
+
+            // this one gets the symbol of the 
+            let token_client = token_contract::Client::new(&env, &op.offer_asset);
+            let token_symbol = token_client.symbol();
 
             simulate_swap_response
                 .total_commission_amount
-                .push_back(simulate_swap.commission_amount);
-            simulate_swap_response.ask_amount = simulate_swap.ask_amount;
+                .push_back((token_symbol, simulated_swap.commission_amount));
+            simulate_swap_response.ask_amount = simulated_swap.ask_amount;
             simulate_swap_response
                 .spread_amount
-                .push_back(simulate_swap.spread_amount);
+                .push_back(simulated_swap.spread_amount);
 
-            next_offer_amount = simulate_swap.ask_amount;
+            next_offer_amount = simulated_swap.ask_amount;
         });
 
         simulate_swap_response
@@ -164,19 +168,23 @@ impl MultihopTrait for Multihop {
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
 
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
-            let simulate_reverse_swap =
+            let simulated_reverse_swap =
                 lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
+
+            // this one gets the symbol of the 
+            let token_client = token_contract::Client::new(&env, &op.ask_asset);
+            let token_symbol = token_client.symbol();
 
             simulate_swap_response
                 .total_commission_amount
-                .push_back(simulate_reverse_swap.commission_amount);
-            simulate_swap_response.offer_amount = simulate_reverse_swap.offer_amount;
+                .push_back((token_symbol, simulated_reverse_swap.commission_amount));
+            simulate_swap_response.offer_amount = simulated_reverse_swap.offer_amount;
 
             simulate_swap_response
                 .spread_amount
-                .push_back(simulate_reverse_swap.spread_amount);
+                .push_back(simulated_reverse_swap.spread_amount);
 
-            next_ask_amount = simulate_reverse_swap.offer_amount;
+            next_ask_amount = simulated_reverse_swap.offer_amount;
         });
 
         simulate_swap_response

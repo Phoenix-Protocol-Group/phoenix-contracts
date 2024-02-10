@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Env, Vec};
+use soroban_sdk::{contracttype, Address, Env, String, Vec};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -68,7 +68,7 @@ pub fn set_initialized(e: &Env) {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SimulateSwapResponse {
     pub ask_amount: i128,
-    pub total_commission_amount: Vec<i128>,
+    pub total_commission_amount: Vec<(String, i128)>,
     pub spread_amount: Vec<i128>,
 }
 
@@ -76,6 +76,6 @@ pub struct SimulateSwapResponse {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SimulateReverseSwapResponse {
     pub offer_amount: i128,
-    pub total_commission_amount: Vec<i128>,
+    pub total_commission_amount: Vec<(String, i128)>,
     pub spread_amount: Vec<i128>,
 }
