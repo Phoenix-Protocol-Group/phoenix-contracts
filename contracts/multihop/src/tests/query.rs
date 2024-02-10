@@ -465,145 +465,184 @@ fn simulate_swap_three_different_pools_no_fees() {
     );
 }
 
-// #[test]
-// fn simulate_swap_three_different_pools_with_fees() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//     env.budget().reset_unlimited();
+#[test]
+fn simulate_swap_three_different_pools_with_fees() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
 
-//     let admin = Address::generate(&env);
+    let admin = Address::generate(&env);
 
-//     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//     let token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
-//     let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token1 = create_token_contract_with_metadata(
+        &env,
+        &admin,
+        7u32,
+        String::from_str(&env, "fuzzy"),
+        String::from_str(&env, "FZY"),
+    );
+    let token2 = create_token_contract_with_metadata(
+        &env,
+        &admin,
+        7u32,
+        String::from_str(&env, "buzzy"),
+        String::from_str(&env, "BZY"),
+    );
+    let token3 = create_token_contract_with_metadata(
+        &env,
+        &admin,
+        7u32,
+        String::from_str(&env, "wuzzy"),
+        String::from_str(&env, "WZY"),
+    );
+    let token4 = create_token_contract_with_metadata(
+        &env,
+        &admin,
+        7u32,
+        String::from_str(&env, "guzzy"),
+        String::from_str(&env, "GZY"),
+    );
 
-//     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+    token1.mint(&admin, &10_000_000i128);
+    token2.mint(&admin, &10_000_000i128);
+    token3.mint(&admin, &10_000_000i128);
+    token4.mint(&admin, &10_000_000i128);
 
-//     let fees = Some(1_000); // 1000bps == 10%
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token1.address.clone(),
-//         1_000_000,
-//         token2.address.clone(),
-//         2_000_000,
-//         fees,
-//     );
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token2.address.clone(),
-//         1_000_000,
-//         token3.address.clone(),
-//         3_000_000,
-//         fees,
-//     );
-//     deploy_and_initialize_lp(
-//         &env,
-//         &factory_client,
-//         admin.clone(),
-//         token3.address.clone(),
-//         1_000_000,
-//         token4.address.clone(),
-//         5_000_000,
-//         fees,
-//     );
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-//     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+    let fees = Some(1_000); // 1000bps == 10%
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        1_000_000,
+        token2.address.clone(),
+        2_000_000,
+        fees,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token2.address.clone(),
+        1_000_000,
+        token3.address.clone(),
+        3_000_000,
+        fees,
+    );
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token3.address.clone(),
+        1_000_000,
+        token4.address.clone(),
+        5_000_000,
+        fees,
+    );
 
-//     let simulated_swap = multihop.simulate_swap(
-//         &vec![
-//             &env,
-//             Swap {
-//                 offer_asset: token1.address.clone(),
-//                 ask_asset: token2.address.clone(),
-//                 max_belief_price: None::<i64>,
-//             },
-//             Swap {
-//                 offer_asset: token2.address.clone(),
-//                 ask_asset: token3.address.clone(),
-//                 max_belief_price: None::<i64>,
-//             },
-//             Swap {
-//                 offer_asset: token3.address.clone(),
-//                 ask_asset: token4.address.clone(),
-//                 max_belief_price: None::<i64>,
-//             },
-//         ],
-//         &10_000i128,
-//     );
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
 
-//     // cp = offer_pool * ask_pool
-//     // return_amount = ask_pool - (cp / (offer_pool + offer_amount))
-//     // commission_amount = return_amount * commission_rate
+    let simulated_swap = multihop.simulate_swap(
+        &vec![
+            &env,
+            Swap {
+                offer_asset: token1.address.clone(),
+                ask_asset: token2.address.clone(),
+                max_belief_price: None::<i64>,
+            },
+            Swap {
+                offer_asset: token2.address.clone(),
+                ask_asset: token3.address.clone(),
+                max_belief_price: None::<i64>,
+            },
+            Swap {
+                offer_asset: token3.address.clone(),
+                ask_asset: token4.address.clone(),
+                max_belief_price: None::<i64>,
+            },
+        ],
+        &10_000i128,
+    );
 
-//     // we start swapping 10_000 tokens
+    // cp = offer_pool * ask_pool
+    // return_amount = ask_pool - (cp / (offer_pool + offer_amount))
+    // commission_amount = return_amount * commission_rate
 
-//     // token1 => token2
-//     // cp = 2_000_000_000_000
-//     // return_amount = 2_000_000 - (2 * 10^12 / (1_000_000 + 10_000)) = 19_802
-//     // commission_amount = 1_980.2
-//     // ask_amount = 19_802 - 1_980 = 17_822
+    // we start swapping 10_000 tokens
 
-//     // token2 => token3
-//     // cp = 3_000_000_000_000
-//     // return_amount = 3_000_000 - (3 * 10^12 / (1_000_000 + 17_822)) = 52_529.82
-//     // commission_amount = 5_252.9
-//     // ask_amount = 52_529 - 5_252 = 47_277
+    // token1 => token2
+    // cp = 2_000_000_000_000
+    // return_amount = 2_000_000 - (2 * 10^12 / (1_000_000 + 10_000)) = 19_802
+    // commission_amount = 1_980.2
+    // ask_amount = 19_802 - 1_980 = 17_822
 
-//     // token3 => token4
-//     // cp = 5_000_000_000_000
-//     // return_amount = 5_000_000 - (5 * 10^12 / (1_000_000 + 47_277)) = 225_713.93
-//     // commission_amount = 22_571.3
-//     // ask_amount = 225_714 - 22_571 = 203_143
-//     assert_eq!(simulated_swap.ask_amount, 203_143i128);
-//     // total_commission_amount = 1_980 + 5_253 + 22_571 = 29_804
-//     assert_eq!(
-//         simulated_swap.total_commission_amount,
-//         vec![&env, 1980i128, 5253i128, 22571i128]
-//     );
-//     assert_eq!(
-//         simulated_swap.spread_amount,
-//         vec![&env, 198i128, 936i128, 10671i128]
-//     );
+    // token2 => token3
+    // cp = 3_000_000_000_000
+    // return_amount = 3_000_000 - (3 * 10^12 / (1_000_000 + 17_822)) = 52_529.82
+    // commission_amount = 5_252.9
+    // ask_amount = 52_529 - 5_252 = 47_277
 
-//     // simulate reverse swap returns same result
-//     let reverse_simulated_swap = multihop.simulate_reverse_swap(
-//         &vec![
-//             &env,
-//             Swap {
-//                 offer_asset: token3.address.clone(),
-//                 ask_asset: token4.address.clone(),
-//                 max_belief_price: None::<i64>,
-//             },
-//             Swap {
-//                 offer_asset: token2.address.clone(),
-//                 ask_asset: token3.address.clone(),
-//                 max_belief_price: None::<i64>,
-//             },
-//             Swap {
-//                 offer_asset: token1.address.clone(),
-//                 ask_asset: token2.address.clone(),
-//                 max_belief_price: None::<i64>,
-//             },
-//         ],
-//         &203_143i128,
-//     );
+    // token3 => token4
+    // cp = 5_000_000_000_000
+    // return_amount = 5_000_000 - (5 * 10^12 / (1_000_000 + 47_277)) = 225_713.93
+    // commission_amount = 22_571.3
+    // ask_amount = 225_714 - 22_571 = 203_143
+    assert_eq!(simulated_swap.ask_amount, 203_143i128);
+    // total_commission_amount = 1_980 + 5_253 + 22_571 = 29_804
+    assert_eq!(
+        simulated_swap.commission_amount,
+        vec![
+            &env,
+            (String::from_str(&env, "FZY"), 1980i128),
+            (String::from_str(&env, "BZY"), 5253i128),
+            (String::from_str(&env, "WZY"), 22571i128),
+        ]
+    );
+    assert_eq!(
+        simulated_swap.spread_amount,
+        vec![&env, 198i128, 936i128, 10671i128]
+    );
 
-//     // one difference due to rounding
-//     assert_eq!(reverse_simulated_swap.offer_amount, 9_999i128);
-//     assert_eq!(
-//         reverse_simulated_swap.total_commission_amount,
-//         vec![&env, 22571i128, 5252i128, 1980i128]
-//     );
-//     assert_eq!(
-//         reverse_simulated_swap.spread_amount,
-//         vec![&env, 10671i128, 934i128, 197i128]
-//     );
-// }
+    // simulate reverse swap returns same result
+    let reverse_simulated_swap = multihop.simulate_reverse_swap(
+        &vec![
+            &env,
+            Swap {
+                offer_asset: token3.address.clone(),
+                ask_asset: token4.address.clone(),
+                max_belief_price: None::<i64>,
+            },
+            Swap {
+                offer_asset: token2.address.clone(),
+                ask_asset: token3.address.clone(),
+                max_belief_price: None::<i64>,
+            },
+            Swap {
+                offer_asset: token1.address.clone(),
+                ask_asset: token2.address.clone(),
+                max_belief_price: None::<i64>,
+            },
+        ],
+        &203_143i128,
+    );
+
+    // one difference due to rounding
+    assert_eq!(reverse_simulated_swap.offer_amount, 9_999i128);
+    assert_eq!(
+        reverse_simulated_swap.commission_amount,
+        vec![
+            &env, 
+            (String::from_str(&env, "GZY"), 22571i128),
+            (String::from_str(&env, "WZY"), 5252i128),
+            (String::from_str(&env, "BZY"), 1980i128),
+        ]
+    );
+    assert_eq!(
+        reverse_simulated_swap.spread_amount,
+        vec![&env, 10671i128, 934i128, 197i128]
+    );
+}
 
 // #[test]
 // #[should_panic(expected = "Multihop: Simulate swap: operations empty")]
