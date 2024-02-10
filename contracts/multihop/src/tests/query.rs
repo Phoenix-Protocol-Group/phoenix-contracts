@@ -454,9 +454,9 @@ fn simulate_swap_three_different_pools_no_fees() {
         reverse_simulated_swap.commission_amount,
         vec![
             &env,
-            (String::from_str(&env, "GZY"), 0i128), 
-            (String::from_str(&env, "WZY"), 0i128), 
-            (String::from_str(&env, "BZY"), 0i128), 
+            (String::from_str(&env, "GZY"), 0i128),
+            (String::from_str(&env, "WZY"), 0i128),
+            (String::from_str(&env, "BZY"), 0i128),
         ]
     );
     assert_eq!(
