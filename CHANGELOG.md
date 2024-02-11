@@ -16,6 +16,7 @@ and this project adheres to
 - Pool: Replace panic! with panic_with_error! to provide more contextual information ([#206])
 - Multihop: changes total_commission_amount type in SimulateSwap and SimulateReverseSwap ([#236])
 - Multihop: removes unnecessary unwrap of a value ([#240])
+- Factory, Multihop, Pool, Pool_stable, Phoenix: adds lp_token decimal's as a const instead a user input ([#241])
 
 [#200]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/200
 [#234]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/234
@@ -24,6 +25,7 @@ and this project adheres to
 [#206]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/206
 [#236]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/236
 [#240]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/240
+[#241]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/241
 
 ## Added
 
