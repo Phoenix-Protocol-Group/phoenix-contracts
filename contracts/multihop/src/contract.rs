@@ -3,8 +3,8 @@ use soroban_sdk::{contract, contractimpl, contractmeta, vec, Address, Env, Vec};
 // FIXM: Disable Referral struct
 // use crate::lp_contract::Referral;
 use crate::storage::{
-    get_factory, is_initialized, save_factory, set_initialized, DataKey,
-    SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
+    get_factory, is_initialized, save_factory, set_initialized, SimulateReverseSwapResponse,
+    SimulateSwapResponse, Swap,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, lp_contract};
@@ -38,8 +38,6 @@ pub trait MultihopTrait {
         operations: Vec<Swap>,
         amount: i128,
     ) -> SimulateReverseSwapResponse;
-
-    fn get_admin(env: Env) -> Address;
 }
 
 #[contractimpl]
@@ -50,10 +48,6 @@ impl MultihopTrait for Multihop {
         }
 
         set_initialized(&env);
-
-        env.storage()
-            .persistent()
-            .set(&DataKey::Admin, &admin.clone());
 
         save_factory(&env, factory);
 
@@ -187,12 +181,5 @@ impl MultihopTrait for Multihop {
         });
 
         simulate_swap_response
-    }
-
-    fn get_admin(env: Env) -> Address {
-        env.storage()
-            .persistent()
-            .get(&DataKey::Admin)
-            .expect("Multihop: No admin found")
     }
 }
