@@ -155,7 +155,6 @@ pub fn deploy_and_initialize_lp(
         fee_recipient: admin.clone(),
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 500,
-        share_token_decimals: 7,
         swap_fee_bps: fees.unwrap_or(0i64),
         max_referral_bps: 5_000,
         token_init_info,

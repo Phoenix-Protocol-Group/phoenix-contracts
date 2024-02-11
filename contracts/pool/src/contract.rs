@@ -17,6 +17,7 @@ use crate::{
 };
 use decimal::Decimal;
 use phoenix::{
+    constants::LP_TOKEN_DECIMALS,
     utils::{is_approx_ratio, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
@@ -139,7 +140,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         }
 
         let admin = lp_init_info.admin;
-        let share_token_decimals = lp_init_info.share_token_decimals;
+        let share_token_decimals = LP_TOKEN_DECIMALS;
         let swap_fee_bps = lp_init_info.swap_fee_bps;
         let fee_recipient = lp_init_info.fee_recipient;
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
