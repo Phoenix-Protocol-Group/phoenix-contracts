@@ -20,6 +20,7 @@ fn simulate_swap_single_pool_no_fees() {
         7u32,
         String::from_str(&env, "fuzzy"),
         String::from_str(&env, "FZY"),
+        100_000_000,
     );
     let token2 = create_token_contract_with_metadata(
         &env,
@@ -27,10 +28,8 @@ fn simulate_swap_single_pool_no_fees() {
         7u32,
         String::from_str(&env, "bazzy"),
         String::from_str(&env, "BZY"),
+        200_000_000i128,
     );
-
-    token1.mint(&admin, &100_000_000i128);
-    token2.mint(&admin, &200_000_000i128);
 
     assert_eq!(token1.symbol(), String::from_str(&env, "FZY"));
     assert_eq!(token2.symbol(), String::from_str(&env, "BZY"));
@@ -65,7 +64,7 @@ fn simulate_swap_single_pool_no_fees() {
 
     assert_eq!(result.ask_amount, 2_000i128);
     assert_eq!(
-        result.commission_amount,
+        result.commission_amounts,
         vec![&env, (String::from_str(&env, "FZY"), 0i128)]
     );
     assert_eq!(result.spread_amount, vec![&env, 0i128]);
@@ -75,7 +74,7 @@ fn simulate_swap_single_pool_no_fees() {
 
     assert_eq!(reverse_simulated_swap.offer_amount, 1_000i128);
     assert_eq!(
-        reverse_simulated_swap.commission_amount,
+        reverse_simulated_swap.commission_amounts,
         vec![&env, (String::from_str(&env, "BZY"), 0i128)]
     );
     assert_eq!(reverse_simulated_swap.spread_amount, vec![&env, 0i128]);
@@ -95,6 +94,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
         7u32,
         String::from_str(&env, "fuzzy"),
         String::from_str(&env, "FZY"),
+        100_000_000,
     );
     let token2 = create_token_contract_with_metadata(
         &env,
@@ -102,6 +102,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
         7u32,
         String::from_str(&env, "bazzy"),
         String::from_str(&env, "BZY"),
+        200_000_000,
     );
     let token3 = create_token_contract_with_metadata(
         &env,
@@ -109,6 +110,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
         7u32,
         String::from_str(&env, "wazzy"),
         String::from_str(&env, "WZY"),
+        300_000_000,
     );
     let token4 = create_token_contract_with_metadata(
         &env,
@@ -116,12 +118,8 @@ fn simulate_swap_three_equal_pools_no_fees() {
         7u32,
         String::from_str(&env, "gazzy"),
         String::from_str(&env, "GZY"),
+        400_000_000,
     );
-
-    token1.mint(&admin, &100_000_000i128);
-    token2.mint(&admin, &200_000_000i128);
-    token3.mint(&admin, &300_000_000i128);
-    token4.mint(&admin, &400_000_000i128);
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
@@ -183,7 +181,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
 
     assert_eq!(simulated_swap.ask_amount, 50i128);
     assert_eq!(
-        simulated_swap.commission_amount,
+        simulated_swap.commission_amounts,
         vec![
             &env,
             (String::from_str(&env, "FZY"), 0i128),
@@ -221,7 +219,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
 
     assert_eq!(reverse_simulated_swap.offer_amount, 50i128);
     assert_eq!(
-        reverse_simulated_swap.commission_amount,
+        reverse_simulated_swap.commission_amounts,
         vec![
             &env,
             (String::from_str(&env, "GZY"), 0i128),
@@ -249,6 +247,7 @@ fn simulate_swap_single_pool_with_fees() {
         7u32,
         String::from_str(&env, "fuzzy"),
         String::from_str(&env, "FZY"),
+        1_001_000,
     );
     let token2 = create_token_contract_with_metadata(
         &env,
@@ -256,10 +255,8 @@ fn simulate_swap_single_pool_with_fees() {
         7u32,
         String::from_str(&env, "buzzy"),
         String::from_str(&env, "BZY"),
+        1_001_000,
     );
-
-    token1.mint(&admin, &1_001_000i128);
-    token2.mint(&admin, &1_001_000i128);
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
@@ -293,7 +290,7 @@ fn simulate_swap_single_pool_with_fees() {
     // tokens2 will be 240
     assert_eq!(simulated_swap.ask_amount, 240i128);
     assert_eq!(
-        simulated_swap.commission_amount,
+        simulated_swap.commission_amounts,
         vec![&env, (String::from_str(&env, "FZY"), 60i128)]
     );
     assert_eq!(simulated_swap.spread_amount, vec![&env, 0i128]);
@@ -303,7 +300,7 @@ fn simulate_swap_single_pool_with_fees() {
 
     assert_eq!(reverse_simulated_swap.offer_amount, 300i128);
     assert_eq!(
-        reverse_simulated_swap.commission_amount,
+        reverse_simulated_swap.commission_amounts,
         vec![&env, (String::from_str(&env, "BZY"), 60i128)]
     );
     assert_eq!(reverse_simulated_swap.spread_amount, vec![&env, 0i128]);
@@ -323,6 +320,7 @@ fn simulate_swap_three_different_pools_no_fees() {
         7u32,
         String::from_str(&env, "fuzzy"),
         String::from_str(&env, "FZY"),
+        10_000_000,
     );
     let token2 = create_token_contract_with_metadata(
         &env,
@@ -330,6 +328,7 @@ fn simulate_swap_three_different_pools_no_fees() {
         7u32,
         String::from_str(&env, "buzzy"),
         String::from_str(&env, "BZY"),
+        10_000_000,
     );
     let token3 = create_token_contract_with_metadata(
         &env,
@@ -337,6 +336,7 @@ fn simulate_swap_three_different_pools_no_fees() {
         7u32,
         String::from_str(&env, "wuzzy"),
         String::from_str(&env, "WZY"),
+        10_000_000,
     );
     let token4 = create_token_contract_with_metadata(
         &env,
@@ -344,12 +344,8 @@ fn simulate_swap_three_different_pools_no_fees() {
         7u32,
         String::from_str(&env, "guzzy"),
         String::from_str(&env, "GZY"),
+        10_000_000,
     );
-
-    token1.mint(&admin, &10_000_000i128);
-    token2.mint(&admin, &10_000_000i128);
-    token3.mint(&admin, &10_000_000i128);
-    token4.mint(&admin, &10_000_000i128);
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
@@ -412,7 +408,7 @@ fn simulate_swap_three_different_pools_no_fees() {
     assert_eq!(simulated_swap.ask_amount, 4_956i128);
     // we have 3 swaps, none of them have commission amount, so we have three times 0i128
     assert_eq!(
-        simulated_swap.commission_amount,
+        simulated_swap.commission_amounts,
         vec![
             &env,
             (String::from_str(&env, "FZY"), 0i128),
@@ -451,7 +447,7 @@ fn simulate_swap_three_different_pools_no_fees() {
     assert_eq!(reverse_simulated_swap.offer_amount, 5_000i128);
     // we have 3 reverse swaps, none of them have commission amount, so we have three times 0i128
     assert_eq!(
-        reverse_simulated_swap.commission_amount,
+        reverse_simulated_swap.commission_amounts,
         vec![
             &env,
             (String::from_str(&env, "GZY"), 0i128),
@@ -479,6 +475,7 @@ fn simulate_swap_three_different_pools_with_fees() {
         7u32,
         String::from_str(&env, "fuzzy"),
         String::from_str(&env, "FZY"),
+        10_000_000i128,
     );
     let token2 = create_token_contract_with_metadata(
         &env,
@@ -486,6 +483,7 @@ fn simulate_swap_three_different_pools_with_fees() {
         7u32,
         String::from_str(&env, "buzzy"),
         String::from_str(&env, "BZY"),
+        10_000_000i128,
     );
     let token3 = create_token_contract_with_metadata(
         &env,
@@ -493,6 +491,7 @@ fn simulate_swap_three_different_pools_with_fees() {
         7u32,
         String::from_str(&env, "wuzzy"),
         String::from_str(&env, "WZY"),
+        10_000_000i128,
     );
     let token4 = create_token_contract_with_metadata(
         &env,
@@ -500,12 +499,8 @@ fn simulate_swap_three_different_pools_with_fees() {
         7u32,
         String::from_str(&env, "guzzy"),
         String::from_str(&env, "GZY"),
+        10_000_000i128,
     );
-
-    token1.mint(&admin, &10_000_000i128);
-    token2.mint(&admin, &10_000_000i128);
-    token3.mint(&admin, &10_000_000i128);
-    token4.mint(&admin, &10_000_000i128);
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
@@ -591,7 +586,7 @@ fn simulate_swap_three_different_pools_with_fees() {
     assert_eq!(simulated_swap.ask_amount, 203_143i128);
     // total_commission_amount = 1_980 + 5_253 + 22_571 = 29_804
     assert_eq!(
-        simulated_swap.commission_amount,
+        simulated_swap.commission_amounts,
         vec![
             &env,
             (String::from_str(&env, "FZY"), 1980i128),
@@ -630,7 +625,7 @@ fn simulate_swap_three_different_pools_with_fees() {
     // one difference due to rounding
     assert_eq!(reverse_simulated_swap.offer_amount, 9_999i128);
     assert_eq!(
-        reverse_simulated_swap.commission_amount,
+        reverse_simulated_swap.commission_amounts,
         vec![
             &env,
             (String::from_str(&env, "GZY"), 22571i128),
