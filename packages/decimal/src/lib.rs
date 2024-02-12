@@ -17,7 +17,6 @@ extern crate alloc;
 #[allow(dead_code)]
 #[derive(Debug)]
 enum Error {
-    Overflow,
     DivideByZero,
 }
 
@@ -209,7 +208,6 @@ impl Decimal {
         match Decimal::checked_from_ratio(numerator, denominator) {
             Ok(ratio) => ratio,
             Err(Error::DivideByZero) => panic!("Denominator must not be zero"),
-            Err(Error::Overflow) => panic!("Multiplication overflow"),
         }
     }
 
@@ -319,7 +317,6 @@ impl Div for Decimal {
         match Decimal::checked_from_ratio(self.numerator(), rhs.numerator()) {
             Ok(ratio) => ratio,
             Err(Error::DivideByZero) => panic!("Division failed - denominator must not be zero"),
-            Err(Error::Overflow) => panic!("Division failed - multiplication overflow"),
         }
     }
 }
