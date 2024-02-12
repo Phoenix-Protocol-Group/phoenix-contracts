@@ -52,6 +52,7 @@ pub fn deploy_factory_contract<'a>(
         &stake_wasm_hash,
         &token_wasm_hash,
         &whitelisted_accounts,
+        &10u32,
     );
     factory
 }

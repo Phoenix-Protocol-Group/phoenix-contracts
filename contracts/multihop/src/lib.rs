@@ -15,6 +15,7 @@ pub mod lp_contract {
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 pub mod factory_contract {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"

@@ -7,6 +7,7 @@ use soroban_sdk::{
 };
 use soroban_sdk::{vec, IntoVal, String};
 
+#[allow(clippy::too_many_arguments)]
 pub mod factory {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"
@@ -118,6 +119,7 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Clie
         &stake_wasm_hash,
         &token_wasm_hash,
         &whitelisted_accounts,
+        &10u32,
     );
     factory_client
 }

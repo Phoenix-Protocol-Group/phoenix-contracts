@@ -1,4 +1,3 @@
-use phoenix::constants::LP_TOKEN_DECIMALS;
 use phoenix::utils::LiquidityPoolInitInfo;
 use soroban_sdk::{contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal};
 
@@ -40,6 +39,7 @@ pub trait StableLiquidityPoolTrait {
         amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
+        share_token_decimals: u32,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -129,13 +129,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
+        share_token_decimals: u32,
     ) {
         if is_initialized(&env) {
             panic!("Pool stable: Initialize: initializing contract twice is not allowed");
         }
 
         let admin = lp_init_info.admin;
-        let share_token_decimals = LP_TOKEN_DECIMALS;
         let swap_fee_bps = lp_init_info.swap_fee_bps;
         let fee_recipient = lp_init_info.fee_recipient;
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;

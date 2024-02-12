@@ -20,6 +20,7 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
 pub struct Factory;
 
 pub trait FactoryTrait {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
@@ -28,6 +29,7 @@ pub trait FactoryTrait {
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
+        lp_token_decimals: u32,
     );
 
     fn create_liquidity_pool(
@@ -58,6 +60,7 @@ pub trait FactoryTrait {
 
 #[contractimpl]
 impl FactoryTrait for Factory {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
@@ -66,6 +69,7 @@ impl FactoryTrait for Factory {
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
+        lp_token_decimals: u32,
     ) {
         if is_initialized(&env) {
             panic!("Factory: Initialize: initializing contract twice is not allowed");
@@ -73,6 +77,10 @@ impl FactoryTrait for Factory {
 
         if whitelisted_accounts.is_empty() {
             panic!("Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.")
+        }
+
+        if lp_token_decimals < 6 {
+            panic!("Factory: Initliaze: trying to create factory with invalid param: lp_token_demicals < 6");
         }
 
         set_initialized(&env);
@@ -89,6 +97,7 @@ impl FactoryTrait for Factory {
                 stake_wasm_hash,
                 token_wasm_hash,
                 whitelisted_accounts,
+                lp_token_decimals,
             },
         );
 
@@ -142,6 +151,7 @@ impl FactoryTrait for Factory {
             token_wasm_hash,
             lp_init_info.clone(),
             factory_addr,
+            config.lp_token_decimals,
         )
             .into_val(&env);
 

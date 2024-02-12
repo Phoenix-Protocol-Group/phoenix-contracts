@@ -33,6 +33,7 @@ fn test_deploy_factory_twice_should_fail() {
         &stake_wasm_hash,
         &token_wasm_hash,
         &vec![&env, auth_user.clone()],
+        &10u32,
     );
     factory.initialize(
         &admin,
@@ -41,5 +42,6 @@ fn test_deploy_factory_twice_should_fail() {
         &stake_wasm_hash,
         &token_wasm_hash,
         &vec![&env, auth_user.clone()],
+        &10u32,
     );
 }

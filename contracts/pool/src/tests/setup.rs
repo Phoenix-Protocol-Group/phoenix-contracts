@@ -71,6 +71,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
         &token_wasm_hash,
         &lp_init_info,
         &stake_owner,
+        &10u32,
     );
     pool
 }

@@ -17,7 +17,6 @@ use crate::{
 };
 use decimal::Decimal;
 use phoenix::{
-    constants::LP_TOKEN_DECIMALS,
     utils::{is_approx_ratio, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
@@ -41,6 +40,7 @@ pub trait LiquidityPoolTrait {
         token_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
+        share_token_decimals: u32,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -134,13 +134,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
+        share_token_decimals: u32,
     ) {
         if is_initialized(&env) {
             panic!("Liquidity Pool: Initialize: initializing contract twice is not allowed");
         }
 
         let admin = lp_init_info.admin;
-        let share_token_decimals = LP_TOKEN_DECIMALS;
         let swap_fee_bps = lp_init_info.swap_fee_bps;
         let fee_recipient = lp_init_info.fee_recipient;
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
