@@ -169,8 +169,7 @@ impl MultihopTrait for Multihop {
             let simulated_reverse_swap =
                 lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
 
-            let token_client = token_contract::Client::new(&env, &op.ask_asset);
-            let token_symbol = token_client.symbol();
+            let token_symbol = token_contract::Client::new(&env, &op.ask_asset).symbol();
 
             simulate_swap_response
                 .commission_amounts

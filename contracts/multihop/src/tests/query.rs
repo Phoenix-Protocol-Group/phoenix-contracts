@@ -32,7 +32,10 @@ fn simulate_swap_single_pool_no_fees() {
     );
 
     assert_eq!(token1.symbol(), String::from_str(&env, "FZY"));
+    assert_eq!(token1.name(), String::from_str(&env, "fuzzy"));
+
     assert_eq!(token2.symbol(), String::from_str(&env, "BZY"));
+    assert_eq!(token2.name(), String::from_str(&env, "bazzy"));
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
