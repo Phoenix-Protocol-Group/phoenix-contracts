@@ -831,19 +831,16 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
-    let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
         (&token1.address, &token2.address),
-        swap_fees,
+        0i64,
         None,
         None,
         None,
     );
-
-    // selling just one token with 1% max spread allowed
-    let spread = 100i64; // 1% maximum spread allowed
+    // Swap fails because we provide incorrect token as offer token.
     pool.swap(
         &user1,
         // FIXM: Disable Referral struct
@@ -851,6 +848,6 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
         &bad_token.address,
         &1,
         &None,
-        &Some(spread),
+        &Some(100),
     );
 }
