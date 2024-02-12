@@ -40,7 +40,7 @@ pub trait StakingTrait {
 
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
 
-    fn create_distribution_flow(env: Env, sender: Address, manager: Address, asset: Address);
+    fn create_distribution_flow(env: Env, sender: Address, asset: Address);
 
     fn distribute_rewards(env: Env);
 
@@ -179,7 +179,7 @@ impl StakingTrait for Staking {
         env.events().publish(("bond", "amount"), stake_amount);
     }
 
-    fn create_distribution_flow(env: Env, sender: Address, manager: Address, asset: Address) {
+    fn create_distribution_flow(env: Env, sender: Address, asset: Address) {
         sender.require_auth();
 
         let distribution = Distribution {
@@ -187,7 +187,6 @@ impl StakingTrait for Staking {
             shares_leftover: 0u64,
             distributed_total: 0u128,
             withdrawable_total: 0u128,
-            manager,
             max_bonus_bps: 0u64,
             bonus_per_day_bps: 0u64,
         };
