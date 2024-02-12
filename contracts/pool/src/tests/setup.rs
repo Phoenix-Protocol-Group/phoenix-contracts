@@ -1,4 +1,4 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String};
 
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
@@ -72,6 +72,8 @@ pub fn deploy_liquidity_pool_contract<'a>(
         &lp_init_info,
         &stake_owner,
         &10u32,
+        &String::from_str(env, "Pool"),
+        &String::from_str(env, "PHOBTC"),
     );
     pool
 }

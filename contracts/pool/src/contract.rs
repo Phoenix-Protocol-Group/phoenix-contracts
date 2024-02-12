@@ -1,5 +1,6 @@
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
+    String,
 };
 
 use num_integer::Roots;
@@ -40,6 +41,8 @@ pub trait LiquidityPoolTrait {
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
+        pool_name: String,
+        pool_symbol: String,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -133,6 +136,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
+        pool_name: String,
+        pool_symbol: String,
     ) {
         if is_initialized(&env) {
             panic!("Liquidity Pool: Initialize: initializing contract twice is not allowed");
@@ -186,9 +191,9 @@ impl LiquidityPoolTrait for LiquidityPool {
             // number of decimals on the share token
             &share_token_decimals,
             // name
-            &"Pool Share Token".into_val(&env),
+            &pool_name.into_val(&env),
             // symbol
-            &"POOL".into_val(&env),
+            &pool_symbol.into_val(&env),
         );
 
         let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);

@@ -1,6 +1,6 @@
 extern crate std;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
@@ -130,6 +130,8 @@ fn second_pool_deployment_should_fail() {
         &lp_init_info,
         &Address::generate(&env),
         &10u32,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHOBTC"),
     );
 
     pool.initialize(
@@ -138,5 +140,7 @@ fn second_pool_deployment_should_fail() {
         &lp_init_info,
         &Address::generate(&env),
         &10u32,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHOBTC"),
     );
 }

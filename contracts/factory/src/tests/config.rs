@@ -3,7 +3,7 @@ use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
-    vec, Address, Env,
+    vec, Address, Env, String,
 };
 
 #[test]
@@ -73,7 +73,12 @@ fn factory_successfully_inits_lp() {
         stake_init_info,
     };
 
-    factory.create_liquidity_pool(&lp_init_info, &admin);
+    factory.create_liquidity_pool(
+        &admin,
+        &lp_init_info,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHO/BTC"),
+    );
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
     let first_lp_contract = lp_contract::Client::new(&env, &lp_contract_addr);
@@ -145,7 +150,12 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
 
     let unauthorized_addr = Address::generate(&env);
 
-    factory.create_liquidity_pool(&lp_init_info, &unauthorized_addr);
+    factory.create_liquidity_pool(
+        &unauthorized_addr,
+        &lp_init_info,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHO/BTC"),
+    );
 }
 
 #[test]

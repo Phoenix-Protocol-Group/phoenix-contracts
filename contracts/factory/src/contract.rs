@@ -10,7 +10,8 @@ use crate::{
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use phoenix::validate_bps;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
+    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, String, Symbol, Val,
+    Vec,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -34,8 +35,10 @@ pub trait FactoryTrait {
 
     fn create_liquidity_pool(
         env: Env,
-        lp_init_info: LiquidityPoolInitInfo,
         caller: Address,
+        lp_init_info: LiquidityPoolInitInfo,
+        pool_name: String,
+        pool_symbol: String,
     ) -> Address;
 
     fn update_whitelisted_accounts(
@@ -105,8 +108,10 @@ impl FactoryTrait for Factory {
 
     fn create_liquidity_pool(
         env: Env,
-        lp_init_info: LiquidityPoolInitInfo,
         caller: Address,
+        lp_init_info: LiquidityPoolInitInfo,
+        pool_name: String,
+        pool_symbol: String,
     ) -> Address {
         caller.require_auth();
         if !get_config(&env).whitelisted_accounts.contains(caller) {
@@ -148,6 +153,8 @@ impl FactoryTrait for Factory {
             lp_init_info.clone(),
             factory_addr,
             config.lp_token_decimals,
+            pool_name,
+            pool_symbol,
         )
             .into_val(&env);
 

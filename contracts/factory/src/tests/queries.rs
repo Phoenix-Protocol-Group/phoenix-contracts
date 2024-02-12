@@ -4,7 +4,7 @@ use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{
     contracttype,
     testutils::{arbitrary::std, Address as _},
-    Address, Env, Symbol, Vec,
+    Address, Env, String, Symbol, Vec,
 };
 
 #[contracttype]
@@ -125,10 +125,24 @@ fn test_deploy_multiple_liquidity_pools() {
         stake_init_info: third_stake_init_info,
     };
 
-    let lp_contract_addr = factory.create_liquidity_pool(&first_lp_init_info, &admin.clone());
-    let second_lp_contract_addr =
-        factory.create_liquidity_pool(&second_lp_init_info, &admin.clone());
-    let third_lp_contract_addr = factory.create_liquidity_pool(&third_lp_init_info, &admin.clone());
+    let lp_contract_addr = factory.create_liquidity_pool(
+        &admin.clone(),
+        &first_lp_init_info,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHO/BTC"),
+    );
+    let second_lp_contract_addr = factory.create_liquidity_pool(
+        &admin.clone(),
+        &second_lp_init_info,
+        &String::from_str(&env, "Pool #2"),
+        &String::from_str(&env, "PHO/ETH"),
+    );
+    let third_lp_contract_addr = factory.create_liquidity_pool(
+        &admin.clone(),
+        &third_lp_init_info,
+        &String::from_str(&env, "Pool #3"),
+        &String::from_str(&env, "PHO/XLM"),
+    );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
     let share_token_addr: Address = env.invoke_contract(
@@ -308,10 +322,24 @@ fn test_queries_by_tuple() {
         stake_init_info: third_stake_init_info,
     };
 
-    let lp_contract_addr = factory.create_liquidity_pool(&first_lp_init_info, &admin.clone());
-    let second_lp_contract_addr =
-        factory.create_liquidity_pool(&second_lp_init_info, &admin.clone());
-    let third_lp_contract_addr = factory.create_liquidity_pool(&third_lp_init_info, &admin.clone());
+    let lp_contract_addr = factory.create_liquidity_pool(
+        &admin.clone(),
+        &first_lp_init_info,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHO/BTC"),
+    );
+    let second_lp_contract_addr = factory.create_liquidity_pool(
+        &admin.clone(),
+        &second_lp_init_info,
+        &String::from_str(&env, "Pool #2"),
+        &String::from_str(&env, "PHO/ETH"),
+    );
+    let third_lp_contract_addr = factory.create_liquidity_pool(
+        &admin.clone(),
+        &third_lp_init_info,
+        &String::from_str(&env, "Pool #3"),
+        &String::from_str(&env, "PHO/XLM"),
+    );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
 
