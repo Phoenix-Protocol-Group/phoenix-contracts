@@ -3,7 +3,6 @@ mod contract;
 mod distribution;
 mod msg;
 mod storage;
-mod utils;
 
 pub mod token_contract {
     // The import will code generate:
