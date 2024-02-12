@@ -851,3 +851,77 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
         &Some(100),
     );
 }
+
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #13)")]
+fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_in_pool() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    let bad_token = deploy_token_contract(&env, &Address::generate(&env));
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0i64,
+        None,
+        None,
+        None,
+    );
+    // Simulate swap fails because we provide incorrect token as offer token.
+    pool.simulate_swap(
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &bad_token.address,
+        &1,
+    );
+}
+
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #13)")]
+fn test_v_phx_vul_017_should_panic_when_simulating_reverse_swap_for_non_existing_token_in_pool() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    let bad_token = deploy_token_contract(&env, &Address::generate(&env));
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0i64,
+        None,
+        None,
+        None,
+    );
+    // Simulate swap fails because we provide incorrect token as offer token.
+    pool.simulate_reverse_swap(
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &bad_token.address,
+        &1,
+    );
+}
