@@ -64,7 +64,6 @@ fn confirm_stake_contract_deployment() {
             config: stake_contract::Config {
                 lp_token: share_token_address,
                 min_bond: 10,
-                max_distributions: 10,
                 min_reward: 5,
             }
         }

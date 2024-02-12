@@ -34,20 +34,13 @@ pub struct Staking;
 pub trait StakingTrait {
     // Sets the token contract addresses for this pool
     // epoch: Number of seconds between payments
-    fn initialize(
-        env: Env,
-        admin: Address,
-        lp_token: Address,
-        min_bond: i128,
-        max_distributions: u32,
-        min_reward: i128,
-    );
+    fn initialize(env: Env, admin: Address, lp_token: Address, min_bond: i128, min_reward: i128);
 
     fn bond(env: Env, sender: Address, tokens: i128);
 
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
 
-    fn create_distribution_flow(env: Env, sender: Address, manager: Address, asset: Address);
+    fn create_distribution_flow(env: Env, sender: Address, asset: Address);
 
     fn distribute_rewards(env: Env);
 
@@ -83,14 +76,7 @@ pub trait StakingTrait {
 
 #[contractimpl]
 impl StakingTrait for Staking {
-    fn initialize(
-        env: Env,
-        admin: Address,
-        lp_token: Address,
-        min_bond: i128,
-        max_distributions: u32,
-        min_reward: i128,
-    ) {
+    fn initialize(env: Env, admin: Address, lp_token: Address, min_bond: i128, min_reward: i128) {
         if is_initialized(&env) {
             panic!("Stake: Initialize: initializing contract twice is not allowed");
         }
@@ -115,7 +101,6 @@ impl StakingTrait for Staking {
         let config = Config {
             lp_token,
             min_bond,
-            max_distributions,
             min_reward,
         };
         save_config(&env, config);
@@ -194,7 +179,7 @@ impl StakingTrait for Staking {
         env.events().publish(("bond", "amount"), stake_amount);
     }
 
-    fn create_distribution_flow(env: Env, sender: Address, manager: Address, asset: Address) {
+    fn create_distribution_flow(env: Env, sender: Address, asset: Address) {
         sender.require_auth();
 
         let distribution = Distribution {
@@ -202,7 +187,6 @@ impl StakingTrait for Staking {
             shares_leftover: 0u64,
             distributed_total: 0u128,
             withdrawable_total: 0u128,
-            manager,
             max_bonus_bps: 0u64,
             bonus_per_day_bps: 0u64,
         };

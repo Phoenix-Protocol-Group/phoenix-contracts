@@ -55,8 +55,6 @@ pub struct Distribution {
     pub distributed_total: u128,
     /// Total rewards not yet withdrawn.
     pub withdrawable_total: u128,
-    /// The manager of this distribution
-    pub manager: Address,
     /// Max bonus for staking after 60 days
     pub max_bonus_bps: u64,
     /// Bonus per staking day

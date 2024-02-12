@@ -28,7 +28,6 @@ fn initializa_staking_contract() {
             config: Config {
                 lp_token: lp_token.address,
                 min_bond: 1_000i128,
-                max_distributions: 7u32,
                 min_reward: 1_000i128
             }
         }
@@ -49,8 +48,8 @@ fn test_deploying_stake_twice_should_fail() {
 
     let first = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
 
-    first.initialize(&admin, &lp_token.address, &100i128, &100_000u32, &50i128);
-    first.initialize(&admin, &lp_token.address, &100i128, &100_000u32, &50i128);
+    first.initialize(&admin, &lp_token.address, &100i128, &50i128);
+    first.initialize(&admin, &lp_token.address, &100i128, &50i128);
 }
 
 #[test]
