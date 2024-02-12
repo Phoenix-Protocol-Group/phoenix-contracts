@@ -852,7 +852,6 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
     );
 }
 
-
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #13)")]
 fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_in_pool() {
@@ -888,7 +887,6 @@ fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_i
         &1,
     );
 }
-
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #13)")]
