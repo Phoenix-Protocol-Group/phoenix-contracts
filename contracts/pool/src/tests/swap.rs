@@ -799,8 +799,6 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         &None,
     );
 
-    // selling just one token with 1% max spread allowed
-    let spread = 100i64; // 1% maximum spread allowed
     pool.swap(
         &user1,
         // FIXM: Disable Referral struct
@@ -810,90 +808,4 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         &None,
         &max_spread,
     );
-    assert_eq!(
-        env.auths(),
-        [(
-            user1.clone(),
-            AuthorizedInvocation {
-                function: AuthorizedFunction::Contract((
-                    pool.address.clone(),
-                    symbol_short!("swap"),
-                    (
-                        &user1,
-                        // FIXM: Disable Referral struct
-                        // None::<Referral>,
-                        token1.address.clone(),
-                        1_i128,
-                        None::<i64>,
-                        spread
-                    )
-                        .into_val(&env)
-                )),
-                sub_invocations: std::vec![
-                    (AuthorizedInvocation {
-                        function: AuthorizedFunction::Contract((
-                            token1.address.clone(),
-                            symbol_short!("transfer"),
-                            (&user1, &pool.address, 1_i128).into_val(&env)
-                        )),
-                        sub_invocations: std::vec![],
-                    }),
-                ],
-            }
-        )]
-    );
-
-    let share_token_address = pool.query_share_token_address();
-    let result = pool.query_pool_info();
-    assert_eq!(
-        result,
-        PoolResponse {
-            asset_a: Asset {
-                address: token1.address.clone(),
-                amount: 1_000_001i128,
-            },
-            asset_b: Asset {
-                address: token2.address.clone(),
-                amount: 999_999i128,
-            },
-            asset_lp_share: Asset {
-                address: share_token_address.clone(),
-                amount: 1_000_000i128,
-            },
-        }
-    );
-    assert_eq!(token1.balance(&user1), 999); // -1 from the swap
-    assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
-
-    // this time 100 units
-    let output_amount = pool.swap(
-        &user1,
-        // FIXM: Disable Referral struct
-        // &None::<Referral>,
-        &token2.address,
-        &1_000,
-        &None,
-        &Some(spread),
-    );
-    let result = pool.query_pool_info();
-    assert_eq!(
-        result,
-        PoolResponse {
-            asset_a: Asset {
-                address: token1.address.clone(),
-                amount: 1_000_001 - 1_000, // previous balance minus 1_000
-            },
-            asset_b: Asset {
-                address: token2.address.clone(),
-                amount: 999_999 + 1000,
-            },
-            asset_lp_share: Asset {
-                address: share_token_address,
-                amount: 1_000_000i128, // this has not changed
-            },
-        }
-    );
-    assert_eq!(output_amount, 1000);
-    assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
-    assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
 }
