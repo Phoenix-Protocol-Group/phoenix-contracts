@@ -89,24 +89,14 @@ impl MultihopTrait for Multihop {
 
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
             // FIXM: Disable Referral struct
-            // if let Some(referral) = referral.clone() {
-            //     next_offer_amount = lp_client.swap(
-            //         &recipient,
-            //         &Some(referral),
-            //         &op.offer_asset,
-            //         &next_offer_amount,
-            //         &max_belief_price,
-            //         &max_spread_bps,
-            //     );
-            // } else {
             next_offer_amount = lp_client.swap(
                 &recipient,
+                // &referral,
                 &op.offer_asset,
                 &next_offer_amount,
                 &op.max_belief_price,
                 &max_spread_bps,
             );
-            // }
         });
     }
 
