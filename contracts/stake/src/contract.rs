@@ -34,14 +34,7 @@ pub struct Staking;
 pub trait StakingTrait {
     // Sets the token contract addresses for this pool
     // epoch: Number of seconds between payments
-    fn initialize(
-        env: Env,
-        admin: Address,
-        lp_token: Address,
-        min_bond: i128,
-        max_distributions: u32,
-        min_reward: i128,
-    );
+    fn initialize(env: Env, admin: Address, lp_token: Address, min_bond: i128, min_reward: i128);
 
     fn bond(env: Env, sender: Address, tokens: i128);
 
@@ -83,14 +76,7 @@ pub trait StakingTrait {
 
 #[contractimpl]
 impl StakingTrait for Staking {
-    fn initialize(
-        env: Env,
-        admin: Address,
-        lp_token: Address,
-        min_bond: i128,
-        max_distributions: u32,
-        min_reward: i128,
-    ) {
+    fn initialize(env: Env, admin: Address, lp_token: Address, min_bond: i128, min_reward: i128) {
         if is_initialized(&env) {
             panic!("Stake: Initialize: initializing contract twice is not allowed");
         }
@@ -115,7 +101,6 @@ impl StakingTrait for Staking {
         let config = Config {
             lp_token,
             min_bond,
-            max_distributions,
             min_reward,
         };
         save_config(&env, config);
