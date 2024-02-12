@@ -124,8 +124,7 @@ impl MultihopTrait for Multihop {
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
             let simulated_swap = lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
 
-            let token_client = token_contract::Client::new(&env, &op.offer_asset);
-            let token_symbol = token_client.symbol();
+            let token_symbol = token_contract::Client::new(&env, &op.offer_asset).symbol();
 
             simulate_swap_response
                 .commission_amounts
