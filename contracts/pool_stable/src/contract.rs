@@ -152,7 +152,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let token_b = token_init_info.token_b;
         // Contract info
         let min_bond = stake_init_info.min_bond;
-        let max_distributions = stake_init_info.max_distributions;
         let min_reward = stake_init_info.min_reward;
 
         // Token order validation to make sure only one instance of a pool can exist
@@ -189,7 +188,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &admin,
             &share_token_address,
             &min_bond,
-            &max_distributions,
             &min_reward,
         );
 
