@@ -33,7 +33,6 @@ pub struct LiquidityPool;
 pub trait LiquidityPoolTrait {
     // Sets the token contract addresses for this pool
     // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token
-    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         stake_wasm_hash: BytesN<32>,
@@ -127,7 +126,6 @@ pub trait LiquidityPoolTrait {
 
 #[contractimpl]
 impl LiquidityPoolTrait for LiquidityPool {
-    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         stake_wasm_hash: BytesN<32>,
