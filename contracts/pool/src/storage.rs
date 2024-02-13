@@ -368,6 +368,7 @@ pub mod utils {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
 
     #[test]
     #[should_panic]
@@ -559,5 +560,44 @@ mod tests {
     fn test_invalidate_fee_bps() {
         let env = Env::default();
         validate_fee_bps(&env, 10_001);
+    }
+
+    #[test_case(-1, 10 ; "when desired_a is negative")]
+    #[test_case(0, 10 ; "when desired_a is zero")]
+    #[test_case(10, -1 ; "when desired_b is negative")]
+    #[test_case(10, 0 ; "when desired_b is zero")]
+    #[test_case(-1, -1 ; "when both desired are negative")]
+    #[test_case(0, 0 ; "when both desired are zero")]
+    #[should_panic(expected = "Error(Contract, #13)")]
+    fn test_get_deposit_amounts_desired_less_than_or_equal_zero(desired_a: i128, desired_b: i128) {
+        let env = Env::default();
+        utils::get_deposit_amounts(
+            &env,
+            desired_a,
+            Some(100),
+            desired_b,
+            Some(300),
+            100,
+            200,
+            Decimal::bps(100),
+        );
+    }
+
+    #[test_case(-1, 10 ; "when min_a is negative")]
+    #[test_case(10, -1 ; "when min_b is negative")]
+    #[test_case(-1, -1 ; "when both minimums are negative")]
+    #[should_panic(expected = "Error(Contract, #14)")]
+    fn test_get_deposit_amounts_min_amounts_less_than_zero(min_a: i128, min_b: i128) {
+        let env = Env::default();
+        utils::get_deposit_amounts(
+            &env,
+            100,
+            Some(min_a),
+            100,
+            Some(min_b),
+            100,
+            200,
+            Decimal::bps(100),
+        );
     }
 }
