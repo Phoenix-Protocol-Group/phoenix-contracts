@@ -247,6 +247,26 @@ pub mod utils {
         pool_balance_b: i128,
         allowed_slippage: Decimal,
     ) -> (i128, i128) {
+        if desired_a <= 0 || desired_b <= 0 {
+            log!(
+            env,
+            "Pool: Get Deposit Amounts: Desired amounts are equal or less than zero - desired_a: {}, desired_b: {}",
+            desired_a, desired_b);
+
+            panic_with_error!(env, ContractError::DesiredAmountsBelowOrEqualZero);
+        }
+
+        if let (Some(min_a), Some(min_b)) = (min_a, min_b) {
+            if min_a < 0 || min_b < 0 {
+                log!(
+                env,
+                "Pool: Get Deposit Amounts: Min amounts are less than zero - min_a: {}, min_b: {}",
+                min_a, min_b);
+
+                panic_with_error!(env, ContractError::MinAmountsBelowZero);
+            }
+        }
+
         if pool_balance_a == 0 && pool_balance_b == 0 {
             return (desired_a, desired_b);
         }
