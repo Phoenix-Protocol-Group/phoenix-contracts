@@ -878,43 +878,42 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "assertion and debug on soroban_sdk::string return `String()`"]
+    // #[ignore = "assertion and debug on soroban_sdk::string return `String()`"]
     fn decimal_displayed_as_string() {
         let env = Env::default();
-        let decimal = Decimal::new(128);
+        let decimal = Decimal::percent(128);
+        // Dmytro
+        // token.symbol().to_string().as_str(), "JOY"))
+        //
+        // Jakub
+        /// assert_eq!(a.to_string(&e), String::from_slice(&e, "1.234"));
 
-        assert_eq!(decimal.to_string(&env), String::from_str(&env, "128"));
+        assert_eq!(decimal.to_string(&env), String::from_slice(&env, "128"));
     }
 
     #[test]
     fn decimal_fmt_without_fractional_part() {
-        let value = Decimal(100 * Decimal::DECIMAL_FRACTIONAL);
+        let value = Decimal::from_atomics(100, 0);
         assert_eq!(format!("{}", value), "100");
     }
 
     #[test]
     fn decimal_fmt_fractional_part() {
-        // 1234.56789
-        let whole = 1234 * Decimal::DECIMAL_FRACTIONAL;
-        let fractional = 56789 * (Decimal::DECIMAL_FRACTIONAL / 100000);
-        let value = Decimal(whole + fractional);
+        let value = Decimal::from_atomics(123456789, 5);
         assert_eq!(format!("{}", value), "1234.56789");
     }
 
     #[test]
     fn decimal_fmt_fractional_part_with_trailing_zeros() {
         // 12345.6
-        let whole = 12345 * Decimal::DECIMAL_FRACTIONAL;
-        let fractional = 60 * (Decimal::DECIMAL_FRACTIONAL / 100);
-        let value = Decimal(whole + fractional);
+        let value = Decimal::from_atomics(123456, 1);
         assert_eq!(format!("{}", value), "12345.6");
     }
 
     #[test]
     fn decimal_fmt_only_fractional() {
-        // 0.0789 
-        let fractional = 789 * (Decimal::DECIMAL_FRACTIONAL / 10000);
-        let value = Decimal(fractional);
+        // 0.0789
+        let value = Decimal::from_atomics(789, 4);
         assert_eq!(format!("{}", value), "0.0789");
     }
 }
