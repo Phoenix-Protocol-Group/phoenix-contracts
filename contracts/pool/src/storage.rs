@@ -421,6 +421,22 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Error(Contract, #11)")]
+    fn test_get_deposit_amounts_amount_b_exceeds_desired_amount() {
+        let env = Env::default();
+        utils::get_deposit_amounts(
+            &env,
+            1100,
+            Some(1000),
+            1000,
+            Some(1000),
+            1,
+            1,
+            Decimal::bps(100),
+        );
+    }
+
+    #[test]
     #[should_panic(expected = "Error(Contract, #12)")]
     fn test_get_deposit_amounts_amount_b_less_than_min_b() {
         let env = Env::default();
@@ -618,7 +634,7 @@ mod tests {
             share_token: Address::generate(&env),
             stake_contract: Address::generate(&env),
             pool_type: PairType::Xyk,
-            total_fee_bps: 10i64 ,
+            total_fee_bps: 10i64,
             fee_recipient: Address::generate(&env),
             max_allowed_spread_bps: 10_i64,
             max_referral_bps: 10i64,
