@@ -418,6 +418,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let total_shares = utils::get_total_shares(&env);
 
         if total_shares == 0i128 {
+            log!(&env, "Pool: WithdrawLiquidity: Critical error - Total shares are equal to zero before withdrawal!");
             panic_with_error!(env, ContractError::TotalSharesEqualZero);
         }
 

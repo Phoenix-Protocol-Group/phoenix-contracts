@@ -253,12 +253,14 @@ pub mod utils {
 
         if let Some(min_a) = min_a {
             if min_a > desired_a {
+                log!(&env, "Pool: GetDepositAmounts: Critical error - minimumA is bigger than desiredA");
                 panic_with_error!(env, ContractError::GetDepositAmountsMinABiggerThenDesiredA);
             }
         }
         if let Some(min_b) = min_b {
             if min_b > desired_b {
-                panic_with_error!(env, ContractError::GetDepositAmountsMinABiggerThenDesiredA);
+                log!(&env, "Pool: GetDepositAmounts: Critical error - minimumB is bigger than desiredB");
+                panic_with_error!(env, ContractError::GetDepositAmountsMinBBiggerThenDesiredB);
             }
         }
 

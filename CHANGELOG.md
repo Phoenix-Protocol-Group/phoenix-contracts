@@ -32,7 +32,7 @@ and this project adheres to
 ## Bug fixes
 
 - Pool stable: Fixes an error in the compute_swap function, where commission isn't deducted ([233])
-- Pool: Adds a validation for when shares can be zero ([#245])
+- Pool: Adds a validation for when shares can be zero during withdrawal ([#245])
 
 [#233]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/233
 [#245]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/245
