@@ -273,13 +273,19 @@ pub mod utils {
 
         if let Some(min_a) = min_a {
             if min_a > desired_a {
-                log!(&env, "Pool: GetDepositAmounts: Critical error - minimumA is bigger than desiredA");
+                log!(
+                    &env,
+                    "Pool: GetDepositAmounts: Critical error - minimumA is bigger than desiredA"
+                );
                 panic_with_error!(env, ContractError::GetDepositAmountsMinABiggerThenDesiredA);
             }
         }
         if let Some(min_b) = min_b {
             if min_b > desired_b {
-                log!(&env, "Pool: GetDepositAmounts: Critical error - minimumB is bigger than desiredB");
+                log!(
+                    &env,
+                    "Pool: GetDepositAmounts: Critical error - minimumB is bigger than desiredB"
+                );
                 panic_with_error!(env, ContractError::GetDepositAmountsMinBBiggerThenDesiredB);
             }
         }
@@ -568,7 +574,7 @@ mod tests {
     #[test_case(10, 0 ; "when desired_b is zero")]
     #[test_case(-1, -1 ; "when both desired are negative")]
     #[test_case(0, 0 ; "when both desired are zero")]
-    #[should_panic(expected = "Error(Contract, #13)")]
+    #[should_panic(expected = "Error(Contract, #14)")]
     fn test_get_deposit_amounts_desired_less_than_or_equal_zero(desired_a: i128, desired_b: i128) {
         let env = Env::default();
         utils::get_deposit_amounts(
@@ -586,7 +592,7 @@ mod tests {
     #[test_case(-1, 10 ; "when min_a is negative")]
     #[test_case(10, -1 ; "when min_b is negative")]
     #[test_case(-1, -1 ; "when both minimums are negative")]
-    #[should_panic(expected = "Error(Contract, #14)")]
+    #[should_panic(expected = "Error(Contract, #15)")]
     fn test_get_deposit_amounts_min_amounts_less_than_zero(min_a: i128, min_b: i128) {
         let env = Env::default();
         utils::get_deposit_amounts(
