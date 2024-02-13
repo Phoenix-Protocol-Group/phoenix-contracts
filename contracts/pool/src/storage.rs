@@ -374,6 +374,7 @@ pub mod utils {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use soroban_sdk::testutils::Address as _;
     use test_case::test_case;
 
     #[test]
@@ -417,6 +418,22 @@ mod tests {
     fn test_get_deposit_amounts_amount_b_less_than_desired() {
         let env = Env::default();
         utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #11)")]
+    fn test_get_deposit_amounts_amount_b_exceeds_desired_amount() {
+        let env = Env::default();
+        utils::get_deposit_amounts(
+            &env,
+            1100,
+            Some(1000),
+            1000,
+            Some(1000),
+            1,
+            1,
+            Decimal::bps(100),
+        );
     }
 
     #[test]
@@ -604,6 +621,31 @@ mod tests {
             100,
             200,
             Decimal::bps(100),
+        );
+    }
+
+    #[test]
+    fn test_max_allowed_slippage() {
+        let env = Env::default();
+        let config = Config {
+            max_allowed_slippage_bps: 100,
+            token_a: Address::generate(&env),
+            token_b: Address::generate(&env),
+            share_token: Address::generate(&env),
+            stake_contract: Address::generate(&env),
+            pool_type: PairType::Xyk,
+            total_fee_bps: 10i64,
+            fee_recipient: Address::generate(&env),
+            max_allowed_spread_bps: 10_i64,
+            max_referral_bps: 10i64,
+        };
+
+        let result = config.max_allowed_slippage();
+
+        assert_eq!(
+            result,
+            Decimal::percent(1),
+            "Max allowed slippage should be 1%."
         );
     }
 }
