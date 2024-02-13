@@ -1,3 +1,4 @@
+use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
 };
@@ -415,11 +416,14 @@ impl LiquidityPoolTrait for LiquidityPool {
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
 
-        let mut share_ratio = Decimal::zero();
         let total_shares = utils::get_total_shares(&env);
-        if total_shares != 0i128 {
-            share_ratio = Decimal::from_ratio(share_amount, total_shares);
+        dbg!(total_shares);
+
+        if total_shares == 0i128 {
+            panic_with_error!(env, ContractError::TotalSharesEqualZero);
         }
+
+        let share_ratio = Decimal::from_ratio(share_amount, total_shares);
 
         let return_amount_a = pool_balance_a * share_ratio;
         let return_amount_b = pool_balance_b * share_ratio;

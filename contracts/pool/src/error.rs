@@ -19,4 +19,5 @@ pub enum ContractError {
     GetDepositAmountsAmountALessThenMinA = 10,
     GetDepositAmountsAmountBBiggerThenDesiredB = 11,
     GetDepositAmountsAmountBLessThenMinB = 12,
+    TotalSharesEqualZero = 13,
 }
