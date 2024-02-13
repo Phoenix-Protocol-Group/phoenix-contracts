@@ -399,6 +399,7 @@ impl fmt::Display for Decimal {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use soroban_sdk::testutils::arbitrary::std::dbg;
 
     #[test]
     fn decimal_new() {
@@ -860,5 +861,19 @@ mod tests {
     #[should_panic]
     fn decimal_pow_overflow_panics() {
         _ = Decimal::MAX.pow(2u32);
+    }
+
+    #[test]
+    fn decimal_abs_with_negative_number() {
+        let decimal = Decimal { 0: -128 };
+
+        assert_eq!(decimal.abs(), Decimal { 0: 128 });
+    }
+
+    #[test]
+    fn decimal_abs_with_positive_number() {
+        let decimal = Decimal { 0: 128 };
+
+        assert_eq!(decimal.abs(), Decimal { 0: 128 });
     }
 }
