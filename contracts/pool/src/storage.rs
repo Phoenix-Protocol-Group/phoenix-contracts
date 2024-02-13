@@ -423,7 +423,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #7)")]
+    #[should_panic(expected = "Error(Contract, #8)")]
     fn test_get_deposit_amounts_amount_b_greater_than_desired_and_less_than_min_b() {
         let env = Env::default();
         utils::get_deposit_amounts(
