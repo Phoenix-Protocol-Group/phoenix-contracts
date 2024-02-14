@@ -764,3 +764,21 @@ fn calculate_apr() {
         }
     );
 }
+
+#[test]
+#[should_panic(expected = "Stake: create distribution flow: You are not allowed to create distribution flows.")]
+fn add_distribution_should_fail_when_not_authorized() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+
+    staking.create_distribution_flow(&Address::generate(&env), &reward_token.address);
+}
