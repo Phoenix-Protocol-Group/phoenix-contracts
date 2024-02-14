@@ -766,7 +766,9 @@ fn calculate_apr() {
 }
 
 #[test]
-#[should_panic(expected = "Stake: create distribution flow: You are not allowed to create distribution flows.")]
+#[should_panic(
+    expected = "Stake: create distribution flow: You are not allowed to create distribution flows."
+)]
 fn add_distribution_should_fail_when_not_authorized() {
     let env = Env::default();
     env.mock_all_auths();

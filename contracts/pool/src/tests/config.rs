@@ -106,7 +106,6 @@ fn update_config_unauthorized() {
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
 
-    let stake_owner = Address::generate(&env);
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
     if token2.address < token1.address {
