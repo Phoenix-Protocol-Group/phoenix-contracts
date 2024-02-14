@@ -66,10 +66,6 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         stake_init_info,
     };
 
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-    );
+    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &6u64, &lp_init_info);
     pool
 }

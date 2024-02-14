@@ -37,14 +37,7 @@ fn simple_swap() {
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
-    pool.provide_liquidity(
-        &user1,
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &None,
-    );
+    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None);
 
     // true means "selling A token"
     // selling just one token with 1% max spread allowed
@@ -155,14 +148,7 @@ fn swap_with_high_fee() {
 
     token1.mint(&user1, &(initial_liquidity + 100_000));
     token2.mint(&user1, &initial_liquidity);
-    pool.provide_liquidity(
-        &user1,
-        &Some(initial_liquidity),
-        &Some(initial_liquidity),
-        &Some(initial_liquidity),
-        &Some(initial_liquidity),
-        &None,
-    );
+    pool.provide_liquidity(&user1, &initial_liquidity, &initial_liquidity, &None);
 
     let spread = 1_000; // 10% maximum spread allowed
 
@@ -225,14 +211,7 @@ fn swap_simulation_even_pool() {
     let user1 = Address::generate(&env);
     token1.mint(&user1, &initial_liquidity);
     token2.mint(&user1, &initial_liquidity);
-    pool.provide_liquidity(
-        &user1,
-        &Some(initial_liquidity),
-        &Some(initial_liquidity),
-        &Some(initial_liquidity),
-        &Some(initial_liquidity),
-        &None,
-    );
+    pool.provide_liquidity(&user1, &initial_liquidity, &initial_liquidity, &None);
 
     // let's simulate swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
     let offer_amount = 100_000i128;
@@ -325,14 +304,7 @@ fn swap_simulation_one_third_pool() {
     let user1 = Address::generate(&env);
     token1.mint(&user1, &initial_liquidity);
     token2.mint(&user1, &(3 * initial_liquidity));
-    pool.provide_liquidity(
-        &user1,
-        &Some(initial_liquidity),
-        &Some(initial_liquidity),
-        &Some(3 * initial_liquidity),
-        &Some(3 * initial_liquidity),
-        &None,
-    );
+    pool.provide_liquidity(&user1, &initial_liquidity, &(3 * initial_liquidity), &None);
 
     // let's simulate swap 100_000 units of Token 1 in 1:3 pool with 5% protocol fee
     let offer_amount = 100_000i128;
