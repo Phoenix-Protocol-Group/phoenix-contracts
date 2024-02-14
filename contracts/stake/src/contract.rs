@@ -33,8 +33,15 @@ pub struct Staking;
 
 pub trait StakingTrait {
     // Sets the token contract addresses for this pool
-    // epoch: Number of seconds between payments
-    fn initialize(env: Env, admin: Address, lp_token: Address, min_bond: i128, min_reward: i128);
+    fn initialize(
+        env: Env,
+        admin: Address,
+        lp_token: Address,
+        min_bond: i128,
+        min_reward: i128,
+        manager: Address,
+        owner: Address,
+    );
 
     fn bond(env: Env, sender: Address, tokens: i128);
 
@@ -76,7 +83,15 @@ pub trait StakingTrait {
 
 #[contractimpl]
 impl StakingTrait for Staking {
-    fn initialize(env: Env, admin: Address, lp_token: Address, min_bond: i128, min_reward: i128) {
+    fn initialize(
+        env: Env,
+        admin: Address,
+        lp_token: Address,
+        min_bond: i128,
+        min_reward: i128,
+        manager: Address,
+        owner: Address,
+    ) {
         if is_initialized(&env) {
             panic!("Stake: Initialize: initializing contract twice is not allowed");
         }
@@ -102,6 +117,8 @@ impl StakingTrait for Staking {
             lp_token,
             min_bond,
             min_reward,
+            manager,
+            owner,
         };
         save_config(&env, config);
 
@@ -181,6 +198,13 @@ impl StakingTrait for Staking {
 
     fn create_distribution_flow(env: Env, sender: Address, asset: Address) {
         sender.require_auth();
+
+        let manager = get_config(&env).manager;
+        let owner = get_config(&env).owner;
+        if sender != manager && sender != owner {
+            log!(env, "Non-authorized creation!");
+            panic!("Stake: create distribution flow: You are not allowed to create distribution flows.");
+        }
 
         let distribution = Distribution {
             shares_per_point: 1u128,

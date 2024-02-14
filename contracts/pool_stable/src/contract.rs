@@ -189,6 +189,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &share_token_address,
             &min_bond,
             &min_reward,
+            &admin,
+            &env.current_contract_address(),
         );
 
         let config = Config {

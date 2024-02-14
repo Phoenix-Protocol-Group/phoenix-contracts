@@ -135,9 +135,15 @@ impl FactoryTrait for Factory {
             lp_init_info.max_referral_bps
         );
 
+        let factory_addr = env.current_contract_address();
         let init_fn: Symbol = Symbol::new(&env, "initialize");
-        let init_fn_args: Vec<Val> =
-            (stake_wasm_hash, token_wasm_hash, lp_init_info.clone()).into_val(&env);
+        let init_fn_args: Vec<Val> = (
+            stake_wasm_hash,
+            token_wasm_hash,
+            lp_init_info.clone(),
+            factory_addr,
+        )
+            .into_val(&env);
 
         env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
 
@@ -306,9 +312,9 @@ mod tests {
         let token_init_info = TokenInitInfo { token_a, token_b };
 
         let stake_init_info = StakeInitInfo {
-            max_distributions: 10,
             min_bond: 10,
             min_reward: 10,
+            manager: Address::generate(&env),
         };
         validate_token_info(&env, &token_init_info, &stake_init_info);
     }
@@ -326,9 +332,9 @@ mod tests {
         let token_init_info = TokenInitInfo { token_a, token_b };
 
         let stake_init_info = StakeInitInfo {
-            max_distributions: 10,
             min_bond: 0,
             min_reward: 10,
+            manager: Address::generate(&env),
         };
 
         validate_token_info(&env, &token_init_info, &stake_init_info);
@@ -345,9 +351,9 @@ mod tests {
         let token_init_info = TokenInitInfo { token_a, token_b };
 
         let stake_init_info = StakeInitInfo {
-            max_distributions: 10,
             min_bond: 10,
             min_reward: 0,
+            manager: Address::generate(&env),
         };
         validate_token_info(&env, &token_init_info, &stake_init_info);
     }

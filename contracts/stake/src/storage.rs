@@ -6,6 +6,10 @@ pub struct Config {
     pub lp_token: Address,
     pub min_bond: i128,
     pub min_reward: i128,
+    // Address of a user, allowed to create distribution flows
+    pub manager: Address,
+    // Address of the factory contract that initialized this pool and stake contract
+    pub owner: Address,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 

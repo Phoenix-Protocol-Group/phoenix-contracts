@@ -27,6 +27,9 @@ fn simple_swap() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -36,6 +39,8 @@ fn simple_swap() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &1_001_000);
@@ -166,6 +171,8 @@ fn simple_swap_with_referral_fee() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
     let referral_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
@@ -177,6 +184,8 @@ fn simple_swap_with_referral_fee() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &1_001_000);
@@ -287,6 +296,8 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -296,6 +307,8 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &1_001_000);
@@ -346,6 +359,8 @@ fn swap_should_panic_with_bad_max_spread() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -355,6 +370,8 @@ fn swap_should_panic_with_bad_max_spread() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &1_001_000);
@@ -382,6 +399,8 @@ fn swap_with_high_fee() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
 
     let swap_fees = 1_000i64; // 10% bps
     let fee_recipient = Address::generate(&env);
@@ -393,6 +412,8 @@ fn swap_with_high_fee() {
         fee_recipient.clone(),
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     let initial_liquidity = 1_000_000i128;
@@ -462,6 +483,8 @@ fn swap_simulation_even_pool() {
         std::mem::swap(&mut token1, &mut token2);
     }
 
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -471,6 +494,8 @@ fn swap_simulation_even_pool() {
         Address::generate(&env),
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     let initial_liquidity = 1_000_000i128;
@@ -562,6 +587,8 @@ fn swap_simulation_one_third_pool() {
         std::mem::swap(&mut token1, &mut token2);
     }
 
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
     let swap_fees = 500i64; // 5% bps
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -571,6 +598,8 @@ fn swap_simulation_one_third_pool() {
         Address::generate(&env),
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     let initial_liquidity = 1_000_000i128;
@@ -663,6 +692,8 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
         std::mem::swap(&mut token1, &mut token2);
     }
 
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
@@ -671,6 +702,8 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
         Address::generate(&env),
         10_000i64,
         10_000i64,
+        stake_manager,
+        stake_owner,
     );
 
     let initial_liquidity = 110_358_880_127; // taken from the current amount of tokens in pool

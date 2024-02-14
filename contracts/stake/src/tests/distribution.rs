@@ -16,10 +16,12 @@ fn add_distribution_and_distribute_reward() {
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&admin, &reward_token.address);
 
@@ -86,11 +88,13 @@ fn two_distributions() {
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
     let reward_token_2 = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&admin, &reward_token.address);
     staking.create_distribution_flow(&admin, &reward_token_2.address);
@@ -205,11 +209,13 @@ fn four_users_with_different_stakes() {
     let user2 = Address::generate(&env);
     let user3 = Address::generate(&env);
     let user4 = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&admin, &reward_token.address);
 
@@ -313,11 +319,13 @@ fn two_users_one_starts_after_distribution_begins() {
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let user2 = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&admin, &reward_token.address);
 
@@ -409,11 +417,12 @@ fn two_users_both_bonds_after_distribution_starts() {
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let user2 = Address::generate(&env);
-
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&admin, &reward_token.address);
 
@@ -532,11 +541,13 @@ fn fund_rewards_without_establishing_distribution() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     reward_token.mint(&admin, &1000);
 
@@ -550,10 +561,12 @@ fn try_to_withdraw_rewards_without_bonding() {
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&admin, &reward_token.address);
 
@@ -607,10 +620,12 @@ fn fund_distribution_starting_before_current_timestamp() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&admin, &reward_token.address);
 
@@ -638,10 +653,13 @@ fn fund_distribution_with_reward_below_required_minimum() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&admin, &reward_token.address);
 
@@ -662,10 +680,13 @@ fn calculate_apr() {
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&admin, &reward_token.address);
 

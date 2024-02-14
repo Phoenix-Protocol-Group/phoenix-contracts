@@ -27,6 +27,9 @@ fn confirm_stake_contract_deployment() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -36,6 +39,8 @@ fn confirm_stake_contract_deployment() {
         user1.clone(),
         500,
         200,
+        stake_manager.clone(),
+        stake_owner.clone(),
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -65,6 +70,8 @@ fn confirm_stake_contract_deployment() {
                 lp_token: share_token_address,
                 min_bond: 10,
                 min_reward: 5,
+                manager: stake_manager,
+                owner: stake_owner,
             }
         }
     );
@@ -102,8 +109,8 @@ fn second_pool_deployment_should_fail() {
     };
     let stake_init_info = StakeInitInfo {
         min_bond: 10i128,
-        max_distributions: 10u32,
         min_reward: 5i128,
+        manager: Address::generate(&env),
     };
 
     let lp_init_info = LiquidityPoolInitInfo {
@@ -118,7 +125,17 @@ fn second_pool_deployment_should_fail() {
         stake_init_info,
     };
 
-    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &lp_init_info);
+    pool.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &lp_init_info,
+        &Address::generate(&env),
+    );
 
-    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &lp_init_info);
+    pool.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &lp_init_info,
+        &Address::generate(&env),
+    );
 }

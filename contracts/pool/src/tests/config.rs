@@ -20,6 +20,8 @@ fn update_config() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -29,6 +31,8 @@ fn update_config() {
         user1.clone(),
         500,
         200,
+        stake_manager,
+        stake_owner,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -102,6 +106,7 @@ fn update_config_unauthorized() {
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
 
+    let stake_owner = Address::generate(&env);
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
     if token2.address < token1.address {
@@ -109,6 +114,9 @@ fn update_config_unauthorized() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -118,6 +126,8 @@ fn update_config_unauthorized() {
         user1,
         500,
         200,
+        stake_manager,
+        stake_owner,
     );
 
     pool.update_config(
@@ -146,6 +156,9 @@ fn update_config_update_admin() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -155,6 +168,8 @@ fn update_config_update_admin() {
         user1.clone(),
         500,
         200,
+        stake_manager,
+        stake_owner,
     );
 
     // update admin to new admin
@@ -198,6 +213,9 @@ fn update_config_too_high_fees() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -207,6 +225,8 @@ fn update_config_too_high_fees() {
         user1,
         500,
         200,
+        stake_manager,
+        stake_owner,
     );
 
     // update fees and recipient

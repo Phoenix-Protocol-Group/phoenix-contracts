@@ -18,8 +18,10 @@ fn initializa_staking_contract() {
 
     let admin = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     let response = staking.query_config();
     assert_eq!(
@@ -28,7 +30,9 @@ fn initializa_staking_contract() {
             config: Config {
                 lp_token: lp_token.address,
                 min_bond: 1_000i128,
-                min_reward: 1_000i128
+                min_reward: 1_000i128,
+                manager,
+                owner,
             }
         }
     );
@@ -45,11 +49,19 @@ fn test_deploying_stake_twice_should_fail() {
 
     let admin = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
 
-    let first = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let first = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    first.initialize(&admin, &lp_token.address, &100i128, &50i128);
-    first.initialize(&admin, &lp_token.address, &100i128, &50i128);
+    first.initialize(
+        &admin,
+        &lp_token.address,
+        &100i128,
+        &50i128,
+        &manager,
+        &owner,
+    );
 }
 
 #[test]
@@ -61,8 +73,10 @@ fn bond_too_few() {
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     lp_token.mint(&user, &999);
 
@@ -77,8 +91,10 @@ fn bond_simple() {
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     lp_token.mint(&user, &10_000);
 
@@ -109,9 +125,11 @@ fn unbond_simple() {
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let user2 = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     lp_token.mint(&user, &35_000);
     lp_token.mint(&user2, &10_000);
@@ -165,9 +183,11 @@ fn initializing_contract_sets_total_staked_var() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     assert_eq!(staking.query_total_staked(), 0);
 }
@@ -181,9 +201,11 @@ fn unbond_wrong_user_stake_not_found() {
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let user2 = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     lp_token.mint(&user, &35_000);
     lp_token.mint(&user2, &10_000);

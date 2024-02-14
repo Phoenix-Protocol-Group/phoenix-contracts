@@ -49,8 +49,8 @@ pub struct TokenInitInfo {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StakeInitInfo {
     pub min_bond: i128,
-    pub max_distributions: u32,
     pub min_reward: i128,
+    pub manager: Address,
 }
 
 #[contracttype]

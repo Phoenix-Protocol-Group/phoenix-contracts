@@ -10,7 +10,6 @@ Params:
 - `admin`: `Address` of the administrator for the contract
 - `lp_token`: `Address` of the liquidity pool used with this stake contract
 - `min_bond`: `i128` value showing the minimum required bond
-- `max_distributions`: `u32` value showing the maximum number of distributions
 - `min_reward`: `i128` the minimum amount of rewards the user can withdraw.
 
 Return type:
@@ -54,7 +53,7 @@ Allows the user remove their staked tokens from the stake contract, with any rew
 
 Params:
 - `sender`: `Address` of the user that creates the flow
-- `manager`: `Address` of the user that will be managing the flow
+- `sender`: `Address` of the user that will be managing the flow
 - `asset`: `Address` of the asset that will be used in the distribution flow
 
 Return type:

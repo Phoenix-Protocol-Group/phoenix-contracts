@@ -131,8 +131,8 @@ pub fn deploy_and_initialize_lp(
     };
     let stake_init_info = StakeInitInfo {
         min_bond: 10i128,
-        max_distributions: 10u32,
         min_reward: 5i128,
+        manager: Address::generate(env),
     };
 
     let lp_init_info = LiquidityPoolInitInfo {
