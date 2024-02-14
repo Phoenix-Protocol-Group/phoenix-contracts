@@ -62,7 +62,6 @@ fn confirm_stake_contract_deployment() {
             config: stake_contract::Config {
                 lp_token: share_token_address,
                 min_bond: 10,
-                max_distributions: 10,
                 min_reward: 5,
             }
         }
@@ -118,6 +117,6 @@ fn second_pool_stable_deployment_should_fail() {
         stake_init_info,
     };
 
-    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &lp_init_info);
-    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &lp_init_info);
+    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &6u64, &lp_init_info);
+    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &6u64, &lp_init_info);
 }
