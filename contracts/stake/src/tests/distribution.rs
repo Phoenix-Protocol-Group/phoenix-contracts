@@ -23,7 +23,7 @@ fn add_distribution_and_distribute_reward() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -96,8 +96,8 @@ fn two_distributions() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
-    staking.create_distribution_flow(&admin, &reward_token_2.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token_2.address);
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -217,7 +217,7 @@ fn four_users_with_different_stakes() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -327,7 +327,7 @@ fn two_users_one_starts_after_distribution_begins() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -424,7 +424,7 @@ fn two_users_both_bonds_after_distribution_starts() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -568,7 +568,7 @@ fn try_to_withdraw_rewards_without_bonding() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -627,7 +627,7 @@ fn fund_distribution_starting_before_current_timestamp() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -661,7 +661,7 @@ fn fund_distribution_with_reward_below_required_minimum() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
 
     reward_token.mint(&admin, &10);
 
@@ -688,7 +688,7 @@ fn calculate_apr() {
 
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
