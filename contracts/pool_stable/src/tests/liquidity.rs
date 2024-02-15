@@ -1,3 +1,4 @@
+use soroban_sdk::testutils::arbitrary::std::dbg;
 extern crate std;
 
 use pretty_assertions::assert_eq;
@@ -61,15 +62,7 @@ fn provide_liqudity() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     Symbol::new(&env, "provide_liquidity"),
-                    (
-                        &user1,
-                        Some(100i128),
-                        Some(100i128),
-                        Some(100i128),
-                        Some(100i128),
-                        None::<i64>
-                    )
-                        .into_val(&env),
+                    (&user1, 100i128, 100i128, None::<i64>).into_val(&env),
                 )),
                 sub_invocations: std::vec![
                     AuthorizedInvocation {
