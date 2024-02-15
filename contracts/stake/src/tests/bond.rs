@@ -1,15 +1,12 @@
 use pretty_assertions::assert_eq;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
-    vec, Address, Env,
+    Address, Env,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
-use crate::{
-    msg::ConfigResponse,
-    storage::{Config, Stake},
-};
+use crate::{msg::ConfigResponse, storage::Config};
 
 #[test]
 fn initializa_staking_contract() {
@@ -84,17 +81,6 @@ fn bond_simple() {
 
     staking.bond(&user, &10_000);
 
-    let bonds = staking.query_staked(&user).stakes;
-    assert_eq!(
-        bonds,
-        vec![
-            &env,
-            Stake {
-                stake: 10_000,
-                stake_timestamp: 0,
-            }
-        ]
-    );
     assert_eq!(staking.query_total_staked(), 10_000);
 
     assert_eq!(lp_token.balance(&user), 0);
@@ -130,28 +116,11 @@ fn unbond_simple() {
     });
     staking.bond(&user, &15_000);
 
-    assert_eq!(staking.query_staked(&user).stakes.len(), 3);
     assert_eq!(lp_token.balance(&user), 0);
     assert_eq!(lp_token.balance(&staking.address), 45_000);
 
-    let stake_timestamp = 4000;
-    staking.unbond(&user, &10_000, &stake_timestamp);
+    staking.unbond(&user, &10_000);
 
-    let bonds = staking.query_staked(&user).stakes;
-    assert_eq!(
-        bonds,
-        vec![
-            &env,
-            Stake {
-                stake: 10_000,
-                stake_timestamp: 2_000,
-            },
-            Stake {
-                stake: 15_000,
-                stake_timestamp: 4_000,
-            }
-        ]
-    );
     assert_eq!(staking.query_total_staked(), 35_000);
 
     assert_eq!(lp_token.balance(&user), 10_000);
@@ -202,5 +171,5 @@ fn unbond_wrong_user_stake_not_found() {
     assert_eq!(lp_token.balance(&user2), 0);
     assert_eq!(lp_token.balance(&staking.address), 30_000);
 
-    staking.unbond(&user2, &10_000, &2_000);
+    staking.unbond(&user2, &10_000);
 }

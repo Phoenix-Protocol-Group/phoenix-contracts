@@ -32,15 +32,6 @@ pub struct Stake {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BondingInfo {
-    /// Vec of stakes sorted by stake timestamp
-    pub stakes: Vec<Stake>,
-    /// The rewards debt is a mechanism to determine how much a user has already been credited in terms of staking rewards.
-    /// Whenever a user deposits or withdraws staked tokens to the pool, the rewards for the user is updated based on the
-    /// accumulated rewards per share, and the difference is stored as reward debt. When claiming rewards, this reward debt
-    /// is used to determine how much rewards a user can actually claim.
-    pub reward_debt: u128,
-    /// Last time when user has claimed rewards
-    pub last_reward_time: u64,
     /// Total amount of staked tokens
     pub total_stake: u128,
 }
@@ -48,12 +39,7 @@ pub struct BondingInfo {
 pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
     match env.storage().persistent().get::<_, BondingInfo>(key) {
         Some(stake) => stake,
-        None => BondingInfo {
-            stakes: Vec::new(env),
-            reward_debt: 0u128,
-            last_reward_time: 0u64,
-            total_stake: 0u128,
-        },
+        None => BondingInfo { total_stake: 0u128 },
     }
 }
 

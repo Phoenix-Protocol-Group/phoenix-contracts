@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, String, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, String};
 
 use crate::{
     distribution::{
@@ -7,8 +7,8 @@ use crate::{
         withdrawable_rewards, Distribution, SHARES_SHIFT,
     },
     msg::{
-        AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
-        WithdrawableReward, WithdrawableRewardsResponse,
+        AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, WithdrawableReward,
+        WithdrawableRewardsResponse,
     },
     storage::{
         get_config, get_stakes, save_config, save_stakes,
@@ -16,7 +16,7 @@ use crate::{
             self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
             is_initialized, set_initialized,
         },
-        Config, Stake,
+        Config,
     },
     token_contract,
 };
@@ -38,7 +38,7 @@ pub trait StakingTrait {
 
     fn bond(env: Env, sender: Address, tokens: i128);
 
-    fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
+    fn unbond(env: Env, sender: Address, stake_amount: i128);
 
     fn create_distribution_flow(env: Env, sender: Address, asset: Address);
 
@@ -60,8 +60,6 @@ pub trait StakingTrait {
     fn query_config(env: Env) -> ConfigResponse;
 
     fn query_admin(env: Env) -> Address;
-
-    fn query_staked(env: Env, address: Address) -> StakedResponse;
 
     fn query_total_staked(env: Env) -> i128;
 
@@ -112,7 +110,6 @@ impl StakingTrait for Staking {
     fn bond(env: Env, sender: Address, tokens: i128) {
         sender.require_auth();
 
-        let ledger = env.ledger();
         let config = get_config(&env);
 
         if tokens < config.min_bond {
@@ -129,10 +126,6 @@ impl StakingTrait for Staking {
         lp_token_client.transfer(&sender, &env.current_contract_address(), &tokens);
 
         let mut stakes = get_stakes(&env, &sender);
-        let stake = Stake {
-            stake: tokens,
-            stake_timestamp: ledger.timestamp(),
-        };
         stakes.total_stake += tokens as u128;
         // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
         // creating multiple stakes the same day
@@ -150,7 +143,6 @@ impl StakingTrait for Staking {
             )
         }
 
-        stakes.stakes.push_back(stake);
         save_stakes(&env, &sender, &stakes);
         utils::increase_total_staked(&env, &tokens);
 
@@ -159,13 +151,12 @@ impl StakingTrait for Staking {
         env.events().publish(("bond", "amount"), tokens);
     }
 
-    fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
+    fn unbond(env: Env, sender: Address, stake_amount: i128) {
         sender.require_auth();
 
         let config = get_config(&env);
 
         let mut stakes = get_stakes(&env, &sender);
-        remove_stake(&mut stakes.stakes, stake_amount, stake_timestamp);
         stakes.total_stake -= stake_amount as u128;
 
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
@@ -377,12 +368,6 @@ impl StakingTrait for Staking {
         get_admin(&env)
     }
 
-    fn query_staked(env: Env, address: Address) -> StakedResponse {
-        StakedResponse {
-            stakes: get_stakes(&env, &address).stakes,
-        }
-    }
-
     fn query_total_staked(env: Env) -> i128 {
         get_total_staked_counter(&env)
     }
@@ -448,137 +433,5 @@ impl StakingTrait for Staking {
         let reward_token_client = token_contract::Client::new(&env, &asset);
         reward_token_client.balance(&env.current_contract_address()) as u128
             - distribution.withdrawable_total
-    }
-}
-
-// Function to remove a stake from the vector
-fn remove_stake(stakes: &mut Vec<Stake>, stake: i128, stake_timestamp: u64) {
-    // Find the index of the stake that matches the given stake and stake_timestamp
-    if let Some(index) = stakes
-        .iter()
-        .position(|s| s.stake == stake && s.stake_timestamp == stake_timestamp)
-    {
-        // Remove the stake at the found index
-        stakes.remove(index as u32);
-    } else {
-        // Stake not found, return an error
-        panic!("Stake: Remove stake: Stake not found");
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use soroban_sdk::vec;
-
-    #[test]
-    fn test_remove_stake_success() {
-        let env = Env::default();
-        let mut stakes = vec![
-            &env,
-            Stake {
-                stake: 100,
-                stake_timestamp: 1,
-            },
-            Stake {
-                stake: 200,
-                stake_timestamp: 2,
-            },
-            Stake {
-                stake: 150,
-                stake_timestamp: 3,
-            },
-        ];
-
-        let stake_to_remove = 200;
-        let stake_timestamp_to_remove = 2;
-
-        // Check that the stake is removed successfully
-        remove_stake(&mut stakes, stake_to_remove, stake_timestamp_to_remove);
-
-        // Check that the stake is no longer in the vector
-        assert_eq!(
-            stakes,
-            vec![
-                &env,
-                Stake {
-                    stake: 100,
-                    stake_timestamp: 1
-                },
-                Stake {
-                    stake: 150,
-                    stake_timestamp: 3
-                },
-            ]
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "Stake: Remove stake: Stake not found")]
-    fn test_remove_stake_not_found_case1() {
-        let env = Env::default();
-        let mut stakes = vec![
-            &env,
-            Stake {
-                stake: 100,
-                stake_timestamp: 1,
-            },
-            Stake {
-                stake: 200,
-                stake_timestamp: 2,
-            },
-            Stake {
-                stake: 150,
-                stake_timestamp: 3,
-            },
-        ];
-
-        remove_stake(&mut stakes, 100, 2);
-    }
-
-    #[test]
-    #[should_panic(expected = "Stake: Remove stake: Stake not found")]
-    fn test_remove_stake_not_found_case2() {
-        let env = Env::default();
-        let mut stakes = vec![
-            &env,
-            Stake {
-                stake: 100,
-                stake_timestamp: 1,
-            },
-            Stake {
-                stake: 200,
-                stake_timestamp: 2,
-            },
-            Stake {
-                stake: 150,
-                stake_timestamp: 3,
-            },
-        ];
-
-        remove_stake(&mut stakes, 200, 1);
-    }
-
-    #[test]
-    #[should_panic(expected = "Stake: Remove stake: Stake not found")]
-    fn test_remove_stake_not_found_case3() {
-        let env = Env::default();
-        let mut stakes = vec![
-            &env,
-            Stake {
-                stake: 100,
-                stake_timestamp: 1,
-            },
-            Stake {
-                stake: 200,
-                stake_timestamp: 2,
-            },
-            Stake {
-                stake: 150,
-                stake_timestamp: 3,
-            },
-        ];
-
-        remove_stake(&mut stakes, 150, 1);
     }
 }
