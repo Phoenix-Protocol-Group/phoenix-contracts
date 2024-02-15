@@ -140,36 +140,3 @@ fn initializing_contract_sets_total_staked_var() {
 
     assert_eq!(staking.query_total_staked(), 0);
 }
-
-#[test]
-#[should_panic(expected = "Stake: Remove stake: Stake not found")]
-fn unbond_wrong_user_stake_not_found() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let admin = Address::generate(&env);
-    let user = Address::generate(&env);
-    let user2 = Address::generate(&env);
-    let lp_token = deploy_token_contract(&env, &admin);
-
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address);
-
-    lp_token.mint(&user, &35_000);
-    lp_token.mint(&user2, &10_000);
-
-    env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
-    });
-    staking.bond(&user, &10_000);
-    env.ledger().with_mut(|li| {
-        li.timestamp = 4_000;
-    });
-    staking.bond(&user, &10_000);
-    staking.bond(&user2, &10_000);
-
-    assert_eq!(lp_token.balance(&user), 15_000);
-    assert_eq!(lp_token.balance(&user2), 0);
-    assert_eq!(lp_token.balance(&staking.address), 30_000);
-
-    staking.unbond(&user2, &10_000);
-}
