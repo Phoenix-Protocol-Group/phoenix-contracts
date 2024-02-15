@@ -34,10 +34,12 @@ and this project adheres to
 - Pool stable: Fixes an error in the compute_swap function, where commission isn't deducted ([233])
 - Pool: Adds a validation for when shares can be zero during withdrawal ([#245])
 - Pool: adds new check that verifies the input params for get_deposit_amounts ([#246])
+- Pool: adds state mgmt for avoiding reentrancy attacks ([#253])
 
 [#233]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/233
 [#245]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/245
 [#246]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/246
+[#253]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/253
 
 ## [0.8.0] - 2024-01-17
 
