@@ -405,7 +405,10 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_b: i128,
     ) -> (i128, i128) {
         if is_locked(&env) {
-            log!(env, "Pool: withdraw liquidity: contract state is locked. Aborting!");
+            log!(
+                env,
+                "Pool: withdraw liquidity: contract state is locked. Aborting!"
+            );
             panic_with_error!(env, ContractError::StateLocked);
         } else {
             toggle_state(&env);

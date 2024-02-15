@@ -369,16 +369,23 @@ pub mod utils {
 
     pub fn set_initialized(e: &Env) {
         e.storage().persistent().set(&DataKey::Initialized, &true);
-        e.storage().persistent().set(&DataKey::IsLockedState, &false);
+        e.storage()
+            .persistent()
+            .set(&DataKey::IsLockedState, &false);
     }
 
     pub fn toggle_state(e: &Env) {
-        let is_locked = is_locked(&e);
-        e.storage().persistent().set(&DataKey::IsLockedState, &!is_locked);
+        let is_locked = is_locked(e);
+        e.storage()
+            .persistent()
+            .set(&DataKey::IsLockedState, &!is_locked);
     }
 
     pub fn is_locked(e: &Env) -> bool {
-        e.storage().persistent().get(&DataKey::IsLockedState).unwrap_or_else(|| panic!("State not found. Aborting"))
+        e.storage()
+            .persistent()
+            .get(&DataKey::IsLockedState)
+            .unwrap_or_else(|| panic!("State not found. Aborting"))
     }
 }
 
