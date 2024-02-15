@@ -14,7 +14,7 @@ pub enum DataKey {
     ReserveB = 2,
     Admin = 3,
     Initialized = 4,
-    State = 5,
+    IsLockedState = 5,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -369,16 +369,16 @@ pub mod utils {
 
     pub fn set_initialized(e: &Env) {
         e.storage().persistent().set(&DataKey::Initialized, &true);
-        e.storage().persistent().set(&DataKey::State, &true);
+        e.storage().persistent().set(&DataKey::IsLockedState, &false);
     }
 
     pub fn toggle_state(e: &Env) {
-        let is_locked = get_state(&e);
-        e.storage().persistent().set(&DataKey::State, &!is_locked);
+        let is_locked = is_locked(&e);
+        e.storage().persistent().set(&DataKey::IsLockedState, &!is_locked);
     }
 
-    pub fn get_state(e: &Env) -> bool {
-        e.storage().persistent().get(&DataKey::State).unwrap_or_else(|| panic!("State not found. Aborting"))
+    pub fn is_locked(e: &Env) -> bool {
+        e.storage().persistent().get(&DataKey::IsLockedState).unwrap_or_else(|| panic!("State not found. Aborting"))
     }
 }
 

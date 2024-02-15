@@ -8,7 +8,8 @@ use crate::{
     error::ContractError,
     stake_contract,
     storage::{
-        get_config, save_config, utils,
+        get_config, save_config,
+        utils::{self, is_locked, toggle_state},
         utils::{is_initialized, set_initialized},
         validate_fee_bps, Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
@@ -403,6 +404,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_a: i128,
         min_b: i128,
     ) -> (i128, i128) {
+        if is_locked(&env) {
+            log!(env, "Pool: withdraw liquidity: contract state is locked. Aborting!");
+            panic_with_error!(env, ContractError::StateLocked);
+        } else {
+            toggle_state(&env);
+        }
         validate_int_parameters!(share_amount, min_a, min_b);
 
         sender.require_auth();
@@ -468,6 +475,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         env.events()
             .publish(("withdraw_liquidity", "return_amount_b"), return_amount_b);
 
+        toggle_state(&env);
         (return_amount_a, return_amount_b)
     }
 
@@ -647,6 +655,14 @@ fn do_swap(
     belief_price: Option<i64>,
     max_spread: Option<i64>,
 ) -> i128 {
+    // check state - if locked -> panic
+    if is_locked(&env) {
+        log!(env, "Pool: do_swap: contract state is locked. Aborting!");
+        panic_with_error!(env, ContractError::StateLocked);
+    } else {
+        toggle_state(&env);
+    }
+    // if NOT locked -> set to locked
     let config = get_config(&env);
     // FIXM: Disable Referral struct
     // if let Some(referral) = &referral {
@@ -771,6 +787,8 @@ fn do_swap(
         ("swap", "referral_fee_amount"),
         compute_swap.referral_fee_amount,
     );
+    // unlock here
+    toggle_state(&env);
     compute_swap.return_amount
 }
 
