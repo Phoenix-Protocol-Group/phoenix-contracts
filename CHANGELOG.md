@@ -40,12 +40,14 @@ and this project adheres to
 - Pool: Adds a validation for when shares can be zero during withdrawal ([#245])
 - Pool: adds new check that verifies the input params for get_deposit_amounts ([#246])
 - Stake: Adds access control to create distribution flow ([#249])
+- Decimal: adds handling for when precision is bigger than the decimal places ([#254])
 
 [#233]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/233
 [#239]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/239
 [#245]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/245
 [#246]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/246
 [#249]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/249
+[#254]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/254
 
 ## [0.8.0] - 2024-01-17
 
