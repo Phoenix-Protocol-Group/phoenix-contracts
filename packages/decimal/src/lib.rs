@@ -214,9 +214,14 @@ impl Decimal {
     pub fn to_i128_with_precision(&self, precision: impl Into<i32>) -> i128 {
         let value = self.atomics();
         let precision = precision.into();
-
-        let divisor = 10i128.pow((self.decimal_places() - precision) as u32);
-        value / divisor
+        let decimal_places_diff = self.decimal_places() - precision;
+        if decimal_places_diff >= 0 {
+            let divisor = 10i128.pow(decimal_places_diff.unsigned_abs());
+            value / divisor
+        } else {
+            let multiplier = 10i128.pow(decimal_places_diff.unsigned_abs());
+            value * multiplier
+        }
     }
 
     fn multiply_ratio(&self, numerator: Decimal, denominator: Decimal) -> Decimal {
@@ -860,5 +865,17 @@ mod tests {
     #[should_panic]
     fn decimal_pow_overflow_panics() {
         _ = Decimal::MAX.pow(2u32);
+    }
+
+    #[test]
+    fn test_to_i128_with_precision_when_decimals_bigger_than_precision() {
+        let decimal = Decimal::from_ratio(22, 7);
+        assert_eq!(decimal.to_i128_with_precision(3), 3142);
+    }
+
+    #[test]
+    fn test_to_i128_with_precision_when_decimals_less_than_precision() {
+        let decimal = Decimal::from_ratio(22, 7);
+        assert_eq!(decimal.to_i128_with_precision(21), 3142857142857142857000);
     }
 }
