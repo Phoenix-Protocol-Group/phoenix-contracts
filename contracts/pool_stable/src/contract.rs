@@ -38,6 +38,7 @@ pub trait StableLiquidityPoolTrait {
         token_wasm_hash: BytesN<32>,
         amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
+        factory_addr: Address,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -126,6 +127,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         token_wasm_hash: BytesN<32>,
         amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
+        factory_addr: Address,
     ) {
         if is_initialized(&env) {
             panic!("Pool stable: Initialize: initializing contract twice is not allowed");
@@ -153,6 +155,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         // Contract info
         let min_bond = stake_init_info.min_bond;
         let min_reward = stake_init_info.min_reward;
+        let manager = stake_init_info.manager;
 
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
@@ -189,6 +192,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &share_token_address,
             &min_bond,
             &min_reward,
+            &manager,
+            &factory_addr,
         );
 
         let config = Config {

@@ -58,8 +58,8 @@ fn factory_successfully_inits_lp() {
     };
     let stake_init_info = StakeInitInfo {
         min_bond: 10i128,
-        max_distributions: 10u32,
         min_reward: 5i128,
+        manager: Address::generate(&env),
     };
 
     let lp_init_info = LiquidityPoolInitInfo {
@@ -129,8 +129,8 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
     };
     let stake_init_info = StakeInitInfo {
         min_bond: 10i128,
-        max_distributions: 10u32,
         min_reward: 5i128,
+        manager: Address::generate(&env),
     };
 
     let lp_init_info = LiquidityPoolInitInfo {

@@ -68,8 +68,8 @@ fn test_deploy_multiple_liquidity_pools() {
     };
     let first_stake_init_info = StakeInitInfo {
         min_bond: 10i128,
-        max_distributions: 10u32,
         min_reward: 5i128,
+        manager: Address::generate(&env),
     };
 
     let second_token_init_info = TokenInitInfo {
@@ -78,8 +78,8 @@ fn test_deploy_multiple_liquidity_pools() {
     };
     let second_stake_init_info = StakeInitInfo {
         min_bond: 5i128,
-        max_distributions: 5u32,
         min_reward: 2i128,
+        manager: Address::generate(&env),
     };
 
     let third_token_init_info = TokenInitInfo {
@@ -88,8 +88,8 @@ fn test_deploy_multiple_liquidity_pools() {
     };
     let third_stake_init_info = StakeInitInfo {
         min_bond: 6i128,
-        max_distributions: 6u32,
         min_reward: 3i128,
+        manager: Address::generate(&env),
     };
 
     let first_lp_init_info = LiquidityPoolInitInfo {
@@ -254,8 +254,8 @@ fn test_queries_by_tuple() {
     };
     let first_stake_init_info = StakeInitInfo {
         min_bond: 10i128,
-        max_distributions: 10u32,
         min_reward: 5i128,
+        manager: Address::generate(&env),
     };
 
     let second_token_init_info = TokenInitInfo {
@@ -264,8 +264,8 @@ fn test_queries_by_tuple() {
     };
     let second_stake_init_info = StakeInitInfo {
         min_bond: 5i128,
-        max_distributions: 5u32,
         min_reward: 2i128,
+        manager: Address::generate(&env),
     };
 
     let third_token_init_info = TokenInitInfo {
@@ -274,8 +274,8 @@ fn test_queries_by_tuple() {
     };
     let third_stake_init_info = StakeInitInfo {
         min_bond: 6i128,
-        max_distributions: 6u32,
         min_reward: 3i128,
+        manager: Address::generate(&env),
     };
 
     let first_lp_init_info = LiquidityPoolInitInfo {

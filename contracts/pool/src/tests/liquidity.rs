@@ -31,6 +31,9 @@ fn provide_liqudity() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -40,6 +43,8 @@ fn provide_liqudity() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -143,6 +148,9 @@ fn withdraw_liquidity() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -152,6 +160,8 @@ fn withdraw_liquidity() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -247,6 +257,9 @@ fn provide_liqudity_single_asset_on_empty_pool() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -256,6 +269,8 @@ fn provide_liqudity_single_asset_on_empty_pool() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &1_000_000);
@@ -287,6 +302,9 @@ fn provide_liqudity_single_asset_equal() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -296,6 +314,8 @@ fn provide_liqudity_single_asset_equal() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &10_000_000);
@@ -355,6 +375,9 @@ fn provide_liqudity_single_asset_equal_with_fees() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -364,6 +387,8 @@ fn provide_liqudity_single_asset_equal_with_fees() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     let initial_pool_liquidity = 10_000_000;
@@ -432,6 +457,9 @@ fn provide_liqudity_single_asset_one_third() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -441,6 +469,8 @@ fn provide_liqudity_single_asset_one_third() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &10_000_000);
@@ -496,6 +526,9 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -505,6 +538,8 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &10_000_000);
@@ -557,6 +592,10 @@ fn provide_liqudity_too_high_fees() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let swap_fees = 10_001i64;
+
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     deploy_liquidity_pool_contract(
         &env,
         None,
@@ -565,6 +604,8 @@ fn provide_liqudity_too_high_fees() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 }
 
@@ -586,6 +627,9 @@ fn swap_with_no_amounts() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -595,6 +639,8 @@ fn swap_with_no_amounts() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &1_001_000);
@@ -621,6 +667,9 @@ fn withdraw_liqudity_below_min() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -630,6 +679,8 @@ fn withdraw_liqudity_below_min() {
         None,
         None,
         None,
+        stake_manager,
+        stake_owner,
     );
 
     token1.mint(&user1, &100);
