@@ -1,11 +1,11 @@
 use crate::contract::{Multihop, MultihopClient};
 use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
-use soroban_sdk::vec;
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     Address, Bytes, BytesN, Env,
 };
+use soroban_sdk::{vec, IntoVal, String};
 
 pub mod factory {
     soroban_sdk::contractimport!(
@@ -17,6 +17,21 @@ pub mod token_contract {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
     );
+}
+
+pub fn create_token_contract_with_metadata<'a>(
+    env: &Env,
+    admin: &Address,
+    decimals: u32,
+    name: String,
+    symbol: String,
+    amount: i128,
+) -> token_contract::Client<'a> {
+    let token =
+        token_contract::Client::new(env, &env.register_contract_wasm(None, token_contract::WASM));
+    token.initialize(admin, &decimals, &name.into_val(env), &symbol.into_val(env));
+    token.mint(admin, &amount);
+    token
 }
 
 #[allow(clippy::too_many_arguments)]
