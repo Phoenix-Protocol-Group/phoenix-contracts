@@ -61,7 +61,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
         swap_fee_bps: swap_fees,
         fee_recipient,
         max_allowed_slippage_bps: max_allowed_slippage_bps.into().unwrap_or(5_000),
-        max_allowed_spread_bps: max_allowed_spread_bps.into().unwrap_or(500),
+        max_allowed_spread_bps: max_allowed_spread_bps.into().unwrap_or(1_000),
         max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,

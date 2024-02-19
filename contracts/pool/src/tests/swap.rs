@@ -786,6 +786,8 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         None,
         None,
         Some(500i64),
+        Address::generate(&env),
+        Address::generate(&env),
     );
 
     token1.mint(&user1, &1_001_000);
