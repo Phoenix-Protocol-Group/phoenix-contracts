@@ -757,3 +757,57 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
         }
     );
 }
+
+#[test_case(Some(-100))]
+#[test_case(Some(600))]
+#[test_case(Some(501))]
+#[should_panic(expected = "max spread is out of bounds")]
+fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Option<i64>) {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        Some(500i64),
+        Address::generate(&env),
+        Address::generate(&env),
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    pool.provide_liquidity(
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+    );
+
+    pool.swap(
+        &user1,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &token1.address,
+        &1,
+        &None,
+        &max_spread,
+    );
+}

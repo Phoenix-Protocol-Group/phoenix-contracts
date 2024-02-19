@@ -34,11 +34,13 @@ and this project adheres to
 ## Bug fixes
 
 - Pool stable: Fixes an error in the compute_swap function, where commission isn't deducted ([233])
+- Pool and Pool stable: adds missing validation of max_spread in do_swap ([#239])
 - Pool: Adds a validation for when shares can be zero during withdrawal ([#245])
 - Pool: adds new check that verifies the input params for get_deposit_amounts ([#246])
 - Stake: Adds access control to create distribution flow ([#249])
 
 [#233]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/233
+[#239]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/239
 [#245]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/245
 [#246]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/246
 [#249]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/249
