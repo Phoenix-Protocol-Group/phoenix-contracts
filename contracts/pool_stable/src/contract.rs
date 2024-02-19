@@ -41,8 +41,8 @@ pub trait StableLiquidityPoolTrait {
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
-        pool_name: String,
-        pool_symbol: String,
+        share_token_name: String,
+        share_token_symbol: String,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -132,8 +132,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
-        pool_name: String,
-        pool_symbol: String,
+        share_token_name: String,
+        share_token_symbol: String,
     ) {
         if is_initialized(&env) {
             panic!("Pool stable: Initialize: initializing contract twice is not allowed");
@@ -186,9 +186,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             // number of decimals on the share token
             &share_token_decimals,
             // name
-            &pool_name.into_val(&env),
+            &share_token_name.into_val(&env),
             // symbol
-            &pool_symbol.into_val(&env),
+            &share_token_symbol.into_val(&env),
         );
 
         let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);

@@ -37,8 +37,8 @@ pub trait FactoryTrait {
         env: Env,
         caller: Address,
         lp_init_info: LiquidityPoolInitInfo,
-        pool_name: String,
-        pool_symbol: String,
+        share_token_name: String,
+        share_token_symbol: String,
     ) -> Address;
 
     fn update_whitelisted_accounts(
@@ -110,8 +110,8 @@ impl FactoryTrait for Factory {
         env: Env,
         caller: Address,
         lp_init_info: LiquidityPoolInitInfo,
-        pool_name: String,
-        pool_symbol: String,
+        share_token_name: String,
+        share_token_symbol: String,
     ) -> Address {
         caller.require_auth();
         if !get_config(&env).whitelisted_accounts.contains(caller) {
@@ -153,8 +153,8 @@ impl FactoryTrait for Factory {
             lp_init_info.clone(),
             factory_addr,
             config.lp_token_decimals,
-            pool_name,
-            pool_symbol,
+            share_token_name,
+            share_token_symbol,
         )
             .into_val(&env);
 
