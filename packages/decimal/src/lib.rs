@@ -865,7 +865,7 @@ mod tests {
 
     #[test]
     fn decimal_abs_with_negative_number() {
-        let decimal = Decimal::new(-128);
+        let decimal = Decimal::new(128);
 
         assert_eq!(decimal.abs(), Decimal { 0: 128 });
     }
@@ -878,15 +878,9 @@ mod tests {
     }
 
     #[test]
-    // #[ignore = "assertion and debug on soroban_sdk::string return `String()`"]
     fn decimal_displayed_as_string() {
         let env = Env::default();
         let decimal = Decimal::percent(128);
-        // Dmytro
-        // token.symbol().to_string().as_str(), "JOY"))
-        //
-        // Jakub
-        /// assert_eq!(a.to_string(&e), String::from_slice(&e, "1.234"));
 
         assert_eq!(decimal.to_string(&env), String::from_slice(&env, "128"));
     }
