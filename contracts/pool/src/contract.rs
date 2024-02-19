@@ -590,6 +590,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         } else if offer_asset == config.token_b {
             (pool_balance_b, pool_balance_a)
         } else {
+            log!(&env, "Token offered to swap not found in Pool");
             panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
@@ -627,6 +628,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         } else if ask_asset == config.token_a {
             (pool_balance_b, pool_balance_a)
         } else {
+            log!(&env, "Token offered to swap not found in Pool");
             panic_with_error!(env, ContractError::AssetNotInPool);
         };
 

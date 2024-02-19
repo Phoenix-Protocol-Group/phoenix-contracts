@@ -813,7 +813,7 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #13)")]
+#[should_panic(expected = "HostError: Error(Contract, #16)")]
 fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();
@@ -839,6 +839,8 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
         None,
         None,
         None,
+        Address::generate(&env),
+        Address::generate(&env),
     );
     // Swap fails because we provide incorrect token as offer token.
     pool.swap(
@@ -853,7 +855,7 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #13)")]
+#[should_panic(expected = "HostError: Error(Contract, #16)")]
 fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();
@@ -878,6 +880,8 @@ fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_i
         None,
         None,
         None,
+        Address::generate(&env),
+        Address::generate(&env),
     );
     // Simulate swap fails because we provide incorrect token as offer token.
     pool.simulate_swap(
@@ -889,7 +893,7 @@ fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_i
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #13)")]
+#[should_panic(expected = "HostError: Error(Contract, #16)")]
 fn test_v_phx_vul_017_should_panic_when_simulating_reverse_swap_for_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();
@@ -914,6 +918,8 @@ fn test_v_phx_vul_017_should_panic_when_simulating_reverse_swap_for_non_existing
         None,
         None,
         None,
+        Address::generate(&env),
+        Address::generate(&env),
     );
     // Simulate swap fails because we provide incorrect token as offer token.
     pool.simulate_reverse_swap(
