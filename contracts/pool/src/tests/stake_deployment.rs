@@ -115,7 +115,6 @@ fn second_pool_deployment_should_fail() {
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin: admin1,
-        share_token_decimals: 7u32,
         swap_fee_bps: 0i64,
         fee_recipient,
         max_allowed_slippage_bps: max_allowed_slippage,
@@ -130,6 +129,7 @@ fn second_pool_deployment_should_fail() {
         &token_wasm_hash,
         &lp_init_info,
         &Address::generate(&env),
+        &10u32,
     );
 
     pool.initialize(
@@ -137,5 +137,6 @@ fn second_pool_deployment_should_fail() {
         &token_wasm_hash,
         &lp_init_info,
         &Address::generate(&env),
+        &10u32,
     );
 }

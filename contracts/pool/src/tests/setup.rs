@@ -57,7 +57,6 @@ pub fn deploy_liquidity_pool_contract<'a>(
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin,
-        share_token_decimals: 7u32,
         swap_fee_bps: swap_fees,
         fee_recipient,
         max_allowed_slippage_bps: max_allowed_slippage_bps.into().unwrap_or(5_000),
@@ -72,6 +71,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
         &token_wasm_hash,
         &lp_init_info,
         &stake_owner,
+        &10u32,
     );
     pool
 }

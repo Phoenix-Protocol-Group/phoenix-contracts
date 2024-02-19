@@ -31,7 +31,6 @@ pub struct StableLiquidityPool;
 pub trait StableLiquidityPoolTrait {
     // Sets the token contract addresses for this pool
     // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token
-    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         stake_wasm_hash: BytesN<32>,
@@ -39,6 +38,7 @@ pub trait StableLiquidityPoolTrait {
         amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
+        share_token_decimals: u32,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -120,7 +120,6 @@ pub trait StableLiquidityPoolTrait {
 
 #[contractimpl]
 impl StableLiquidityPoolTrait for StableLiquidityPool {
-    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         stake_wasm_hash: BytesN<32>,
@@ -128,13 +127,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
+        share_token_decimals: u32,
     ) {
         if is_initialized(&env) {
             panic!("Pool stable: Initialize: initializing contract twice is not allowed");
         }
 
         let admin = lp_init_info.admin;
-        let share_token_decimals = lp_init_info.share_token_decimals;
         let swap_fee_bps = lp_init_info.swap_fee_bps;
         let fee_recipient = lp_init_info.fee_recipient;
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
