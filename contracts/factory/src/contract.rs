@@ -79,10 +79,6 @@ impl FactoryTrait for Factory {
             panic!("Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.")
         }
 
-        if lp_token_decimals < 6 {
-            panic!("Factory: Initliaze: trying to create factory with invalid param: lp_token_demicals < 6");
-        }
-
         set_initialized(&env);
 
         let multihop_address =
