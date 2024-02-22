@@ -1,8 +1,9 @@
 use phoenix::utils::LiquidityPoolInitInfo;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, String,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
 };
 
+use crate::error::ContractError;
 use crate::storage::utils::{is_initialized, set_initialized};
 use crate::storage::StableLiquidityPoolInfo;
 use crate::{
@@ -526,8 +527,10 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let pool_balance_b = utils::get_pool_balance_b(&env);
         let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
             (pool_balance_a, pool_balance_b)
-        } else {
+        } else if offer_asset == config.token_b {
             (pool_balance_b, pool_balance_a)
+        } else {
+            panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
         let (ask_amount, spread_amount, commission_amount) = compute_swap(
@@ -557,10 +560,12 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
-        let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
+        let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_b {
             (pool_balance_a, pool_balance_b)
-        } else {
+        } else if offer_asset == config.token_a {
             (pool_balance_b, pool_balance_a)
+        } else {
+            panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
@@ -589,6 +594,10 @@ fn do_swap(
 ) -> i128 {
     let config = get_config(&env);
 
+    if offer_asset != config.token_a && offer_asset != config.token_b {
+        panic!("Trying to swap wrong asset. Aborting..")
+    }
+
     if let Some(max_spread) = max_spread {
         if !(0..=config.max_allowed_spread_bps).contains(&max_spread) {
             panic!("max spread is out of bounds")
@@ -603,8 +612,10 @@ fn do_swap(
 
     let (pool_balance_sell, pool_balance_buy) = if offer_asset == config.token_a {
         (pool_balance_a, pool_balance_b)
-    } else {
+    } else if offer_asset == config.token_b {
         (pool_balance_b, pool_balance_a)
+    } else {
+        panic_with_error!(env, ContractError::AssetNotInPool);
     };
 
     let (return_amount, spread_amount, commission_amount) = compute_swap(

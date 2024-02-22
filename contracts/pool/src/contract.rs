@@ -594,8 +594,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         let pool_balance_b = utils::get_pool_balance_b(&env);
         let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
             (pool_balance_a, pool_balance_b)
-        } else {
+        } else if offer_asset == config.token_b {
             (pool_balance_b, pool_balance_a)
+        } else {
+            log!(&env, "Token offered to swap not found in Pool");
+            panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
         let compute_swap: ComputeSwap = compute_swap(
@@ -629,8 +632,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         let pool_balance_b = utils::get_pool_balance_b(&env);
         let (pool_balance_offer, pool_balance_ask) = if ask_asset == config.token_b {
             (pool_balance_a, pool_balance_b)
-        } else {
+        } else if ask_asset == config.token_a {
             (pool_balance_b, pool_balance_a)
+        } else {
+            log!(&env, "Token offered to swap not found in Pool");
+            panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
@@ -680,8 +686,10 @@ fn do_swap(
 
     let (pool_balance_sell, pool_balance_buy) = if offer_asset == config.token_a {
         (pool_balance_a, pool_balance_b)
-    } else {
+    } else if offer_asset == config.token_b {
         (pool_balance_b, pool_balance_a)
+    } else {
+        panic_with_error!(env, ContractError::AssetNotInPool);
     };
 
     // FIXM: Disable Referral struct
@@ -808,6 +816,11 @@ fn split_deposit_based_on_pool_ratio(
     deposit: i128,
     offer_asset: &Address,
 ) -> (i128, i128) {
+    // check if offer_asset is one of the two tokens in the pool
+    if offer_asset != &config.token_a && offer_asset != &config.token_b {
+        panic_with_error!(env, ContractError::AssetNotInPool);
+    }
+
     // Validate the inputs
     if a_pool <= 0 || b_pool <= 0 || deposit <= 0 {
         log!(
