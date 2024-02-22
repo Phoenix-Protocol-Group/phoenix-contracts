@@ -30,8 +30,10 @@ and this project adheres to
 ## Added
 
 - Adds a new macro that validates the bps arguments value ([#199])
+- Added test coverage for Decimal ([#244])
 
 [#199]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/199
+[#244]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/244
 
 ## Bug fixes
 
