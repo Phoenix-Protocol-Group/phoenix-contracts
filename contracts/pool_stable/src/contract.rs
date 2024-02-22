@@ -1,6 +1,7 @@
 use phoenix::utils::LiquidityPoolInitInfo;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
+    String,
 };
 
 use crate::error::ContractError;
