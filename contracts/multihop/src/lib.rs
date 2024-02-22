@@ -5,6 +5,7 @@ mod storage;
 
 mod utils;
 
+#[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
     // The import will code generate:
     // - A ContractClient type that can be used to invoke functions on the contract.
