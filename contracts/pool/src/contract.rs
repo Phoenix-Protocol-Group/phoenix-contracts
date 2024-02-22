@@ -1,5 +1,6 @@
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
+    String,
 };
 
 use num_integer::Roots;
@@ -33,6 +34,7 @@ pub struct LiquidityPool;
 pub trait LiquidityPoolTrait {
     // Sets the token contract addresses for this pool
     // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         stake_wasm_hash: BytesN<32>,
@@ -40,6 +42,8 @@ pub trait LiquidityPoolTrait {
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
+        share_token_name: String,
+        share_token_symbol: String,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -126,6 +130,7 @@ pub trait LiquidityPoolTrait {
 
 #[contractimpl]
 impl LiquidityPoolTrait for LiquidityPool {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         stake_wasm_hash: BytesN<32>,
@@ -133,6 +138,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
+        share_token_name: String,
+        share_token_symbol: String,
     ) {
         if is_initialized(&env) {
             panic!("Liquidity Pool: Initialize: initializing contract twice is not allowed");
@@ -186,9 +193,9 @@ impl LiquidityPoolTrait for LiquidityPool {
             // number of decimals on the share token
             &share_token_decimals,
             // name
-            &"Pool Share Token".into_val(&env),
+            &share_token_name.into_val(&env),
             // symbol
-            &"POOL".into_val(&env),
+            &share_token_symbol.into_val(&env),
         );
 
         let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);

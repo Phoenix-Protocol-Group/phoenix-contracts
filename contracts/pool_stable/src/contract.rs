@@ -34,6 +34,7 @@ pub struct StableLiquidityPool;
 pub trait StableLiquidityPoolTrait {
     // Sets the token contract addresses for this pool
     // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         stake_wasm_hash: BytesN<32>,
@@ -42,6 +43,8 @@ pub trait StableLiquidityPoolTrait {
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
+        share_token_name: String,
+        share_token_symbol: String,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -123,6 +126,7 @@ pub trait StableLiquidityPoolTrait {
 
 #[contractimpl]
 impl StableLiquidityPoolTrait for StableLiquidityPool {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         stake_wasm_hash: BytesN<32>,
@@ -131,6 +135,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
+        share_token_name: String,
+        share_token_symbol: String,
     ) {
         if is_initialized(&env) {
             panic!("Pool stable: Initialize: initializing contract twice is not allowed");
@@ -183,9 +189,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             // number of decimals on the share token
             &share_token_decimals,
             // name
-            &"Pool Share Token".into_val(&env),
+            &share_token_name.into_val(&env),
             // symbol
-            &"POOL".into_val(&env),
+            &share_token_symbol.into_val(&env),
         );
 
         let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);

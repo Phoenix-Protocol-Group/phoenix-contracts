@@ -399,6 +399,7 @@ impl fmt::Display for Decimal {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::format;
 
     #[test]
     fn decimal_new() {
@@ -860,5 +861,53 @@ mod tests {
     #[should_panic]
     fn decimal_pow_overflow_panics() {
         _ = Decimal::MAX.pow(2u32);
+    }
+
+    #[test]
+    fn decimal_abs_with_negative_number() {
+        let decimal = Decimal::new(128);
+
+        assert_eq!(decimal.abs(), Decimal { 0: 128 });
+    }
+
+    #[test]
+    fn decimal_abs_with_positive_number() {
+        let decimal = Decimal::new(128);
+
+        assert_eq!(decimal.abs(), Decimal { 0: 128 });
+    }
+
+    #[test]
+    fn decimal_displayed_as_string() {
+        let env = Env::default();
+        let decimal = Decimal::percent(128);
+
+        assert_eq!(decimal.to_string(&env), String::from_slice(&env, "128"));
+    }
+
+    #[test]
+    fn decimal_fmt_without_fractional_part() {
+        let value = Decimal::from_atomics(100, 0);
+        assert_eq!(format!("{}", value), "100");
+    }
+
+    #[test]
+    fn decimal_fmt_fractional_part() {
+        let value = Decimal::from_atomics(123456789, 5);
+        assert_eq!(format!("{}", value), "1234.56789");
+    }
+
+    #[test]
+    fn decimal_fmt_fractional_part_with_trailing_zeros() {
+        // 12345.6
+        let value = Decimal::from_atomics(123456, 1);
+        assert_eq!(format!("{}", value), "12345.6");
+    }
+
+    #[test]
+    fn decimal_fmt_only_fractional() {
+        // 0.0789
+        let value = Decimal::from_atomics(789, 4);
+        assert_eq!(format!("{}", value), "0.0789");
     }
 }

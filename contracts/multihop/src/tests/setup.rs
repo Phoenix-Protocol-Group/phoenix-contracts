@@ -163,7 +163,12 @@ pub fn deploy_and_initialize_lp(
         stake_init_info,
     };
 
-    let lp = factory.create_liquidity_pool(&lp_init_info, &admin.clone());
+    let lp = factory.create_liquidity_pool(
+        &admin.clone(),
+        &lp_init_info,
+        &String::from_str(env, "Pool"),
+        &String::from_str(env, "PHO/XLM"),
+    );
 
     let lp_client = lp_contract::Client::new(env, &lp);
     lp_client.provide_liquidity(
