@@ -57,6 +57,7 @@ pub trait LiquidityPoolTrait {
         desired_b: Option<i128>,
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
+        tolerance: Option<i128>,
     );
 
     // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
@@ -241,6 +242,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         desired_b: Option<i128>,
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
+        tolerance: Option<i128>,
     ) {
         validate_int_parameters!(desired_a, min_a, desired_b, min_b);
 
@@ -250,6 +252,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let config = get_config(&env);
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
+        let tolerance = tolerance.unwrap_or(500);
 
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
@@ -287,6 +290,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     pool_balance_b,
                     a,
                     &config.token_a,
+                    tolerance,
                 );
                 do_swap(
                     env.clone(),
@@ -310,6 +314,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     pool_balance_b,
                     b,
                     &config.token_b,
+                    tolerance,
                 );
                 do_swap(
                     env.clone(),
@@ -805,6 +810,7 @@ fn do_swap(
 /// * `b_pool` - The current amount of Token B in the liquidity pool.
 /// * `deposit` - The total amount of tokens that the user wants to deposit into the liquidity pool.
 /// * `sell_a` - A boolean that indicates whether the deposit is in Token A (if true) or in Token B (if false).
+/// * `tolerance` - The smallest difference in a deposit we care about.
 /// # Returns
 /// * A tuple `(final_offer_amount, final_ask_amount)`, where `final_offer_amount` is the amount of deposit tokens
 ///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.
@@ -815,6 +821,7 @@ fn split_deposit_based_on_pool_ratio(
     b_pool: i128,
     deposit: i128,
     offer_asset: &Address,
+    tolerance: i128,
 ) -> (i128, i128) {
     // check if offer_asset is one of the two tokens in the pool
     if offer_asset != &config.token_a && offer_asset != &config.token_b {
@@ -838,9 +845,6 @@ fn split_deposit_based_on_pool_ratio(
     // Define boundaries for binary search algorithm
     let mut low = 0;
     let mut high = deposit;
-
-    // Tolerance is the smallest difference in deposit that we care about
-    let tolerance = 500;
 
     let mut final_offer_amount = deposit; // amount of deposit tokens to be swapped
     let mut final_ask_amount = 0; // amount of other tokens to be received

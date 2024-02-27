@@ -178,5 +178,6 @@ pub fn deploy_and_initialize_lp(
         &Some(token_b_amount),
         &None,
         &None::<i64>,
+        &None::<i128>,
     );
 }

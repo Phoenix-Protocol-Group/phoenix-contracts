@@ -52,6 +52,7 @@ fn simple_swap() {
         &Some(1_000_000),
         &Some(1_000_000),
         &None,
+        &None,
     );
 
     // selling just one token with 1% max spread allowed
@@ -197,6 +198,7 @@ fn simple_swap_with_referral_fee() {
         &Some(1_000_000),
         &Some(1_000_000),
         &None,
+        &None,
     );
 
     // selling just one token with 1% max spread allowed
@@ -320,6 +322,7 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
         &Some(1_000_000),
         &Some(1_000_000),
         &None,
+        &None,
     );
 
     let spread = 100i64; // 1% maximum spread allowed
@@ -376,7 +379,15 @@ fn swap_should_panic_with_bad_max_spread() {
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &2_001_000);
-    pool.provide_liquidity(&user1, &Some(5000), &None, &Some(2_000_000), &None, &None);
+    pool.provide_liquidity(
+        &user1,
+        &Some(5000),
+        &None,
+        &Some(2_000_000),
+        &None,
+        &None,
+        &None,
+    );
 
     // selling just one token with 1% max spread allowed and 50 bps max spread
     // FIXM: Disable Referral struct
@@ -426,6 +437,7 @@ fn swap_with_high_fee() {
         &Some(initial_liquidity),
         &Some(initial_liquidity),
         &Some(initial_liquidity),
+        &None,
         &None,
     );
 
@@ -508,6 +520,7 @@ fn swap_simulation_even_pool() {
         &Some(initial_liquidity),
         &Some(initial_liquidity),
         &Some(initial_liquidity),
+        &None,
         &None,
     );
 
@@ -613,6 +626,7 @@ fn swap_simulation_one_third_pool() {
         &Some(3 * initial_liquidity),
         &Some(3 * initial_liquidity),
         &None,
+        &None,
     );
 
     // let's simulate swap 100_000 units of Token 1 in 1:3 pool with 5% protocol fee
@@ -717,6 +731,7 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
         &Some(initial_liquidity),
         &Some(initial_liquidity),
         &None,
+        &None,
     );
 
     // simulating a swap with 1_000_000_000 units
@@ -798,6 +813,7 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         &Some(1_000_000),
         &Some(1_000_000),
         &Some(1_000_000),
+        &None,
         &None,
     );
 
