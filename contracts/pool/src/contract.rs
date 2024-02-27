@@ -49,6 +49,7 @@ pub trait LiquidityPoolTrait {
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
     // is determined based on the difference between the reserves stored by this contract, and
     // the actual balance of token_a and token_b for this contract.
+    #[allow(clippy::too_many_arguments)]
     fn provide_liquidity(
         env: Env,
         depositor: Address,
@@ -234,6 +235,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             .publish(("initialize", "XYK LP token_b"), token_b);
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn provide_liquidity(
         env: Env,
         sender: Address,
