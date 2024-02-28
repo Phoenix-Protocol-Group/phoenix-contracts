@@ -49,7 +49,6 @@ pub trait LiquidityPoolTrait {
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
     // is determined based on the difference between the reserves stored by this contract, and
     // the actual balance of token_a and token_b for this contract.
-    #[allow(clippy::too_many_arguments)]
     fn provide_liquidity(
         env: Env,
         depositor: Address,
@@ -236,7 +235,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             .publish(("initialize", "XYK LP token_b"), token_b);
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn provide_liquidity(
         env: Env,
         sender: Address,
@@ -254,7 +252,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let config = get_config(&env);
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
-        let tolerance = config.tolerance;
+        let tolerance_bps = config.tolerance_bps;
 
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
@@ -292,7 +290,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     pool_balance_b,
                     a,
                     &config.token_a,
-                    tolerance.into(),
+                    tolerance_bps.into(),
                 );
                 do_swap(
                     env.clone(),
@@ -316,7 +314,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     pool_balance_b,
                     b,
                     &config.token_b,
-                    tolerance.into(),
+                    tolerance_bps.into(),
                 );
                 do_swap(
                     env.clone(),
@@ -812,7 +810,7 @@ fn do_swap(
 /// * `b_pool` - The current amount of Token B in the liquidity pool.
 /// * `deposit` - The total amount of tokens that the user wants to deposit into the liquidity pool.
 /// * `sell_a` - A boolean that indicates whether the deposit is in Token A (if true) or in Token B (if false).
-/// * `tolerance` - The smallest difference in a deposit we care about.
+/// * `tolerance`- The smallest difference (in bps) between the high and low boundaries of a deposit split.
 /// # Returns
 /// * A tuple `(final_offer_amount, final_ask_amount)`, where `final_offer_amount` is the amount of deposit tokens
 ///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.
