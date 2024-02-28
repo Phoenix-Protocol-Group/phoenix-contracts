@@ -99,7 +99,7 @@ fn factory_successfully_inits_lp() {
             token_a: token_init_info.token_a,
             token_b: token_init_info.token_b,
             total_fee_bps: 0,
-            tolerance: 500,
+            tolerance_bps: 500,
         }
     );
 }

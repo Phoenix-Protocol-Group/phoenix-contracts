@@ -151,7 +151,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
         let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
         let max_referral_bps = lp_init_info.max_referral_bps;
-        let tolerance = lp_init_info.tolerance;
+        let tolerance_bps = lp_init_info.tolerance;
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
 
@@ -220,7 +220,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
             max_referral_bps,
-            tolerance,
+            tolerance_bps,
         };
 
         save_config(&env, config);
