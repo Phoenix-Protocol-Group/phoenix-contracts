@@ -62,7 +62,7 @@ pub struct LiquidityPoolInitInfo {
     pub max_allowed_slippage_bps: i64,
     pub max_allowed_spread_bps: i64,
     pub max_referral_bps: i64,
-    pub tolerance: i64,
+    pub tolerance_bps: i64,
     pub token_init_info: TokenInitInfo,
     pub stake_init_info: StakeInitInfo,
 }
