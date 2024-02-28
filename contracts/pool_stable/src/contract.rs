@@ -1,5 +1,4 @@
 use phoenix::utils::LiquidityPoolInitInfo;
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
     String,
@@ -265,14 +264,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let amp_parameters = get_amp(&env).unwrap(); // FIXME: This is minor, but add some
                                                      // validation to AMP parameters
-        dbg!(amp_parameters.clone());
         let amp = compute_current_amp(&env, &amp_parameters);
-        dbg!(amp);
 
         // Invariant (D) after deposit added
         let new_balance_a = desired_a + old_balance_a;
         let new_balance_b = desired_b + old_balance_b;
-        dbg!("before");
         let new_invariant = compute_d(
             amp as u128,
             &[
@@ -281,7 +277,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             ],
         );
 
-        dbg!("after");
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
             let share =

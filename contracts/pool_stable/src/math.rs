@@ -1,4 +1,3 @@
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::Env;
 
 use crate::storage::AmplifierParameters;
@@ -66,7 +65,6 @@ pub fn compute_d(amp: u128, pools: &[Decimal]) -> Decimal {
 
     // Newton's method to approximate D
     for i in 0..ITERATIONS {
-        dbg!(i);
         let d_product = d.pow(3) / (amount_a_times_coins * amount_b_times_coins);
         d_previous = d;
         d = calculate_step(d, leverage, sum_x, d_product);
@@ -91,8 +89,6 @@ fn calculate_step(
     d_product: Decimal,
 ) -> Decimal {
     let leverage_mul = leverage * sum_x;
-    dbg!(d_product);
-    dbg!(N_COINS);
     let d_p_mul = d_product * N_COINS;
 
     let l_val = leverage_mul + d_p_mul * initial_d;

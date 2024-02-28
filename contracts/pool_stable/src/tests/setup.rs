@@ -1,4 +1,4 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String};
 
 use crate::{
     contract::{StableLiquidityPool, StableLiquidityPoolClient},
@@ -33,6 +33,8 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     fee_recipient: impl Into<Option<Address>>,
     max_allowed_slippage_bps: impl Into<Option<i64>>,
     max_allowed_spread_bps: impl Into<Option<i64>>,
+    stake_manager: Address,
+    stake_owner: Address,
 ) -> StableLiquidityPoolClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
     let pool =
@@ -47,8 +49,8 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     };
     let stake_init_info = StakeInitInfo {
         min_bond: 10i128,
-        max_distributions: 10u32,
         min_reward: 5i128,
+        manager: stake_manager,
     };
 
     let token_wasm_hash = install_token_wasm(env);
@@ -56,7 +58,6 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin,
-        share_token_decimals: 7u32,
         swap_fee_bps: swap_fees,
         fee_recipient,
         max_allowed_slippage_bps: max_allowed_slippage_bps.into().unwrap_or(5_000),
@@ -66,6 +67,15 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         stake_init_info,
     };
 
-    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &6u64, &lp_init_info);
+    pool.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &6u64,
+        &lp_init_info,
+        &stake_owner,
+        &10u32,
+        &String::from_str(env, "LP_SHARE_TOKEN"),
+        &String::from_str(env, "PHOBTCLP"),
+    );
     pool
 }
