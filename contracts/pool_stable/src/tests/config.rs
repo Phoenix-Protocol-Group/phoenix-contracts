@@ -21,7 +21,7 @@ fn update_config() {
     }
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
-    let stake_owner = Address::generate(&env);
+    let factory = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -31,8 +31,8 @@ fn update_config() {
         user1.clone(),
         500,
         200,
-        stake_owner,
         stake_manager,
+        factory,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -113,7 +113,7 @@ fn update_config_unauthorized() {
     }
     let swap_fees = 0i64;
     let stake_manager = Address::generate(&env);
-    let stake_owner = Address::generate(&env);
+    let factory = Address::generate(&env);
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
@@ -122,8 +122,8 @@ fn update_config_unauthorized() {
         user1,
         500,
         200,
-        stake_owner,
         stake_manager,
+        factory,
     );
 
     pool.update_config(
@@ -154,7 +154,7 @@ fn update_config_update_admin() {
     }
     let swap_fees = 0i64;
     let stake_manager = Address::generate(&env);
-    let stake_owner = Address::generate(&env);
+    let factory = Address::generate(&env);
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
@@ -163,8 +163,8 @@ fn update_config_update_admin() {
         user1.clone(),
         500,
         200,
-        stake_owner,
         stake_manager,
+        factory,
     );
 
     // update admin to new admin
@@ -209,7 +209,7 @@ fn update_config_too_high_fees() {
     }
     let swap_fees = 0i64;
     let stake_manager = Address::generate(&env);
-    let stake_owner = Address::generate(&env);
+    let factory = Address::generate(&env);
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
@@ -218,8 +218,8 @@ fn update_config_too_high_fees() {
         user1,
         500,
         200,
-        stake_owner,
         stake_manager,
+        factory,
     );
 
     // update fees and recipient

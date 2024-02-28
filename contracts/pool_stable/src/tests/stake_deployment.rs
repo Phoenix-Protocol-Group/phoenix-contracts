@@ -1,6 +1,6 @@
 extern crate std;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::contract::{StableLiquidityPool, StableLiquidityPoolClient};
@@ -27,6 +27,8 @@ fn confirm_stake_contract_deployment() {
     }
     let user1 = Address::generate(&env);
     let swap_fees = 0i64;
+    let factory = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
         Some(admin1.clone()),
@@ -35,6 +37,8 @@ fn confirm_stake_contract_deployment() {
         user1.clone(),
         500,
         200,
+        stake_manager.clone(),
+        factory.clone(),
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -63,6 +67,8 @@ fn confirm_stake_contract_deployment() {
                 lp_token: share_token_address,
                 min_bond: 10,
                 min_reward: 5,
+                owner: factory,
+                manager: stake_manager,
             }
         }
     );
@@ -94,6 +100,9 @@ fn second_pool_stable_deployment_should_fail() {
     let fee_recipient = user;
     let max_allowed_slippage = 5_000i64; // 50% if not specified
     let max_allowed_spread = 500i64; // 5% if not specified
+    let amp = 6u64;
+    let stake_manager = Address::generate(&env);
+    let factory = Address::generate(&env);
 
     let token_init_info = TokenInitInfo {
         token_a: token1.address.clone(),
@@ -101,13 +110,12 @@ fn second_pool_stable_deployment_should_fail() {
     };
     let stake_init_info = StakeInitInfo {
         min_bond: 10i128,
-        max_distributions: 10u32,
         min_reward: 5i128,
+        manager: stake_manager.clone(),
     };
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin: admin1,
-        share_token_decimals: 7u32,
         swap_fee_bps: 0i64,
         fee_recipient,
         max_allowed_slippage_bps: max_allowed_slippage,
@@ -117,6 +125,24 @@ fn second_pool_stable_deployment_should_fail() {
         stake_init_info,
     };
 
-    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &6u64, &lp_init_info);
-    pool.initialize(&stake_wasm_hash, &token_wasm_hash, &6u64, &lp_init_info);
+    pool.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &amp,
+        &lp_init_info,
+        &factory,
+        &10u32,
+        &String::from_str(&env, "LP_SHARE_TOKEN"),
+        &String::from_str(&env, "PHOBTCLP"),
+    );
+    pool.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &amp,
+        &lp_init_info,
+        &factory,
+        &10u32,
+        &String::from_str(&env, "LP_SHARE_TOKEN"),
+        &String::from_str(&env, "PHOBTCLP"),
+    );
 }
