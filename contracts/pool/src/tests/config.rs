@@ -51,6 +51,7 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
+            tolerance: 500,
         }
     );
 
@@ -76,6 +77,7 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 1_000,
+            tolerance: 500,
         }
     );
 
@@ -94,6 +96,7 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 5_000,
             max_referral_bps: 500,
+            tolerance: 500,
         }
     );
 }
@@ -192,6 +195,7 @@ fn update_config_update_admin() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
+            tolerance: 500,
         }
     );
 }

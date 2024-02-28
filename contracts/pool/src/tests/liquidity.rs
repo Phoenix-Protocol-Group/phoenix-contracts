@@ -14,11 +14,9 @@ use crate::{
     token_contract,
 };
 use decimal::Decimal;
-use test_case::test_case;
 
-#[test_case(Some(250i128) ; "when tolerance is some")]
-#[test_case(None::<i128> ; "when tolerance is none")]
-fn provide_liqudity(tolerance: Option<i128>) {
+#[test]
+fn provide_liqudity() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -65,7 +63,6 @@ fn provide_liqudity(tolerance: Option<i128>) {
         &Some(100),
         &Some(100),
         &None,
-        &tolerance,
     );
 
     assert_eq!(
@@ -83,7 +80,6 @@ fn provide_liqudity(tolerance: Option<i128>) {
                         Some(100i128),
                         Some(100i128),
                         None::<i64>,
-                        tolerance
                     )
                         .into_val(&env),
                 )),
@@ -179,7 +175,6 @@ fn withdraw_liquidity() {
         &Some(100),
         &Some(100),
         &Some(100),
-        &None,
         &None,
     );
 
@@ -288,7 +283,6 @@ fn provide_liqudity_single_asset_on_empty_pool() {
         &None,
         &None,
         &None,
-        &None,
     );
 }
 
@@ -335,7 +329,6 @@ fn provide_liqudity_single_asset_equal() {
         &Some(10_000_000),
         &Some(10_000_000),
         &None,
-        &None,
     );
     assert_eq!(token1.balance(&pool.address), 10_000_000);
     assert_eq!(token2.balance(&pool.address), 10_000_000);
@@ -349,7 +342,6 @@ fn provide_liqudity_single_asset_equal() {
         &Some(50_000),
         &None,
         &Some(49_000),
-        &None,
         &None,
     );
     // before swap : A(10_000_000), B(10_000_000)
@@ -411,7 +403,6 @@ fn provide_liqudity_single_asset_equal_with_fees() {
         &Some(initial_pool_liquidity),
         &Some(initial_pool_liquidity),
         &None,
-        &None,
     );
     assert_eq!(token1.balance(&pool.address), initial_pool_liquidity);
     assert_eq!(token2.balance(&pool.address), initial_pool_liquidity);
@@ -425,7 +416,6 @@ fn provide_liqudity_single_asset_equal_with_fees() {
         &Some(50_000),
         &None,
         &Some(49_000),
-        &None,
         &None,
     );
     // before swap : A(10_000_000), B(10_000_000)
@@ -494,7 +484,6 @@ fn provide_liqudity_single_asset_one_third() {
         &Some(30_000_000),
         &Some(30_000_000),
         &None,
-        &None,
     );
     assert_eq!(token1.balance(&pool.address), 10_000_000);
     assert_eq!(token2.balance(&pool.address), 30_000_000);
@@ -509,7 +498,6 @@ fn provide_liqudity_single_asset_one_third() {
         &Some(100_000),
         &None,
         &Some(slippage_tolerance_bps),
-        &None,
     );
     // before swap : A(10_000_000), B(30_000_000)
     // since pool is 1/3 divides 75k/25k sum for swap
@@ -565,13 +553,12 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
         &Some(30_000_000),
         &Some(30_000_000),
         &None,
-        &None,
     );
     assert_eq!(token1.balance(&pool.address), 10_000_000);
     assert_eq!(token2.balance(&pool.address), 30_000_000);
 
     token2.mint(&user1, &100_000);
-    pool.provide_liquidity(&user1, &None, &None, &Some(100_000), &None, &None, &None);
+    pool.provide_liquidity(&user1, &None, &None, &Some(100_000), &None, &None);
     // before swap : A(10_000_000), B(30_000_000)
     // since pool is 1/3 algorithm will split it around 15794/52734
     // swap 47_226k B for A = 17_548 (-10% fee = 15_793)
@@ -659,7 +646,7 @@ fn swap_with_no_amounts() {
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
     // providing all amounts as None
-    pool.provide_liquidity(&user1, &None, &None, &None, &None, &None, &None);
+    pool.provide_liquidity(&user1, &None, &None, &None, &None, &None);
 }
 
 #[test]
@@ -704,7 +691,6 @@ fn withdraw_liqudity_below_min() {
         &Some(100),
         &Some(100),
         &Some(100),
-        &None,
         &None,
     );
 

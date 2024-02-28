@@ -58,7 +58,6 @@ pub trait LiquidityPoolTrait {
         desired_b: Option<i128>,
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
-        tolerance: Option<i128>,
     );
 
     // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
@@ -153,6 +152,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
         let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
         let max_referral_bps = lp_init_info.max_referral_bps;
+        let tolerance = lp_init_info.tolerance;
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
 
@@ -221,6 +221,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
             max_referral_bps,
+            tolerance,
         };
 
         save_config(&env, config);
@@ -244,7 +245,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         desired_b: Option<i128>,
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
-        tolerance: Option<i128>,
     ) {
         validate_int_parameters!(desired_a, min_a, desired_b, min_b);
 
@@ -254,7 +254,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let config = get_config(&env);
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
-        let tolerance = tolerance.unwrap_or(500);
+        let tolerance = config.tolerance;
 
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
@@ -292,7 +292,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     pool_balance_b,
                     a,
                     &config.token_a,
-                    tolerance,
+                    tolerance.into(),
                 );
                 do_swap(
                     env.clone(),
@@ -316,7 +316,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     pool_balance_b,
                     b,
                     &config.token_b,
-                    tolerance,
+                    tolerance.into(),
                 );
                 do_swap(
                     env.clone(),

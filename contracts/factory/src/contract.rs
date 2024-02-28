@@ -122,6 +122,7 @@ impl FactoryTrait for Factory {
 
         validate_token_info(
             &env,
+            lp_init_info.tolerance,
             &lp_init_info.token_init_info,
             &lp_init_info.stake_init_info,
         );
@@ -279,9 +280,14 @@ impl FactoryTrait for Factory {
 
 fn validate_token_info(
     env: &Env,
+    tolerance: i64,
     token_init_info: &TokenInitInfo,
     stake_init_info: &StakeInitInfo,
 ) {
+    if tolerance <= 0 {
+        log!(env, "tolerance cannot be less than or equal to zero");
+        panic!("Factory: validate tolerance failed: Tolerance cannot be less than or equal zero");
+    }
     if token_init_info.token_a >= token_init_info.token_b {
         log!(env, "token_a must be less than token_b");
         panic!("Factory: validate_token_info failed: First token must be smaller then second");
@@ -329,7 +335,7 @@ mod tests {
             min_reward: 10,
             manager: Address::generate(&env),
         };
-        validate_token_info(&env, &token_init_info, &stake_init_info);
+        validate_token_info(&env, 500, &token_init_info, &stake_init_info);
     }
 
     #[test]
@@ -350,7 +356,7 @@ mod tests {
             manager: Address::generate(&env),
         };
 
-        validate_token_info(&env, &token_init_info, &stake_init_info);
+        validate_token_info(&env, 500, &token_init_info, &stake_init_info);
     }
 
     #[test]
@@ -368,6 +374,6 @@ mod tests {
             min_reward: 0,
             manager: Address::generate(&env),
         };
-        validate_token_info(&env, &token_init_info, &stake_init_info);
+        validate_token_info(&env, 500, &token_init_info, &stake_init_info);
     }
 }

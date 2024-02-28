@@ -49,6 +49,8 @@ pub struct Config {
     pub max_allowed_spread_bps: i64,
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
+    /// * `tolerance` - The smallest difference in a deposit we care about.
+    pub tolerance: i64,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
@@ -636,8 +638,9 @@ mod tests {
             pool_type: PairType::Xyk,
             total_fee_bps: 10i64,
             fee_recipient: Address::generate(&env),
-            max_allowed_spread_bps: 10_i64,
+            max_allowed_spread_bps: 10i64,
             max_referral_bps: 10i64,
+            tolerance: 500i64,
         };
 
         let result = config.max_allowed_slippage();
