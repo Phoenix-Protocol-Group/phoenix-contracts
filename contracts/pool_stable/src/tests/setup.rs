@@ -25,6 +25,7 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn deploy_stable_liquidity_pool_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,

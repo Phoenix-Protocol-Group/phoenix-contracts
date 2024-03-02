@@ -64,7 +64,7 @@ pub fn compute_d(amp: u128, pools: &[Decimal]) -> Decimal {
     let mut d: Decimal = sum_x;
 
     // Newton's method to approximate D
-    for i in 0..ITERATIONS {
+    for _ in 0..ITERATIONS {
         let d_product = d.pow(3) / (amount_a_times_coins * amount_b_times_coins);
         d_previous = d;
         d = calculate_step(d, leverage, sum_x, d_product);
