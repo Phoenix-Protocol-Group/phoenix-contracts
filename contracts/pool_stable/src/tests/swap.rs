@@ -24,6 +24,8 @@ fn simple_swap() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
         &env,
@@ -33,6 +35,8 @@ fn simple_swap() {
         None,
         None,
         None,
+        stake_manager.clone(),
+        factory.clone(),
     );
 
     token1.mint(&user1, &1_001_000);
@@ -131,6 +135,8 @@ fn swap_with_high_fee() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
     let user1 = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
 
     let swap_fees = 1_000i64; // 10% bps
     let fee_recipient = Address::generate(&env);
@@ -142,6 +148,8 @@ fn swap_with_high_fee() {
         fee_recipient.clone(),
         None,
         None,
+        stake_manager.clone(),
+        factory.clone(),
     );
 
     let initial_liquidity = 1_000_000i128;
@@ -195,6 +203,8 @@ fn swap_simulation_even_pool() {
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
+    let factory = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
 
     let swap_fees = 1_000i64; // 10% bps
     let pool = deploy_stable_liquidity_pool_contract(
@@ -205,6 +215,8 @@ fn swap_simulation_even_pool() {
         Address::generate(&env),
         None,
         None,
+        stake_manager.clone(),
+        factory.clone(),
     );
 
     let initial_liquidity = 1_000_000i128;
@@ -288,6 +300,8 @@ fn swap_simulation_one_third_pool() {
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
+    let factory = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
 
     let swap_fees = 500i64; // 5% bps
     let pool = deploy_stable_liquidity_pool_contract(
@@ -298,6 +312,8 @@ fn swap_simulation_one_third_pool() {
         Address::generate(&env),
         None,
         None,
+        stake_manager.clone(),
+        factory.clone(),
     );
 
     let initial_liquidity = 1_000_000i128;
