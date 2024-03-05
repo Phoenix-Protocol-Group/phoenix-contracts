@@ -3,12 +3,12 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, 
 use crate::{
     distribution::{
         calculate_annualized_payout, do_withdraw_rewards, get_distribution, get_reward_curve,
-        get_withdraw_adjustment, get_withdrawable_rewards, save_distribution, save_reward_curve,
-        save_withdraw_adjustment, update_rewards, withdrawable_rewards, Distribution, SHARES_SHIFT,
+        get_withdrawable_rewards, save_distribution, save_reward_curve, update_rewards,
+        Distribution, SHARES_SHIFT,
     },
     msg::{
         AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
-        WithdrawableReward, WithdrawableRewardsResponse,
+        WithdrawableRewardsResponse,
     },
     storage::{
         get_config, get_stakes, save_config, save_stakes,
