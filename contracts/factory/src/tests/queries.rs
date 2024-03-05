@@ -451,8 +451,8 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
     };
     let first_stake_init_info = StakeInitInfo {
         min_bond: 1i128,
-        max_distributions: 100u32,
         min_reward: 1i128,
+        manager: admin.clone(),
     };
 
     let first_lp_init_info = LiquidityPoolInitInfo {
@@ -460,15 +460,20 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
         fee_recipient: fee_recipient.clone(),
         max_allowed_slippage_bps: 100,
         max_allowed_spread_bps: 100,
-        share_token_decimals: 7,
         swap_fee_bps: 0,
         max_referral_bps: 0,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
     };
 
-    let lp_contract_addr = factory.create_liquidity_pool(&first_lp_init_info, &admin.clone());
+    let lp_contract_addr = factory.create_liquidity_pool(
+        &admin.clone(),
+        &first_lp_init_info,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHO/BTC"),
+    );
 
+    
     let first_result = factory.query_pool_details(&lp_contract_addr);
     let share_token_addr: Address = env.invoke_contract(
         &lp_contract_addr,
@@ -483,9 +488,6 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
 
     // testing the liquidity providing
 
-    dbg!(lp_contract_addr.clone());
-    dbg!(user_1.clone());
-
     // this is just to test why it always fail
     // let init_fn_args: Vec<Val> =
     //     (token1.address, 10).into_val(&env);
@@ -494,6 +496,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
     //     &Symbol::new(&env, "simulate_swap"),
     //     init_fn_args,
     // );
+    dbg!("before");
 
     let init_fn_args: Vec<Val> = (
         user_1.clone(),
@@ -509,6 +512,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
         &Symbol::new(&env, "provide_liquidity"),
         init_fn_args,
     );
+    dbg!("after");
 
     let result = factory.get_user_portfolio(&user_1);
     dbg!(result);

@@ -35,11 +35,10 @@ pub trait FactoryTrait {
 
     fn create_liquidity_pool(
         env: Env,
-        caller: Address,
+        sender: Address,
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
-        sender: Address,
     ) -> Address;
 
     fn update_whitelisted_accounts(
@@ -111,11 +110,10 @@ impl FactoryTrait for Factory {
 
     fn create_liquidity_pool(
         env: Env,
-        caller: Address,
+        sender: Address,
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
-        sender: Address,
     ) -> Address {
         sender.require_auth();
         if !get_config(&env).whitelisted_accounts.contains(sender) {
