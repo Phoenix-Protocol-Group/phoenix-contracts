@@ -330,27 +330,6 @@ impl FactoryTrait for Factory {
     }
 }
 
-fn get_token_amount_per_liquidity_pool(
-    env: &Env,
-    asset_addr: &Address,
-    bsset_addr: &Address,
-    sender: &Address,
-) -> (i128, i128) {
-    let asset_amount = env.invoke_contract(
-        asset_addr,
-        &Symbol::new(env, "balance"),
-        vec![env, sender.clone().into_val(env)],
-    );
-
-    let bsset_amount = env.invoke_contract(
-        bsset_addr,
-        &Symbol::new(env, "balance"),
-        vec![env, sender.clone().into_val(env)],
-    );
-
-    (asset_amount, bsset_amount)
-}
-
 fn validate_token_info(
     env: &Env,
     token_init_info: &TokenInitInfo,
