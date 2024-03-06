@@ -18,6 +18,7 @@ and this project adheres to
 - Multihop: removes unnecessary unwrap of a value ([#240])
 - Factory, Multihop, Pool, Pool_stable, Phoenix: adds lp_token decimal's as a const instead a user input ([#241])
 - Factory, Multihop, Pool, Pool_stable: adds a new parameter for creating liquidity pool ([#243])
+- Update soroban-sdk version from v20.1.0 to v20.4.0 ([#262])
 
 [#200]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/200
 [#234]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/234
@@ -28,6 +29,7 @@ and this project adheres to
 [#240]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/240
 [#241]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/241
 [#243]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/243
+[#262]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/262
 
 ## Added
 
