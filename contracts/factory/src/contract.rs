@@ -293,7 +293,7 @@ impl FactoryTrait for Factory {
             // if asset lp-share is above 0 make the call and push to lp_portfolio
             if response.pool_response.asset_lp_share.amount > 0 {
                 // get the lp share token balance for the user
-                let lp_share_response: i128 = env.invoke_contract(
+                let lp_share_amount: i128 = env.invoke_contract(
                     &response.pool_response.asset_lp_share.address,
                     &Symbol::new(&env, "balance"),
                     vec![&env, sender.into_val(&env)],
@@ -303,7 +303,7 @@ impl FactoryTrait for Factory {
                 let (amount_token_a, amount_token_b) = env.invoke_contract(
                     &response.pool_response.asset_lp_share.address,
                     &Symbol::new(&env, "query_share"),
-                    vec![&env, lp_share_response.into_val(&env)],
+                    vec![&env, lp_share_amount.into_val(&env)],
                 );
 
                 // add to the lp_portfolio
