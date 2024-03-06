@@ -50,7 +50,7 @@ pub struct Config {
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
     /// * `tolerance` - The smallest difference (in bps) between the high and low boundaries of a deposit split.
-    pub tolerance_bps: i64,
+    pub tolerance: i64,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
@@ -640,7 +640,7 @@ mod tests {
             fee_recipient: Address::generate(&env),
             max_allowed_spread_bps: 10i64,
             max_referral_bps: 10i64,
-            tolerance_bps: 500i64,
+            tolerance: 500i64,
         };
 
         let result = config.max_allowed_slippage();

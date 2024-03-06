@@ -69,7 +69,7 @@ fn factory_successfully_inits_lp() {
         max_allowed_spread_bps: 500,
         swap_fee_bps: 0,
         max_referral_bps: 5_000,
-        tolerance_bps: 500,
+        tolerance: 500,
         token_init_info: token_init_info.clone(),
         stake_init_info,
     };
@@ -99,7 +99,7 @@ fn factory_successfully_inits_lp() {
             token_a: token_init_info.token_a,
             token_b: token_init_info.token_b,
             total_fee_bps: 0,
-            tolerance_bps: 500,
+            tolerance: 500,
         }
     );
 }
@@ -146,7 +146,7 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
         max_allowed_spread_bps: 500,
         swap_fee_bps: 0,
         max_referral_bps: 5_000,
-        tolerance_bps: 500,
+        tolerance: 500,
         token_init_info: token_init_info.clone(),
         stake_init_info,
     };

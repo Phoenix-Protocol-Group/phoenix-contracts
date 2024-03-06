@@ -122,7 +122,7 @@ impl FactoryTrait for Factory {
 
         validate_token_info(
             &env,
-            lp_init_info.tolerance_bps,
+            lp_init_info.tolerance,
             &lp_init_info.token_init_info,
             &lp_init_info.stake_init_info,
         );
