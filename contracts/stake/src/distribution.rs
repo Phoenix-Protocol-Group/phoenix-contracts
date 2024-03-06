@@ -240,7 +240,7 @@ pub fn get_withdrawable_rewards(env: &Env, user: &Address) -> WithdrawableReward
     WithdrawableRewardsResponse { rewards }
 }
 
-pub fn do_withdraw_rewards(env: &Env, sender: &Address) {
+pub fn withdraw_rewards(env: &Env, sender: &Address) {
     env.events().publish(("withdraw_rewards", "user"), sender);
 
     for distribution_address in get_distributions(env) {

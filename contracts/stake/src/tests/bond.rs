@@ -226,3 +226,57 @@ fn unbond_wrong_user_stake_not_found() {
 
     staking.unbond(&user2, &10_000, &2_000);
 }
+
+#[test]
+fn pay_rewards_during_unbond() {
+    const AMOUNT: i128 = 100_000;
+    const WITHDRAW_TIMESTAMP: u64 = 2_000;
+
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let lp_token = deploy_token_contract(&env, &admin);
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+
+    lp_token.mint(&user, &AMOUNT);
+    lp_token.mint(&owner, &AMOUNT);
+
+    staking.create_distribution_flow(&owner, &lp_token.address);
+    staking.fund_distribution(&owner, &0u64, &10_000u64, &lp_token.address, &AMOUNT);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = WITHDRAW_TIMESTAMP;
+    });
+    staking.bond(&user, &10_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 4_000;
+    });
+
+    // user hasn't unbonded yet, no rewards to withdraw
+    assert_eq!(
+        staking
+            .query_withdrawable_rewards(&user)
+            .rewards
+            .iter()
+            .map(|reward| reward.reward_amount)
+            .sum::<u128>(),
+        0
+    );
+    assert_eq!(
+        staking.query_undistributed_rewards(&lp_token.address),
+        110_000
+    );
+    staking.unbond(&user, &10_000, &WITHDRAW_TIMESTAMP);
+
+    // user unbonded we automatically distribute rewards
+    assert_eq!(
+        staking.query_undistributed_rewards(&lp_token.address),
+        100_000
+    );
+}
