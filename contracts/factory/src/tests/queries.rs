@@ -1,14 +1,11 @@
-use super::setup::{
-    deploy_factory_contract, deploy_lp_contract, deploy_token_contract, install_token_wasm,
-};
+use super::setup::{deploy_factory_contract, deploy_lp_contract, deploy_token_contract};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use soroban_sdk::testutils::arbitrary::std::dbg;
 
 use soroban_sdk::vec;
 use soroban_sdk::{
     contracttype,
     testutils::{arbitrary::std, Address as _},
-    Address, Env, IntoVal, String, Symbol, Val, Vec,
+    Address, Env, IntoVal, String, Symbol, Vec,
 };
 
 #[contracttype]
@@ -402,8 +399,8 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
     let admin = Address::generate(&env);
     let fee_recipient = Address::generate(&env);
     let user_1 = Address::generate(&env);
-    let user_2 = Address::generate(&env);
-    let user_3 = Address::generate(&env);
+    let _user_2 = Address::generate(&env);
+    let _user_3 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
@@ -477,10 +474,6 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
 
     let first_lp_client = deploy_lp_contract(&env, lp_contract_addr.clone());
 
-    // testing the liquidity providing
-
-    dbg!("before");
-    // todo use Client instead of
     first_lp_client.provide_liquidity(
         &user_1.clone(),
         &Some(100i128),
@@ -489,7 +482,6 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
         &Some(100i128),
         &None::<i64>,
     );
-    dbg!("after");
 
-    let result = factory.get_user_portfolio(&user_1);
+    let _result = factory.query_user_portfolio(&user_1, &true);
 }

@@ -126,6 +126,8 @@ pub trait LiquidityPoolTrait {
         ask_asset: Address,
         ask_amount: i128,
     ) -> SimulateReverseSwapResponse;
+
+    fn query_share(env: Env, amount: i128) -> (i128, i128);
 }
 
 #[contractimpl]
@@ -653,6 +655,22 @@ impl LiquidityPoolTrait for LiquidityPool {
             spread_amount,
             commission_amount,
         }
+    }
+
+    fn query_share(env: Env, amount: i128) -> (i128, i128) {
+        let pool_info = Self::query_pool_info(env);
+        let total_share = pool_info.asset_lp_share.amount;
+        let token_a_amount = pool_info.asset_a.amount;
+        let token_b_amount = pool_info.asset_b.amount;
+
+        let mut share_ratio = Decimal::zero();
+        if total_share != 0 {
+            share_ratio = Decimal::from_ratio(amount, total_share);
+        }
+
+        let amount_a = token_a_amount * share_ratio;
+        let amount_b = token_b_amount * share_ratio;
+        (amount_a, amount_b)
     }
 }
 

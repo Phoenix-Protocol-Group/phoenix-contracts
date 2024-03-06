@@ -60,7 +60,7 @@ pub trait FactoryTrait {
 
     fn get_config(env: Env) -> Config;
 
-    fn get_user_portfolio(env: Env, sender: Address) -> UserPortfolio;
+    fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio;
 }
 
 #[contractimpl]
@@ -278,7 +278,7 @@ impl FactoryTrait for Factory {
             .expect("Factory: No multihop present in storage")
     }
 
-    fn get_user_portfolio(env: Env, sender: Address) -> UserPortfolio {
+    fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio {
         let initialized_pools = get_lp_vec(&env);
         let mut lp_portfolio: Vec<LpPortfolio> = Vec::new(&env);
         let mut stake_portfolio: Vec<StakePortfolio> = Vec::new(&env);
@@ -290,37 +290,50 @@ impl FactoryTrait for Factory {
                 Vec::new(&env),
             );
 
-            let asset_addr = response.pool_response.asset_a.address.clone();
-            let bsset_addr = response.pool_response.asset_b.address.clone();
+            // if asset lp-share is above 0 make the call and push to lp_portfolio
+            if response.pool_response.asset_lp_share.amount > 0 {
+                // get the lp share token balance for the user
+                let lp_share_response: i128 = env.invoke_contract(
+                    &response.pool_response.asset_lp_share.address,
+                    &Symbol::new(&env, "balance"),
+                    vec![&env, sender.into_val(&env)],
+                );
 
-            let (asset_amount_available_for_user, bsset_amount_available_for_user) =
-                get_token_amount_per_liquidity_pool(&env, &asset_addr, &bsset_addr, &sender);
+                // query the balance of the liquidity tokens
+                let (amount_token_a, amount_token_b) = env.invoke_contract(
+                    &response.pool_response.asset_lp_share.address,
+                    &Symbol::new(&env, "query_share"),
+                    vec![&env, lp_share_response.into_val(&env)],
+                );
 
-            let asset_a = Asset {
-                address: asset_addr,
-                amount: asset_amount_available_for_user,
-            };
+                // add to the lp_portfolio
+                lp_portfolio.push_back(LpPortfolio {
+                    assets: (
+                        Asset {
+                            address: response.pool_response.asset_a.address,
+                            amount: amount_token_a,
+                        },
+                        Asset {
+                            address: response.pool_response.asset_b.address,
+                            amount: amount_token_b,
+                        },
+                    ),
+                });
+            }
 
-            let asset_b = Asset {
-                address: bsset_addr,
-                amount: bsset_amount_available_for_user,
-            };
+            // make a call towards the stake contract to check the staked amount if `staking` is true
+            if staking {
+                let stake_response: StakedResponse = env.invoke_contract(
+                    &response.pool_response.stake_address,
+                    &Symbol::new(&env, "query_staked"),
+                    vec![&env, sender.into_val(&env)],
+                );
 
-            lp_portfolio.push_back(LpPortfolio {
-                assets: (asset_a, asset_b),
-            });
-
-            // make a call towards the stake contract to check the staked amount
-            let stake_response: StakedResponse = env.invoke_contract(
-                &response.pool_response.stake_address,
-                &Symbol::new(&env, "query_staked"),
-                vec![&env, sender.into_val(&env)],
-            );
-
-            stake_portfolio.push_back(StakePortfolio {
-                stake_token: response.pool_response.stake_address,
-                stakes: stake_response.stakes,
-            })
+                stake_portfolio.push_back(StakePortfolio {
+                    stake_token: response.pool_response.stake_address,
+                    stakes: stake_response.stakes,
+                })
+            }
         }
 
         UserPortfolio {

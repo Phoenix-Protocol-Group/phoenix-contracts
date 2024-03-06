@@ -700,3 +700,105 @@ fn withdraw_liqudity_below_min() {
     // Expecting min_a and/or min_b as huge bigger then available
     pool.withdraw_liquidity(&user1, &share_amount, &3000, &3000);
 }
+
+#[test]
+fn query_share() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let token_share = token_contract::Client::new(&env, &share_token_address);
+
+    token1.mint(&user1, &1000);
+    assert_eq!(token1.balance(&user1), 1000);
+
+    token2.mint(&user1, &1000);
+    assert_eq!(token2.balance(&user1), 1000);
+
+    pool.provide_liquidity(
+        &user1,
+        &Some(100),
+        &Some(100),
+        &Some(100),
+        &Some(100),
+        &None,
+    );
+
+    let pool_info_result = pool.query_pool_info();
+    assert_eq!(
+        pool_info_result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 100i128
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 100i128
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 100i128
+            },
+            stake_address: pool_info_result.clone().stake_address,
+        }
+    );
+
+    let lp_share_balance = token_share.balance(&user1);
+    let query_share_result = pool.query_share(&lp_share_balance);
+    assert_eq!(query_share_result, (100i128, 100i128));
+
+    pool.withdraw_liquidity(&user1, &lp_share_balance, &100i128, &100i128);
+    let lp_share_balance_after_withdraw = token_share.balance(&user1);
+    assert_eq!(lp_share_balance_after_withdraw, 0);
+
+    let pool_info_result = pool.query_pool_info();
+    assert_eq!(
+        pool_info_result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address,
+                amount: 0i128
+            },
+            asset_b: Asset {
+                address: token2.address,
+                amount: 0i128
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 0i128
+            },
+            stake_address: pool_info_result.clone().stake_address,
+        }
+    );
+
+    let query_share_result_after_withdraw = pool.query_share(&lp_share_balance_after_withdraw);
+    assert_eq!(query_share_result_after_withdraw, (0i128, 0i128));
+}
