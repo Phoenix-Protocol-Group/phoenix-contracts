@@ -867,14 +867,14 @@ mod tests {
     fn decimal_abs_with_negative_number() {
         let decimal = Decimal::new(128);
 
-        assert_eq!(decimal.abs(), Decimal { 0: 128 });
+        assert_eq!(decimal.abs(), Decimal(128));
     }
 
     #[test]
     fn decimal_abs_with_positive_number() {
         let decimal = Decimal::new(128);
 
-        assert_eq!(decimal.abs(), Decimal { 0: 128 });
+        assert_eq!(decimal.abs(), Decimal(128));
     }
 
     #[test]
@@ -882,7 +882,22 @@ mod tests {
         let env = Env::default();
         let decimal = Decimal::percent(128);
 
-        assert_eq!(decimal.to_string(&env), String::from_slice(&env, "128"));
+        // Convert expected string to Soroban SDK String
+        let expected_msg = "1.28";
+        let expected_string = String::from_str(&env, expected_msg);
+
+        // Convert decimal to String and get its byte representation
+        let result_string = decimal.to_string(&env);
+        let result_string_len = result_string.len() as usize;
+        let mut result_bytes = alloc::vec![0u8; result_string_len];
+        result_string.copy_into_slice(&mut result_bytes);
+
+        // Get byte representation of expected string
+        let expected_string_len = expected_string.len() as usize;
+        let mut expected_bytes = alloc::vec![0u8; expected_string_len];
+        expected_string.copy_into_slice(&mut expected_bytes);
+
+        assert_eq!(result_bytes, expected_bytes);
     }
 
     #[test]
