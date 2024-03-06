@@ -19,6 +19,7 @@ and this project adheres to
 - Factory, Multihop, Pool, Pool_stable, Phoenix: adds lp_token decimal's as a const instead a user input ([#241])
 - Factory, Multihop, Pool, Pool_stable: adds a new parameter for creating liquidity pool ([#243])
 - Multihop, Pool: removes hardcoded value for `tolerance` and adds it as parameter ([#257])
+- Update soroban-sdk version from v20.1.0 to v20.4.0 ([#262])
 
 [#200]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/200
 [#234]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/234
@@ -30,6 +31,7 @@ and this project adheres to
 [#241]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/241
 [#243]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/243
 [#257]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/257
+[#262]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/262
 
 ## Added
 
