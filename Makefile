@@ -1,4 +1,4 @@
-SUBDIRS := contracts/factory contracts/multihop contracts/pool contracts/pool_stable contracts/stake contracts/token
+SUBDIRS := contracts/factory contracts/multihop contracts/pool contracts/pool_stable contracts/stake contracts/token packages/phoenix packages/decimal packages/curve
 BUILD_FLAGS ?=
 
 default: build
