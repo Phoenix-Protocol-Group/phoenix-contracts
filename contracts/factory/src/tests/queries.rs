@@ -1,4 +1,6 @@
-use super::setup::{deploy_factory_contract, deploy_token_contract, install_token_wasm};
+use super::setup::{
+    deploy_factory_contract, deploy_lp_contract, deploy_token_contract, install_token_wasm,
+};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::testutils::arbitrary::std::dbg;
 
@@ -473,47 +475,21 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
         &String::from_str(&env, "PHO/BTC"),
     );
 
-    
-    let first_result = factory.query_pool_details(&lp_contract_addr);
-    let share_token_addr: Address = env.invoke_contract(
-        &lp_contract_addr,
-        &Symbol::new(&env, "query_share_token_address"),
-        Vec::new(&env),
-    );
-    let first_lp_config: LiquidityPoolConfig = env.invoke_contract(
-        &lp_contract_addr,
-        &Symbol::new(&env, "query_config"),
-        Vec::new(&env),
-    );
+    let first_lp_client = deploy_lp_contract(&env, lp_contract_addr.clone());
 
     // testing the liquidity providing
 
-    // this is just to test why it always fail
-    // let init_fn_args: Vec<Val> =
-    //     (token1.address, 10).into_val(&env);
-    // env.invoke_contract::<Val>(
-    //     &lp_contract_addr,
-    //     &Symbol::new(&env, "simulate_swap"),
-    //     init_fn_args,
-    // );
     dbg!("before");
-
-    let init_fn_args: Vec<Val> = (
-        user_1.clone(),
-        Some(100),
-        Some(100),
-        Some(100),
-        Some(100),
-        None::<i128>,
-    )
-        .into_val(&env);
-    env.invoke_contract::<Val>(
-        &lp_contract_addr,
-        &Symbol::new(&env, "provide_liquidity"),
-        init_fn_args,
+    // todo use Client instead of
+    first_lp_client.provide_liquidity(
+        &user_1.clone(),
+        &Some(100i128),
+        &Some(100i128),
+        &Some(100i128),
+        &Some(100i128),
+        &None::<i64>,
     );
     dbg!("after");
 
     let result = factory.get_user_portfolio(&user_1);
-    dbg!(result);
 }

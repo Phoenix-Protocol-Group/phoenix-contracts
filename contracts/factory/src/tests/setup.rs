@@ -1,4 +1,7 @@
-use crate::{contract::{Factory, FactoryClient}, token_contract};
+use crate::{
+    contract::{Factory, FactoryClient},
+    token_contract,
+};
 use soroban_sdk::{testutils::Address as _, vec, Address, BytesN, Env};
 #[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
@@ -12,6 +15,13 @@ pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
         file = "../../target/wasm32-unknown-unknown/release/phoenix_multihop.wasm"
     );
     env.deployer().upload_contract_wasm(WASM)
+}
+
+pub fn deploy_lp_contract<'a>(env: &Env, contract_id: Address) -> lp_contract::Client<'a> {
+    lp_contract::Client::new(
+        env,
+        &env.register_contract_wasm(Some(&contract_id), lp_contract::WASM),
+    )
 }
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
