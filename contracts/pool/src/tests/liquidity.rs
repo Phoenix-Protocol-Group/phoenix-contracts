@@ -702,8 +702,6 @@ fn withdraw_liqudity_below_min() {
 }
 
 #[test]
-// todo add failing test cases as well
-// i.e. query_share with empty pool etc
 fn query_share_valid_liquidity() {
     let env = Env::default();
     env.mock_all_auths();
