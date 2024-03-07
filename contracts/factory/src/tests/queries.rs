@@ -1,5 +1,5 @@
 use super::setup::{deploy_factory_contract, deploy_lp_contract, deploy_token_contract};
-use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
+use crate::storage::{Asset, LpPortfolio, StakePortfolio, UserPortfolio};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::vec;
 use soroban_sdk::{
@@ -596,11 +596,6 @@ fn test_query_token_amount_per_liquidity_pool_per_user_no_stake() {
         &Some(100i128),
         &None::<i64>,
     );
-
-    let stake_address = factory
-        .query_pool_details(&lp_contract_addr)
-        .pool_response
-        .stake_address;
 
     let result = factory.query_user_portfolio(&user_1, &false);
     assert_eq!(
