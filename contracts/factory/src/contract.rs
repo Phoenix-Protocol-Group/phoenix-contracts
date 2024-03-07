@@ -300,8 +300,8 @@ impl FactoryTrait for Factory {
                 );
 
                 // query the balance of the liquidity tokens
-                let (amount_token_a, amount_token_b) = env.invoke_contract(
-                    &response.pool_response.asset_lp_share.address,
+                let (asset_a, asset_b) = env.invoke_contract::<(Asset, Asset)>(
+                    &address,
                     &Symbol::new(&env, "query_share"),
                     vec![&env, lp_share_amount.into_val(&env)],
                 );
@@ -310,12 +310,12 @@ impl FactoryTrait for Factory {
                 lp_portfolio.push_back(LpPortfolio {
                     assets: (
                         Asset {
-                            address: response.pool_response.asset_a.address,
-                            amount: amount_token_a,
+                            address: asset_a.address,
+                            amount: asset_a.amount,
                         },
                         Asset {
-                            address: response.pool_response.asset_b.address,
-                            amount: amount_token_b,
+                            address: asset_b.address,
+                            amount: asset_b.amount,
                         },
                     ),
                 });

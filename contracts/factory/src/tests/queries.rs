@@ -1,7 +1,6 @@
 use super::setup::{deploy_factory_contract, deploy_lp_contract, deploy_token_contract};
+use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-// use soroban_sdk::testutils::arbitrary::std::dbg;
-
 use soroban_sdk::vec;
 use soroban_sdk::{
     contracttype,
@@ -394,7 +393,7 @@ fn test_queries_by_tuple_errors() {
 }
 
 #[test]
-fn test_query_token_amount_per_liquidity_pool_per_user() {
+fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
     let env = Env::default();
 
     let admin = Address::generate(&env);
@@ -476,8 +475,118 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
 
     let first_lp_client = deploy_lp_contract(&env, lp_contract_addr.clone());
 
-    // let result = first_lp_client.query_config();
-    // dbg!(result);
+    first_lp_client.provide_liquidity(
+        &user_1.clone(),
+        &Some(100i128),
+        &Some(100i128),
+        &Some(100i128),
+        &Some(100i128),
+        &None::<i64>,
+    );
+
+    let stake_address = factory
+        .query_pool_details(&lp_contract_addr)
+        .pool_response
+        .stake_address;
+
+    let result = factory.query_user_portfolio(&user_1, &true);
+    assert_eq!(
+        result,
+        UserPortfolio {
+            lp_portfolio: vec![
+                &env,
+                LpPortfolio {
+                    assets: (
+                        Asset {
+                            address: token1.address,
+                            amount: 100i128
+                        },
+                        Asset {
+                            address: token2.address,
+                            amount: 100i128
+                        }
+                    )
+                }
+            ],
+            stake_portfolio: vec![
+                &env,
+                StakePortfolio {
+                    stake_token: stake_address,
+                    stakes: vec![&env] // no bonds, empty stake
+                }
+            ]
+        }
+    );
+}
+
+#[test]
+fn test_query_token_amount_per_liquidity_pool_per_user_no_stake() {
+    let env = Env::default();
+
+    let admin = Address::generate(&env);
+    let fee_recipient = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let user_1 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    token1.mint(&user_1, &10_000i128);
+    let user1_token1_balance: i128 = env.invoke_contract(
+        &token1.address,
+        &Symbol::new(&env, "balance"),
+        vec![&env, user_1.into_val(&env)],
+    );
+
+    assert_eq!(user1_token1_balance, 10_000i128);
+
+    token2.mint(&user_1, &10_000i128);
+    let user1_token2_balance: i128 = env.invoke_contract(
+        &token2.address,
+        &Symbol::new(&env, "balance"),
+        vec![&env, user_1.into_val(&env)],
+    );
+
+    assert_eq!(user1_token2_balance, 10_000i128);
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+
+    let first_token_init_info = TokenInitInfo {
+        token_a: token1.address.clone(),
+        token_b: token2.address.clone(),
+    };
+    let first_stake_init_info = StakeInitInfo {
+        min_bond: 1i128,
+        min_reward: 1i128,
+        manager,
+    };
+
+    let first_lp_init_info = LiquidityPoolInitInfo {
+        admin: admin.clone(),
+        fee_recipient: fee_recipient.clone(),
+        max_allowed_slippage_bps: 100,
+        max_allowed_spread_bps: 100,
+        swap_fee_bps: 0,
+        max_referral_bps: 0,
+        token_init_info: first_token_init_info.clone(),
+        stake_init_info: first_stake_init_info,
+    };
+
+    let lp_contract_addr = factory.create_liquidity_pool(
+        &admin.clone(),
+        &first_lp_init_info,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHO/BTC"),
+    );
+
+    let first_lp_client = deploy_lp_contract(&env, lp_contract_addr.clone());
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
@@ -488,5 +597,31 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
         &None::<i64>,
     );
 
-    let _result = factory.query_user_portfolio(&user_1, &true);
+    let stake_address = factory
+        .query_pool_details(&lp_contract_addr)
+        .pool_response
+        .stake_address;
+
+    let result = factory.query_user_portfolio(&user_1, &false);
+    assert_eq!(
+        result,
+        UserPortfolio {
+            lp_portfolio: vec![
+                &env,
+                LpPortfolio {
+                    assets: (
+                        Asset {
+                            address: token1.address,
+                            amount: 100i128
+                        },
+                        Asset {
+                            address: token2.address,
+                            amount: 100i128
+                        }
+                    )
+                }
+            ],
+            stake_portfolio: vec![&env]
+        }
+    );
 }
