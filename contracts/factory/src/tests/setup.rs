@@ -41,16 +41,6 @@ pub fn deploy_stake_contract<'a>(
     )
 }
 
-pub fn deploy_stake_token_client<'a>(
-    env: &Env,
-    token_contract_address: Address,
-) -> token_contract::Client<'a> {
-    token_contract::Client::new(
-        env,
-        &env.register_contract_wasm(Some(&token_contract_address), token_contract::WASM),
-    )
-}
-
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
     token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
 }

@@ -2,15 +2,14 @@ use super::setup::{
     deploy_factory_contract, deploy_lp_contract, deploy_token_contract, generate_lp_init_info,
 };
 use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
-use crate::tests::setup::{deploy_stake_contract, deploy_stake_token_client};
+use crate::tests::setup::deploy_stake_contract;
 use crate::token_contract;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use soroban_sdk::testutils::Ledger;
 use soroban_sdk::vec;
 use soroban_sdk::{
     contracttype,
     testutils::{arbitrary::std, Address as _},
-    Address, Env, IntoVal, String, Symbol, Vec,
+    Address, Env, String, Symbol, Vec,
 };
 
 #[contracttype]
@@ -406,14 +405,11 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
     let manager = Address::generate(&env);
     let user_1 = Address::generate(&env);
     let user_2 = Address::generate(&env);
-    let user_3 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
     let mut token3 = deploy_token_contract(&env, &admin);
     let mut token4 = deploy_token_contract(&env, &admin);
-    let mut token5 = deploy_token_contract(&env, &admin);
-    let mut token6 = deploy_token_contract(&env, &admin);
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -426,16 +422,10 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         std::mem::swap(&mut token3, &mut token4);
     }
 
-    if token6.address < token5.address {
-        std::mem::swap(&mut token5, &mut token6);
-    }
-
     token1.mint(&user_1, &10_000i128);
     token2.mint(&user_1, &10_000i128);
     token3.mint(&user_2, &20_000i128);
     token4.mint(&user_2, &20_000i128);
-    token5.mint(&user_3, &30_000i128);
-    token6.mint(&user_3, &30_000i128);
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
