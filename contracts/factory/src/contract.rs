@@ -308,16 +308,7 @@ impl FactoryTrait for Factory {
 
                 // add to the lp_portfolio
                 lp_portfolio.push_back(LpPortfolio {
-                    assets: (
-                        Asset {
-                            address: asset_a.address,
-                            amount: asset_a.amount,
-                        },
-                        Asset {
-                            address: asset_b.address,
-                            amount: asset_b.amount,
-                        },
-                    ),
+                    assets: (asset_a, asset_b),
                 });
             }
 
