@@ -444,13 +444,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         &token2,
         manager.clone(),
         &admin,
-        fee_recipient,
-        1,
-        1,
-        100,
-        100,
-        0,
-        0,
+        fee_recipient.clone(),
     );
 
     let first_lp_contract_addr = factory.create_liquidity_pool(
@@ -471,7 +465,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
 
     let stake_token_address = first_stake_client.query_config().config.lp_token;
     let stake_token_client = token_contract::Client::new(&env, &stake_token_address);
-    stake_token_client.mint(&user_1, &1_001i128);
+    stake_token_client.mint(&user_1, &1_000i128);
     stake_token_client.mint(&manager, &10_000i128);
 
     first_stake_client.create_distribution_flow(&manager, &stake_token_address);
@@ -483,9 +477,6 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         &5_000i128,
     );
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = 1_000;
-    });
     first_stake_client.bond(&user_1, &1_000i128);
 
     first_lp_client.provide_liquidity(
@@ -497,13 +488,53 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         &None::<i64>,
     );
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = 1_000;
-    });
+    let second_lp_init_info =
+        generate_lp_init_info(&token3, &token4, manager.clone(), &admin, fee_recipient);
 
-    let first_result = factory.query_user_portfolio(&user_1, &true);
+    let second_lp_contract_addr = factory.create_liquidity_pool(
+        &admin.clone(),
+        &second_lp_init_info,
+        &String::from_str(&env, "Second Pool"),
+        &String::from_str(&env, "PHO/ETH"),
+    );
+
+    let second_lp_client = deploy_lp_contract(&env, second_lp_contract_addr.clone());
+
+    let second_stake_address = factory
+        .query_pool_details(&second_lp_contract_addr)
+        .pool_response
+        .stake_address;
+
+    let second_stake_client = deploy_stake_contract(&env, second_stake_address.clone());
+
+    let second_stake_token_address = second_stake_client.query_config().config.lp_token;
+    let second_stake_token_client = token_contract::Client::new(&env, &second_stake_token_address);
+    second_stake_token_client.mint(&user_2, &2_000i128);
+    second_stake_token_client.mint(&manager, &10_000i128);
+
+    second_stake_client.create_distribution_flow(&manager, &second_stake_token_address);
+    second_stake_client.fund_distribution(
+        &manager,
+        &0u64,
+        &1_000u64,
+        &second_stake_token_address,
+        &10_000i128,
+    );
+
+    second_stake_client.bond(&user_2, &2_000i128);
+
+    second_lp_client.provide_liquidity(
+        &user_2.clone(),
+        &Some(200),
+        &Some(100i128),
+        &Some(250),
+        &Some(100i128),
+        &None::<i64>,
+    );
+
+    let first_portfolio = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
-        first_result,
+        first_portfolio,
         UserPortfolio {
             lp_portfolio: vec![
                 &env,
@@ -515,7 +546,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
                         },
                         Asset {
                             address: token2.address,
-                            amount: 201i128
+                            amount: 200i128
                         }
                     )
                 }
@@ -523,12 +554,47 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
             stake_portfolio: vec![
                 &env,
                 StakePortfolio {
-                    stake_token: first_stake_address,
+                    stake_token: first_stake_address.clone(),
                     stakes: vec![
                         &env,
                         Stake {
                             stake: 1_000i128,
-                            stake_timestamp: 1_000
+                            stake_timestamp: 0
+                        }
+                    ]
+                }
+            ]
+        }
+    );
+
+    let second_portfolio = factory.query_user_portfolio(&user_2, &true);
+    assert_eq!(
+        second_portfolio,
+        UserPortfolio {
+            lp_portfolio: vec![
+                &env,
+                LpPortfolio {
+                    assets: (
+                        Asset {
+                            address: token3.address,
+                            amount: 200i128,
+                        },
+                        Asset {
+                            address: token4.address,
+                            amount: 250i128
+                        }
+                    )
+                }
+            ],
+            stake_portfolio: vec![
+                &env,
+                StakePortfolio {
+                    stake_token: second_stake_address.clone(),
+                    stakes: vec![
+                        &env,
+                        Stake {
+                            stake: 2_000i128,
+                            stake_timestamp: 0
                         }
                     ]
                 }

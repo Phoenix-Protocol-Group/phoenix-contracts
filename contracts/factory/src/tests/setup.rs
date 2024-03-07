@@ -24,10 +24,10 @@ pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-pub fn deploy_lp_contract<'a>(env: &Env, contract_id: Address) -> lp_contract::Client<'a> {
+pub fn deploy_lp_contract<'a>(env: &Env, contract_address: Address) -> lp_contract::Client<'a> {
     lp_contract::Client::new(
         env,
-        &env.register_contract_wasm(Some(&contract_id), lp_contract::WASM),
+        &env.register_contract_wasm(Some(&contract_address), lp_contract::WASM),
     )
 }
 
@@ -105,30 +105,24 @@ pub(crate) fn generate_lp_init_info(
     manager: Address,
     admin: &Address,
     fee_recipient: Address,
-    min_bond: i128,
-    min_reward: i128,
-    max_allowed_slippage_bps: i64,
-    max_allowed_spread_bps: i64,
-    swap_fee_bps: i64,
-    max_referral_bps: i64,
 ) -> LiquidityPoolInitInfo {
     let token_init_info = TokenInitInfo {
         token_a: token_a.address.clone(),
         token_b: token_b.address.clone(),
     };
     let stake_init_info = StakeInitInfo {
-        min_bond,
-        min_reward,
+        min_bond: 10,
+        min_reward: 10,
         manager,
     };
 
     LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: fee_recipient.clone(),
-        max_allowed_slippage_bps,
-        max_allowed_spread_bps,
-        swap_fee_bps,
-        max_referral_bps,
+        max_allowed_slippage_bps: 100,
+        max_allowed_spread_bps: 100,
+        swap_fee_bps: 0,
+        max_referral_bps: 0,
         token_init_info,
         stake_init_info,
     }

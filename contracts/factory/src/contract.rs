@@ -290,15 +290,15 @@ impl FactoryTrait for Factory {
                 Vec::new(&env),
             );
 
-            // if asset lp-share is above 0 make the call and push to lp_portfolio
-            if response.pool_response.asset_lp_share.amount > 0 {
-                // get the lp share token balance for the user
-                let lp_share_amount: i128 = env.invoke_contract(
-                    &response.pool_response.asset_lp_share.address,
-                    &Symbol::new(&env, "balance"),
-                    vec![&env, sender.into_val(&env)],
-                );
+            // get the lp share token balance for the user
+            // if the user has any liquidity tokens in the pool add to the lp_portfolio
+            let lp_share_amount: i128 = env.invoke_contract(
+                &response.pool_response.asset_lp_share.address,
+                &Symbol::new(&env, "balance"),
+                vec![&env, sender.into_val(&env)],
+            );
 
+            if lp_share_amount > 0 {
                 // query the balance of the liquidity tokens
                 let (asset_a, asset_b) = env.invoke_contract::<(Asset, Asset)>(
                     &address,
@@ -320,10 +320,13 @@ impl FactoryTrait for Factory {
                     vec![&env, sender.into_val(&env)],
                 );
 
-                stake_portfolio.push_back(StakePortfolio {
-                    stake_token: response.pool_response.stake_address,
-                    stakes: stake_response.stakes,
-                })
+                // only stakes that the user has made
+                if stake_response.stakes.len() > 0 {
+                    stake_portfolio.push_back(StakePortfolio {
+                        stake_token: response.pool_response.stake_address,
+                        stakes: stake_response.stakes,
+                    })
+                }
             }
         }
 
