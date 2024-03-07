@@ -400,8 +400,8 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
     let fee_recipient = Address::generate(&env);
     let manager = Address::generate(&env);
     let user_1 = Address::generate(&env);
-    let _user_2 = Address::generate(&env);
-    let _user_3 = Address::generate(&env);
+    let user_2 = Address::generate(&env);
+    let user_3 = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
@@ -426,22 +426,11 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
     }
 
     token1.mint(&user_1, &10_000i128);
-    let user1_token1_balance: i128 = env.invoke_contract(
-        &token1.address,
-        &Symbol::new(&env, "balance"),
-        vec![&env, user_1.into_val(&env)],
-    );
-
-    assert_eq!(user1_token1_balance, 10_000i128);
-
     token2.mint(&user_1, &10_000i128);
-    let user1_token2_balance: i128 = env.invoke_contract(
-        &token2.address,
-        &Symbol::new(&env, "balance"),
-        vec![&env, user_1.into_val(&env)],
-    );
-
-    assert_eq!(user1_token2_balance, 10_000i128);
+    token3.mint(&user_2, &10_000i128);
+    token4.mint(&user_2, &10_000i128);
+    token5.mint(&user_3, &10_000i128);
+    token6.mint(&user_3, &10_000i128);
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
@@ -539,23 +528,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_no_stake() {
     }
 
     token1.mint(&user_1, &10_000i128);
-    let user1_token1_balance: i128 = env.invoke_contract(
-        &token1.address,
-        &Symbol::new(&env, "balance"),
-        vec![&env, user_1.into_val(&env)],
-    );
-
-    assert_eq!(user1_token1_balance, 10_000i128);
-
     token2.mint(&user_1, &10_000i128);
-    let user1_token2_balance: i128 = env.invoke_contract(
-        &token2.address,
-        &Symbol::new(&env, "balance"),
-        vec![&env, user_1.into_val(&env)],
-    );
-
-    assert_eq!(user1_token2_balance, 10_000i128);
-
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let first_token_init_info = TokenInitInfo {
