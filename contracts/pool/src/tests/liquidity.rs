@@ -840,12 +840,6 @@ fn query_share_empty_pool() {
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);
 
-    token1.mint(&user1, &1000);
-    assert_eq!(token1.balance(&user1), 1000);
-
-    token2.mint(&user1, &1000);
-    assert_eq!(token2.balance(&user1), 1000);
-
     let lp_share_balance = token_share.balance(&user1);
     let query_share_result = pool.query_share(&lp_share_balance);
     assert_eq!(
