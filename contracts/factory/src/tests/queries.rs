@@ -1,6 +1,11 @@
-use super::setup::{deploy_factory_contract, deploy_lp_contract, deploy_token_contract};
-use crate::storage::{Asset, LpPortfolio, StakePortfolio, UserPortfolio};
+use super::setup::{
+    deploy_factory_contract, deploy_lp_contract, deploy_token_contract, generate_lp_init_info,
+};
+use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
+use crate::tests::setup::{deploy_stake_contract, deploy_stake_token_client};
+use crate::token_contract;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use soroban_sdk::testutils::Ledger;
 use soroban_sdk::vec;
 use soroban_sdk::{
     contracttype,
@@ -427,60 +432,78 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
 
     token1.mint(&user_1, &10_000i128);
     token2.mint(&user_1, &10_000i128);
-    token3.mint(&user_2, &10_000i128);
-    token4.mint(&user_2, &10_000i128);
-    token5.mint(&user_3, &10_000i128);
-    token6.mint(&user_3, &10_000i128);
+    token3.mint(&user_2, &20_000i128);
+    token4.mint(&user_2, &20_000i128);
+    token5.mint(&user_3, &30_000i128);
+    token6.mint(&user_3, &30_000i128);
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
-    let first_token_init_info = TokenInitInfo {
-        token_a: token1.address.clone(),
-        token_b: token2.address.clone(),
-    };
-    let first_stake_init_info = StakeInitInfo {
-        min_bond: 1i128,
-        min_reward: 1i128,
-        manager,
-    };
+    let first_lp_init_info = generate_lp_init_info(
+        &token1,
+        &token2,
+        manager.clone(),
+        &admin,
+        fee_recipient,
+        1,
+        1,
+        100,
+        100,
+        0,
+        0,
+    );
 
-    let first_lp_init_info = LiquidityPoolInitInfo {
-        admin: admin.clone(),
-        fee_recipient: fee_recipient.clone(),
-        max_allowed_slippage_bps: 100,
-        max_allowed_spread_bps: 100,
-        swap_fee_bps: 0,
-        max_referral_bps: 0,
-        token_init_info: first_token_init_info.clone(),
-        stake_init_info: first_stake_init_info,
-    };
-
-    let lp_contract_addr = factory.create_liquidity_pool(
+    let first_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
         &first_lp_init_info,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHO/BTC"),
     );
 
-    let first_lp_client = deploy_lp_contract(&env, lp_contract_addr.clone());
+    let first_lp_client = deploy_lp_contract(&env, first_lp_contract_addr.clone());
+
+    let first_stake_address = factory
+        .query_pool_details(&first_lp_contract_addr)
+        .pool_response
+        .stake_address;
+
+    let first_stake_client = deploy_stake_contract(&env, first_stake_address.clone());
+
+    let stake_token_address = first_stake_client.query_config().config.lp_token;
+    let stake_token_client = token_contract::Client::new(&env, &stake_token_address);
+    stake_token_client.mint(&user_1, &1_001i128);
+    stake_token_client.mint(&manager, &10_000i128);
+
+    first_stake_client.create_distribution_flow(&manager, &stake_token_address);
+    first_stake_client.fund_distribution(
+        &manager,
+        &0u64,
+        &1_000u64,
+        &stake_token_address,
+        &5_000i128,
+    );
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1_000;
+    });
+    first_stake_client.bond(&user_1, &1_000i128);
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
+        &Some(150),
         &Some(100i128),
-        &Some(100i128),
-        &Some(100i128),
+        &Some(200),
         &Some(100i128),
         &None::<i64>,
     );
 
-    let stake_address = factory
-        .query_pool_details(&lp_contract_addr)
-        .pool_response
-        .stake_address;
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1_000;
+    });
 
-    let result = factory.query_user_portfolio(&user_1, &true);
+    let first_result = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
-        result,
+        first_result,
         UserPortfolio {
             lp_portfolio: vec![
                 &env,
@@ -488,11 +511,11 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
                     assets: (
                         Asset {
                             address: token1.address,
-                            amount: 100i128
+                            amount: 150i128,
                         },
                         Asset {
                             address: token2.address,
-                            amount: 100i128
+                            amount: 201i128
                         }
                     )
                 }
@@ -500,8 +523,14 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
             stake_portfolio: vec![
                 &env,
                 StakePortfolio {
-                    stake_token: stake_address,
-                    stakes: vec![&env] // no bonds, empty stake
+                    stake_token: first_stake_address,
+                    stakes: vec![
+                        &env,
+                        Stake {
+                            stake: 1_000i128,
+                            stake_timestamp: 1_000
+                        }
+                    ]
                 }
             ]
         }
@@ -563,9 +592,9 @@ fn test_query_token_amount_per_liquidity_pool_per_user_no_stake() {
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
+        &Some(150i128),
         &Some(100i128),
-        &Some(100i128),
-        &Some(100i128),
+        &Some(200i128),
         &Some(100i128),
         &None::<i64>,
     );
@@ -580,11 +609,11 @@ fn test_query_token_amount_per_liquidity_pool_per_user_no_stake() {
                     assets: (
                         Asset {
                             address: token1.address,
-                            amount: 100i128
+                            amount: 150i128
                         },
                         Asset {
                             address: token2.address,
-                            amount: 100i128
+                            amount: 200i128
                         }
                     )
                 }

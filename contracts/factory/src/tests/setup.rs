@@ -2,11 +2,18 @@ use crate::{
     contract::{Factory, FactoryClient},
     token_contract,
 };
+use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{testutils::Address as _, vec, Address, BytesN, Env};
 #[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm"
+    );
+}
+
+pub mod stake_contract {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
 }
 
@@ -21,6 +28,26 @@ pub fn deploy_lp_contract<'a>(env: &Env, contract_id: Address) -> lp_contract::C
     lp_contract::Client::new(
         env,
         &env.register_contract_wasm(Some(&contract_id), lp_contract::WASM),
+    )
+}
+
+pub fn deploy_stake_contract<'a>(
+    env: &Env,
+    stake_contract_address: Address,
+) -> stake_contract::Client<'a> {
+    stake_contract::Client::new(
+        env,
+        &env.register_contract_wasm(Some(&stake_contract_address), stake_contract::WASM),
+    )
+}
+
+pub fn deploy_stake_token_client<'a>(
+    env: &Env,
+    token_contract_address: Address,
+) -> token_contract::Client<'a> {
+    token_contract::Client::new(
+        env,
+        &env.register_contract_wasm(Some(&token_contract_address), token_contract::WASM),
     )
 }
 
@@ -69,4 +96,40 @@ pub fn deploy_factory_contract<'a>(
         &10u32,
     );
     factory
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn generate_lp_init_info(
+    token_a: &crate::token_contract::Client<'_>,
+    token_b: &crate::token_contract::Client<'_>,
+    manager: Address,
+    admin: &Address,
+    fee_recipient: Address,
+    min_bond: i128,
+    min_reward: i128,
+    max_allowed_slippage_bps: i64,
+    max_allowed_spread_bps: i64,
+    swap_fee_bps: i64,
+    max_referral_bps: i64,
+) -> LiquidityPoolInitInfo {
+    let token_init_info = TokenInitInfo {
+        token_a: token_a.address.clone(),
+        token_b: token_b.address.clone(),
+    };
+    let stake_init_info = StakeInitInfo {
+        min_bond,
+        min_reward,
+        manager,
+    };
+
+    LiquidityPoolInitInfo {
+        admin: admin.clone(),
+        fee_recipient: fee_recipient.clone(),
+        max_allowed_slippage_bps,
+        max_allowed_spread_bps,
+        swap_fee_bps,
+        max_referral_bps,
+        token_init_info,
+        stake_init_info,
+    }
 }
