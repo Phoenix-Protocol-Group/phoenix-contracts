@@ -1,5 +1,6 @@
 use super::setup::{deploy_factory_contract, deploy_lp_contract, deploy_token_contract};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+// use soroban_sdk::testutils::arbitrary::std::dbg;
 
 use soroban_sdk::vec;
 use soroban_sdk::{
@@ -398,6 +399,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
 
     let admin = Address::generate(&env);
     let fee_recipient = Address::generate(&env);
+    let manager = Address::generate(&env);
     let user_1 = Address::generate(&env);
     let _user_2 = Address::generate(&env);
     let _user_3 = Address::generate(&env);
@@ -451,7 +453,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
     let first_stake_init_info = StakeInitInfo {
         min_bond: 1i128,
         min_reward: 1i128,
-        manager: admin.clone(),
+        manager,
     };
 
     let first_lp_init_info = LiquidityPoolInitInfo {
@@ -473,6 +475,9 @@ fn test_query_token_amount_per_liquidity_pool_per_user() {
     );
 
     let first_lp_client = deploy_lp_contract(&env, lp_contract_addr.clone());
+
+    // let result = first_lp_client.query_config();
+    // dbg!(result);
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),

@@ -80,7 +80,7 @@ impl Config {
 }
 
 pub fn get_config(env: &Env) -> Config {
-    env.storage().instance().get(&CONFIG).unwrap()
+    env.storage().persistent().get(&CONFIG).unwrap()
 }
 
 pub fn save_config(env: &Env, config: Config) {

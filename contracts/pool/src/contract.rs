@@ -244,14 +244,21 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
     ) {
+        env.events().publish(("DEBUG", "STARTING"), 247);
+
         validate_int_parameters!(desired_a, min_a, desired_b, min_b);
+        env.events().publish(("DEBUG", "VALIDATED"), 250);
 
         // sender needs to authorize the deposit
         sender.require_auth();
+        env.events().publish(("DEBUG", "AUTHORIZED"), 254);
 
         let config = get_config(&env);
+        env.events().publish(("DEBUG", "AFTERCONFIG"), 257);
         let pool_balance_a = utils::get_pool_balance_a(&env);
+        env.events().publish(("DEBUG", "AFTER_POOL_BALANCE_A"), 259);
         let pool_balance_b = utils::get_pool_balance_b(&env);
+        env.events().publish(("DEBUG", "AFTER_POOL_BALANCE_b"), 261);
 
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
@@ -263,7 +270,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
             }
         }
-
+        env.events().publish(("DEBUG", "AFTER_SLIPPAGE"), 273);
         // Check if both tokens are provided, one token is provided, or none are provided
         let amounts = match (desired_a, desired_b) {
             // Both tokens are provided
@@ -338,13 +345,14 @@ impl LiquidityPoolTrait for LiquidityPool {
                 );
             }
         };
-
+        env.events().publish(("DEBUG", "AFTERAMOUNTS"), 348);
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
         // Move tokens from client's wallet to the contract
         token_a_client.transfer(&sender, &env.current_contract_address(), &(amounts.0));
         token_b_client.transfer(&sender, &env.current_contract_address(), &(amounts.1));
+        env.events().publish(("DEBUG", "AFTERTRANSFER"), 355);
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
