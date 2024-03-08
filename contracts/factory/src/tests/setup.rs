@@ -1,7 +1,4 @@
-use crate::{
-    contract::{Factory, FactoryClient},
-    token_contract,
-};
+use crate::contract::{Factory, FactoryClient};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{testutils::Address as _, vec, Address, BytesN, Env};
 #[allow(clippy::too_many_arguments)]
@@ -22,27 +19,6 @@ pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
         file = "../../target/wasm32-unknown-unknown/release/phoenix_multihop.wasm"
     );
     env.deployer().upload_contract_wasm(WASM)
-}
-
-pub fn deploy_lp_contract<'a>(env: &Env, contract_address: Address) -> lp_contract::Client<'a> {
-    lp_contract::Client::new(
-        env,
-        &env.register_contract_wasm(Some(&contract_address), lp_contract::WASM),
-    )
-}
-
-pub fn deploy_stake_contract<'a>(
-    env: &Env,
-    stake_contract_address: Address,
-) -> stake_contract::Client<'a> {
-    stake_contract::Client::new(
-        env,
-        &env.register_contract_wasm(Some(&stake_contract_address), stake_contract::WASM),
-    )
-}
-
-pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
-    token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
 }
 
 pub fn install_lp_contract(env: &Env) -> BytesN<32> {

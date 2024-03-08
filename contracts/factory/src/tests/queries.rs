@@ -1,8 +1,7 @@
-use super::setup::{
-    deploy_factory_contract, deploy_lp_contract, deploy_token_contract, generate_lp_init_info,
-};
+use super::setup::{deploy_factory_contract, generate_lp_init_info};
 use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
-use crate::tests::setup::deploy_stake_contract;
+use crate::tests::setup::{lp_contract, stake_contract};
+use crate::token_contract;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::vec;
 use soroban_sdk::{
@@ -405,10 +404,14 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
     let user_1 = Address::generate(&env);
     let user_2 = Address::generate(&env);
 
-    let mut token1 = deploy_token_contract(&env, &admin);
-    let mut token2 = deploy_token_contract(&env, &admin);
-    let mut token3 = deploy_token_contract(&env, &admin);
-    let mut token4 = deploy_token_contract(&env, &admin);
+    let mut token1 =
+        token_contract::Client::new(&env, &env.register_stellar_asset_contract(admin.clone()));
+    let mut token2 =
+        token_contract::Client::new(&env, &env.register_stellar_asset_contract(admin.clone()));
+    let mut token3 =
+        token_contract::Client::new(&env, &env.register_stellar_asset_contract(admin.clone()));
+    let mut token4 =
+        token_contract::Client::new(&env, &env.register_stellar_asset_contract(admin.clone()));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -443,14 +446,20 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         &String::from_str(&env, "PHO/BTC"),
     );
 
-    let first_lp_client = deploy_lp_contract(&env, first_lp_contract_addr.clone());
+    let first_lp_client = lp_contract::Client::new(
+        &env,
+        &env.register_contract_wasm(Some(&first_lp_contract_addr), lp_contract::WASM),
+    );
 
     let first_stake_address = factory
         .query_pool_details(&first_lp_contract_addr)
         .pool_response
         .stake_address;
 
-    let first_stake_client = deploy_stake_contract(&env, first_stake_address.clone());
+    let first_stake_client = stake_contract::Client::new(
+        &env,
+        &env.register_contract_wasm(Some(&first_stake_address), stake_contract::WASM),
+    );
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
@@ -519,14 +528,19 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         &String::from_str(&env, "PHO/ETH"),
     );
 
-    let second_lp_client = deploy_lp_contract(&env, second_lp_contract_addr.clone());
-
+    let second_lp_client = lp_contract::Client::new(
+        &env,
+        &env.register_contract_wasm(Some(&second_lp_contract_addr), lp_contract::WASM),
+    );
     let second_stake_address = factory
         .query_pool_details(&second_lp_contract_addr)
         .pool_response
         .stake_address;
 
-    let second_stake_client = deploy_stake_contract(&env, second_stake_address.clone());
+    let second_stake_client = stake_contract::Client::new(
+        &env,
+        &env.register_contract_wasm(Some(&second_stake_address), stake_contract::WASM),
+    );
 
     second_lp_client.provide_liquidity(
         &user_2.clone(),
@@ -593,8 +607,10 @@ fn test_query_token_amount_per_liquidity_pool_per_user_no_stake() {
     let manager = Address::generate(&env);
     let user_1 = Address::generate(&env);
 
-    let mut token1 = deploy_token_contract(&env, &admin);
-    let mut token2 = deploy_token_contract(&env, &admin);
+    let mut token1 =
+        token_contract::Client::new(&env, &env.register_stellar_asset_contract(admin.clone()));
+    let mut token2 =
+        token_contract::Client::new(&env, &env.register_stellar_asset_contract(admin.clone()));
 
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -635,7 +651,10 @@ fn test_query_token_amount_per_liquidity_pool_per_user_no_stake() {
         &String::from_str(&env, "PHO/BTC"),
     );
 
-    let first_lp_client = deploy_lp_contract(&env, lp_contract_addr.clone());
+    let first_lp_client = lp_contract::Client::new(
+        &env,
+        &env.register_contract_wasm(Some(&lp_contract_addr.clone()), lp_contract::WASM),
+    );
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),

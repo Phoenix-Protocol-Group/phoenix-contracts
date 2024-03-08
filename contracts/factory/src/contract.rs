@@ -312,7 +312,7 @@ impl FactoryTrait for Factory {
                 });
             }
 
-            // make a call towards the stake contract to check the staked amount if `staking` is true
+            // make a call towards the stake contract to check the staked amount
             if staking {
                 let stake_response: StakedResponse = env.invoke_contract(
                     &response.pool_response.stake_address,
