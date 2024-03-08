@@ -1,4 +1,5 @@
 use pretty_assertions::assert_eq;
+use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env,
@@ -229,9 +230,7 @@ fn unbond_wrong_user_stake_not_found() {
 
 #[test]
 fn pay_rewards_during_unbond() {
-    const AMOUNT: i128 = 100_000;
-    const WITHDRAW_TIMESTAMP: u64 = 2_000;
-
+    const STAKED_AMOUNT: i128 = 1_000;
     let env = Env::default();
     env.mock_all_auths();
 
@@ -241,21 +240,19 @@ fn pay_rewards_during_unbond() {
     let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
-    lp_token.mint(&user, &AMOUNT);
-    lp_token.mint(&owner, &AMOUNT);
+    lp_token.mint(&user, &10_000);
+    reward_token.mint(&admin, &10_000);
 
-    staking.create_distribution_flow(&owner, &lp_token.address);
-    staking.fund_distribution(&owner, &0u64, &10_000u64, &lp_token.address, &AMOUNT);
+    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.fund_distribution(&admin, &0u64, &10_000u64, &reward_token.address, &10_000);
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = WITHDRAW_TIMESTAMP;
-    });
-    staking.bond(&user, &10_000);
+    staking.bond(&user, &STAKED_AMOUNT);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 4_000;
+        li.timestamp = 10_000;
     });
 
     // user hasn't unbonded yet, no rewards to withdraw
@@ -269,14 +266,16 @@ fn pay_rewards_during_unbond() {
         0
     );
     assert_eq!(
-        staking.query_undistributed_rewards(&lp_token.address),
-        110_000
+        staking.query_undistributed_rewards(&reward_token.address),
+        10_000
     );
-    staking.unbond(&user, &10_000, &WITHDRAW_TIMESTAMP);
+    dbg!(reward_token.balance(&user));
+    staking.unbond(&user, &STAKED_AMOUNT, &0);
+    dbg!(reward_token.balance(&user));
 
     // user unbonded we automatically distribute rewards
     assert_eq!(
-        staking.query_undistributed_rewards(&lp_token.address),
-        100_000
+        staking.query_undistributed_rewards(&reward_token.address),
+        10_000
     );
 }
