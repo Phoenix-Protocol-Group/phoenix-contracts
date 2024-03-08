@@ -4,7 +4,7 @@ use crate::{
     distribution::{
         calculate_annualized_payout, get_distribution, get_reward_curve, get_withdraw_adjustment,
         save_distribution, save_reward_curve, save_withdraw_adjustment, update_rewards,
-        withdraw_rewards, withdrawable_rewards, Distribution, SHARES_SHIFT,
+        withdrawable_rewards, Distribution, SHARES_SHIFT,
     },
     msg::{
         AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
@@ -186,7 +186,7 @@ impl StakingTrait for Staking {
             Self::query_withdrawable_rewards(env.clone(), sender.clone());
 
         if !found_rewards.rewards.is_empty() {
-            withdraw_rewards(&env, &sender);
+            Self::withdraw_rewards(env.clone(), sender.clone());
         }
 
         let mut stakes = get_stakes(&env, &sender);
