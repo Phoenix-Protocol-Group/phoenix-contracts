@@ -453,10 +453,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         .pool_response
         .stake_address;
 
-    let first_stake_client = stake_contract::Client::new(
-        &env,
-        &env.register_contract_wasm(Some(&first_stake_address), stake_contract::WASM),
-    );
+    let first_stake_client = stake_contract::Client::new(&env, &first_stake_address);
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
@@ -531,10 +528,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         .pool_response
         .stake_address;
 
-    let second_stake_client = stake_contract::Client::new(
-        &env,
-        &env.register_contract_wasm(Some(&second_stake_address), stake_contract::WASM),
-    );
+    let second_stake_client = stake_contract::Client::new(&env, &second_stake_address);
 
     second_lp_client.provide_liquidity(
         &user_2.clone(),
@@ -561,7 +555,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
                             address: token4.address.clone(),
                             amount: 250i128
                         }
-                    ic)
+                    )
                 }
             ],
             stake_portfolio: vec![&env,]
@@ -645,10 +639,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_no_stake() {
         &String::from_str(&env, "PHO/BTC"),
     );
 
-    let first_lp_client = lp_contract::Client::new(
-        &env,
-        &env.register_contract_wasm(Some(&lp_contract_addr.clone()), lp_contract::WASM),
-    );
+    let first_lp_client = lp_contract::Client::new(&env, &lp_contract_addr);
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
