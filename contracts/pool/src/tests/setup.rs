@@ -62,6 +62,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
         max_allowed_slippage_bps: max_allowed_slippage_bps.into().unwrap_or(5_000),
         max_allowed_spread_bps: max_allowed_spread_bps.into().unwrap_or(1_000),
         max_referral_bps: 5_000,
+        tolerance: 500,
         token_init_info,
         stake_init_info,
     };

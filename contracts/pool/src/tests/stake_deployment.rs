@@ -59,6 +59,7 @@ fn confirm_stake_contract_deployment() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
+            tolerance: 500,
         }
     );
 
@@ -120,6 +121,7 @@ fn second_pool_deployment_should_fail() {
         max_allowed_slippage_bps: max_allowed_slippage,
         max_allowed_spread_bps: max_allowed_spread,
         max_referral_bps: 500,
+        tolerance: 500,
         token_init_info,
         stake_init_info,
     };

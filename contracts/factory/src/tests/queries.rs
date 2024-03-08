@@ -30,6 +30,7 @@ pub struct LiquidityPoolConfig {
     /// The maximum amount of spread (in bps) that is tolerated during swap
     pub max_allowed_spread_bps: i64,
     pub max_referral_bps: i64,
+    pub tolerance: i64,
 }
 
 #[test]
@@ -99,6 +100,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_allowed_spread_bps: 500,
         swap_fee_bps: 0,
         max_referral_bps: 5_000,
+        tolerance: 500,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
     };
@@ -110,6 +112,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_allowed_spread_bps: 400,
         swap_fee_bps: 0,
         max_referral_bps: 5_000,
+        tolerance: 500,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
     };
@@ -121,6 +124,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_allowed_spread_bps: 400,
         swap_fee_bps: 0,
         max_referral_bps: 5_000,
+        tolerance: 500,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
     };
@@ -296,6 +300,7 @@ fn test_queries_by_tuple() {
         max_allowed_spread_bps: 500,
         swap_fee_bps: 0,
         max_referral_bps: 5_000,
+        tolerance: 500,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
     };
@@ -307,6 +312,7 @@ fn test_queries_by_tuple() {
         max_allowed_spread_bps: 400,
         swap_fee_bps: 0,
         max_referral_bps: 5_000,
+        tolerance: 500,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
     };
@@ -318,6 +324,7 @@ fn test_queries_by_tuple() {
         max_allowed_spread_bps: 400,
         swap_fee_bps: 0,
         max_referral_bps: 5_000,
+        tolerance: 500,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
     };

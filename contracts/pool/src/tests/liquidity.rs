@@ -79,7 +79,7 @@ fn provide_liqudity() {
                         Some(100i128),
                         Some(100i128),
                         Some(100i128),
-                        None::<i64>
+                        None::<i64>,
                     )
                         .into_val(&env),
                 )),
