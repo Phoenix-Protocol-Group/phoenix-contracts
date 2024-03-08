@@ -3,7 +3,6 @@ use super::setup::{
 };
 use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
 use crate::tests::setup::deploy_stake_contract;
-use crate::token_contract;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::vec;
 use soroban_sdk::{
@@ -453,22 +452,6 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
 
     let first_stake_client = deploy_stake_contract(&env, first_stake_address.clone());
 
-    let stake_token_address = first_stake_client.query_config().config.lp_token;
-    let stake_token_client = token_contract::Client::new(&env, &stake_token_address);
-    stake_token_client.mint(&user_1, &1_000i128);
-    stake_token_client.mint(&manager, &10_000i128);
-
-    first_stake_client.create_distribution_flow(&manager, &stake_token_address);
-    first_stake_client.fund_distribution(
-        &manager,
-        &0u64,
-        &1_000u64,
-        &stake_token_address,
-        &5_000i128,
-    );
-
-    first_stake_client.bond(&user_1, &1_000i128);
-
     first_lp_client.provide_liquidity(
         &user_1.clone(),
         &Some(150),
@@ -476,6 +459,54 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         &Some(200),
         &Some(100i128),
         &None::<i64>,
+    );
+
+    // first portfolio after providing liquidity
+    let first_portfolio = factory.query_user_portfolio(&user_1, &true);
+    assert_eq!(
+        first_portfolio,
+        UserPortfolio {
+            lp_portfolio: vec![
+                &env,
+                LpPortfolio {
+                    assets: (
+                        Asset {
+                            address: token1.address.clone(),
+                            amount: 150i128,
+                        },
+                        Asset {
+                            address: token2.address.clone(),
+                            amount: 200i128
+                        }
+                    )
+                }
+            ],
+            stake_portfolio: vec![&env,]
+        }
+    );
+
+    first_stake_client.bond(&user_1, &173i128);
+
+    // first portfolio after staking
+    let first_portfolio = factory.query_user_portfolio(&user_1, &true);
+    assert_eq!(
+        first_portfolio,
+        UserPortfolio {
+            lp_portfolio: vec![&env,],
+            stake_portfolio: vec![
+                &env,
+                StakePortfolio {
+                    stake_token: first_stake_address.clone(),
+                    stakes: vec![
+                        &env,
+                        Stake {
+                            stake: 173i128,
+                            stake_timestamp: 0
+                        }
+                    ]
+                }
+            ]
+        }
     );
 
     let second_lp_init_info =
@@ -497,22 +528,6 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
 
     let second_stake_client = deploy_stake_contract(&env, second_stake_address.clone());
 
-    let second_stake_token_address = second_stake_client.query_config().config.lp_token;
-    let second_stake_token_client = token_contract::Client::new(&env, &second_stake_token_address);
-    second_stake_token_client.mint(&user_2, &2_000i128);
-    second_stake_token_client.mint(&manager, &10_000i128);
-
-    second_stake_client.create_distribution_flow(&manager, &second_stake_token_address);
-    second_stake_client.fund_distribution(
-        &manager,
-        &0u64,
-        &1_000u64,
-        &second_stake_token_address,
-        &10_000i128,
-    );
-
-    second_stake_client.bond(&user_2, &2_000i128);
-
     second_lp_client.provide_liquidity(
         &user_2.clone(),
         &Some(200),
@@ -520,41 +535,6 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         &Some(250),
         &Some(100i128),
         &None::<i64>,
-    );
-
-    let first_portfolio = factory.query_user_portfolio(&user_1, &true);
-    assert_eq!(
-        first_portfolio,
-        UserPortfolio {
-            lp_portfolio: vec![
-                &env,
-                LpPortfolio {
-                    assets: (
-                        Asset {
-                            address: token1.address,
-                            amount: 150i128,
-                        },
-                        Asset {
-                            address: token2.address,
-                            amount: 200i128
-                        }
-                    )
-                }
-            ],
-            stake_portfolio: vec![
-                &env,
-                StakePortfolio {
-                    stake_token: first_stake_address.clone(),
-                    stakes: vec![
-                        &env,
-                        Stake {
-                            stake: 1_000i128,
-                            stake_timestamp: 0
-                        }
-                    ]
-                }
-            ]
-        }
     );
 
     let second_portfolio = factory.query_user_portfolio(&user_2, &true);
@@ -566,16 +546,27 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
                 LpPortfolio {
                     assets: (
                         Asset {
-                            address: token3.address,
+                            address: token3.address.clone(),
                             amount: 200i128,
                         },
                         Asset {
-                            address: token4.address,
+                            address: token4.address.clone(),
                             amount: 250i128
                         }
                     )
                 }
             ],
+            stake_portfolio: vec![&env,]
+        }
+    );
+
+    second_stake_client.bond(&user_2, &223i128);
+
+    let second_portfolio = factory.query_user_portfolio(&user_2, &true);
+    assert_eq!(
+        second_portfolio,
+        UserPortfolio {
+            lp_portfolio: vec![&env,],
             stake_portfolio: vec![
                 &env,
                 StakePortfolio {
@@ -583,7 +574,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
                     stakes: vec![
                         &env,
                         Stake {
-                            stake: 2_000i128,
+                            stake: 223i128,
                             stake_timestamp: 0
                         }
                     ]
