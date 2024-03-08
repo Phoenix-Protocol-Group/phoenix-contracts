@@ -182,23 +182,10 @@ impl StakingTrait for Staking {
         let config = get_config(&env);
 
         // check for rewards and withdraw them
-        let mut rewards = vec![&env];
-        for distribution_address in get_distributions(&env) {
-            // get distribution data for the given reward
-            let distribution = get_distribution(&env, &distribution_address);
-            // get withdraw adjustment for the given distribution
-            let withdraw_adjustment = get_withdraw_adjustment(&env, &sender, &distribution_address);
-            // calculate current reward amount given the distribution and subtracting withdraw
-            // adjustments
-            let reward_amount =
-                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment);
-            rewards.push_back(WithdrawableReward {
-                reward_address: distribution_address,
-                reward_amount,
-            });
-        }
+        let found_rewards: WithdrawableRewardsResponse =
+            Self::query_withdrawable_rewards(env.clone(), sender.clone());
 
-        if !rewards.is_empty() {
+        if !found_rewards.rewards.is_empty() {
             withdraw_rewards(&env, &sender);
         }
 
