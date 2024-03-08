@@ -810,7 +810,7 @@ fn do_swap(
 /// * `b_pool` - The current amount of Token B in the liquidity pool.
 /// * `deposit` - The total amount of tokens that the user wants to deposit into the liquidity pool.
 /// * `sell_a` - A boolean that indicates whether the deposit is in Token A (if true) or in Token B (if false).
-/// * `tolerance`- The smallest difference (in bps) between the high and low boundaries of a deposit split.
+/// * `tolerance`- The smallest difference between the high and low boundaries of a deposit split.
 /// # Returns
 /// * A tuple `(final_offer_amount, final_ask_amount)`, where `final_offer_amount` is the amount of deposit tokens
 ///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.

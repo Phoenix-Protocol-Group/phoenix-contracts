@@ -49,7 +49,7 @@ pub struct Config {
     pub max_allowed_spread_bps: i64,
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
-    /// * `tolerance` - The smallest difference (in bps) between the high and low boundaries of a deposit split.
+    /// * `tolerance` - The smallest difference between the high and low boundaries of a deposit split.
     pub tolerance: i64,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
