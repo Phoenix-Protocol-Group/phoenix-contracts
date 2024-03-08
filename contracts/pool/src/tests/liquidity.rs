@@ -323,7 +323,7 @@ fn provide_liqudity_single_asset_equal() {
     token1.mint(&user1, &10_000_000);
     token2.mint(&user1, &10_000_000);
 
-    // providing liquidity with single asset is not allowed on an empty pool
+    // providing liquidity with equal assets
     pool.provide_liquidity(
         &user1,
         &Some(10_000_000),
@@ -397,7 +397,7 @@ fn provide_liqudity_single_asset_equal_with_fees() {
     token1.mint(&user1, &initial_pool_liquidity);
     token2.mint(&user1, &initial_pool_liquidity);
 
-    // providing liquidity with single asset is not allowed on an empty pool
+    // providing liquidity with equal assets
     pool.provide_liquidity(
         &user1,
         &Some(initial_pool_liquidity),
@@ -478,7 +478,7 @@ fn provide_liqudity_single_asset_one_third() {
     token1.mint(&user1, &10_000_000);
     token2.mint(&user1, &30_000_000);
 
-    // providing liquidity with single asset is not allowed on an empty pool
+    // providing liquidity in 1:3 ratio
     pool.provide_liquidity(
         &user1,
         &Some(10_000_000),
@@ -547,7 +547,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
     token1.mint(&user1, &10_000_000);
     token2.mint(&user1, &30_000_000);
 
-    // providing liquidity with single asset is not allowed on an empty pool
+    // providing liquidity in 1:3 ratio
     pool.provide_liquidity(
         &user1,
         &Some(10_000_000),
@@ -560,6 +560,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
     assert_eq!(token2.balance(&pool.address), 30_000_000);
 
     token2.mint(&user1, &100_000);
+    // providing liquidity with a single asset - token2
     pool.provide_liquidity(&user1, &None, &None, &Some(100_000), &None, &None);
     // before swap : A(10_000_000), B(30_000_000)
     // since pool is 1/3 algorithm will split it around 15794/52734
@@ -687,6 +688,7 @@ fn withdraw_liqudity_below_min() {
 
     token1.mint(&user1, &100);
     token2.mint(&user1, &100);
+    // providing liquidity in a 1:1 ratio
     pool.provide_liquidity(
         &user1,
         &Some(100),
@@ -745,6 +747,7 @@ fn query_share_valid_liquidity() {
     token2.mint(&user2, &300);
     token2.mint(&user3, &400);
 
+    // all users provide liquidity in a 3:4 ratio
     pool.provide_liquidity(&user1, &Some(150), &Some(10), &Some(200), &Some(10), &None);
     pool.provide_liquidity(&user2, &Some(150), &Some(50), &Some(200), &Some(50), &None);
     pool.provide_liquidity(
