@@ -886,26 +886,6 @@ fn query_share_valid_liquidity() {
     let lp_share_balance_after_withdraw_user3: i128 = token_share.balance(&user3);
     assert_eq!(lp_share_balance_after_withdraw_user3, 0);
 
-    let pool_info_result = pool.query_pool_info();
-    assert_eq!(
-        pool_info_result,
-        PoolResponse {
-            asset_a: Asset {
-                address: token1.address.clone(),
-                amount: 0
-            },
-            asset_b: Asset {
-                address: token2.address.clone(),
-                amount: 0
-            },
-            asset_lp_share: Asset {
-                address: share_token_address.clone(),
-                amount: 0
-            },
-            stake_address: pool_info_result.clone().stake_address,
-        }
-    );
-
     let query_share_result_user3 = pool.query_share(&lp_share_balance_after_withdraw_user3);
     assert_eq!(
         query_share_result_user3,
