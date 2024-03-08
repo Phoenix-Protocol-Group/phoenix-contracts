@@ -499,7 +499,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
             stake_portfolio: vec![
                 &env,
                 StakePortfolio {
-                    stake_token: first_stake_address.clone(),
+                    staking_contract: first_stake_address.clone(),
                     stakes: vec![
                         &env,
                         Stake {
@@ -572,7 +572,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
             stake_portfolio: vec![
                 &env,
                 StakePortfolio {
-                    stake_token: second_stake_address.clone(),
+                    staking_contract: second_stake_address.clone(),
                     stakes: vec![
                         &env,
                         Stake {

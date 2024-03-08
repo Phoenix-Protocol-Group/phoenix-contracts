@@ -323,7 +323,7 @@ impl FactoryTrait for Factory {
                 // only stakes that the user has made
                 if !stake_response.stakes.is_empty() {
                     stake_portfolio.push_back(StakePortfolio {
-                        stake_token: response.pool_response.stake_address,
+                        staking_contract: response.pool_response.stake_address,
                         stakes: stake_response.stakes,
                     })
                 }

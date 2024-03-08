@@ -51,7 +51,7 @@ pub struct LpPortfolio {
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StakePortfolio {
-    pub stake_token: Address,
+    pub staking_contract: Address,
     pub stakes: Vec<Stake>,
 }
 
