@@ -1,12 +1,9 @@
-use soroban_sdk::{contracttype, vec, Address, Env};
+use soroban_sdk::{contracttype, Address, Env};
 
 use curve::Curve;
 use decimal::Decimal;
 
-use crate::{
-    msg::{WithdrawableReward, WithdrawableRewardsResponse},
-    storage::{get_stakes, utils::get_distributions},
-};
+use crate::storage::{get_stakes, utils::get_distributions};
 
 /// How much points is the worth of single token in rewards distribution.
 /// The scaling is performed to have better precision of fixed point division.
@@ -218,26 +215,6 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
         }
         None => Decimal::zero(),
     }
-}
-
-pub fn get_withdrawable_rewards(env: &Env, user: &Address) -> WithdrawableRewardsResponse {
-    // iterate over all distributions and calculate withdrawable rewards
-    let mut rewards = vec![&env];
-    for distribution_address in get_distributions(env) {
-        // get distribution data for the given reward
-        let distribution = get_distribution(env, &distribution_address);
-        // get withdraw adjustment for the given distribution
-        let withdraw_adjustment = get_withdraw_adjustment(env, user, &distribution_address);
-        // calculate current reward amount given the distribution and subtracting withdraw
-        // adjustments
-        let reward_amount = withdrawable_rewards(env, user, &distribution, &withdraw_adjustment);
-        rewards.push_back(WithdrawableReward {
-            reward_address: distribution_address,
-            reward_amount,
-        });
-    }
-
-    WithdrawableRewardsResponse { rewards }
 }
 
 pub fn withdraw_rewards(env: &Env, sender: &Address) {
