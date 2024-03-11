@@ -124,7 +124,7 @@ pub trait StableLiquidityPoolTrait {
         ask_amount: i128,
     ) -> SimulateReverseSwapResponse;
 
-    fn query_share(env: Env, amount: i128) -> (i128, i128);
+    fn query_share(env: Env, amount: i128) -> (Asset, Asset);
 }
 
 #[contractimpl]
@@ -586,7 +586,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         }
     }
 
-    fn query_share(env: Env, amount: i128) -> (i128, i128) {
+    fn query_share(env: Env, amount: i128) -> (Asset, Asset) {
         let pool_info = Self::query_pool_info(env);
         let total_share = pool_info.asset_lp_share.amount;
         let token_a_amount = pool_info.asset_a.amount;
@@ -599,7 +599,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let amount_a = token_a_amount * share_ratio;
         let amount_b = token_b_amount * share_ratio;
-        (amount_a, amount_b)
+        (
+            Asset {
+                address: pool_info.asset_a.address,
+                amount: amount_a,
+            },
+            Asset {
+                address: pool_info.asset_b.address,
+                amount: amount_b,
+            },
+        )
     }
 }
 
