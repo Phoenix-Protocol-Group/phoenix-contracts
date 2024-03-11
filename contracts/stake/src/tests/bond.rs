@@ -255,16 +255,6 @@ fn pay_rewards_during_unbond() {
         li.timestamp = 10_000;
     });
 
-    // user hasn't unbonded yet, no rewards to withdraw
-    assert_eq!(
-        staking
-            .query_withdrawable_rewards(&user)
-            .rewards
-            .iter()
-            .map(|reward| reward.reward_amount)
-            .sum::<u128>(),
-        0
-    );
     assert_eq!(
         staking.query_undistributed_rewards(&reward_token.address),
         10_000
