@@ -4,7 +4,7 @@ use pretty_assertions::assert_eq;
 
 use soroban_sdk::{
     symbol_short,
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
     Address, Env, IntoVal, Symbol,
 };
 
@@ -737,7 +737,7 @@ fn query_share_valid_liquidity() {
     );
 
     let share_token_address = pool.query_share_token_address();
-    let token_share = token_contract::Client::new(&env, &share_token_address);
+    let token_share = token_contract::Client::new(&env, &share_token_address.clone());
 
     token1.mint(&user1, &150);
     token1.mint(&user2, &250);
@@ -776,15 +776,45 @@ fn query_share_valid_liquidity() {
         )
     );
 
-    let pool_info_befor_withdrawal = pool.query_pool_info();
+    let pool_info_before_withdrawal = pool.query_pool_info();
+    assert_eq!(
+        pool_info_before_withdrawal,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 450
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 600
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 519
+            },
+            stake_address: pool_info_before_withdrawal.clone().stake_address,
+        }
+    );
+
     pool.withdraw_liquidity(&user1, &lp_share_balance_user1, &100i128, &100i128);
     let pool_info_after_withdrawal = pool.query_pool_info();
-
-    assert!(pool_info_befor_withdrawal.asset_a.amount > pool_info_after_withdrawal.asset_a.amount);
-    assert!(pool_info_befor_withdrawal.asset_b.amount > pool_info_after_withdrawal.asset_b.amount);
-    assert!(
-        pool_info_befor_withdrawal.asset_lp_share.amount
-            > pool_info_after_withdrawal.asset_lp_share.amount
+    assert_eq!(
+        pool_info_after_withdrawal,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 301
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 401
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 346
+            },
+            stake_address: pool_info_after_withdrawal.clone().stake_address,
+        }
     );
 
     let lp_share_balance_after_withdraw_user1: i128 = token_share.balance(&user1);
@@ -822,14 +852,14 @@ fn query_share_valid_liquidity() {
         )
     );
 
-    let pool_info_befor_withdrawal = pool.query_pool_info();
+    let pool_info_before_withdrawal = pool.query_pool_info();
     pool.withdraw_liquidity(&user2, &lp_share_balance_user2, &150i128, &200i128);
     let pool_info_after_withdrawal = pool.query_pool_info();
 
-    assert!(pool_info_befor_withdrawal.asset_a.amount > pool_info_after_withdrawal.asset_a.amount);
-    assert!(pool_info_befor_withdrawal.asset_b.amount > pool_info_after_withdrawal.asset_b.amount);
+    assert!(pool_info_before_withdrawal.asset_a.amount > pool_info_after_withdrawal.asset_a.amount);
+    assert!(pool_info_before_withdrawal.asset_b.amount > pool_info_after_withdrawal.asset_b.amount);
     assert!(
-        pool_info_befor_withdrawal.asset_lp_share.amount
+        pool_info_before_withdrawal.asset_lp_share.amount
             > pool_info_after_withdrawal.asset_lp_share.amount
     );
 
@@ -868,14 +898,14 @@ fn query_share_valid_liquidity() {
         )
     );
 
-    let pool_info_befor_withdrawal = pool.query_pool_info();
+    let pool_info_before_withdrawal = pool.query_pool_info();
     pool.withdraw_liquidity(&user3, &lp_share_balance_user3, &100i128, &100i128);
     let pool_info_after_withdrawal = pool.query_pool_info();
 
-    assert!(pool_info_befor_withdrawal.asset_a.amount > pool_info_after_withdrawal.asset_a.amount);
-    assert!(pool_info_befor_withdrawal.asset_b.amount > pool_info_after_withdrawal.asset_b.amount);
+    assert!(pool_info_before_withdrawal.asset_a.amount > pool_info_after_withdrawal.asset_a.amount);
+    assert!(pool_info_before_withdrawal.asset_b.amount > pool_info_after_withdrawal.asset_b.amount);
     assert!(
-        pool_info_befor_withdrawal.asset_lp_share.amount
+        pool_info_before_withdrawal.asset_lp_share.amount
             > pool_info_after_withdrawal.asset_lp_share.amount
     );
 
