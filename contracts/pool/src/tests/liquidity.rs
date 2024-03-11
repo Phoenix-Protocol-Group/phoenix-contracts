@@ -4,7 +4,7 @@ use pretty_assertions::assert_eq;
 
 use soroban_sdk::{
     symbol_short,
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
     Address, Env, IntoVal, Symbol,
 };
 
@@ -852,15 +852,25 @@ fn query_share_valid_liquidity() {
         )
     );
 
-    let pool_info_before_withdrawal = pool.query_pool_info();
     pool.withdraw_liquidity(&user2, &lp_share_balance_user2, &150i128, &200i128);
     let pool_info_after_withdrawal = pool.query_pool_info();
-
-    assert!(pool_info_before_withdrawal.asset_a.amount > pool_info_after_withdrawal.asset_a.amount);
-    assert!(pool_info_before_withdrawal.asset_b.amount > pool_info_after_withdrawal.asset_b.amount);
-    assert!(
-        pool_info_before_withdrawal.asset_lp_share.amount
-            > pool_info_after_withdrawal.asset_lp_share.amount
+    assert_eq!(
+        pool_info_after_withdrawal,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 151
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 201
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 173
+            },
+            stake_address: pool_info_after_withdrawal.clone().stake_address,
+        }
     );
 
     let lp_share_balance_after_withdraw_user2: i128 = token_share.balance(&user2);
@@ -898,23 +908,30 @@ fn query_share_valid_liquidity() {
         )
     );
 
-    let pool_info_before_withdrawal = pool.query_pool_info();
-    pool.withdraw_liquidity(&user3, &lp_share_balance_user3, &100i128, &100i128);
+    // user3 has 173 shares, we are withdrawing 73
+    pool.withdraw_liquidity(&user3, &73, &1i128, &1i128);
     let pool_info_after_withdrawal = pool.query_pool_info();
-
-    assert!(pool_info_before_withdrawal.asset_a.amount > pool_info_after_withdrawal.asset_a.amount);
-    assert!(pool_info_before_withdrawal.asset_b.amount > pool_info_after_withdrawal.asset_b.amount);
-    assert!(
-        pool_info_before_withdrawal.asset_lp_share.amount
-            > pool_info_after_withdrawal.asset_lp_share.amount
+    assert_eq!(
+        pool_info_after_withdrawal,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 88
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 117
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 100
+            },
+            stake_address: pool_info_after_withdrawal.clone().stake_address,
+        }
     );
 
-    assert_eq!(pool_info_after_withdrawal.asset_a.amount, 0);
-    assert_eq!(pool_info_after_withdrawal.asset_b.amount, 0);
-    assert_eq!(pool_info_after_withdrawal.asset_lp_share.amount, 0);
-
     let lp_share_balance_after_withdraw_user3: i128 = token_share.balance(&user3);
-    assert_eq!(lp_share_balance_after_withdraw_user3, 0);
+    assert_eq!(lp_share_balance_after_withdraw_user3, 100);
 
     let query_share_result_user3 = pool.query_share(&lp_share_balance_after_withdraw_user3);
     assert_eq!(
@@ -922,11 +939,11 @@ fn query_share_valid_liquidity() {
         (
             Asset {
                 address: token1.address.clone(),
-                amount: 0
+                amount: 88
             },
             Asset {
                 address: token2.address.clone(),
-                amount: 0
+                amount: 117
             }
         )
     );
