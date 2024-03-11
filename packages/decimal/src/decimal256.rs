@@ -1,7 +1,7 @@
 // A lot of this code is taken from the cosmwasm-std crate, which is licensed under the Apache
 // License 2.0 - https://github.com/CosmWasm/cosmwasm.
 
-use soroban_sdk::{Env, String, I256, Bytes};
+use soroban_sdk::{Bytes, Env, String, I256};
 
 use core::{
     cmp::{Ordering, PartialEq, PartialOrd},
@@ -23,384 +23,394 @@ pub struct Decimal256(I256);
 
 #[allow(dead_code)]
 impl Decimal256 {
-    const DECIMAL_FRACTIONAL: I256 =
-        I256::from_i128(&Env::default(), 1_000_000_000_000_000_000i128); // 1*10**18
-    const DECIMAL_FRACTIONAL_SQUARED: I256 = I256::from_i128(
-        &Env::default(),
-        1_000_000_000_000_000_000_000_000_000_000_000_000i128,
-    ); // (1*10**18)**2 = 1*10**36
-    /// The number of decimal places. Since decimal types are fixed-point rather than
-    /// floating-point, this is a constant.
+    // Number of decimal places
     pub const DECIMAL_PLACES: i32 = 18;
-    /// The largest value that can be represented by this decimal type.
-    pub const MAX: Self = Self(I256::from_i128(&Env::default(), (1i128 << 127) - 1));
-    /// The smallest value that can be represented by this decimal type.
-    pub const MIN: Self = Self(I256::from_i128(&Env::default(), -1i128 << 127));
 
-    pub fn new(value: I256) -> Self {
-        Decimal256(value)
+    // Function to get DECIMAL_FRACTIONAL
+    pub fn decimal_fractional(env: &Env) -> I256 {
+        I256::from_i128(env, 1_000_000_000_000_000_000i128) // 1*10**18
     }
 
-    pub const fn raw(value: I256) -> Self {
-        Self(value)
+    // Function to get DECIMAL_FRACTIONAL_SQUARED
+    pub fn decimal_fractional_squared(env: &Env) -> I256 {
+        I256::from_i128(env, 1_000_000_000_000_000_000_000_000_000_000_000_000i128)
+        // (1*10**18)**2 = 1*10**36
     }
 
-    /// Create a 1.0 Decimal256
-    #[inline]
-    pub const fn one() -> Self {
-        Self(Self::DECIMAL_FRACTIONAL)
+    // Function to get MAX value
+    pub fn max(env: &Env) -> Self {
+        Self(I256::from_i128(env, (1i128 << 127) - 1))
     }
 
-    /// Create a 0.0 Decimal256
-    #[inline]
-    pub const fn zero() -> Self {
-        Self(I256::from_i32(&Env::default(), 0i32))
+    // Function to get MIN value
+    pub fn min(env: &Env) -> Self {
+        Self(I256::from_i128(env, -1i128 << 127))
     }
 
-    /// Convert x% into Decimal256
-    pub fn percent(x: i64) -> Self {
-        Self(I256::from_i128(&Env::default(), (x as i128) * 10_000_000_000_000_000))
-    }
+    // pub fn new(value: I256) -> Self {
+    //     Decimal256(value)
+    // }
 
-    /// Convert permille (x/1000) into Decimal256
-    pub fn permille(x: i64) -> Self {
-        Self(I256::from_i128(&Env::default(), (x as i128) * 1_000_000_000_000_000))
-    }
+    // pub const fn raw(value: I256) -> Self {
+    //     Self(value)
+    // }
 
-    /// Convert basis points (x/10000) into Decimal256
-    pub fn bps(x: i64) -> Self {
-        Self(I256::from_i128(&Env::default(), (x as i128) * 100_000_000_000_000))
-    }
+    // /// Create a 1.0 Decimal256
+    // #[inline]
+    // pub const fn one() -> Self {
+    //     Self(Self::DECIMAL_FRACTIONAL)
+    // }
 
-    /// The number of decimal places. This is a constant value for now
-    /// but this could potentially change as the type evolves.
-    ///
-    /// See also [`Decimal256::atomics()`].
-    #[must_use]
-    #[inline]
-    pub const fn decimal_places(&self) -> i32 {
-        Self::DECIMAL_PLACES
-    }
+    // /// Create a 0.0 Decimal256
+    // #[inline]
+    // pub const fn zero() -> Self {
+    //     Self(I256::from_i32(&Env::default(), 0i32))
+    // }
 
-    #[inline]
-    fn numerator(&self) -> I256 {
-        self.0
-    }
+    // /// Convert x% into Decimal256
+    // pub fn percent(x: i64) -> Self {
+    //     Self(I256::from_i128(&Env::default(), (x as i128) * 10_000_000_000_000_000))
+    // }
 
-    #[inline]
-    fn denominator(&self) -> I256 {
-        Self::DECIMAL_FRACTIONAL
-    }
+    // /// Convert permille (x/1000) into Decimal256
+    // pub fn permille(x: i64) -> Self {
+    //     Self(I256::from_i128(&Env::default(), (x as i128) * 1_000_000_000_000_000))
+    // }
 
-    #[must_use]
-    pub const fn is_zero(&self) -> bool {
-        self.0 == I256::from_i32(&Env::default(), 0i32)
-    }
+    // /// Convert basis points (x/10000) into Decimal256
+    // pub fn bps(x: i64) -> Self {
+    //     Self(I256::from_i128(&Env::default(), (x as i128) * 100_000_000_000_000))
+    // }
 
-    /// A decimal is an integer of atomic units plus a number that specifies the
-    /// position of the decimal dot. So any decimal can be expressed as two numbers.
-    ///
-    /// ## Examples
-    ///
-    /// ```
-    /// use decimal::Decimal256;
-    /// // Value with whole and fractional part
-    /// let a = Decimal256::percent(123);
-    /// assert_eq!(a.decimal_places(), 18);
-    /// assert_eq!(a.atomics(), 1230000000000000000);
-    ///
-    /// // Smallest possible value
-    /// let b = Decimal256::new(1);
-    /// assert_eq!(b.decimal_places(), 18);
-    /// assert_eq!(b.atomics(), 1);
-    /// ```
-    #[must_use]
-    #[inline]
-    pub const fn atomics(&self) -> I256 {
-        self.0
-    }
+    // /// The number of decimal places. This is a constant value for now
+    // /// but this could potentially change as the type evolves.
+    // ///
+    // /// See also [`Decimal256::atomics()`].
+    // #[must_use]
+    // #[inline]
+    // pub const fn decimal_places(&self) -> i32 {
+    //     Self::DECIMAL_PLACES
+    // }
 
-    /// Creates a decimal from a number of atomic units and the number
-    /// of decimal places. The inputs will be converted internally to form
-    /// a decimal with 18 decimal places. So the input 1234 and 3 will create
-    /// the decimal 1.234.
-    ///
-    /// Using 18 decimal places is slightly more efficient than other values
-    /// as no internal conversion is necessary.
-    ///
-    /// ## Examples
-    ///
-    /// ```
-    /// use decimal::Decimal256;
-    /// use soroban_sdk::{String, Env};
-    ///
-    /// let e = Env::default();
-    /// let a = Decimal256::from_atomics(1234, 3);
-    /// assert_eq!(a.to_string(&e), String::from_slice(&e, "1.234"));
-    ///
-    /// let a = Decimal256::from_atomics(1234, 0);
-    /// assert_eq!(a.to_string(&e), String::from_slice(&e, "1234"));
-    ///
-    /// let a = Decimal256::from_atomics(1, 18);
-    /// assert_eq!(a.to_string(&e), String::from_slice(&e, "0.000000000000000001"));
-    /// ```
-    pub fn from_atomics(atomics: impl Into<I256>, decimal_places: i32) -> Self {
-        let atomics: I256 = atomics.into();
-        const TEN: I256 = I256::from_be_bytes(&Env::default(), &Bytes::from_slice(&Env::default(), &[
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 10,
-        ]));
-        match decimal_places.cmp(&Self::DECIMAL_PLACES) {
-            Ordering::Less => {
-                let digits = Self::DECIMAL_PLACES - decimal_places;
-                let factor: I256 = TEN.pow(digits as u32);
-                Self(atomics * factor)
-            }
-            Ordering::Equal => Self(atomics),
-            Ordering::Greater => {
-                let digits = decimal_places - Self::DECIMAL_PLACES;
-                let factor = TEN.pow(digits as u32);
-                // Since factor cannot be zero, the division is safe.
-                Self(atomics / factor)
-            }
-        }
-    }
+    // #[inline]
+    // fn numerator(&self) -> I256 {
+    //     self.0
+    // }
 
-    /// Raises a value to the power of `exp`, panicking if an overflow occurs.
-    pub fn pow(self, exp: u32) -> Self {
-        // This uses the exponentiation by squaring algorithm:
-        // https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Basic_method
+    // #[inline]
+    // fn denominator(&self) -> I256 {
+    //     Self::DECIMAL_FRACTIONAL
+    // }
 
-        fn inner(mut x: Decimal256, mut n: u32) -> Decimal256 {
-            if n == 0 {
-                return Decimal256::one();
-            }
+    // #[must_use]
+    // pub const fn is_zero(&self) -> bool {
+    //     self.0 == I256::from_i32(&Env::default(), 0i32)
+    // }
 
-            let mut y = Decimal256::one();
+    // /// A decimal is an integer of atomic units plus a number that specifies the
+    // /// position of the decimal dot. So any decimal can be expressed as two numbers.
+    // ///
+    // /// ## Examples
+    // ///
+    // /// ```
+    // /// use decimal::Decimal256;
+    // /// // Value with whole and fractional part
+    // /// let a = Decimal256::percent(123);
+    // /// assert_eq!(a.decimal_places(), 18);
+    // /// assert_eq!(a.atomics(), 1230000000000000000);
+    // ///
+    // /// // Smallest possible value
+    // /// let b = Decimal256::new(1);
+    // /// assert_eq!(b.decimal_places(), 18);
+    // /// assert_eq!(b.atomics(), 1);
+    // /// ```
+    // #[must_use]
+    // #[inline]
+    // pub const fn atomics(&self) -> I256 {
+    //     self.0
+    // }
 
-            while n > 1 {
-                if n % 2 == 0 {
-                    x = x * x; // Regular multiplication
-                    n /= 2;
-                } else {
-                    y = x * y; // Regular multiplication
-                    x = x * x; // Regular multiplication
-                    n = (n - 1) / 2;
-                }
-            }
+    // /// Creates a decimal from a number of atomic units and the number
+    // /// of decimal places. The inputs will be converted internally to form
+    // /// a decimal with 18 decimal places. So the input 1234 and 3 will create
+    // /// the decimal 1.234.
+    // ///
+    // /// Using 18 decimal places is slightly more efficient than other values
+    // /// as no internal conversion is necessary.
+    // ///
+    // /// ## Examples
+    // ///
+    // /// ```
+    // /// use decimal::Decimal256;
+    // /// use soroban_sdk::{String, Env};
+    // ///
+    // /// let e = Env::default();
+    // /// let a = Decimal256::from_atomics(1234, 3);
+    // /// assert_eq!(a.to_string(&e), String::from_slice(&e, "1.234"));
+    // ///
+    // /// let a = Decimal256::from_atomics(1234, 0);
+    // /// assert_eq!(a.to_string(&e), String::from_slice(&e, "1234"));
+    // ///
+    // /// let a = Decimal256::from_atomics(1, 18);
+    // /// assert_eq!(a.to_string(&e), String::from_slice(&e, "0.000000000000000001"));
+    // /// ```
+    // pub fn from_atomics(atomics: impl Into<I256>, decimal_places: i32) -> Self {
+    //     let atomics: I256 = atomics.into();
+    //     const TEN: I256 = I256::from_be_bytes(&Env::default(), &Bytes::from_slice(&Env::default(), &[
+    //         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    //         0, 0, 10,
+    //     ]));
+    //     match decimal_places.cmp(&Self::DECIMAL_PLACES) {
+    //         Ordering::Less => {
+    //             let digits = Self::DECIMAL_PLACES - decimal_places;
+    //             let factor: I256 = TEN.pow(digits as u32);
+    //             Self(atomics * factor)
+    //         }
+    //         Ordering::Equal => Self(atomics),
+    //         Ordering::Greater => {
+    //             let digits = decimal_places - Self::DECIMAL_PLACES;
+    //             let factor = TEN.pow(digits as u32);
+    //             // Since factor cannot be zero, the division is safe.
+    //             Self(atomics / factor)
+    //         }
+    //     }
+    // }
 
-            x * y
-        }
+    // /// Raises a value to the power of `exp`, panicking if an overflow occurs.
+    // pub fn pow(self, exp: u32) -> Self {
+    //     // This uses the exponentiation by squaring algorithm:
+    //     // https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Basic_method
 
-        inner(self, exp)
-    }
+    //     fn inner(mut x: Decimal256, mut n: u32) -> Decimal256 {
+    //         if n == 0 {
+    //             return Decimal256::one();
+    //         }
 
-    /// Returns the multiplicative inverse `1/d` for decimal `d`.
-    ///
-    /// If `d` is zero, none is returned.
-    pub fn inv(&self) -> Option<Self> {
-        if self.is_zero() {
-            None
-        } else {
-            // Let self be p/q with p = self.0 and q = DECIMAL_FRACTIONAL.
-            // Now we calculate the inverse a/b = q/p such that b = DECIMAL_FRACTIONAL. Then
-            // `a = DECIMAL_FRACTIONAL*DECIMAL_FRACTIONAL / self.0`.
-            Some(Decimal256(Self::DECIMAL_FRACTIONAL_SQUARED / self.0))
-        }
-    }
+    //         let mut y = Decimal256::one();
 
-    /// Returns the ratio (numerator / denominator) as a Decimal256
-    pub fn from_ratio(numerator: impl Into<I256>, denominator: impl Into<I256>) -> Self {
-        match Decimal256::checked_from_ratio(numerator, denominator) {
-            Ok(ratio) => ratio,
-            Err(Error::DivideByZero) => panic!("Denominator must not be zero"),
-        }
-    }
+    //         while n > 1 {
+    //             if n % 2 == 0 {
+    //                 x = x * x; // Regular multiplication
+    //                 n /= 2;
+    //             } else {
+    //                 y = x * y; // Regular multiplication
+    //                 x = x * x; // Regular multiplication
+    //                 n = (n - 1) / 2;
+    //             }
+    //         }
 
-    pub fn to_I256_with_precision(&self, precision: impl Into<i32>) -> I256 {
-        let value = self.atomics();
-        let precision = precision.into();
+    //         x * y
+    //     }
 
-        let divisor = 10I256.pow((self.decimal_places() - precision) as u32);
-        value / divisor
-    }
+    //     inner(self, exp)
+    // }
 
-    fn multiply_ratio(&self, numerator: Decimal256, denominator: Decimal256) -> Decimal256 {
-        Decimal256::from_ratio(self.atomics() * numerator.atomics(), denominator.atomics())
-    }
+    // /// Returns the multiplicative inverse `1/d` for decimal `d`.
+    // ///
+    // /// If `d` is zero, none is returned.
+    // pub fn inv(&self) -> Option<Self> {
+    //     if self.is_zero() {
+    //         None
+    //     } else {
+    //         // Let self be p/q with p = self.0 and q = DECIMAL_FRACTIONAL.
+    //         // Now we calculate the inverse a/b = q/p such that b = DECIMAL_FRACTIONAL. Then
+    //         // `a = DECIMAL_FRACTIONAL*DECIMAL_FRACTIONAL / self.0`.
+    //         Some(Decimal256(Self::DECIMAL_FRACTIONAL_SQUARED / self.0))
+    //     }
+    // }
 
-    /// Returns the ratio (numerator / denominator) as a Decimal256
-    fn checked_from_ratio(
-        numerator: impl Into<I256>,
-        denominator: impl Into<I256>,
-    ) -> Result<Self, Error> {
-        let numerator = numerator.into();
-        let denominator = denominator.into();
+    // /// Returns the ratio (numerator / denominator) as a Decimal256
+    // pub fn from_ratio(numerator: impl Into<I256>, denominator: impl Into<I256>) -> Self {
+    //     match Decimal256::checked_from_ratio(numerator, denominator) {
+    //         Ok(ratio) => ratio,
+    //         Err(Error::DivideByZero) => panic!("Denominator must not be zero"),
+    //     }
+    // }
 
-        // If denominator is zero, panic.
-        if denominator == 0 {
-            return Err(Error::DivideByZero);
-        }
+    // pub fn to_I256_with_precision(&self, precision: impl Into<i32>) -> I256 {
+    //     let value = self.atomics();
+    //     let precision = precision.into();
 
-        // Convert numerator and denominator to BigInt.
-        // unwrap since I256 is always convertible to BigInt
-        // let numerator = numerator.to_bigint().unwrap();
-        // let denominator = denominator.to_bigint().unwrap();
-        // let decimal_fractional = Self::DECIMAL_FRACTIONAL.to_bigint().unwrap();
+    //     let divisor = 10I256.pow((self.decimal_places() - precision) as u32);
+    //     value / divisor
+    // }
 
-        // Compute the ratio: (numerator * DECIMAL_FRACTIONAL) / denominator
-        let ratio = (numerator * Self::DECIMAL_FRACTIONAL) / denominator;
+    // fn multiply_ratio(&self, numerator: Decimal256, denominator: Decimal256) -> Decimal256 {
+    //     Decimal256::from_ratio(self.atomics() * numerator.atomics(), denominator.atomics())
+    // }
 
-        // Convert back to I256. If conversion fails, panic.
-        // let ratio = ratio.to_I256().ok_or(Error::Overflow)?;
+    // /// Returns the ratio (numerator / denominator) as a Decimal256
+    // fn checked_from_ratio(
+    //     numerator: impl Into<I256>,
+    //     denominator: impl Into<I256>,
+    // ) -> Result<Self, Error> {
+    //     let numerator = numerator.into();
+    //     let denominator = denominator.into();
 
-        // Construct and return the Decimal256.
-        Ok(Decimal256(ratio))
-    }
+    //     // If denominator is zero, panic.
+    //     if denominator == 0 {
+    //         return Err(Error::DivideByZero);
+    //     }
 
-    pub fn abs(&self) -> Self {
-        if self.0 < 0 {
-            Decimal256(-self.0)
-        } else {
-            *self
-        }
-    }
+    //     // Convert numerator and denominator to BigInt.
+    //     // unwrap since I256 is always convertible to BigInt
+    //     // let numerator = numerator.to_bigint().unwrap();
+    //     // let denominator = denominator.to_bigint().unwrap();
+    //     // let decimal_fractional = Self::DECIMAL_FRACTIONAL.to_bigint().unwrap();
 
-    pub fn to_string(&self, env: &Env) -> String {
-        String::from_str(env, alloc::format!("{}", self).as_str())
-    }
+    //     // Compute the ratio: (numerator * DECIMAL_FRACTIONAL) / denominator
+    //     let ratio = (numerator * Self::DECIMAL_FRACTIONAL) / denominator;
 
-    pub const fn abs_diff(self, other: Self) -> Self {
-        Self(self.0.abs_diff(other.0) as I256)
-    }
+    //     // Convert back to I256. If conversion fails, panic.
+    //     // let ratio = ratio.to_I256().ok_or(Error::Overflow)?;
+
+    //     // Construct and return the Decimal256.
+    //     Ok(Decimal256(ratio))
+    // }
+
+    // pub fn abs(&self) -> Self {
+    //     if self.0 < 0 {
+    //         Decimal256(-self.0)
+    //     } else {
+    //         *self
+    //     }
+    // }
+
+    // pub fn to_string(&self, env: &Env) -> String {
+    //     String::from_str(env, alloc::format!("{}", self).as_str())
+    // }
+
+    // pub const fn abs_diff(self, other: Self) -> Self {
+    //     Self(self.0.abs_diff(other.0) as I256)
+    // }
 }
 
-impl Add for Decimal256 {
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self {
-        Decimal256(self.0 + other.0)
-    }
-}
-impl Sub for Decimal256 {
-    type Output = Self;
-
-    fn sub(self, other: Self) -> Self {
-        Decimal256(self.0 - other.0)
-    }
-}
-
-impl Mul for Decimal256 {
-    type Output = Self;
-
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, other: Self) -> Self {
-        // Decimal256s are fractions. We can multiply two decimals a and b
-        // via
-        //       (a.numerator() * b.numerator()) / (a.denominator() * b.denominator())
-        //     = (a.numerator() * b.numerator()) / a.denominator() / b.denominator()
-
-        // let self_numerator = self.numerator().to_bigint().unwrap();
-        // let other_numerator = other.numerator().to_bigint().unwrap();
-
-        // Compute the product of the numerators and divide by DECIMAL_FRACTIONAL
-        let result = (self.numerator() * other.numerator()) / Self::DECIMAL_FRACTIONAL;
-
-        // Convert the result back to I256, and panic on overflow
-        // let result = result
-        //     .to_I256()
-        //     .unwrap_or_else(|| panic!("attempt to multiply with overflow"));
-
-        // Return a new Decimal256
-        Decimal256(result)
-    }
-}
-
-impl Div for Decimal256 {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self {
-        match Decimal256::checked_from_ratio(self.numerator(), rhs.numerator()) {
-            Ok(ratio) => ratio,
-            Err(Error::DivideByZero) => panic!("Division failed - denominator must not be zero"),
-        }
-    }
-}
-
-impl Mul<I256> for Decimal256 {
-    type Output = I256;
-
-    fn mul(self, rhs: I256) -> Self::Output {
-        rhs * self
-    }
-}
-
-impl Div<I256> for Decimal256 {
-    type Output = Self;
-
-    fn div(self, rhs: I256) -> Self::Output {
-        Decimal256(self.0 / rhs)
-    }
-}
-
-impl Mul<Decimal256> for I256 {
-    type Output = Self;
-
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, rhs: Decimal256) -> Self::Output {
-        // 0*a and b*0 is always 0
-        if self == 0I256 || rhs.is_zero() {
-            return 0I256;
-        }
-        self * rhs.0 / Decimal256::DECIMAL_FRACTIONAL
-    }
-}
-
-impl FromStr for Decimal256 {
-    type Err = ();
-
-    fn from_str(input: &str) -> Result<Self, Self::Err> {
-        let mut parts_iter = input.split('.');
-
-        let whole_part = parts_iter.next().expect("Unexpected input format");
-        let whole: I256 = whole_part.parse().expect("Error parsing whole");
-        let mut atomics = whole * Self::DECIMAL_FRACTIONAL;
-
-        if let Some(fractional_part) = parts_iter.next() {
-            let fractional: I256 = fractional_part.parse().expect("Error parsing fractional");
-            let exp = Self::DECIMAL_PLACES - fractional_part.len() as i32;
-            assert!(exp >= 0, "There must be at least one fractional digit");
-            let fractional_factor = 10I256.pow(exp as u32);
-            atomics += fractional * fractional_factor;
-        }
-
-        assert!(parts_iter.next().is_none(), "Unexpected number of dots");
-
-        Ok(Decimal256(atomics))
-    }
-}
-
-impl fmt::Display for Decimal256 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let whole = self.0 / Self::DECIMAL_FRACTIONAL;
-        let fractional = self.0 % Self::DECIMAL_FRACTIONAL;
-
-        if fractional == 0 {
-            write!(f, "{}", whole)
-        } else {
-            let fractional_string = alloc::format!(
-                "{:0>padding$}",
-                fractional,
-                padding = Self::DECIMAL_PLACES as usize
-            );
-            f.write_fmt(format_args!(
-                "{}.{}",
-                whole,
-                fractional_string.trim_end_matches('0')
-            ))
-        }
-    }
-}
+// impl Add for Decimal256 {
+//     type Output = Self;
+//
+//     fn add(self, other: Self) -> Self {
+//         Decimal256(self.0 + other.0)
+//     }
+// }
+// impl Sub for Decimal256 {
+//     type Output = Self;
+//
+//     fn sub(self, other: Self) -> Self {
+//         Decimal256(self.0 - other.0)
+//     }
+// }
+//
+// impl Mul for Decimal256 {
+//     type Output = Self;
+//
+//     #[allow(clippy::suspicious_arithmetic_impl)]
+//     fn mul(self, other: Self) -> Self {
+//         // Decimal256s are fractions. We can multiply two decimals a and b
+//         // via
+//         //       (a.numerator() * b.numerator()) / (a.denominator() * b.denominator())
+//         //     = (a.numerator() * b.numerator()) / a.denominator() / b.denominator()
+//
+//         // let self_numerator = self.numerator().to_bigint().unwrap();
+//         // let other_numerator = other.numerator().to_bigint().unwrap();
+//
+//         // Compute the product of the numerators and divide by DECIMAL_FRACTIONAL
+//         let result = (self.numerator() * other.numerator()) / Self::DECIMAL_FRACTIONAL;
+//
+//         // Convert the result back to I256, and panic on overflow
+//         // let result = result
+//         //     .to_I256()
+//         //     .unwrap_or_else(|| panic!("attempt to multiply with overflow"));
+//
+//         // Return a new Decimal256
+//         Decimal256(result)
+//     }
+// }
+//
+// impl Div for Decimal256 {
+//     type Output = Self;
+//
+//     fn div(self, rhs: Self) -> Self {
+//         match Decimal256::checked_from_ratio(self.numerator(), rhs.numerator()) {
+//             Ok(ratio) => ratio,
+//             Err(Error::DivideByZero) => panic!("Division failed - denominator must not be zero"),
+//         }
+//     }
+// }
+//
+// impl Mul<I256> for Decimal256 {
+//     type Output = I256;
+//
+//     fn mul(self, rhs: I256) -> Self::Output {
+//         rhs * self
+//     }
+// }
+//
+// impl Div<I256> for Decimal256 {
+//     type Output = Self;
+//
+//     fn div(self, rhs: I256) -> Self::Output {
+//         Decimal256(self.0 / rhs)
+//     }
+// }
+//
+// impl Mul<Decimal256> for I256 {
+//     type Output = Self;
+//
+//     #[allow(clippy::suspicious_arithmetic_impl)]
+//     fn mul(self, rhs: Decimal256) -> Self::Output {
+//         // 0*a and b*0 is always 0
+//         if self == 0I256 || rhs.is_zero() {
+//             return 0I256;
+//         }
+//         self * rhs.0 / Decimal256::DECIMAL_FRACTIONAL
+//     }
+// }
+//
+// impl FromStr for Decimal256 {
+//     type Err = ();
+//
+//     fn from_str(input: &str) -> Result<Self, Self::Err> {
+//         let mut parts_iter = input.split('.');
+//
+//         let whole_part = parts_iter.next().expect("Unexpected input format");
+//         let whole: I256 = whole_part.parse().expect("Error parsing whole");
+//         let mut atomics = whole * Self::DECIMAL_FRACTIONAL;
+//
+//         if let Some(fractional_part) = parts_iter.next() {
+//             let fractional: I256 = fractional_part.parse().expect("Error parsing fractional");
+//             let exp = Self::DECIMAL_PLACES - fractional_part.len() as i32;
+//             assert!(exp >= 0, "There must be at least one fractional digit");
+//             let fractional_factor = 10I256.pow(exp as u32);
+//             atomics += fractional * fractional_factor;
+//         }
+//
+//         assert!(parts_iter.next().is_none(), "Unexpected number of dots");
+//
+//         Ok(Decimal256(atomics))
+//     }
+// }
+//
+// impl fmt::Display for Decimal256 {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         let whole = self.0 / Self::DECIMAL_FRACTIONAL;
+//         let fractional = self.0 % Self::DECIMAL_FRACTIONAL;
+//
+//         if fractional == 0 {
+//             write!(f, "{}", whole)
+//         } else {
+//             let fractional_string = alloc::format!(
+//                 "{:0>padding$}",
+//                 fractional,
+//                 padding = Self::DECIMAL_PLACES as usize
+//             );
+//             f.write_fmt(format_args!(
+//                 "{}.{}",
+//                 whole,
+//                 fractional_string.trim_end_matches('0')
+//             ))
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
