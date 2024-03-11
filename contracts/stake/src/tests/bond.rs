@@ -1,5 +1,4 @@
 use pretty_assertions::assert_eq;
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env,
@@ -252,20 +251,28 @@ fn pay_rewards_during_unbond() {
     staking.bond(&user, &STAKED_AMOUNT);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 10_000;
+        li.timestamp = 5_000;
     });
+    staking.distribute_rewards();
 
+    // user has bonded for 5_000 time, initial rewards are 10_000
+    // so user should have 5_000 rewards
+    // 5_000 rewards are still undistributed
     assert_eq!(
         staking.query_undistributed_rewards(&reward_token.address),
-        10_000
+        5_000
     );
-    dbg!(reward_token.balance(&user));
+    assert_eq!(
+        staking
+            .query_withdrawable_rewards(&user)
+            .rewards
+            .iter()
+            .map(|reward| reward.reward_amount)
+            .sum::<u128>(),
+        5_000
+    );
+
+    assert_eq!(reward_token.balance(&user), 0);
     staking.unbond(&user, &STAKED_AMOUNT, &0);
-    dbg!(reward_token.balance(&user));
-
-    // user unbonded we automatically distribute rewards
-    assert_eq!(
-        staking.query_undistributed_rewards(&reward_token.address),
-        10_000
-    );
+    assert_eq!(reward_token.balance(&user), 5_000);
 }

@@ -1,4 +1,3 @@
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, String, Vec};
 
 use crate::{
@@ -186,7 +185,6 @@ impl StakingTrait for Staking {
         let found_rewards: WithdrawableRewardsResponse =
             Self::query_withdrawable_rewards(env.clone(), sender.clone());
 
-        dbg!(found_rewards.clone());
         if !found_rewards.rewards.is_empty() {
             Self::withdraw_rewards(env.clone(), sender.clone());
         }
