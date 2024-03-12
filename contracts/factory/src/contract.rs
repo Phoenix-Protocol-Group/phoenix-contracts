@@ -292,25 +292,22 @@ impl FactoryTrait for Factory {
 
             // get the lp share token balance for the user
             // if the user has any liquidity tokens in the pool add to the lp_portfolio
-            let lp_share_amount_in_pool: i128 = env.invoke_contract(
+            let lp_share_balance: i128 = env.invoke_contract(
                 &response.pool_response.asset_lp_share.address,
                 &Symbol::new(&env, "balance"),
                 vec![&env, sender.into_val(&env)],
             );
 
-            let lp_shares_in_stake: StakedResponse = env.invoke_contract(
+            let lp_share_staked: StakedResponse = env.invoke_contract(
                 &response.pool_response.stake_address,
                 &Symbol::new(&env, "query_staked"),
                 vec![&env, sender.into_val(&env)],
             );
 
-            let sum_of_lp_share_in_stake: i128 = lp_shares_in_stake
-                .stakes
-                .iter()
-                .map(|stake| stake.stake)
-                .sum();
+            let sum_of_lp_share_staked: i128 =
+                lp_share_staked.stakes.iter().map(|stake| stake.stake).sum();
 
-            let total_lp_share_for_user = lp_share_amount_in_pool + sum_of_lp_share_in_stake;
+            let total_lp_share_for_user = lp_share_balance + sum_of_lp_share_staked;
 
             // query the balance of the liquidity tokens
             let (asset_a, asset_b) = env.invoke_contract::<(Asset, Asset)>(
