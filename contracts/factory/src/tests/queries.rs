@@ -1087,6 +1087,42 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
             ]
         }
     );
+
+    // second user portfolio with second pool without staking
+    let second_user_second_portfolio = factory.query_user_portfolio(&user_2, &false);
+    assert_eq!(
+        second_user_second_portfolio,
+        UserPortfolio {
+            lp_portfolio: vec![
+                &env,
+                LpPortfolio {
+                    assets: (
+                        Asset {
+                            address: token1.address.clone(),
+                            amount: 1_999i128,
+                        },
+                        Asset {
+                            address: token2.address.clone(),
+                            amount: 1_999i128
+                        }
+                    )
+                },
+                LpPortfolio {
+                    assets: (
+                        Asset {
+                            address: token3.address.clone(),
+                            amount: 1_999i128,
+                        },
+                        Asset {
+                            address: token4.address.clone(),
+                            amount: 7_999i128
+                        }
+                    )
+                }
+            ],
+            stake_portfolio: vec![&env,]
+        }
+    );
 }
 
 #[test]
