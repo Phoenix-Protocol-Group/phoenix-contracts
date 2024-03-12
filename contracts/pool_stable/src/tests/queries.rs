@@ -92,7 +92,7 @@ fn query_share_valid_liquidity() {
                 address: share_token_address.clone(),
                 amount: 519
             },
-            // stake_address: pool_info_before_withdrawal.clone().stake_address,
+            stake_address: pool_info_before_withdrawal.clone().stake_address,
         }
     );
 
@@ -113,7 +113,7 @@ fn query_share_valid_liquidity() {
                 address: share_token_address.clone(),
                 amount: 346
             },
-            // stake_address: pool_info_after_withdrawal.clone().stake_address,
+            stake_address: pool_info_after_withdrawal.clone().stake_address,
         }
     );
 
@@ -169,7 +169,7 @@ fn query_share_valid_liquidity() {
                 address: share_token_address.clone(),
                 amount: 173
             },
-            // stake_address: pool_info_after_withdrawal.clone().stake_address, // I think we need that in storage
+            stake_address: pool_info_after_withdrawal.clone().stake_address, // I think we need that in storage
         }
     );
 
@@ -226,7 +226,7 @@ fn query_share_valid_liquidity() {
                 address: share_token_address.clone(),
                 amount: 100
             },
-            // stake_address: pool_info_after_withdrawal.clone().stake_address,
+            stake_address: pool_info_after_withdrawal.clone().stake_address,
         }
     );
 

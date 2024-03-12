@@ -495,6 +495,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 address: config.share_token,
                 amount: utils::get_total_shares(&env),
             },
+            stake_address: config.stake_contract,
         }
     }
 
@@ -513,6 +514,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 address: config.share_token,
                 amount: utils::get_total_shares(&env),
             },
+            stake_address: config.stake_contract,
         };
         let total_fee_bps = config.total_fee_bps;
 
