@@ -395,7 +395,7 @@ fn test_queries_by_tuple_errors() {
 }
 
 #[test]
-fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
+fn test_query_user_portfolio_with_stake() {
     let env = Env::default();
 
     let admin = Address::generate(&env);
@@ -464,7 +464,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
         &None::<i64>,
     );
 
-    // first portfolio after providing liquidity
+    // first user portfolio after providing liquidity
     let first_portfolio = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
         first_portfolio,
@@ -490,12 +490,26 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
 
     first_stake_client.bond(&user_1, &173i128);
 
-    // first portfolio after staking
+    // first user portfolio after staking
     let first_portfolio = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
         first_portfolio,
         UserPortfolio {
-            lp_portfolio: vec![&env,],
+            lp_portfolio: vec![
+                &env,
+                LpPortfolio {
+                    assets: (
+                        Asset {
+                            address: token1.address.clone(),
+                            amount: 150i128,
+                        },
+                        Asset {
+                            address: token2.address.clone(),
+                            amount: 200i128
+                        }
+                    )
+                }
+            ],
             stake_portfolio: vec![
                 &env,
                 StakePortfolio {
@@ -568,7 +582,21 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
     assert_eq!(
         second_portfolio,
         UserPortfolio {
-            lp_portfolio: vec![&env,],
+            lp_portfolio: vec![
+                &env,
+                LpPortfolio {
+                    assets: (
+                        Asset {
+                            address: token3.address.clone(),
+                            amount: 200i128,
+                        },
+                        Asset {
+                            address: token4.address.clone(),
+                            amount: 250i128
+                        }
+                    )
+                }
+            ],
             stake_portfolio: vec![
                 &env,
                 StakePortfolio {
@@ -587,7 +615,7 @@ fn test_query_token_amount_per_liquidity_pool_per_user_with_stake() {
 }
 
 #[test]
-fn test_query_token_amount_per_liquidity_pool_per_user_no_stake() {
+fn test_query_user_portfolio_without_stake() {
     let env = Env::default();
 
     let admin = Address::generate(&env);

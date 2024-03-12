@@ -292,20 +292,35 @@ impl FactoryTrait for Factory {
 
             // get the lp share token balance for the user
             // if the user has any liquidity tokens in the pool add to the lp_portfolio
-            let lp_share_amount: i128 = env.invoke_contract(
+            let lp_share_amount_in_pool: i128 = env.invoke_contract(
                 &response.pool_response.asset_lp_share.address,
                 &Symbol::new(&env, "balance"),
                 vec![&env, sender.into_val(&env)],
             );
 
-            if lp_share_amount > 0 {
-                // query the balance of the liquidity tokens
-                let (asset_a, asset_b) = env.invoke_contract::<(Asset, Asset)>(
-                    &address,
-                    &Symbol::new(&env, "query_share"),
-                    vec![&env, lp_share_amount.into_val(&env)],
-                );
+            let lp_shares_in_stake: StakedResponse = env.invoke_contract(
+                &response.pool_response.stake_address,
+                &Symbol::new(&env, "query_staked"),
+                vec![&env, sender.into_val(&env)],
+            );
 
+            let sum_of_lp_share_in_stake: i128 = lp_shares_in_stake
+                .stakes
+                .iter()
+                .map(|stake| stake.stake)
+                .sum();
+
+            let total_lp_share_for_user = lp_share_amount_in_pool + sum_of_lp_share_in_stake;
+
+            // query the balance of the liquidity tokens
+            let (asset_a, asset_b) = env.invoke_contract::<(Asset, Asset)>(
+                &address,
+                &Symbol::new(&env, "query_share"),
+                vec![&env, total_lp_share_for_user.into_val(&env)],
+            );
+
+            // we add only liquidity pools that the user has staked to to his portfolio
+            if total_lp_share_for_user > 0 {
                 // add to the lp_portfolio
                 lp_portfolio.push_back(LpPortfolio {
                     assets: (asset_a, asset_b),

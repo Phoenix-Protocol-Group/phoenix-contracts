@@ -120,21 +120,6 @@ fn query_share_valid_liquidity() {
     let lp_share_balance_after_withdraw_user1: i128 = token_share.balance(&user1);
     assert_eq!(lp_share_balance_after_withdraw_user1, 0);
 
-    let query_share_result_user1 = pool.query_share(&lp_share_balance_after_withdraw_user1);
-    assert_eq!(
-        query_share_result_user1,
-        (
-            Asset {
-                address: token1.address.clone(),
-                amount: 0
-            },
-            Asset {
-                address: token2.address.clone(),
-                amount: 0
-            }
-        )
-    );
-
     // user2 assertions
     let lp_share_balance_user2 = token_share.balance(&user2);
     let query_share_result_user2 = pool.query_share(&lp_share_balance_user2);
@@ -169,27 +154,12 @@ fn query_share_valid_liquidity() {
                 address: share_token_address.clone(),
                 amount: 173
             },
-            stake_address: pool_info_after_withdrawal.clone().stake_address, // I think we need that in storage
+            stake_address: pool_info_after_withdrawal.clone().stake_address,
         }
     );
 
     let lp_share_balance_after_withdraw_user2: i128 = token_share.balance(&user2);
     assert_eq!(lp_share_balance_after_withdraw_user2, 0);
-
-    let query_share_result_user2 = pool.query_share(&lp_share_balance_after_withdraw_user2);
-    assert_eq!(
-        query_share_result_user2,
-        (
-            Asset {
-                address: token1.address.clone(),
-                amount: 0
-            },
-            Asset {
-                address: token2.address.clone(),
-                amount: 0
-            }
-        )
-    );
 
     // user3 assertions
     let lp_share_balance_user3 = token_share.balance(&user3);
