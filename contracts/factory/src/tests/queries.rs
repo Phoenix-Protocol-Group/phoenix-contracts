@@ -644,13 +644,13 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
     }
 
     token1.mint(&user_1, &1_000i128);
-    token2.mint(&user_1, &1_000i128);
     token1.mint(&user_2, &2_000i128);
+    token2.mint(&user_1, &1_000i128);
     token2.mint(&user_2, &2_000i128);
 
     token3.mint(&user_1, &1_000i128);
-    token4.mint(&user_1, &4_000i128);
     token3.mint(&user_2, &2_000i128);
+    token4.mint(&user_1, &4_000i128);
     token4.mint(&user_2, &8_000i128);
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
