@@ -59,7 +59,7 @@ pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> i64 {
     if total_fee_bps > MAX_TOTAL_FEE_BPS {
         log!(
             env,
-            "Stable Pool: Validate fee bps: Total fees cannot be greater than 100%"
+            "Pool Stable: Validate fee bps: Total fees cannot be greater than 100%"
         );
         panic_with_error!(
             env,

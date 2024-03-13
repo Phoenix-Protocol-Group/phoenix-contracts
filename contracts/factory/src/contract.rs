@@ -355,20 +355,20 @@ fn validate_token_info(
     stake_init_info: &StakeInitInfo,
 ) {
     if token_init_info.token_a >= token_init_info.token_b {
-        log!(env, "token_a must be less than token_b");
+        log!(env, "Factory: token_a must be less than token_b");
         panic!("Factory: validate_token_info failed: First token must be smaller then second");
     }
 
     if stake_init_info.min_bond <= 0 {
         log!(
             env,
-            "Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+            "Factory: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
         );
         panic!("Factory: validate_token_info failed: min stake is less or equal to zero");
     }
 
     if stake_init_info.min_reward <= 0 {
-        log!(env, "min_reward must be bigger then 0!");
+        log!(env, "Factory: min_reward must be bigger then 0!");
         panic!("Factory: validate_token_info failed: min reward too small");
     }
 }

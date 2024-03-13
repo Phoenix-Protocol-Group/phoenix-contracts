@@ -101,12 +101,12 @@ impl StakingTrait for Staking {
         if min_bond <= 0 {
             log!(
                 &env,
-                "Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+                "Stake: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
             );
             panic!("Stake: Initialize: Minimum amount of lp share tokens to bond can not be smaller or equal to 0")
         }
         if min_reward <= 0 {
-            log!(&env, "min_reward must be bigger then 0!");
+            log!(&env, "Stake: min_reward must be bigger then 0!");
             panic!("Stake: Initialize: min reward must be bigger then 0")
         }
 
@@ -135,7 +135,7 @@ impl StakingTrait for Staking {
         if tokens < config.min_bond {
             log!(
                 &env,
-                "Trying to bond {} which is less then minimum {} required!",
+                "Stake: Trying to bond {} which is less then minimum {} required!",
                 tokens,
                 config.min_bond
             );
@@ -210,7 +210,7 @@ impl StakingTrait for Staking {
         let manager = get_config(&env).manager;
         let owner = get_config(&env).owner;
         if sender != manager && sender != owner {
-            log!(env, "Non-authorized creation!");
+            log!(env, "Stake: Non-authorized creation!");
             panic!("Stake: create distribution flow: You are not allowed to create distribution flows.");
         }
 
@@ -239,7 +239,7 @@ impl StakingTrait for Staking {
     fn distribute_rewards(env: Env) {
         let total_rewards_power = get_total_staked_counter(&env) as u128;
         if total_rewards_power == 0 {
-            log!(&env, "No rewards to distribute!");
+            log!(&env, "Stake: No rewards to distribute!");
             return;
         }
         for distribution_address in get_distributions(&env) {
@@ -345,7 +345,7 @@ impl StakingTrait for Staking {
         if start_time < current_time {
             log!(
                 &env,
-                "Trying to fund distribution flow with start timestamp: {} which is earlier then the current one: {}",
+                "Stake: Trying to fund distribution flow with start timestamp: {} which is earlier then the current one: {}",
                 start_time,
                 current_time
             );
@@ -356,7 +356,7 @@ impl StakingTrait for Staking {
         if config.min_reward > token_amount {
             log!(
                 &env,
-                "Trying to create distribution flow with reward not reaching minimum amount: {}",
+                "Stake: Trying to create distribution flow with reward not reaching minimum amount: {}",
                 config.min_reward
             );
             panic!("Stake: Fund distribution: minimum reward amount not reached");
@@ -378,7 +378,7 @@ impl StakingTrait for Staking {
         if min != 0 || max > token_amount as u128 {
             log!(
                 &env,
-                "Trying to create reward distribution which either doesn't end with empty balance or exceeds provided amount"
+                "Stake: Trying to create reward distribution which either doesn't end with empty balance or exceeds provided amount"
             );
             panic!("Stake: Fund distribution: Rewards validation failed");
         }

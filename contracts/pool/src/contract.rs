@@ -174,14 +174,14 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
-            log!(&env, "token_a must be less than token_b");
+            log!(&env, "Pool: token_a must be less than token_b");
             panic!(
                 "Pool: Initialize: First token must be alphabetically smaller than second token"
             );
         }
 
         if !(0..=10_000).contains(&swap_fee_bps) {
-            log!(&env, "Fees must be between 0 and 100%");
+            log!(&env, "Pool: Fees must be between 0 and 100%");
             panic!("Pool: Initialize: Fees must be between 0 and 100%");
         }
 
@@ -941,7 +941,10 @@ fn assert_slippage_tolerance(
         default_slippage
     };
     if slippage_tolerance > max_allowed_slippage {
-        log!(env, "Slippage tolerance exceeds the maximum allowed value");
+        log!(
+            env,
+            "Pool: Slippage tolerance exceeds the maximum allowed value"
+        );
         panic!(
             "Pool: Assert slippage tolerance: slippage tolerance exceeds the maximum allowed value"
         );
@@ -960,7 +963,7 @@ fn assert_slippage_tolerance(
     {
         log!(
             env,
-            "Slippage tolerance violated. Deposits: 0: {} 1: {}, Pools: 0: {} 1: {}",
+            "Pool: Slippage tolerance violated. Deposits: 0: {} 1: {}, Pools: 0: {} 1: {}",
             deposits[0],
             deposits[1],
             pools[0],
@@ -1002,7 +1005,7 @@ pub fn assert_max_spread(
     };
 
     if spread_ratio > max_spread {
-        log!(env, "Spread exceeds maximum allowed");
+        log!(env, "Pool: Spread exceeds maximum allowed");
         panic_with_error!(env, ContractError::SpreadExceedsLimit);
     }
 }
