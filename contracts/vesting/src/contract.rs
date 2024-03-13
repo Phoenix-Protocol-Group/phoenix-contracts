@@ -2,6 +2,8 @@ use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use curve::Curve;
 
+use crate::storage::Config;
+
 // Metadata that is added on to the WASM custom section
 contractmeta!(key = "Description", val = "Phoenix Protocol Vesting");
 
@@ -24,7 +26,13 @@ pub trait VestingTrait {
 
     fn update_minter(env: Env, sender: Address, new_minter: Address);
 
-    // fn send(env: Env, )
+    fn send_tokens_to_contract(env: Env, sender: Address, contract: Address, amount: i128);
+
+    fn add_to_whitelist(env: Env, sender: Address, to_add: Address);
+
+    fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address);
+
+    fn query_config(env: Env) -> Config;
 }
 
 #[contractimpl]
