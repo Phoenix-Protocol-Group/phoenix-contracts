@@ -1,17 +1,17 @@
-use crate::storage::{
-    get_config, is_initialized, save_config, set_initialized, Asset, Config, DataKey,
-    LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
-};
-use crate::utils::deploy_multihop_contract;
 use crate::{
-    storage::{get_lp_vec, save_lp_vec, save_lp_vec_with_tuple_as_key},
-    utils::deploy_lp_contract,
+    error::ContractError,
+    storage::{
+        get_config, get_lp_vec, is_initialized, save_config, save_lp_vec,
+        save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, DataKey, LiquidityPoolInfo,
+        LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
+    },
+    utils::{deploy_lp_contract, deploy_multihop_contract},
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use phoenix::validate_bps;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, vec, Address, BytesN, Env, IntoVal, String, Symbol,
-    Val, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,
+    IntoVal, String, Symbol, Val, Vec,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -77,11 +77,16 @@ impl FactoryTrait for Factory {
         lp_token_decimals: u32,
     ) {
         if is_initialized(&env) {
-            panic!("Factory: Initialize: initializing contract twice is not allowed");
+            log!(
+                &env,
+                "Factory: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
         }
 
         if whitelisted_accounts.is_empty() {
-            panic!("Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.")
+            log!(&env, "Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.");
+            panic_with_error!(&env, ContractError::WhiteListedEmpty);
         }
 
         set_initialized(&env);
@@ -117,9 +122,11 @@ impl FactoryTrait for Factory {
     ) -> Address {
         sender.require_auth();
         if !get_config(&env).whitelisted_accounts.contains(sender) {
-            panic!(
+            log!(
+                &env,
                 "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
-            )
+            );
+            panic_with_error!(&env, ContractError::NotAuthorized);
         };
 
         validate_token_info(
@@ -188,9 +195,11 @@ impl FactoryTrait for Factory {
         let config = get_config(&env);
 
         if config.admin != sender {
-            panic!(
-                "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
-            )
+            log!(
+                &env,
+                "Factory: Update whitelisted accounts: You are not authorized!"
+            );
+            panic_with_error!(&env, ContractError::NotAuthorized);
         };
 
         let mut whitelisted_accounts = config.whitelisted_accounts;
@@ -264,7 +273,11 @@ impl FactoryTrait for Factory {
             return addr;
         }
 
-        panic!("Factory: query_for_pool_by_token_pair failed: No liquidity pool found");
+        log!(
+            &env,
+            "Factory: query_for_pool_by_token_pair failed: No liquidity pool found"
+        );
+        panic_with_error!(&env, ContractError::LiquidityPoolNotFound);
     }
 
     fn get_admin(env: Env) -> Address {
@@ -355,21 +368,27 @@ fn validate_token_info(
     stake_init_info: &StakeInitInfo,
 ) {
     if token_init_info.token_a >= token_init_info.token_b {
-        log!(env, "token_a must be less than token_b");
-        panic!("Factory: validate_token_info failed: First token must be smaller then second");
+        log!(
+            env,
+            "Factory: validate_token info failed: token_a must be less than token_b"
+        );
+        panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
     }
 
     if stake_init_info.min_bond <= 0 {
         log!(
             env,
-            "Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+            "Factory: validate_token_info: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
         );
-        panic!("Factory: validate_token_info failed: min stake is less or equal to zero");
+        panic_with_error!(&env, ContractError::MinStakeInvalid);
     }
 
     if stake_init_info.min_reward <= 0 {
-        log!(env, "min_reward must be bigger then 0!");
-        panic!("Factory: validate_token_info failed: min reward too small");
+        log!(
+            &env,
+            "Factory: validate_token_info failed: min_reward must be bigger then 0!"
+        );
+        panic_with_error!(&env, ContractError::MinRewardInvalid);
     }
 }
 
@@ -380,7 +399,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "Factory: validate_token_info failed: First token must be smaller then second"
+        expected = "Factory: validate_token info failed: token_a must be less than token_b"
     )]
     fn validate_token_info_should_fail_on_token_a_less_than_token_b() {
         let env = Env::default();
@@ -406,7 +425,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "Factory: validate_token_info failed: min stake is less or equal to zero"
+        expected = "Factory: validate_token_info: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
     )]
     fn validate_token_info_should_fail_on_min_bond_less_than_zero() {
         let env = Env::default();
@@ -426,7 +445,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Factory: validate_token_info failed: min reward too small")]
+    #[should_panic(
+        expected = "Factory: validate_token_info failed: min_reward must be bigger then 0!"
+    )]
     fn validate_token_info_should_fail_on_min_reward_less_than_zero() {
         let env = Env::default();
 

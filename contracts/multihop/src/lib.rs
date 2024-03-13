@@ -1,8 +1,7 @@
 #![no_std]
 mod contract;
-
+mod error;
 mod storage;
-
 mod utils;
 
 #[allow(clippy::too_many_arguments)]

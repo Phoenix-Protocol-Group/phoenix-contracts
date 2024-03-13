@@ -1,19 +1,21 @@
-use soroban_sdk::Vec;
+use soroban_sdk::{log, panic_with_error, Env, Vec};
 
-use crate::storage::Swap;
+use crate::{error::ContractError, storage::Swap};
 
-pub fn verify_swap(operations: &Vec<Swap>) {
+pub fn verify_swap(env: &Env, operations: &Vec<Swap>) {
     for (current, next) in operations.iter().zip(operations.iter().skip(1)) {
         if current.ask_asset != next.offer_asset {
-            panic!("Multihop: Swap: Provided bad swap order");
+            log!(&env, "Multihop: Swap: Provided bad swap order");
+            panic_with_error!(&env, ContractError::BadSwap);
         }
     }
 }
 
-pub fn verify_reverse_swap(operations: &Vec<Swap>) {
+pub fn verify_reverse_swap(env: &Env, operations: &Vec<Swap>) {
     for (current, next) in operations.iter().zip(operations.iter().skip(1)) {
         if current.offer_asset != next.ask_asset {
-            panic!("Multihop: Reverse swap: Provided bad swap order");
+            log!(&env, "Multihop: Reverse swap: Provided bad swap order");
+            panic_with_error!(&env, ContractError::BadSwap);
         }
     }
 }
@@ -52,7 +54,7 @@ mod tests {
 
         let operations = vec![&env, swap1, swap2, swap3];
 
-        verify_swap(&operations);
+        verify_swap(&env, &operations);
     }
 
     #[test]
@@ -82,7 +84,7 @@ mod tests {
 
         let operations = vec![&env, swap1, swap2, swap3];
 
-        verify_reverse_swap(&operations);
+        verify_reverse_swap(&env, &operations);
     }
 
     #[test]
@@ -108,7 +110,7 @@ mod tests {
 
         let operations = vec![&env, swap1, swap2];
 
-        verify_swap(&operations);
+        verify_swap(&env, &operations);
     }
 
     #[test]
@@ -134,6 +136,6 @@ mod tests {
 
         let operations = vec![&env, swap1, swap2];
 
-        verify_reverse_swap(&operations);
+        verify_reverse_swap(&env, &operations);
     }
 }

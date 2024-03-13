@@ -1,0 +1,14 @@
+use soroban_sdk::contracterror;
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum ContractError {
+    AlreadyInitialized = 1,
+    WhiteListedEmpty = 2,
+    NotAuthorized = 3,
+    LiquidityPoolNotFound = 4,
+    TokenABiggerThanTokenB = 5,
+    MinStakeInvalid = 6,
+    MinRewardInvalid = 7,
+}
