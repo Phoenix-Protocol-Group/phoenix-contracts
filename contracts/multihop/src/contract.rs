@@ -1,5 +1,8 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, vec, Address, Env, Vec};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, Vec,
+};
 
+use crate::error::ContractError;
 // FIXM: Disable Referral struct
 // use crate::lp_contract::Referral;
 use crate::storage::{
@@ -44,7 +47,11 @@ pub trait MultihopTrait {
 impl MultihopTrait for Multihop {
     fn initialize(env: Env, admin: Address, factory: Address) {
         if is_initialized(&env) {
-            panic!("Multihop: Initialize: initializing contract twice is not allowed");
+            log!(
+                &env,
+                "Multihop: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
         }
 
         set_initialized(&env);
@@ -65,9 +72,10 @@ impl MultihopTrait for Multihop {
         amount: i128,
     ) {
         if operations.is_empty() {
-            panic!("Multihop: Swap: operations is empty!");
+            log!(&env, "Multihop: Swap: operations is empty!");
+            panic_with_error!(&env, ContractError::OperationsEmpty);
         }
-        verify_swap(&operations);
+        verify_swap(&env, &operations);
 
         recipient.require_auth();
 
@@ -96,10 +104,11 @@ impl MultihopTrait for Multihop {
 
     fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse {
         if operations.is_empty() {
-            panic!("Multihop: Simulate swap: operations empty");
+            log!(&env, "Multihop: Simulate swap: operations empty");
+            panic_with_error!(&env, ContractError::OperationsEmpty);
         }
 
-        verify_swap(&operations);
+        verify_swap(&env, &operations);
 
         let mut next_offer_amount: i128 = amount;
 
@@ -140,10 +149,11 @@ impl MultihopTrait for Multihop {
         amount: i128,
     ) -> SimulateReverseSwapResponse {
         if operations.is_empty() {
-            panic!("Multihop: Simulate reverse swap: operations empty");
+            log!(&env, "Multihop: Simulate reverse swap: operations empty");
+            panic_with_error!(&env, ContractError::OperationsEmpty);
         }
 
-        verify_reverse_swap(&operations);
+        verify_reverse_swap(&env, &operations);
 
         let mut next_ask_amount: i128 = amount;
 
