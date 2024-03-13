@@ -64,7 +64,6 @@ pub fn deploy_factory_contract<'a>(
     factory
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(crate) fn generate_lp_init_info(
     token_a: &crate::token_contract::Client<'_>,
     token_b: &crate::token_contract::Client<'_>,
