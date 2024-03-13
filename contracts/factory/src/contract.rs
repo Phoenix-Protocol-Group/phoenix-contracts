@@ -1,18 +1,17 @@
-use crate::error::ContractError;
-use crate::utils::deploy_multihop_contract;
 use crate::{
+    error::ContractError,
     storage::{
         get_config, get_lp_vec, is_initialized, save_config, save_lp_vec,
-        save_lp_vec_with_tuple_as_key, set_initialized, Config, DataKey, LiquidityPoolInfo,
-        PairTupleKey,
+        save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, DataKey, LiquidityPoolInfo,
+        LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
     },
-    utils::deploy_lp_contract,
+    utils::{deploy_lp_contract, deploy_multihop_contract},
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use phoenix::validate_bps;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String, Symbol, Val, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,
+    IntoVal, String, Symbol, Val, Vec,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -121,8 +120,8 @@ impl FactoryTrait for Factory {
         share_token_name: String,
         share_token_symbol: String,
     ) -> Address {
-        caller.require_auth();
-        if !get_config(&env).whitelisted_accounts.contains(caller) {
+        sender.require_auth();
+        if !get_config(&env).whitelisted_accounts.contains(sender) {
             log!(
                 &env,
                 "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
