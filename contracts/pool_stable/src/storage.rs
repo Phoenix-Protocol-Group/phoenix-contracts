@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "Stable Pool: Validate fee bps: Total fees cannot be greater than 100%"
+        expected = "Pool Stable: Validate fee bps: Total fees cannot be greater than 100%"
     )]
     fn test_invalidate_fee_bps() {
         let env = Env::default();
