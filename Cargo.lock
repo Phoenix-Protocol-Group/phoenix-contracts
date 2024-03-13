@@ -785,6 +785,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "phoenix-vesting"
+version = "0.8.0"
+dependencies = [
+ "curve",
+ "decimal",
+ "phoenix",
+ "pretty_assertions",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "pkcs8"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
