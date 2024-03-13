@@ -137,6 +137,8 @@ pub struct PoolResponse {
     pub asset_b: Asset,
     /// The total amount of LP tokens currently issued
     pub asset_lp_share: Asset,
+    /// The address of the Stake contract for the liquidity pool
+    pub stake_address: Address,
 }
 
 #[contracttype]

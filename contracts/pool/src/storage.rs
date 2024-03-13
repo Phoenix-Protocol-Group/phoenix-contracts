@@ -80,11 +80,11 @@ impl Config {
 }
 
 pub fn get_config(env: &Env) -> Config {
-    env.storage().instance().get(&CONFIG).unwrap()
+    env.storage().persistent().get(&CONFIG).unwrap()
 }
 
 pub fn save_config(env: &Env, config: Config) {
-    env.storage().instance().set(&CONFIG, &config);
+    env.storage().persistent().set(&CONFIG, &config);
 }
 
 #[contracttype]
@@ -130,6 +130,8 @@ pub struct PoolResponse {
     pub asset_b: Asset,
     /// The total amount of LP tokens currently issued
     pub asset_lp_share: Asset,
+    /// The address of the Stake contract for the liquidity pool
+    pub stake_address: Address,
 }
 
 #[contracttype]
@@ -185,19 +187,19 @@ pub mod utils {
     }
 
     pub fn save_admin(e: &Env, address: Address) {
-        e.storage().instance().set(&DataKey::Admin, &address)
+        e.storage().persistent().set(&DataKey::Admin, &address)
     }
 
     pub fn save_total_shares(e: &Env, amount: i128) {
-        e.storage().instance().set(&DataKey::TotalShares, &amount)
+        e.storage().persistent().set(&DataKey::TotalShares, &amount)
     }
 
     pub fn save_pool_balance_a(e: &Env, amount: i128) {
-        e.storage().instance().set(&DataKey::ReserveA, &amount)
+        e.storage().persistent().set(&DataKey::ReserveA, &amount)
     }
 
     pub fn save_pool_balance_b(e: &Env, amount: i128) {
-        e.storage().instance().set(&DataKey::ReserveB, &amount)
+        e.storage().persistent().set(&DataKey::ReserveB, &amount)
     }
 
     pub fn mint_shares(e: &Env, share_token: &Address, to: &Address, amount: i128) {
@@ -218,18 +220,18 @@ pub mod utils {
 
     // queries
     pub fn get_admin(e: &Env) -> Address {
-        e.storage().instance().get(&DataKey::Admin).unwrap()
+        e.storage().persistent().get(&DataKey::Admin).unwrap()
     }
 
     pub fn get_total_shares(e: &Env) -> i128 {
-        e.storage().instance().get(&DataKey::TotalShares).unwrap()
+        e.storage().persistent().get(&DataKey::TotalShares).unwrap()
     }
     pub fn get_pool_balance_a(e: &Env) -> i128 {
-        e.storage().instance().get(&DataKey::ReserveA).unwrap()
+        e.storage().persistent().get(&DataKey::ReserveA).unwrap()
     }
 
     pub fn get_pool_balance_b(e: &Env) -> i128 {
-        e.storage().instance().get(&DataKey::ReserveB).unwrap()
+        e.storage().persistent().get(&DataKey::ReserveB).unwrap()
     }
 
     pub fn get_balance(e: &Env, contract: &Address) -> i128 {

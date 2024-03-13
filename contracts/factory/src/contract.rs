@@ -1,6 +1,6 @@
 use crate::storage::{
-    get_config, is_initialized, save_config, set_initialized, Config, DataKey, LiquidityPoolInfo,
-    PairTupleKey,
+    get_config, is_initialized, save_config, set_initialized, Asset, Config, DataKey,
+    LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
 };
 use crate::utils::deploy_multihop_contract;
 use crate::{
@@ -10,8 +10,8 @@ use crate::{
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use phoenix::validate_bps;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, Address, BytesN, Env, IntoVal, String, Symbol, Val,
-    Vec,
+    contract, contractimpl, contractmeta, log, vec, Address, BytesN, Env, IntoVal, String, Symbol,
+    Val, Vec,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -35,7 +35,7 @@ pub trait FactoryTrait {
 
     fn create_liquidity_pool(
         env: Env,
-        caller: Address,
+        sender: Address,
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
@@ -59,6 +59,8 @@ pub trait FactoryTrait {
     fn get_admin(env: Env) -> Address;
 
     fn get_config(env: Env) -> Config;
+
+    fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio;
 }
 
 #[contractimpl]
@@ -108,13 +110,13 @@ impl FactoryTrait for Factory {
 
     fn create_liquidity_pool(
         env: Env,
-        caller: Address,
+        sender: Address,
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
     ) -> Address {
-        caller.require_auth();
-        if !get_config(&env).whitelisted_accounts.contains(caller) {
+        sender.require_auth();
+        if !get_config(&env).whitelisted_accounts.contains(sender) {
             panic!(
                 "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
             )
@@ -274,6 +276,76 @@ impl FactoryTrait for Factory {
             .persistent()
             .get(&DataKey::Config)
             .expect("Factory: No multihop present in storage")
+    }
+
+    fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio {
+        let initialized_pools = get_lp_vec(&env);
+        let mut lp_portfolio: Vec<LpPortfolio> = Vec::new(&env);
+        let mut stake_portfolio: Vec<StakePortfolio> = Vec::new(&env);
+
+        for address in initialized_pools {
+            let response: LiquidityPoolInfo = env.invoke_contract(
+                &address,
+                &Symbol::new(&env, "query_pool_info_for_factory"),
+                Vec::new(&env),
+            );
+
+            // get the lp share token balance for the user
+            // if the user has any liquidity tokens in the pool add to the lp_portfolio
+            let lp_share_balance: i128 = env.invoke_contract(
+                &response.pool_response.asset_lp_share.address,
+                &Symbol::new(&env, "balance"),
+                vec![&env, sender.into_val(&env)],
+            );
+
+            let lp_share_staked: StakedResponse = env.invoke_contract(
+                &response.pool_response.stake_address,
+                &Symbol::new(&env, "query_staked"),
+                vec![&env, sender.into_val(&env)],
+            );
+
+            let sum_of_lp_share_staked: i128 =
+                lp_share_staked.stakes.iter().map(|stake| stake.stake).sum();
+
+            let total_lp_share_for_user = lp_share_balance + sum_of_lp_share_staked;
+
+            // query the balance of the liquidity tokens
+            let (asset_a, asset_b) = env.invoke_contract::<(Asset, Asset)>(
+                &address,
+                &Symbol::new(&env, "query_share"),
+                vec![&env, total_lp_share_for_user.into_val(&env)],
+            );
+
+            // we add only liquidity pools that the user has staked to to his portfolio
+            if total_lp_share_for_user > 0 {
+                // add to the lp_portfolio
+                lp_portfolio.push_back(LpPortfolio {
+                    assets: (asset_a, asset_b),
+                });
+            }
+
+            // make a call towards the stake contract to check the staked amount
+            if staking {
+                let stake_response: StakedResponse = env.invoke_contract(
+                    &response.pool_response.stake_address,
+                    &Symbol::new(&env, "query_staked"),
+                    vec![&env, sender.into_val(&env)],
+                );
+
+                // only stakes that the user has made
+                if !stake_response.stakes.is_empty() {
+                    stake_portfolio.push_back(StakePortfolio {
+                        staking_contract: response.pool_response.stake_address,
+                        stakes: stake_response.stakes,
+                    })
+                }
+            }
+        }
+
+        UserPortfolio {
+            lp_portfolio,
+            stake_portfolio,
+        }
     }
 }
 

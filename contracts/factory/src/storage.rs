@@ -37,6 +37,26 @@ pub struct Config {
 
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UserPortfolio {
+    pub lp_portfolio: Vec<LpPortfolio>,
+    pub stake_portfolio: Vec<StakePortfolio>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LpPortfolio {
+    pub assets: (Asset, Asset),
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StakePortfolio {
+    pub staking_contract: Address,
+    pub stakes: Vec<Stake>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Asset {
     /// Address of the asset
     pub address: Address,
@@ -54,6 +74,8 @@ pub struct PoolResponse {
     pub asset_b: Asset,
     /// The total amount of LP tokens currently issued
     pub asset_lp_share: Asset,
+    /// The address of the Stake contract for the liquidity pool
+    pub stake_address: Address,
 }
 
 #[contracttype]
@@ -62,6 +84,21 @@ pub struct LiquidityPoolInfo {
     pub pool_address: Address,
     pub pool_response: PoolResponse,
     pub total_fee_bps: i64,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StakedResponse {
+    pub stakes: Vec<Stake>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Stake {
+    /// The amount of staked tokens
+    pub stake: i128,
+    /// The timestamp when the stake was made
+    pub stake_timestamp: u64,
 }
 
 pub fn save_config(env: &Env, config: Config) {

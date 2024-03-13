@@ -123,6 +123,8 @@ pub trait StableLiquidityPoolTrait {
         offer_asset: Address,
         ask_amount: i128,
     ) -> SimulateReverseSwapResponse;
+
+    fn query_share(env: Env, amount: i128) -> (Asset, Asset);
 }
 
 #[contractimpl]
@@ -493,6 +495,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 address: config.share_token,
                 amount: utils::get_total_shares(&env),
             },
+            stake_address: config.stake_contract,
         }
     }
 
@@ -511,6 +514,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 address: config.share_token,
                 amount: utils::get_total_shares(&env),
             },
+            stake_address: config.stake_contract,
         };
         let total_fee_bps = config.total_fee_bps;
 
@@ -582,6 +586,31 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             spread_amount,
             commission_amount,
         }
+    }
+
+    fn query_share(env: Env, amount: i128) -> (Asset, Asset) {
+        let pool_info = Self::query_pool_info(env);
+        let total_share = pool_info.asset_lp_share.amount;
+        let token_a_amount = pool_info.asset_a.amount;
+        let token_b_amount = pool_info.asset_b.amount;
+
+        let mut share_ratio = Decimal::zero();
+        if total_share != 0 {
+            share_ratio = Decimal::from_ratio(amount, total_share);
+        }
+
+        let amount_a = token_a_amount * share_ratio;
+        let amount_b = token_b_amount * share_ratio;
+        (
+            Asset {
+                address: pool_info.asset_a.address,
+                amount: amount_a,
+            },
+            Asset {
+                address: pool_info.asset_b.address,
+                amount: amount_b,
+            },
+        )
     }
 }
 
