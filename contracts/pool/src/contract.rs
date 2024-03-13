@@ -597,7 +597,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         } else if offer_asset == config.token_b {
             (pool_balance_b, pool_balance_a)
         } else {
-            log!(&env, "Token offered to swap not found in Pool");
+            log!(&env, "Pool: Token offered to swap not found in Pool");
             panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
@@ -635,7 +635,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         } else if ask_asset == config.token_a {
             (pool_balance_b, pool_balance_a)
         } else {
-            log!(&env, "Token offered to swap not found in Pool");
+            log!(&env, "Pool: Token offered to swap not found in Pool");
             panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
@@ -714,6 +714,7 @@ fn do_swap(
     } else if offer_asset == config.token_b {
         (pool_balance_b, pool_balance_a)
     } else {
+        log!(&env, "Pool: Token offered to swap not found in Pool");
         panic_with_error!(env, ContractError::AssetNotInPool);
     };
 
@@ -843,6 +844,7 @@ fn split_deposit_based_on_pool_ratio(
 ) -> (i128, i128) {
     // check if offer_asset is one of the two tokens in the pool
     if offer_asset != &config.token_a && offer_asset != &config.token_b {
+        log!(&env, "Pool: Token offered to swap not found in Pool");
         panic_with_error!(env, ContractError::AssetNotInPool);
     }
 

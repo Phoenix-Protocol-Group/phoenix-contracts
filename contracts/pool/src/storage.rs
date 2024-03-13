@@ -63,7 +63,7 @@ pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> i64 {
         );
         panic_with_error!(
             env,
-            ContractError::ValidateFeeBpsTotalFeesCantBeGreaterThen100
+            ContractError::ValidateFeeBpsTotalFeesCantBeGreaterThan100
         );
     }
     total_fee_bps

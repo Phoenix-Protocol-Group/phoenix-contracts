@@ -1,9 +1,9 @@
 use soroban_sdk::{
-    contracttype, log, symbol_short, xdr::ToXdr, Address, Bytes, BytesN, ConversionError, Env,
-    Symbol, TryFromVal, Val,
+    contracttype, log, panic_with_error, symbol_short, xdr::ToXdr, Address, Bytes, BytesN,
+    ConversionError, Env, Symbol, TryFromVal, Val,
 };
 
-use crate::token_contract;
+use crate::{error::ContractError, token_contract};
 use decimal::Decimal;
 
 #[derive(Clone, Copy)]
@@ -57,8 +57,14 @@ const MAX_TOTAL_FEE_BPS: i64 = 10_000;
 /// This method is used to check fee bps.
 pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> i64 {
     if total_fee_bps > MAX_TOTAL_FEE_BPS {
-        log!(env, "Total fees cannot be greater than 100%");
-        panic!("Pool: Validate fee bps: total fees cannot be greater than 100%")
+        log!(
+            env,
+            "Stable Pool: Validate fee bps: Total fees cannot be greater than 100%"
+        );
+        panic_with_error!(
+            env,
+            ContractError::ValidateFeeBpsTotalFeesCantBeGreaterThan100
+        );
     }
     total_fee_bps
 }
@@ -301,7 +307,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "total fees cannot be greater than 100%")]
+    #[should_panic(
+        expected = "Stable Pool: Validate fee bps: Total fees cannot be greater than 100%"
+    )]
     fn test_invalidate_fee_bps() {
         let env = Env::default();
         validate_fee_bps(&env, 10_001);

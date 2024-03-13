@@ -260,7 +260,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         // Check if custom_slippage_bps is more than max_allowed_slippage
         if let Some(custom_slippage) = custom_slippage_bps {
             if custom_slippage > config.max_allowed_slippage_bps {
-                panic!("Pool: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage tolerance");
+                log!(
+                    &env,
+                    "Stable Pool: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage toleranc"
+                );
+                panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
             }
         }
 
@@ -369,11 +373,14 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
 
-        let mut share_ratio = Decimal::zero();
         let total_shares = utils::get_total_shares(&env);
-        if total_shares != 0i128 {
-            share_ratio = Decimal::from_ratio(share_amount, total_shares);
+
+        if total_shares == 0i128 {
+            log!(&env, "Pool: WithdrawLiquidity: Critical error - Total shares are equal to zero before withdrawal!");
+            panic_with_error!(env, ContractError::TotalSharesEqualZero);
         }
+
+        let share_ratio = Decimal::from_ratio(share_amount, total_shares);
 
         let return_amount_a = pool_balance_a * share_ratio;
         let return_amount_b = pool_balance_b * share_ratio;
@@ -381,15 +388,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         if return_amount_a < min_a || return_amount_b < min_b {
             log!(
                 &env,
-                "Minimum amount of token_a or token_b is not satisfied! min_a: {}, min_b: {}, return_amount_a: {}, return_amount_b: {}",
+                "Pool Stable: Minimum amount of token_a or token_b is not satisfied! min_a: {}, min_b: {}, return_amount_a: {}, return_amount_b: {}",
                 min_a,
                 min_b,
                 return_amount_a,
                 return_amount_b
             );
-            panic!(
-                "Pool: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied!"
-            )
+            panic_with_error!(
+                env,
+                ContractError::WithdrawLiquidityMinimumAmountOfAOrBIsNotSatisfied
+            );
         }
 
         // burn shares
@@ -535,6 +543,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         } else if offer_asset == config.token_b {
             (pool_balance_b, pool_balance_a)
         } else {
+            log!(&env, "Pool Stable: Token offered to swap not found in Pool");
             panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
@@ -570,6 +579,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         } else if offer_asset == config.token_a {
             (pool_balance_b, pool_balance_a)
         } else {
+            log!(&env, "Pool Stable: Token offered to swap not found in Pool");
             panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
@@ -645,6 +655,7 @@ fn do_swap(
     } else if offer_asset == config.token_b {
         (pool_balance_b, pool_balance_a)
     } else {
+        log!(&env, "Pool Stable: Token offered to swap not found in Pool");
         panic_with_error!(env, ContractError::AssetNotInPool);
     };
 
@@ -861,7 +872,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "spread exceeds maximum allowed")]
+    #[should_panic(expected = "Spread exceeds maximum allowed")]
     fn test_assert_max_spread_fail_max_spread_exceeded() {
         let env = Env::default();
 
@@ -890,7 +901,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "spread exceeds maximum allowed")]
+    #[should_panic(expected = "Spread exceeds maximum allowed")]
     fn test_assert_max_spread_fail_no_belief_price_max_spread_exceeded() {
         let env = Env::default();
         // no belief price, max spread of 10%, offer amount of 10, return amount of 10, spread amount of 2

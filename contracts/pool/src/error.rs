@@ -11,7 +11,7 @@ pub enum ContractError {
 
     WithdrawLiquidityMinimumAmountOfAOrBIsNotSatisfied = 4,
     SplitDepositBothPoolsAndDepositMustBePositive = 5,
-    ValidateFeeBpsTotalFeesCantBeGreaterThen100 = 6,
+    ValidateFeeBpsTotalFeesCantBeGreaterThan100 = 6,
 
     GetDepositAmountsMinABiggerThenDesiredA = 7,
     GetDepositAmountsMinBBiggerThenDesiredB = 8,
