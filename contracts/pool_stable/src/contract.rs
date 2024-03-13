@@ -754,7 +754,7 @@ pub fn assert_max_spread(
 
     if spread_ratio > max_spread {
         log!(env, "Spread exceeds maximum allowed");
-        panic!("Pool: Assert max spread: spread exceeds maximum allowed");
+        panic_with_error!(env, ContractError::SpreadExceedsLimit);
     }
 }
 
