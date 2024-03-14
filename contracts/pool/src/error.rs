@@ -23,4 +23,8 @@ pub enum ContractError {
     DesiredAmountsBelowOrEqualZero = 14,
     MinAmountsBelowZero = 15,
     AssetNotInPool = 16,
+    AlreadyInitialized = 17,
+    TokenABiggerThanTokenB = 18,
+    InvalidBps = 19,
+    SlippageInvalid = 20,
 }
