@@ -1,4 +1,6 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, vec, Address, Env, String, Vec};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, String, Vec,
+};
 
 use crate::{
     distribution::{
@@ -6,6 +8,7 @@ use crate::{
         save_distribution, save_reward_curve, save_withdraw_adjustment, update_rewards,
         withdrawable_rewards, Distribution, SHARES_SHIFT,
     },
+    error::ContractError,
     msg::{
         AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
         WithdrawableReward, WithdrawableRewardsResponse,
@@ -93,7 +96,11 @@ impl StakingTrait for Staking {
         owner: Address,
     ) {
         if is_initialized(&env) {
-            panic!("Stake: Initialize: initializing contract twice is not allowed");
+            log!(
+                &env,
+                "Stake: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
         }
 
         set_initialized(&env);
@@ -101,13 +108,13 @@ impl StakingTrait for Staking {
         if min_bond <= 0 {
             log!(
                 &env,
-                "Stake: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+                "Stake: initialize: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
             );
-            panic!("Stake: Initialize: Minimum amount of lp share tokens to bond can not be smaller or equal to 0")
+            panic_with_error!(&env, ContractError::InvalidMinBond);
         }
         if min_reward <= 0 {
-            log!(&env, "Stake: min_reward must be bigger then 0!");
-            panic!("Stake: Initialize: min reward must be bigger then 0")
+            log!(&env, "Stake: initialize: min_reward must be bigger then 0!");
+            panic_with_error!(&env, ContractError::InvalidMinReward);
         }
 
         env.events()
@@ -135,11 +142,9 @@ impl StakingTrait for Staking {
         if tokens < config.min_bond {
             log!(
                 &env,
-                "Stake: Trying to bond {} which is less then minimum {} required!",
-                tokens,
-                config.min_bond
+                "Stake: Bond: Trying to stake less than minimum required"
             );
-            panic!("Stake: Bond: Trying to stake less then minimum required");
+            panic_with_error!(&env, ContractError::InvalidBond);
         }
 
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
@@ -190,7 +195,7 @@ impl StakingTrait for Staking {
         }
 
         let mut stakes = get_stakes(&env, &sender);
-        remove_stake(&mut stakes.stakes, stake_amount, stake_timestamp);
+        remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
         stakes.total_stake -= stake_amount as u128;
 
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
@@ -210,8 +215,8 @@ impl StakingTrait for Staking {
         let manager = get_config(&env).manager;
         let owner = get_config(&env).owner;
         if sender != manager && sender != owner {
-            log!(env, "Stake: Non-authorized creation!");
-            panic!("Stake: create distribution flow: You are not allowed to create distribution flows.");
+            log!(env, "Stake: create distribution: Non-authorized creation!");
+            panic_with_error!(&env, ContractError::Unauthorized);
         }
 
         let distribution = Distribution {
@@ -345,21 +350,18 @@ impl StakingTrait for Staking {
         if start_time < current_time {
             log!(
                 &env,
-                "Stake: Trying to fund distribution flow with start timestamp: {} which is earlier then the current one: {}",
-                start_time,
-                current_time
+                "Stake: Fund distribution: Fund distribution start time is too early"
             );
-            panic!("Stake: Fund distribution: Fund distribution start time is too early");
+            panic_with_error!(&env, ContractError::InvalidTime);
         }
 
         let config = get_config(&env);
         if config.min_reward > token_amount {
             log!(
                 &env,
-                "Stake: Trying to create distribution flow with reward not reaching minimum amount: {}",
-                config.min_reward
+                "Stake: Fund distribution: minimum reward amount not reached",
             );
-            panic!("Stake: Fund distribution: minimum reward amount not reached");
+            panic_with_error!(&env, ContractError::MinRewardNotEnough);
         }
 
         // transfer tokens to fund distribution
@@ -376,11 +378,8 @@ impl StakingTrait for Staking {
         // also fully unlocks all rewards sent
         let (min, max) = new_reward_distribution.range();
         if min != 0 || max > token_amount as u128 {
-            log!(
-                &env,
-                "Stake: Trying to create reward distribution which either doesn't end with empty balance or exceeds provided amount"
-            );
-            panic!("Stake: Fund distribution: Rewards validation failed");
+            log!(&env, "Stake: Fund distribution: Rewards validation failed");
+            panic_with_error!(&env, ContractError::RewardsInvalid);
         }
 
         // now combine old distribution with the new schedule
@@ -484,7 +483,7 @@ impl StakingTrait for Staking {
 }
 
 // Function to remove a stake from the vector
-fn remove_stake(stakes: &mut Vec<Stake>, stake: i128, stake_timestamp: u64) {
+fn remove_stake(env: &Env, stakes: &mut Vec<Stake>, stake: i128, stake_timestamp: u64) {
     // Find the index of the stake that matches the given stake and stake_timestamp
     if let Some(index) = stakes
         .iter()
@@ -494,7 +493,8 @@ fn remove_stake(stakes: &mut Vec<Stake>, stake: i128, stake_timestamp: u64) {
         stakes.remove(index as u32);
     } else {
         // Stake not found, return an error
-        panic!("Stake: Remove stake: Stake not found");
+        log!(&env, "Stake: Remove stake: Stake not found");
+        panic_with_error!(&env, ContractError::StakeNotFound);
     }
 }
 
@@ -526,7 +526,12 @@ mod tests {
         let stake_timestamp_to_remove = 2;
 
         // Check that the stake is removed successfully
-        remove_stake(&mut stakes, stake_to_remove, stake_timestamp_to_remove);
+        remove_stake(
+            &env,
+            &mut stakes,
+            stake_to_remove,
+            stake_timestamp_to_remove,
+        );
 
         // Check that the stake is no longer in the vector
         assert_eq!(
@@ -565,7 +570,7 @@ mod tests {
             },
         ];
 
-        remove_stake(&mut stakes, 100, 2);
+        remove_stake(&env, &mut stakes, 100, 2);
     }
 
     #[test]
@@ -588,7 +593,7 @@ mod tests {
             },
         ];
 
-        remove_stake(&mut stakes, 200, 1);
+        remove_stake(&env, &mut stakes, 200, 1);
     }
 
     #[test]
@@ -611,6 +616,6 @@ mod tests {
             },
         ];
 
-        remove_stake(&mut stakes, 150, 1);
+        remove_stake(&env, &mut stakes, 150, 1);
     }
 }
