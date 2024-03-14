@@ -142,7 +142,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         share_token_symbol: String,
     ) {
         if is_initialized(&env) {
-            panic!("Pool stable: Initialize: initializing contract twice is not allowed");
+            log!(
+                &env,
+                "Pool stable: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
         }
 
         let admin = lp_init_info.admin;
@@ -170,17 +174,21 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
-            log!(&env, "Pool Stable: token_a must be less than token_b");
-            panic!(
+            log!(
+                &env,
                 "Pool Stable: Initialize: First token must be alphabetically smaller than second token"
             );
+            panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
         }
 
         save_greatest_precision(&env, &token_a, &token_b);
 
         if !(0..=10_000).contains(&swap_fee_bps) {
-            log!(&env, "Pool Stable: Fees must be between 0 and 100%");
-            panic!("Pool: Initialize: Fees must be between 0 and 100%");
+            log!(
+                &env,
+                "Pool Stable: Initialize: Fees must be between 0 and 100%"
+            );
+            panic_with_error!(&env, ContractError::InvalidBps);
         }
 
         // deploy token contract
@@ -276,6 +284,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let new_balance_a = desired_a + old_balance_a;
         let new_balance_b = desired_b + old_balance_b;
         let new_invariant = compute_d(
+            &env,
             amp as u128,
             &[
                 Decimal::from_atomics(new_balance_a, 6),
@@ -288,11 +297,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             let share =
                 new_invariant.to_i128_with_precision(greatest_precision) - MINIMUM_LIQUIDITY_AMOUNT;
             if share == 0 {
-                panic!("Pool: ProvideLiquidity: Liquidity amount is too low");
+                log!(
+                    &env,
+                    "Pool Stable: ProvideLiquidity: Liquidity amount is too low"
+                );
+                panic_with_error!(&env, ContractError::LowLiquidity);
             }
             share
         } else {
             let initial_invariant = compute_d(
+                &env,
                 amp as u128,
                 &[
                     Decimal::from_atomics(old_balance_a, 6),
@@ -439,7 +453,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         max_allowed_spread_bps: Option<i64>,
     ) {
         if sender != utils::get_admin(&env) {
-            panic!("Pool: UpdateConfig: Unauthorized");
+            log!(&env, "Pool Stable: UpdateConfig: Unauthorized");
+            panic_with_error!(&env, ContractError::Unauthorized);
         }
 
         let mut config = get_config(&env);
@@ -449,7 +464,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         }
         if let Some(total_fee_bps) = total_fee_bps {
             if !(0..=10_000).contains(&total_fee_bps) {
-                panic!("Pool: UpdateConfig: Invalid total_fee_bps");
+                log!(&env, "Pool Stable: UpdateConfig: Invalid total_fee_bps");
+                panic_with_error!(&env, ContractError::InvalidBps);
             }
             config.total_fee_bps = total_fee_bps;
         }
@@ -635,12 +651,17 @@ fn do_swap(
     let config = get_config(&env);
 
     if offer_asset != config.token_a && offer_asset != config.token_b {
-        panic!("Trying to swap wrong asset. Aborting..")
+        log!(
+            &env,
+            "Pool Stable: do swap: Trying to swap wrong asset. Aborting.."
+        );
+        panic_with_error!(&env, ContractError::IncorrectAssetSwap);
     }
 
     if let Some(max_spread) = max_spread {
         if !(0..=config.max_allowed_spread_bps).contains(&max_spread) {
-            panic!("max spread is out of bounds")
+            log!(&env, "Pool Stable: do swap: max spread is out of bounds");
+            panic_with_error!(&env, ContractError::InvalidBps);
         }
     }
 
@@ -792,6 +813,7 @@ pub fn compute_swap(
     let amp = compute_current_amp(env, &amp_parameters);
 
     let new_ask_pool = calc_y(
+        env,
         amp as u128,
         Decimal::from_atomics(offer_pool + offer_amount, 6),
         &[
@@ -828,6 +850,7 @@ pub fn compute_offer_amount(
     let amp = compute_current_amp(env, &amp_parameters);
 
     let new_offer_pool = calc_y(
+        env,
         amp as u128,
         Decimal::from_atomics(ask_pool - ask_amount, 6),
         &[

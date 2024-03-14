@@ -5,7 +5,7 @@ use soroban_sdk::contracterror;
 #[repr(u32)]
 pub enum ContractError {
     AlreadyInitialized = 1,
-    WhiteListedEmpty = 2,
+    WhiteListeEmpty = 2,
     NotAuthorized = 3,
     LiquidityPoolNotFound = 4,
     TokenABiggerThanTokenB = 5,

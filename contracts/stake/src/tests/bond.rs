@@ -65,7 +65,7 @@ fn test_deploying_stake_twice_should_fail() {
 }
 
 #[test]
-#[should_panic = "Stake: Bond: Trying to stake less then minimum required"]
+#[should_panic = "Stake: Bond: Trying to stake less than minimum required"]
 fn bond_too_few() {
     let env = Env::default();
     env.mock_all_auths();

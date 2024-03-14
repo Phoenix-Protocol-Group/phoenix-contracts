@@ -10,4 +10,12 @@ pub enum ContractError {
     ValidateFeeBpsTotalFeesCantBeGreaterThan100 = 4,
     TotalSharesEqualZero = 5,
     AssetNotInPool = 6,
+    AlreadyInitialized = 7,
+    TokenABiggerThanTokenB = 8,
+    InvalidBps = 9,
+    LowLiquidity = 10,
+    Unauthorized = 11,
+    IncorrectAssetSwap = 12,
+    NewtonMethodFailed = 13,
+    CalcYErr = 14,
 }

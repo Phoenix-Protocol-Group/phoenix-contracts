@@ -1,6 +1,6 @@
-use soroban_sdk::Env;
+use soroban_sdk::{log, panic_with_error, Env};
 
-use crate::storage::AmplifierParameters;
+use crate::{error::ContractError, storage::AmplifierParameters};
 
 use decimal::Decimal;
 
@@ -50,7 +50,7 @@ pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -
 /// * **Equation**
 ///
 /// A * sum(x_i) * n**n + D = A * D * n**n + D**(n+1) / (n**n * prod(x_i))
-pub fn compute_d(amp: u128, pools: &[Decimal]) -> Decimal {
+pub fn compute_d(env: &Env, amp: u128, pools: &[Decimal]) -> Decimal {
     let leverage = Decimal::from_ratio(amp as i128, AMP_PRECISION) * N_COINS;
     let amount_a_times_coins = pools[0] * N_COINS;
     let amount_b_times_coins = pools[1] * N_COINS;
@@ -74,7 +74,11 @@ pub fn compute_d(amp: u128, pools: &[Decimal]) -> Decimal {
         }
     }
 
-    panic!("Newton method for D failed to converge");
+    log!(
+        &env,
+        "Pool Stable: compute_d: Newton method for D failed to converge"
+    );
+    panic_with_error!(&env, ContractError::NewtonMethodFailed);
 }
 
 /// Helper function used to calculate the D invariant as a last step in the `compute_d` public function.
@@ -107,8 +111,14 @@ fn calculate_step(
 /// y**2 + y * (sum' - (A*n**n - 1) * D / (A * n**n)) = D ** (n + 1) / (n ** (2 * n) * prod' * A)
 ///
 /// y**2 + b*y = c
-pub(crate) fn calc_y(amp: u128, new_amount: Decimal, xp: &[Decimal], target_precision: u8) -> i128 {
-    let d = compute_d(amp, xp);
+pub(crate) fn calc_y(
+    env: &Env,
+    amp: u128,
+    new_amount: Decimal,
+    xp: &[Decimal],
+    target_precision: u8,
+) -> i128 {
+    let d = compute_d(env, amp, xp);
     let leverage = Decimal::from_ratio(amp as i128, 1u8) * N_COINS;
     let amp_prec = Decimal::from_ratio(AMP_PRECISION, 1u8);
 
@@ -127,5 +137,6 @@ pub(crate) fn calc_y(amp: u128, new_amount: Decimal, xp: &[Decimal], target_prec
     }
 
     // Should definitely converge in 64 iterations.
-    panic!("y is not converging");
+    log!(&env, "Pool Stable: calc_y: y is not converging");
+    panic_with_error!(&env, ContractError::CalcYErr);
 }

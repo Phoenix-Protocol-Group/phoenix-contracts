@@ -6,6 +6,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+## Changed
+
+## Added
+- all: changes panic! to panic_with_error ([#269])
+
+[#269]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/269
+
+## Bug fixes
+
+
 ## [0.9.0] - 2024-03-12
 
 ## Changed

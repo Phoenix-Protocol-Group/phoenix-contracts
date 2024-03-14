@@ -6,7 +6,7 @@ pub fn verify_swap(env: &Env, operations: &Vec<Swap>) {
     for (current, next) in operations.iter().zip(operations.iter().skip(1)) {
         if current.ask_asset != next.offer_asset {
             log!(&env, "Multihop: Swap: Provided bad swap order");
-            panic_with_error!(&env, ContractError::BadSwap);
+            panic_with_error!(&env, ContractError::IncorrectAssetSwap);
         }
     }
 }
@@ -15,7 +15,7 @@ pub fn verify_reverse_swap(env: &Env, operations: &Vec<Swap>) {
     for (current, next) in operations.iter().zip(operations.iter().skip(1)) {
         if current.offer_asset != next.ask_asset {
             log!(&env, "Multihop: Reverse swap: Provided bad swap order");
-            panic_with_error!(&env, ContractError::BadSwap);
+            panic_with_error!(&env, ContractError::IncorrectAssetSwap);
         }
     }
 }

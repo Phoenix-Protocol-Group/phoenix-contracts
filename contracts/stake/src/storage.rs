@@ -66,9 +66,11 @@ pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
 }
 
 pub mod utils {
+    use crate::error::ContractError;
+
     use super::*;
 
-    use soroban_sdk::{ConversionError, TryFromVal, Val};
+    use soroban_sdk::{log, panic_with_error, ConversionError, TryFromVal, Val};
 
     #[derive(Clone, Copy)]
     #[repr(u32)]
@@ -135,7 +137,8 @@ pub mod utils {
     pub fn add_distribution(e: &Env, asset: &Address) {
         let mut distributions = get_distributions(e);
         if distributions.contains(asset) {
-            panic!("Stake: Add distribution: Distribution already added");
+            log!(&e, "Stake: Add distribution: Distribution already added");
+            panic_with_error!(&e, ContractError::DistributionExists);
         }
         distributions.push_back(asset.clone());
         e.storage()

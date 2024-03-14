@@ -78,7 +78,7 @@ fn confirm_stake_contract_deployment() {
 }
 
 #[test]
-#[should_panic(expected = "Liquidity Pool: Initialize: initializing contract twice is not allowed")]
+#[should_panic(expected = "Pool: Initialize: initializing contract twice is not allowed")]
 fn second_pool_deployment_should_fail() {
     let env = Env::default();
     env.mock_all_auths();

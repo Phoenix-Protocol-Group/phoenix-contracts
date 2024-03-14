@@ -143,7 +143,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         share_token_symbol: String,
     ) {
         if is_initialized(&env) {
-            panic!("Liquidity Pool: Initialize: initializing contract twice is not allowed");
+            log!(
+                &env,
+                "Pool: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
         }
 
         let admin = lp_init_info.admin;
@@ -174,15 +178,16 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
-            log!(&env, "Pool: token_a must be less than token_b");
-            panic!(
+            log!(
+                &env,
                 "Pool: Initialize: First token must be alphabetically smaller than second token"
             );
+            panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
         }
 
         if !(0..=10_000).contains(&swap_fee_bps) {
-            log!(&env, "Pool: Fees must be between 0 and 100%");
-            panic!("Pool: Initialize: Fees must be between 0 and 100%");
+            log!(&env, "Pool: Initialize: Fees must be between 0 and 100%");
+            panic_with_error!(&env, ContractError::InvalidBps);
         }
 
         // deploy token contract
@@ -500,7 +505,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         }
         if let Some(total_fee_bps) = total_fee_bps {
             if !(0..=10_000).contains(&total_fee_bps) {
-                panic!("Pool: UpdateConfig: Invalid total_fee_bps");
+                log!(&env, "Pool: UpdateConfig: Invalid total_fee_bps");
+                panic_with_error!(&env, ContractError::InvalidBps);
             }
             config.total_fee_bps = total_fee_bps;
         }
@@ -699,7 +705,8 @@ fn do_swap(
 
     if let Some(max_spread) = max_spread {
         if !(0..=config.max_allowed_spread_bps).contains(&max_spread) {
-            panic!("max spread is out of bounds")
+            log!(&env, "Pool: do_swap: max spread is out of bounds");
+            panic_with_error!(&env, ContractError::InvalidBps);
         }
     }
 
@@ -945,9 +952,7 @@ fn assert_slippage_tolerance(
             env,
             "Pool: Slippage tolerance exceeds the maximum allowed value"
         );
-        panic!(
-            "Pool: Assert slippage tolerance: slippage tolerance exceeds the maximum allowed value"
-        );
+        panic_with_error!(&env, ContractError::SlippageInvalid);
     }
 
     // Calculate the limit below which the deposit-to-pool ratio must not fall for each token
@@ -962,14 +967,10 @@ fn assert_slippage_tolerance(
             > deposits[0] * pools[1] * Decimal::one()
     {
         log!(
-            env,
-            "Pool: Slippage tolerance violated. Deposits: 0: {} 1: {}, Pools: 0: {} 1: {}",
-            deposits[0],
-            deposits[1],
-            pools[0],
-            pools[1]
+            &env,
+            "Pool: Assert slippage tolerance: slippage tolerance violated"
         );
-        panic!("Pool: Assert slippage tolerance: slippage tolerance violated");
+        panic_with_error!(&env, ContractError::SlippageInvalid);
     }
 }
 
@@ -1113,7 +1114,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "slippage tolerance exceeds the maximum allowed value")]
+    #[should_panic(expected = "Pool: Slippage tolerance exceeds the maximum allowed value")]
     fn test_assert_slippage_tolerance_fail_tolerance_too_high() {
         let env = Env::default();
         // Test case that should fail due to slippage tolerance being too high

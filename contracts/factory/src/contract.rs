@@ -86,7 +86,7 @@ impl FactoryTrait for Factory {
 
         if whitelisted_accounts.is_empty() {
             log!(&env, "Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.");
-            panic_with_error!(&env, ContractError::WhiteListedEmpty);
+            panic_with_error!(&env, ContractError::WhiteListeEmpty);
         }
 
         set_initialized(&env);
