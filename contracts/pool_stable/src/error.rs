@@ -15,7 +15,7 @@ pub enum ContractError {
     InvalidBps = 9,
     LowLiquidity = 10,
     Unauthorized = 11,
-    BadSwap = 12,
+    IncorrectAssetSwap = 12,
     NewtonMethodFailed = 13,
     CalcYErr = 14,
 }

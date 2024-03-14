@@ -655,7 +655,7 @@ fn do_swap(
             &env,
             "Pool Stable: do swap: Trying to swap wrong asset. Aborting.."
         );
-        panic_with_error!(&env, ContractError::BadSwap);
+        panic_with_error!(&env, ContractError::IncorrectAssetSwap);
     }
 
     if let Some(max_spread) = max_spread {

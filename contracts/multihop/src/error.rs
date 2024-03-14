@@ -6,5 +6,5 @@ use soroban_sdk::contracterror;
 pub enum ContractError {
     AlreadyInitialized = 1,
     OperationsEmpty = 2,
-    BadSwap = 3,
+    IncorrectAssetSwap = 3,
 }
