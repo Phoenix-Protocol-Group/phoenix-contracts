@@ -6,4 +6,8 @@ use soroban_sdk::contracterror;
 pub enum ContractError {
     VestingScheduleNotFoundForAddress = 1,
     AllowanceNotFoundForGivenPair = 2,
+    MinterNotFoundForAddress = 3,
+    NoBalanceFoundForAddress = 4,
+    NoConfigFound = 5,
+    NoAdminFound = 6,
 }
