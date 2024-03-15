@@ -1,10 +1,10 @@
-use core::ops::Add;
-
 use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
 
 use curve::Curve;
 
-use crate::storage::{Config, VestingTokenInfo};
+use crate::storage::{
+    save_admin, save_config, save_minter, Config, VestingInitialBalance, VestingTokenInfo,
+};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(key = "Description", val = "Phoenix Protocol Vesting");
@@ -13,8 +13,17 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Vesting");
 pub struct Vesting;
 
 pub trait VestingTrait {
-    // Sets the token contract addresses for this pool
-    fn initialize(env: Env, admin: Address);
+    fn initialize(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        initial_balances: VestingInitialBalance,
+        initial_balances_curve: Option<Curve>,
+        minter_addr: Address,
+        minter_curve: Option<Curve>,
+        allowed_vesters: Option<Vec<Address>>,
+        max_curve_complexity: u64,
+    );
 
     fn create_vesting_accounts(env: Env, accounts: Vec<Address>);
 
@@ -53,8 +62,41 @@ pub trait VestingTrait {
 
 #[contractimpl]
 impl VestingTrait for Vesting {
-    fn initialize(env: Env, admin: Address) {
-        todo!("initialize")
+    fn initialize(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        initial_balances: VestingInitialBalance,
+        initial_balances_curve: Option<Curve>,
+        minter_addr: Address,
+        minter_curve: Option<Curve>,
+        allowed_vesters: Option<Vec<Address>>,
+        max_vesting_complexity: u64,
+    ) {
+        save_admin(&env, &admin);
+
+        let whitelisted_accounts = match allowed_vesters {
+            Some(whitelisted) => whitelisted,
+            None => Vec::new(&env),
+        };
+
+        let token_info = VestingTokenInfo {
+            name: vesting_token.name,
+            symbol: vesting_token.symbol,
+            decimals: vesting_token.decimals,
+        };
+
+        let config = Config {
+            admin,
+            whitelist: whitelisted_accounts,
+            token_info,
+            max_vesting_complexity,
+        };
+
+        save_config(&env, &config);
+        //save balances
+
+        save_minter(&env, &minter_addr, &minter_curve);
     }
 
     fn create_vesting_accounts(env: Env, accounts: Vec<Address>) {
