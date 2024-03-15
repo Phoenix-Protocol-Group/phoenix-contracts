@@ -4,6 +4,7 @@ use soroban_sdk::{
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
+use pretty_assertions::assert_eq;
 
 use crate::msg::{
     AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward, WithdrawableRewardsResponse,
@@ -781,4 +782,86 @@ fn add_distribution_should_fail_when_not_authorized() {
     let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
 
     staking.create_distribution_flow(&Address::generate(&env), &reward_token.address);
+}
+
+#[test]
+fn test_v_phx_vul_010_unbond_brakes_reward_distribution() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user_1 = Address::generate(&env);
+    let user_2 = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+
+    staking.create_distribution_flow(&manager, &reward_token.address);
+
+    let reward_amount: u128 = 100_000;
+    reward_token.mint(&admin, &(reward_amount as i128));
+
+    // bond tokens for user to enable distribution for him
+    lp_token.mint(&user_1, &1_000);
+    lp_token.mint(&user_2, &1_000);
+    staking.bond(&user_1, &1_000);
+    staking.bond(&user_2, &1_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_000;
+    });
+
+    let reward_duration = 600;
+    staking.fund_distribution(
+        &admin,
+        &2_000,
+        &reward_duration,
+        &reward_token.address,
+        &(reward_amount as i128),
+    );
+
+    staking.distribute_rewards();
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        reward_amount
+    );
+
+    // at the 1/2 of the distribution time, user_1 unbonds
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_300;
+    });
+    staking.unbond(&user_1, &1_000, &0);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_600;
+    });
+
+    staking.distribute_rewards();
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        0
+    );
+    assert_eq!(
+        staking.query_distributed_rewards(&reward_token.address),
+        reward_amount
+    );
+
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user_1),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: reward_amount / 2
+                }
+            ]
+        }
+    );
+
+    staking.withdraw_rewards(&user_1);
+    assert_eq!(reward_token.balance(&user_1), 50_000i128);
 }
