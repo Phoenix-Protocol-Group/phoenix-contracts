@@ -84,12 +84,26 @@ pub fn update_rewards(
     distribution: &mut Distribution,
     old_rewards_power: i128,
     new_rewards_power: i128,
+    bonding: bool, // checks whether the user is bonding or unbonding
 ) {
-    if old_rewards_power == new_rewards_power {
+    let can_proceed = if bonding {
+        old_rewards_power == new_rewards_power
+    } else {
+        old_rewards_power >= new_rewards_power
+    };
+
+    if can_proceed {
         return;
     }
+
+    let diff = if bonding {
+        new_rewards_power - old_rewards_power
+    } else {
+        old_rewards_power - new_rewards_power
+    };
+
+    // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
-    let diff = new_rewards_power - old_rewards_power;
     apply_points_correction(env, user, asset, diff, ppw);
 }
 

@@ -14,4 +14,5 @@ pub enum ContractError {
     StakeNotFound = 8,
     InvalidTime = 9,
     DistributionExists = 10,
+    InvalidRewardAmount = 11,
 }

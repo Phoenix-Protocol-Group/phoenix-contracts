@@ -1,5 +1,7 @@
+use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, String, Vec,
+    U256,
 };
 
 use crate::{
@@ -169,6 +171,7 @@ impl StakingTrait for Staking {
                 &mut distribution,
                 total_staked,
                 total_staked + tokens,
+                true,
             )
         }
 
@@ -186,6 +189,19 @@ impl StakingTrait for Staking {
 
         let config = get_config(&env);
 
+        let total_staked = utils::get_total_staked_counter(&env);
+        for distribution_address in get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address);
+            update_rewards(
+                &env,
+                &sender,
+                &distribution_address,
+                &mut distribution,
+                total_staked,
+                total_staked - stake_amount,
+                false,
+            )
+        }
         // check for rewards and withdraw them
         let found_rewards: WithdrawableRewardsResponse =
             Self::query_withdrawable_rewards(env.clone(), sender.clone());
@@ -304,7 +320,12 @@ impl StakingTrait for Staking {
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
-                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment);
+                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment)
+                    .to_u128()
+                    .unwrap_or_else(|| {
+                        log!(&env, "Stake: Withdraw rewards: Reward amount is invalid");
+                        panic_with_error!(&env, ContractError::InvalidRewardAmount)
+                    });
 
             if reward_amount == 0 {
                 continue;
@@ -328,7 +349,7 @@ impl StakingTrait for Staking {
                 &reward_token_client.address,
             );
             env.events()
-                .publish(("withdraw_rewards", "reward_amount"), reward_amount as i128);
+                .publish(("withdraw_rewards", "reward_amount"), reward_amount);
         }
     }
 
@@ -456,13 +477,20 @@ impl StakingTrait for Staking {
             let distribution = get_distribution(&env, &distribution_address);
             // get withdraw adjustment for the given distribution
             let withdraw_adjustment = get_withdraw_adjustment(&env, &user, &distribution_address);
+            dbg!(withdraw_adjustment.clone());
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
                 withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment);
             rewards.push_back(WithdrawableReward {
                 reward_address: distribution_address,
-                reward_amount,
+                reward_amount: reward_amount.to_u128().unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Stake: Query withdrawable rewards: Reward amount is invalid"
+                    );
+                    panic_with_error!(&env, ContractError::InvalidRewardAmount)
+                }),
             });
         }
 

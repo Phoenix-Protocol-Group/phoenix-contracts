@@ -809,34 +809,33 @@ fn test_v_phx_vul_010_unbond_brakes_reward_distribution() {
     lp_token.mint(&user_2, &1_000);
     staking.bond(&user_1, &1_000);
     staking.bond(&user_2, &1_000);
-
-    env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
-    });
-
-    let reward_duration = 600;
+    let reward_duration = 10_000;
     staking.fund_distribution(
         &admin,
-        &2_000,
+        &0,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
 
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_000;
+    });
+
     staking.distribute_rewards();
     assert_eq!(
         staking.query_undistributed_rewards(&reward_token.address),
-        reward_amount
+        80_000 // 100k total rewards, we have 2000 seconds passed, so we have 80k undistributed rewards
     );
 
     // at the 1/2 of the distribution time, user_1 unbonds
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_300;
+        li.timestamp = 5_000;
     });
     staking.unbond(&user_1, &1_000, &0);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_600;
+        li.timestamp = 10_000;
     });
 
     staking.distribute_rewards();
@@ -856,7 +855,20 @@ fn test_v_phx_vul_010_unbond_brakes_reward_distribution() {
                 &env,
                 WithdrawableReward {
                     reward_address: reward_token.address.clone(),
-                    reward_amount: reward_amount / 2
+                    reward_amount: 25_000
+                }
+            ]
+        }
+    );
+
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user_2),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 75_000
                 }
             ]
         }
