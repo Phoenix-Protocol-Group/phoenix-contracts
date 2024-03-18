@@ -1,4 +1,5 @@
-use soroban_sdk::{contracttype, Address, Env};
+use soroban_sdk::testutils::arbitrary::std::dbg;
+use soroban_sdk::{contracttype, Address, Env, I256, U256};
 
 use curve::Curve;
 use decimal::Decimal;
@@ -46,6 +47,7 @@ pub fn get_reward_curve(env: &Env, asset: &Address) -> Option<Curve> {
 }
 
 #[contracttype]
+#[derive(Debug, Default, Clone)]
 pub struct Distribution {
     /// How many shares is single point worth
     pub shares_per_point: u128,
@@ -159,16 +161,23 @@ pub fn withdrawable_rewards(
     owner: &Address,
     distribution: &Distribution,
     adjustment: &WithdrawAdjustment,
-) -> u128 {
+) -> U256 {
     let ppw = distribution.shares_per_point;
 
     let points = get_stakes(env, owner).total_stake;
     let points = (ppw * points) as i128;
 
+    // Iterate over each stake
+    // for each stake in owner's stakes:
+    //     If the stake is not active (unbonded), subtract its correction and withdrawn rewards from the total
+    //     if stake is not active:
+    //         total_correction -= stake.shares_correction // but stake has no field shares_correction
+    //         total_withdrawn_rewards -= stake.withdrawn_rewards // stake has no field withdrawn_rewards
+
     let correction = adjustment.shares_correction;
     let points = points + correction;
-    let amount = points as u128 >> SHARES_SHIFT;
-    amount - adjustment.withdrawn_rewards
+    let amount = U256::from_u128(&env, points as u128).shr(SHARES_SHIFT as u32); // now that we have 256 should we change this?
+    amount.sub(&U256::from_u128(&env, adjustment.withdrawn_rewards))
 }
 
 pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {
