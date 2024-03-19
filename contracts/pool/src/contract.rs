@@ -17,10 +17,7 @@ use crate::{
     token_contract,
 };
 use decimal::Decimal;
-use phoenix::{
-    utils::{is_approx_ratio, LiquidityPoolInitInfo},
-    validate_bps, validate_int_parameters,
-};
+use phoenix::{utils::LiquidityPoolInitInfo, validate_bps, validate_int_parameters};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -295,7 +292,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     a,
                     &config.token_a,
                 );
-                do_swap(
+                let actual_b_from_swap = do_swap(
                     env.clone(),
                     sender.clone(),
                     // FIXM: Disable Referral struct
@@ -307,7 +304,16 @@ impl LiquidityPoolTrait for LiquidityPool {
                     None,
                 );
                 // return: rest of Token A amount, simulated result of swap of portion A
-                (a - a_for_swap, b_from_swap)
+                if (actual_b_from_swap - b_from_swap).abs() > 1 {
+                    log!(
+                        &env,
+                        "Off by more than rounding error! a: {}, b: {}",
+                        actual_b_from_swap,
+                        b_from_swap
+                    );
+                    panic_with_error!(env, ContractError::OffByMoreThanRoundingError)
+                }
+                (a - a_for_swap, actual_b_from_swap)
             }
             // Only token B is provided
             (None, Some(b)) if b > 0 => {
@@ -319,7 +325,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     b,
                     &config.token_b,
                 );
-                do_swap(
+                let actual_a_from_swap = do_swap(
                     env.clone(),
                     sender.clone(),
                     // FIXM: Disable Referral struct
@@ -331,7 +337,16 @@ impl LiquidityPoolTrait for LiquidityPool {
                     None,
                 );
                 // return: simulated result of swap of portion B, rest of Token B amount
-                (a_from_swap, b - b_for_swap)
+                if (actual_a_from_swap - a_from_swap).abs() > 1 {
+                    log!(
+                        &env,
+                        "Off by more than rounding error! a: {}, b: {}",
+                        actual_a_from_swap,
+                        a_from_swap
+                    );
+                    panic_with_error!(env, ContractError::OffByMoreThanRoundingError)
+                }
+                (actual_a_from_swap, b - b_for_swap)
             }
             // None or invalid amounts are provided
             _ => {
@@ -878,57 +893,43 @@ fn split_deposit_based_on_pool_ratio(
         );
     }
 
-    // Calculate the current ratio in the pool
-    let target_ratio = Decimal::from_ratio(b_pool, a_pool);
-    // Define boundaries for binary search algorithm
-    let mut low = 0;
-    let mut high = deposit;
+    // get pool fee rate
+    let fee = config.protocol_fee_rate();
+    // determine which pool is offer and which is ask
+    let (offer_pool, ask_pool) = if offer_asset == &config.token_a {
+        (a_pool, b_pool)
+    } else {
+        (b_pool, a_pool)
+    };
 
-    // Tolerance is the smallest difference in deposit that we care about
-    let tolerance = 500;
+    // formula to calculate final_offer_amount
+    let final_offer_amount = {
+        let numerator = deposit * fee - 2 * offer_pool
+            + (deposit * deposit * fee * fee
+                + 4 * deposit * offer_pool
+                + 4 * offer_pool * offer_pool)
+                .sqrt();
+        let denominator = 2 * (fee + Decimal::one());
+        numerator / denominator
+    };
 
-    let mut final_offer_amount = deposit; // amount of deposit tokens to be swapped
-    let mut final_ask_amount = 0; // amount of other tokens to be received
+    // formula to calculate final_ask_amount
+    let final_ask_amount = {
+        let numerator = ask_pool * final_offer_amount;
+        let denominator = offer_pool + final_offer_amount;
+        numerator / denominator
+    };
 
-    while high - low > tolerance {
-        let mid = (low + high) / 2; // Calculate middle point
+    log!(
+        &env,
+        "log",
+        a_pool,
+        b_pool,
+        deposit,
+        final_offer_amount,
+        final_ask_amount
+    );
 
-        // Simulate swap to get amount of other tokens to be received for `mid` amount of deposit tokens
-        let SimulateSwapResponse {
-            ask_amount,
-            spread_amount: _,
-            commission_amount: _,
-            total_return: _,
-        } = LiquidityPool::simulate_swap(env.clone(), offer_asset.clone(), mid);
-
-        // Update final amounts
-        final_offer_amount = mid;
-        final_ask_amount = ask_amount;
-
-        // Calculate the ratio that would result from swapping `mid` deposit tokens
-        let ratio = if offer_asset == &config.token_a {
-            Decimal::from_ratio(ask_amount, deposit - mid)
-        } else {
-            Decimal::from_ratio(deposit - mid, ask_amount)
-        };
-
-        // If the resulting ratio is approximately equal (1%) to the target ratio, break the loop
-        if is_approx_ratio(ratio, target_ratio, Decimal::percent(1)) {
-            break;
-        }
-        // Update boundaries for the next iteration of the binary search
-        if ratio > target_ratio {
-            if offer_asset == &config.token_a {
-                high = mid;
-            } else {
-                low = mid;
-            }
-        } else if offer_asset == &config.token_a {
-            low = mid;
-        } else {
-            high = mid;
-        };
-    }
     (final_offer_amount, final_ask_amount)
 }
 
