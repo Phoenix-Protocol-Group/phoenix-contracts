@@ -1,7 +1,5 @@
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, String, Vec,
-    U256,
 };
 
 use crate::{
@@ -171,7 +169,6 @@ impl StakingTrait for Staking {
                 &mut distribution,
                 total_staked,
                 total_staked + tokens,
-                true,
             )
         }
 
@@ -199,7 +196,6 @@ impl StakingTrait for Staking {
                 &mut distribution,
                 total_staked,
                 total_staked - stake_amount,
-                false,
             )
         }
         // check for rewards and withdraw them
@@ -477,7 +473,6 @@ impl StakingTrait for Staking {
             let distribution = get_distribution(&env, &distribution_address);
             // get withdraw adjustment for the given distribution
             let withdraw_adjustment = get_withdraw_adjustment(&env, &user, &distribution_address);
-            dbg!(withdraw_adjustment.clone());
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =

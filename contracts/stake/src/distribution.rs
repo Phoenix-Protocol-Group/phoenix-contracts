@@ -1,5 +1,4 @@
-use soroban_sdk::testutils::arbitrary::std::dbg;
-use soroban_sdk::{contracttype, Address, Env, I256, U256};
+use soroban_sdk::{contracttype, Address, Env, U256};
 
 use curve::Curve;
 use decimal::Decimal;
@@ -84,24 +83,11 @@ pub fn update_rewards(
     distribution: &mut Distribution,
     old_rewards_power: i128,
     new_rewards_power: i128,
-    bonding: bool, // checks whether the user is bonding or unbonding
 ) {
-    let can_proceed = if bonding {
-        old_rewards_power == new_rewards_power
-    } else {
-        old_rewards_power >= new_rewards_power
-    };
-
-    if can_proceed {
+    if old_rewards_power == new_rewards_power {
         return;
     }
-
-    let diff = if bonding {
-        new_rewards_power - old_rewards_power
-    } else {
-        old_rewards_power - new_rewards_power
-    };
-
+    let diff = (new_rewards_power - old_rewards_power).abs();
     // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
     apply_points_correction(env, user, asset, diff, ppw);
@@ -120,7 +106,7 @@ fn apply_points_correction(
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     let shares_correction = withdraw_adjustment.shares_correction;
-    withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
+    withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff; // poi - that's why we have -1000 shares correction
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
@@ -181,17 +167,10 @@ pub fn withdrawable_rewards(
     let points = get_stakes(env, owner).total_stake;
     let points = (ppw * points) as i128;
 
-    // Iterate over each stake
-    // for each stake in owner's stakes:
-    //     If the stake is not active (unbonded), subtract its correction and withdrawn rewards from the total
-    //     if stake is not active:
-    //         total_correction -= stake.shares_correction // but stake has no field shares_correction
-    //         total_withdrawn_rewards -= stake.withdrawn_rewards // stake has no field withdrawn_rewards
-
     let correction = adjustment.shares_correction;
     let points = points + correction;
-    let amount = U256::from_u128(&env, points as u128).shr(SHARES_SHIFT as u32); // now that we have 256 should we change this?
-    amount.sub(&U256::from_u128(&env, adjustment.withdrawn_rewards))
+    let amount = U256::from_u128(env, points as u128).shr(SHARES_SHIFT as u32);
+    amount.sub(&U256::from_u128(env, adjustment.withdrawn_rewards))
 }
 
 pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {
