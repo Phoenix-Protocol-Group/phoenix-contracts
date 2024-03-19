@@ -1,4 +1,5 @@
 extern crate std;
+use phoenix::assert_approx_eq;
 use pretty_assertions::assert_eq;
 use soroban_sdk::{
     symbol_short,
@@ -8,7 +9,10 @@ use soroban_sdk::{
 use test_case::test_case;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
-use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
+use crate::{
+    storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse},
+    token_contract,
+};
 use decimal::Decimal;
 
 #[test]
@@ -1031,4 +1035,69 @@ fn test_should_fail_when_invalid_ask_asset_min_amount() {
 
     let spread = 100i64; // 1% maximum spread allowed
     pool.swap(&user, &token1.address, &1, &Some(10), &Some(spread));
+}
+
+#[test]
+fn provide_liqudity_single_asset_no_fees_poc_split_good_target() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let user2 = Address::generate(&env);
+
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        Address::generate(&env),
+        Address::generate(&env),
+    );
+
+    token1.mint(&user1, &10_000_000);
+    token2.mint(&user1, &10_000_000);
+
+    pool.provide_liquidity(
+        &user1,
+        &Some(10_000_000),
+        &Some(10_000_000),
+        &Some(10_000_000),
+        &Some(10_000_000),
+        &None,
+    );
+    assert_eq!(token1.balance(&pool.address), 10_000_000);
+    assert_eq!(token2.balance(&pool.address), 10_000_000);
+
+    token1.mint(&user2, &500_000);
+
+    let user2_token_a_balance_before = token1.balance(&user2);
+
+    pool.provide_liquidity(&user2, &Some(500_000), &None, &None, &None, &None);
+
+    let share_token = pool.query_share_token_address();
+
+    let user2_lp_balance = token_contract::Client::new(&env, &share_token).balance(&user2);
+
+    // @audit User 2 withdraw the liquidity by burning all its lp token balance.
+    let (_, amount_b) = pool.withdraw_liquidity(&user2, &user2_lp_balance, &1, &1);
+
+    pool.swap(&user2, &token2.address, &amount_b, &None, &None);
+
+    let user2_token_a_balance_after = token1.balance(&user2);
+
+    assert_approx_eq!(user2_token_a_balance_before, user2_token_a_balance_after, 5);
 }
