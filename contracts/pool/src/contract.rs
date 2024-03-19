@@ -845,10 +845,10 @@ fn do_swap(
 
 /// This function divides the deposit in such a way that when swapping it for the other token,
 /// the resulting amounts of tokens maintain the current pool's ratio.
+/// * `config` - The configuration of the liquidity pool.
 /// * `a_pool` - The current amount of Token A in the liquidity pool.
 /// * `b_pool` - The current amount of Token B in the liquidity pool.
 /// * `deposit` - The total amount of tokens that the user wants to deposit into the liquidity pool.
-/// * `sell_a` - A boolean that indicates whether the deposit is in Token A (if true) or in Token B (if false).
 /// # Returns
 /// * A tuple `(final_offer_amount, final_ask_amount)`, where `final_offer_amount` is the amount of deposit tokens
 ///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.
