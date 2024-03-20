@@ -1,4 +1,3 @@
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
     String,
@@ -305,11 +304,6 @@ impl LiquidityPoolTrait for LiquidityPool {
                     None,
                 );
                 // return: rest of Token A amount, simulated result of swap of portion A
-                dbg!(
-                    actual_b_from_swap,
-                    b_from_swap,
-                    actual_b_from_swap - b_from_swap
-                );
                 if (actual_b_from_swap - b_from_swap).abs() > 1 {
                     log!(
                         &env,
@@ -343,11 +337,6 @@ impl LiquidityPoolTrait for LiquidityPool {
                     None,
                 );
                 // return: simulated result of swap of portion B, rest of Token B amount
-                dbg!(
-                    actual_a_from_swap,
-                    a_from_swap,
-                    actual_a_from_swap - a_from_swap
-                );
                 if (actual_a_from_swap - a_from_swap).abs() > 1 {
                     log!(
                         &env,
@@ -925,12 +914,11 @@ fn split_deposit_based_on_pool_ratio(
     };
 
     // formula to calculate final_ask_amount
-    // we need ti handle the fee here as well
+    // we need to handle the fee here as well
+    // we don't change ask_pool offer_pool values based on the fee prior to this method
     let final_ask_amount = {
-        dbg!(ask_pool, final_offer_amount, fee);
-        let numerator = (ask_pool - ask_pool * fee) * final_offer_amount;
+        let numerator = ask_pool * final_offer_amount;
         let denominator = offer_pool + final_offer_amount;
-        dbg!(numerator, denominator, numerator / denominator);
         numerator / denominator
     };
 
