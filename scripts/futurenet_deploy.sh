@@ -94,7 +94,8 @@ soroban contract invoke \
     --lp_wasm_hash $PAIR_WASM_HASH \
     --stake_wasm_hash $STAKE_WASM_HASH \
     --token_wasm_hash $TOKEN_WASM_HASH \
-    --whitelisted_accounts "[ \"${ADMIN_ADDRESS}\" ]"
+    --whitelisted_accounts "[ \"${ADMIN_ADDRESS}\" ]" \
+    --lp_token_decimals 7
 
 echo "Factory initialized. " + $FACTORY_ADDR
 
@@ -133,8 +134,10 @@ soroban contract invoke \
     --network testnet \
     -- \
     create_liquidity_pool \
-    --caller $ADMIN_ADDRESS \
-    --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"share_token_decimals\": 7, \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3 } }"
+    --sender $ADMIN_ADDRESS \
+    --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"share_token_decimals\": 7, \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3, \"manager\": \"${ADMIN_ADDRESS}\" } }" \
+    --share_token_name "PHOXLMST" \
+    --share_token_symbol "PXST"
 
 echo "Query pair address..."
 
@@ -257,8 +260,10 @@ soroban contract invoke \
     --network testnet \
     -- \
     create_liquidity_pool \
-    --caller $ADMIN_ADDRESS \
-    --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"share_token_decimals\": 7, \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3 } }"
+    --sender $ADMIN_ADDRESS \
+    --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"share_token_decimals\": 7, \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3, \"manager\": \"${ADMIN_ADDRESS}\"  } }" \
+    --share_token_name "EURCXLMST" \
+    --share_token_symbol "EXST"
 
 PAIR_ADDR=$(soroban contract invoke \
     --id $FACTORY_ADDR \
