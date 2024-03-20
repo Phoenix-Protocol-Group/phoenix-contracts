@@ -87,7 +87,7 @@ pub fn update_rewards(
     if old_rewards_power == new_rewards_power {
         return;
     }
-    let diff = (new_rewards_power - old_rewards_power).abs();
+    let diff = new_rewards_power - old_rewards_power;
     // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
     apply_points_correction(env, user, asset, diff, ppw);
