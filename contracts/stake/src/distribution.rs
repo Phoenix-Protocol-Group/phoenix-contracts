@@ -93,6 +93,13 @@ pub fn update_rewards(
     let diff = new_rewards_power - old_rewards_power;
     // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
+    dbg!(
+        "inside update_rewards",
+        old_rewards_power,
+        new_rewards_power,
+        new_rewards_power - old_rewards_power,
+        ppw
+    );
     apply_points_correction(env, user, asset, diff, ppw);
 }
 
@@ -222,7 +229,7 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
     }
 }
 
-pub fn calc_power(env: &Env, stake_tokens: i128, token_per_power: i128) -> i128 {
+pub fn calc_power(stake_tokens: i128, token_per_power: i128) -> i128 {
     dbg!(stake_tokens, token_per_power);
     match token_per_power {
         0 => 0,

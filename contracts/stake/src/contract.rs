@@ -164,9 +164,9 @@ impl StakingTrait for Staking {
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address);
             let stakes = get_stakes(&env, &sender).total_stake;
-            let old_power = calc_power(&env, tokens, stakes as i128);
-            dbg!(old_power);
-            let new_power = old_power + tokens;
+            let old_power = calc_power(tokens, stakes as i128);
+            let new_power = calc_power(tokens, stakes as i128 + tokens);
+            dbg!(old_power, new_power);
             update_rewards(
                 &env,
                 &sender,
