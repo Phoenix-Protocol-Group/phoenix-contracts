@@ -1,3 +1,5 @@
+use core::ops::Mul;
+
 use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{contracttype, Address, Env, U256};
 
@@ -217,5 +219,13 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
             }
         }
         None => Decimal::zero(),
+    }
+}
+
+pub fn calc_power(env: &Env, stake_tokens: i128, token_per_power: i128) -> i128 {
+    dbg!(stake_tokens, token_per_power);
+    match token_per_power {
+        0 => 0,
+        _ => stake_tokens * Decimal::one() / token_per_power,
     }
 }

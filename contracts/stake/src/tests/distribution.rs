@@ -916,7 +916,6 @@ fn test_bond_withdraw_unbond() {
     });
 
     staking.distribute_rewards();
-    dbg!(staking.query_withdrawable_rewards(&user.clone()),);
 
     staking.unbond(&user, &1_000, &0);
 

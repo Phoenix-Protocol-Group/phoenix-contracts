@@ -3,6 +3,7 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, String, Vec,
 };
 
+use crate::distribution::calc_power;
 use crate::{
     distribution::{
         calculate_annualized_payout, get_distribution, get_reward_curve, get_withdraw_adjustment,
@@ -160,16 +161,19 @@ impl StakingTrait for Staking {
         // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
         // creating multiple stakes the same day
 
-        let total_staked = utils::get_total_staked_counter(&env);
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address);
+            let stakes = get_stakes(&env, &sender).total_stake;
+            let old_power = calc_power(&env, tokens, stakes as i128);
+            dbg!(old_power);
+            let new_power = old_power + tokens;
             update_rewards(
                 &env,
                 &sender,
                 &distribution_address,
                 &mut distribution,
-                total_staked,
-                total_staked + tokens,
+                old_power,
+                new_power,
             )
         }
 
