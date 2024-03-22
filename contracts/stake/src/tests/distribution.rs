@@ -918,6 +918,7 @@ fn test_bond_withdraw_unbond() {
 
     dbg!("DISTRIBUTE REWARDS");
     staking.distribute_rewards();
+    staking.withdraw_rewards(&user);
 
     dbg!("UNBOND");
     staking.unbond(&user, &1_000, &0);

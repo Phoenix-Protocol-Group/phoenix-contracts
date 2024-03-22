@@ -87,6 +87,7 @@ pub fn update_rewards(
     old_rewards_power: i128,
     new_rewards_power: i128,
 ) {
+    dbg!("______----------------UPDATE REWARDS");
     if old_rewards_power == new_rewards_power {
         return;
     }
@@ -116,19 +117,18 @@ fn apply_points_correction(
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     dbg!(
-        "apply_points_correction",
-        withdraw_adjustment.shares_correction // in wynddex this is 0 initially
+        "+++++++++apply_points_correctionnnnn",
+        withdraw_adjustment.clone()
     );
     let shares_correction = withdraw_adjustment.shares_correction;
     withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
     dbg!(
         "apply_points_correction",
-        withdraw_adjustment.shares_correction,
-        shares_correction,
         shares_per_point,
         diff,
         shares_correction - shares_per_point as i128 * diff
     );
+    dbg!("REEEE SAVING THIS HELLISH ADJUSTMENT: ", withdraw_adjustment.clone());
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
@@ -184,26 +184,24 @@ pub fn withdrawable_rewards(
     distribution: &Distribution,
     adjustment: &WithdrawAdjustment,
     config: &Config,
-) -> U256 {
+) -> u128 {
     let ppw = distribution.shares_per_point;
 
     let stakes: u128 = get_stakes(&env, &owner).total_stake;
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
-    let points = calc_power(config, stakes as i128, Decimal::one(), 1);
+    let points = calc_power(config, stakes as i128, Decimal::one(), 1_000);
     let points = (ppw * points as u128) as i128;
 
     let correction = adjustment.shares_correction;
+    dbg!("WITHDRAWABLE REWARDS ---------");
+    dbg!("POINTS", points);
+    dbg!("SHARES CORRECTION", correction);
     let points = points + correction;
-    dbg!(
-        "withdrawable_rewards",
-        points,
-        correction,
-        ppw,
-        adjustment.clone()
-    );
-    let amount = U256::from_u128(env, points as u128).shr(SHARES_SHIFT as u32);
-    amount.sub(&U256::from_u128(env, adjustment.withdrawn_rewards))
+    let amount = points >> SHARES_SHIFT;
+    dbg!("AMOUNT", amount);
+    dbg!("withdraw rewards", adjustment.withdrawn_rewards);
+    amount as u128 - adjustment.withdrawn_rewards
 }
 
 pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {
