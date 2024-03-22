@@ -1,3 +1,4 @@
+use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, String, Vec,
 };
@@ -196,11 +197,12 @@ impl StakingTrait for Staking {
                 &mut distribution,
                 total_staked,
                 total_staked - stake_amount,
-            )
+            );
         }
         // check for rewards and withdraw them
         let found_rewards: WithdrawableRewardsResponse =
             Self::query_withdrawable_rewards(env.clone(), sender.clone());
+        // poi we alread have withdrawn the rewards - how is this still not empty?
 
         if !found_rewards.rewards.is_empty() {
             Self::withdraw_rewards(env.clone(), sender.clone());
@@ -254,6 +256,7 @@ impl StakingTrait for Staking {
     }
 
     fn distribute_rewards(env: Env) {
+        // poi 3 why is this in the thousands? being 2000 (here) vs 2 (wynddex)
         let total_rewards_power = get_total_staked_counter(&env) as u128;
         if total_rewards_power == 0 {
             log!(&env, "Stake: No rewards to distribute!");
@@ -282,6 +285,7 @@ impl StakingTrait for Staking {
 
             let leftover: u128 = distribution.shares_leftover.into();
             let points = (amount << SHARES_SHIFT) + leftover;
+            // poi 2
             let points_per_share = points / total_rewards_power;
             distribution.shares_leftover = (points % total_rewards_power) as u64;
 
@@ -289,6 +293,7 @@ impl StakingTrait for Staking {
             // Full amount is added here to total withdrawable, as it should not be considered on its own
             // on future distributions - even if because of calculation offsets it is not fully
             // distributed, the error is handled by leftover.
+            // poi 1
             distribution.shares_per_point += points_per_share;
             distribution.distributed_total += amount;
             distribution.withdrawable_total += amount;
@@ -326,8 +331,8 @@ impl StakingTrait for Staking {
             if reward_amount == 0 {
                 continue;
             }
-
             withdraw_adjustment.withdrawn_rewards += reward_amount;
+            // continue from here
             distribution.withdrawable_total -= reward_amount;
 
             save_distribution(&env, &distribution_address, &distribution);

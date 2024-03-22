@@ -1,3 +1,4 @@
+use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env, String,
@@ -876,4 +877,59 @@ fn test_v_phx_vul_010_unbond_brakes_reward_distribution() {
 
     staking.withdraw_rewards(&user_1);
     assert_eq!(reward_token.balance(&user_1), 50_000i128);
+}
+
+#[test]
+fn test_bond_withdraw_unbond() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+
+    staking.create_distribution_flow(&manager, &reward_token.address);
+
+    let reward_amount: u128 = 100_000;
+    reward_token.mint(&admin, &(reward_amount as i128));
+
+    lp_token.mint(&user, &1_000);
+    staking.bond(&user, &1_000);
+
+    let reward_duration = 10_000;
+
+    staking.fund_distribution(
+        &admin,
+        &0,
+        &reward_duration,
+        &reward_token.address,
+        &(reward_amount as i128),
+    );
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 10_000;
+    });
+
+    staking.distribute_rewards();
+    dbg!(staking.query_withdrawable_rewards(&user.clone()),);
+
+    staking.unbond(&user, &1_000, &0);
+
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 0
+                }
+            ]
+        }
+    );
 }

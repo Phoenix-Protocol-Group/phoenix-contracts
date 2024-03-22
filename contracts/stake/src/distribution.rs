@@ -1,3 +1,4 @@
+use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{contracttype, Address, Env, U256};
 
 use curve::Curve;
@@ -106,7 +107,7 @@ fn apply_points_correction(
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     let shares_correction = withdraw_adjustment.shares_correction;
-    withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff; // poi - that's why we have -1000 shares correction
+    withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
