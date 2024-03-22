@@ -136,6 +136,7 @@ impl StakingTrait for Staking {
     }
 
     fn bond(env: Env, sender: Address, tokens: i128) {
+        dbg!("BONDGING");
         sender.require_auth();
 
         let ledger = env.ledger();
@@ -187,6 +188,7 @@ impl StakingTrait for Staking {
     }
 
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
+        dbg!("UNBONDING");
         sender.require_auth();
 
         let config = get_config(&env);
@@ -194,13 +196,17 @@ impl StakingTrait for Staking {
         let total_staked = utils::get_total_staked_counter(&env);
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address);
+            let stakes = get_stakes(&env, &sender).total_stake;
+            let old_power = calc_power(stake_amount, stakes as i128);
+            let new_power = calc_power(stake_amount, stakes as i128 - stake_amount);
+            dbg!("unbonding", old_power, new_power);
             update_rewards(
                 &env,
                 &sender,
                 &distribution_address,
                 &mut distribution,
-                total_staked,
-                total_staked - stake_amount,
+                old_power,
+                new_power,
             );
         }
         // check for rewards and withdraw them
@@ -289,8 +295,15 @@ impl StakingTrait for Staking {
 
             let leftover: u128 = distribution.shares_leftover.into();
             let points = (amount << SHARES_SHIFT) + leftover;
-            // poi 2
+            // poi 2 why is that happening
             let points_per_share = points / total_rewards_power;
+            dbg!(
+                "distribute rewards",
+                points,
+                points_per_share,
+                total_rewards_power,
+                points / total_rewards_power
+            );
             distribution.shares_leftover = (points % total_rewards_power) as u64;
 
             // Everything goes back to 128-bits/16-bytes

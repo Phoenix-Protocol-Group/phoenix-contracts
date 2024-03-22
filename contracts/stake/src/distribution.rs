@@ -115,8 +115,20 @@ fn apply_points_correction(
     shares_per_point: u128,
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
+    dbg!(
+        "apply_points_correction",
+        withdraw_adjustment.shares_correction
+    );
     let shares_correction = withdraw_adjustment.shares_correction;
     withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
+    dbg!(
+        "apply_points_correction",
+        withdraw_adjustment.shares_correction,
+        shares_correction,
+        shares_per_point,
+        diff,
+        shares_correction - shares_per_point as i128 * diff
+    );
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
@@ -230,7 +242,7 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
 }
 
 pub fn calc_power(stake_tokens: i128, token_per_power: i128) -> i128 {
-    dbg!(stake_tokens, token_per_power);
+    dbg!("calc_power", stake_tokens, token_per_power);
     match token_per_power {
         0 => 0,
         _ => stake_tokens * Decimal::one() / token_per_power,

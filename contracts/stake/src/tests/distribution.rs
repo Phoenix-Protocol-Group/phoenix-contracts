@@ -898,9 +898,9 @@ fn test_bond_withdraw_unbond() {
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
 
-    lp_token.mint(&user, &1_000);
+    lp_token.mint(&user, &2_000);
     dbg!("BONDING");
-    staking.bond(&user, &1_000);
+    staking.bond(&user, &2_000);
 
     let reward_duration = 10_000;
 
@@ -920,7 +920,7 @@ fn test_bond_withdraw_unbond() {
     staking.distribute_rewards();
 
     dbg!("UNBOND");
-    staking.unbond(&user, &1_000, &0);
+    staking.unbond(&user, &2_000, &0);
 
     assert_eq!(
         staking.query_withdrawable_rewards(&user),
