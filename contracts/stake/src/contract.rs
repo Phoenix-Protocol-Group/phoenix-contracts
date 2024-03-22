@@ -1,3 +1,4 @@
+use decimal::Decimal;
 use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, String, Vec,
@@ -26,6 +27,7 @@ use crate::{
     token_contract,
 };
 use curve::Curve;
+const TOKEN_PER_POWER: i32 = 1_000;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -163,10 +165,20 @@ impl StakingTrait for Staking {
         // creating multiple stakes the same day
 
         for distribution_address in get_distributions(&env) {
+            dbg!(get_withdraw_adjustment(
+                &env,
+                &sender,
+                &distribution_address.clone()
+            ));
             let mut distribution = get_distribution(&env, &distribution_address);
-            let stakes = get_stakes(&env, &sender).total_stake;
-            let old_power = calc_power(tokens, stakes as i128);
-            let new_power = calc_power(tokens, stakes as i128 + tokens);
+            let stakes: u128 = get_stakes(&env, &sender).total_stake;
+            let old_power = calc_power(&config, stakes as i128, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let new_power = calc_power(
+                &config,
+                stakes as i128 + tokens,
+                Decimal::one(),
+                TOKEN_PER_POWER,
+            );
             dbg!(old_power, new_power);
             update_rewards(
                 &env,
@@ -175,7 +187,12 @@ impl StakingTrait for Staking {
                 &mut distribution,
                 old_power,
                 new_power,
-            )
+            );
+            dbg!(get_withdraw_adjustment(
+                &env,
+                &sender,
+                &distribution_address.clone()
+            ));
         }
 
         stakes.stakes.push_back(stake);
@@ -195,10 +212,20 @@ impl StakingTrait for Staking {
 
         let total_staked = utils::get_total_staked_counter(&env);
         for distribution_address in get_distributions(&env) {
+            dbg!(get_withdraw_adjustment(
+                &env,
+                &sender,
+                &distribution_address.clone()
+            ));
             let mut distribution = get_distribution(&env, &distribution_address);
             let stakes = get_stakes(&env, &sender).total_stake;
-            let old_power = calc_power(stake_amount, stakes as i128);
-            let new_power = calc_power(stake_amount, stakes as i128 - stake_amount);
+            let old_power = calc_power(&config, stakes as i128, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let new_power = calc_power(
+                &config,
+                stakes as i128 - stake_amount,
+                Decimal::one(),
+                TOKEN_PER_POWER,
+            );
             dbg!("unbonding", old_power, new_power);
             update_rewards(
                 &env,
@@ -208,6 +235,11 @@ impl StakingTrait for Staking {
                 old_power,
                 new_power,
             );
+            dbg!(get_withdraw_adjustment(
+                &env,
+                &sender,
+                &distribution_address.clone()
+            ));
         }
         // check for rewards and withdraw them
         let found_rewards: WithdrawableRewardsResponse =
@@ -266,8 +298,14 @@ impl StakingTrait for Staking {
     }
 
     fn distribute_rewards(env: Env) {
-        // poi 3 why is this in the thousands? being 2000 (here) vs 2 (wynddex)
-        let total_rewards_power = get_total_staked_counter(&env) as u128;
+        let total_staked_amount = get_total_staked_counter(&env) as u128;
+        let total_rewards_power = calc_power(
+            &get_config(&env),
+            total_staked_amount as i128,
+            Decimal::one(),
+            TOKEN_PER_POWER,
+        ) as u128;
+
         if total_rewards_power == 0 {
             log!(&env, "Stake: No rewards to distribute!");
             return;
@@ -312,8 +350,45 @@ impl StakingTrait for Staking {
             // distributed, the error is handled by leftover.
             // poi 1
             distribution.shares_per_point += points_per_share;
+            dbg!(
+                distribution.shares_per_point,
+                points_per_share,
+                distribution.shares_per_point + points_per_share
+            );
             distribution.distributed_total += amount;
             distribution.withdrawable_total += amount;
+            dbg!(distribution.clone());
+
+            // FIXME
+            // Phoenix
+            // [contracts/stake/src/contract.rs:355:13] distribution.clone() = Distribution {
+            //     shares_per_point: 429496729600001,
+            //     shares_leftover: 0,
+            //     distributed_total: 100000,
+            //     withdrawable_total: 100000,
+            //     max_bonus_bps: 0,
+            //     bonus_per_day_bps: 0,
+            // }
+
+            // WYND
+            // [contracts/stake/src/distribution.rs:94:9] distribution.clone() = Distribution {
+            //     shares_per_point: Uint128(
+            //         2147483648000,
+            //     ),
+            //     shares_leftover: 0,
+            //     distributed_total: Uint128(
+            //         500,
+            //     ),
+            //     withdrawable_total: Uint128(
+            //         500,
+            //     ),
+            //     reward_multipliers: [
+            //         (
+            //             10000,
+            //             Decimal(1),
+            //         ),
+            //     ],
+            // }
 
             save_distribution(&env, &distribution_address, &distribution);
 
@@ -328,6 +403,7 @@ impl StakingTrait for Staking {
 
     fn withdraw_rewards(env: Env, sender: Address) {
         env.events().publish(("withdraw_rewards", "user"), &sender);
+        let config = get_config(&env);
 
         for distribution_address in get_distributions(&env) {
             // get distribution data for the given reward
@@ -335,10 +411,11 @@ impl StakingTrait for Staking {
             // get withdraw adjustment for the given distribution
             let mut withdraw_adjustment =
                 get_withdraw_adjustment(&env, &sender, &distribution_address);
+            dbg!(withdraw_adjustment.clone());
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
-                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment)
+                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment, &config)
                     .to_u128()
                     .unwrap_or_else(|| {
                         log!(&env, "Stake: Withdraw rewards: Reward amount is invalid");
@@ -348,9 +425,13 @@ impl StakingTrait for Staking {
             if reward_amount == 0 {
                 continue;
             }
+            dbg!(withdraw_adjustment.clone());
             withdraw_adjustment.withdrawn_rewards += reward_amount;
+            dbg!(withdraw_adjustment.clone());
             // continue from here
+            dbg!("BEFORE", distribution.withdrawable_total, reward_amount);
             distribution.withdrawable_total -= reward_amount;
+            dbg!("AFTER", distribution.withdrawable_total, reward_amount);
 
             save_distribution(&env, &distribution_address, &distribution);
             save_withdraw_adjustment(&env, &sender, &distribution_address, &withdraw_adjustment);
@@ -488,6 +569,7 @@ impl StakingTrait for Staking {
     }
 
     fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
+        let config = get_config(&env);
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
         for distribution_address in get_distributions(&env) {
@@ -498,7 +580,7 @@ impl StakingTrait for Staking {
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
-                withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment);
+                withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
             rewards.push_back(WithdrawableReward {
                 reward_address: distribution_address,
                 reward_amount: reward_amount.to_u128().unwrap_or_else(|| {

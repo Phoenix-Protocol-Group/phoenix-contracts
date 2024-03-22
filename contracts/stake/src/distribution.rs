@@ -6,7 +6,7 @@ use soroban_sdk::{contracttype, Address, Env, U256};
 use curve::Curve;
 use decimal::Decimal;
 
-use crate::storage::get_stakes;
+use crate::storage::{get_stakes, Config};
 
 /// How much points is the worth of single token in rewards distribution.
 /// The scaling is performed to have better precision of fixed point division.
@@ -117,7 +117,7 @@ fn apply_points_correction(
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     dbg!(
         "apply_points_correction",
-        withdraw_adjustment.shares_correction
+        withdraw_adjustment.shares_correction // in wynddex this is 0 initially
     );
     let shares_correction = withdraw_adjustment.shares_correction;
     withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
@@ -183,14 +183,25 @@ pub fn withdrawable_rewards(
     owner: &Address,
     distribution: &Distribution,
     adjustment: &WithdrawAdjustment,
+    config: &Config,
 ) -> U256 {
     let ppw = distribution.shares_per_point;
 
-    let points = get_stakes(env, owner).total_stake;
-    let points = (ppw * points) as i128;
+    let stakes: u128 = get_stakes(&env, &owner).total_stake;
+    // Decimal::one() represents the standart multiplier per token
+    // 1_000 represents the contsant token per power. TODO: make it configurable
+    let points = calc_power(config, stakes as i128, Decimal::one(), 1);
+    let points = (ppw * points as u128) as i128;
 
     let correction = adjustment.shares_correction;
     let points = points + correction;
+    dbg!(
+        "withdrawable_rewards",
+        points,
+        correction,
+        ppw,
+        adjustment.clone()
+    );
     let amount = U256::from_u128(env, points as u128).shr(SHARES_SHIFT as u32);
     amount.sub(&U256::from_u128(env, adjustment.withdrawn_rewards))
 }
@@ -241,10 +252,16 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
     }
 }
 
-pub fn calc_power(stake_tokens: i128, token_per_power: i128) -> i128 {
-    dbg!("calc_power", stake_tokens, token_per_power);
-    match token_per_power {
-        0 => 0,
-        _ => stake_tokens * Decimal::one() / token_per_power,
+pub fn calc_power(
+    config: &Config,
+    stakes: i128,
+    multiplier: Decimal,
+    token_per_power: i32,
+) -> i128 {
+    dbg!("calc_power", stakes, token_per_power);
+    if stakes < config.min_bond {
+        return 0;
+    } else {
+        return stakes * multiplier / token_per_power as i128;
     }
 }
