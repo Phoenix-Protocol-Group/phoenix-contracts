@@ -1,4 +1,3 @@
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env, String,
@@ -735,7 +734,7 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_str(&env, "100")
+                    amount: String::from_str(&env, "100000")
                 }
             ]
         }
@@ -760,7 +759,7 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_str(&env, "150")
+                    amount: String::from_str(&env, "150000")
                 }
             ]
         }

@@ -1,5 +1,4 @@
 use decimal::Decimal;
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, String, Vec,
 };
@@ -243,7 +242,7 @@ impl StakingTrait for Staking {
         }
 
         let distribution = Distribution {
-            shares_per_point: 0u128,
+            shares_per_point: 1u128,
             shares_leftover: 0u64,
             distributed_total: 0u128,
             withdrawable_total: 0u128,
@@ -452,10 +451,17 @@ impl StakingTrait for Staking {
     fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
         let now = env.ledger().timestamp();
         let mut aprs = vec![&env];
-        let total_rewards_power = get_total_staked_counter(&env) as u128;
+        let config = get_config(&env);
+        let total_stake_amount = get_total_staked_counter(&env) as u128;
 
         for distribution_address in get_distributions(&env) {
-            if total_rewards_power == 0 {
+            let total_stake_power = calc_power(
+                &config,
+                total_stake_amount as i128,
+                Decimal::one(),
+                TOKEN_PER_POWER,
+            );
+            if total_stake_power == 0 {
                 aprs.push_back(AnnualizedReward {
                     asset: distribution_address.clone(),
                     amount: String::from_str(&env, "0"),
@@ -467,8 +473,8 @@ impl StakingTrait for Staking {
             let distribution = get_distribution(&env, &distribution_address);
             let curve = get_reward_curve(&env, &distribution_address);
             let annualized_payout = calculate_annualized_payout(curve, now);
-            let apr =
-                annualized_payout / (total_rewards_power * distribution.shares_per_point) as i128;
+            let apr = annualized_payout
+                / (total_stake_power as u128 * distribution.shares_per_point) as i128;
 
             aprs.push_back(AnnualizedReward {
                 asset: distribution_address.clone(),

@@ -1,7 +1,4 @@
-use core::ops::Mul;
-
-use soroban_sdk::testutils::arbitrary::std::dbg;
-use soroban_sdk::{contracttype, Address, Env, U256};
+use soroban_sdk::{contracttype, Address, Env};
 
 use curve::Curve;
 use decimal::Decimal;
@@ -168,7 +165,7 @@ pub fn withdrawable_rewards(
 ) -> u128 {
     let ppw = distribution.shares_per_point;
 
-    let stakes: u128 = get_stakes(&env, &owner).total_stake;
+    let stakes: u128 = get_stakes(env, owner).total_stake;
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
     let points = calc_power(config, stakes as i128, Decimal::one(), 1_000);
@@ -233,8 +230,8 @@ pub fn calc_power(
     token_per_power: i32,
 ) -> i128 {
     if stakes < config.min_bond {
-        return 0;
+        0
     } else {
-        return stakes * multiplier / token_per_power as i128;
+        stakes * multiplier / token_per_power as i128
     }
 }
