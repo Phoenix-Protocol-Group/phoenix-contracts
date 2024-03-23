@@ -785,7 +785,7 @@ fn add_distribution_should_fail_when_not_authorized() {
 }
 
 #[test]
-fn test_v_phx_vul_010_unbond_brakes_reward_distribution() {
+fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -837,7 +837,33 @@ fn test_v_phx_vul_010_unbond_brakes_reward_distribution() {
         staking.query_undistributed_rewards(&reward_token.address),
         50_000
     );
+
+    // user1 unbonds, which automatically withdraws the rewards
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user_1),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 25_000
+                }
+            ]
+        }
+    );
     staking.unbond(&user_1, &1_000, &0);
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user_1),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 0
+                }
+            ]
+        }
+    );
 
     env.ledger().with_mut(|li| {
         li.timestamp = 10_000;
@@ -851,19 +877,6 @@ fn test_v_phx_vul_010_unbond_brakes_reward_distribution() {
     assert_eq!(
         staking.query_distributed_rewards(&reward_token.address),
         reward_amount
-    );
-
-    assert_eq!(
-        staking.query_withdrawable_rewards(&user_1),
-        WithdrawableRewardsResponse {
-            rewards: vec![
-                &env,
-                WithdrawableReward {
-                    reward_address: reward_token.address.clone(),
-                    reward_amount: 25_000
-                }
-            ]
-        }
     );
 
     assert_eq!(
@@ -930,24 +943,13 @@ fn test_bond_withdraw_unbond() {
                 &env,
                 WithdrawableReward {
                     reward_address: reward_token.address.clone(),
-                    reward_amount: 100_000
-                }
-            ]
-        }
-    );
-    staking.withdraw_rewards(&user);
-    assert_eq!(
-        staking.query_withdrawable_rewards(&user),
-        WithdrawableRewardsResponse {
-            rewards: vec![
-                &env,
-                WithdrawableReward {
-                    reward_address: reward_token.address.clone(),
                     reward_amount: 0
                 }
             ]
         }
     );
+    // one more time to make sure that calculations during unbond aren't off
+    staking.withdraw_rewards(&user);
     assert_eq!(
         staking.query_withdrawable_rewards(&user),
         WithdrawableRewardsResponse {

@@ -226,7 +226,7 @@ fn unbond_wrong_user_stake_not_found() {
 
     staking.unbond(&user2, &10_000, &2_000);
 }
-#[ignore = "We decided to drop that feature for now"]
+
 #[test]
 fn pay_rewards_during_unbond() {
     const STAKED_AMOUNT: i128 = 1_000;
