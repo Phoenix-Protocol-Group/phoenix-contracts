@@ -87,20 +87,12 @@ pub fn update_rewards(
     old_rewards_power: i128,
     new_rewards_power: i128,
 ) {
-    dbg!("______----------------UPDATE REWARDS");
     if old_rewards_power == new_rewards_power {
         return;
     }
     let diff = new_rewards_power - old_rewards_power;
     // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
-    dbg!(
-        "inside update_rewards",
-        old_rewards_power,
-        new_rewards_power,
-        new_rewards_power - old_rewards_power,
-        ppw
-    );
     apply_points_correction(env, user, asset, diff, ppw);
 }
 
@@ -116,19 +108,8 @@ fn apply_points_correction(
     shares_per_point: u128,
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
-    dbg!(
-        "+++++++++apply_points_correctionnnnn",
-        withdraw_adjustment.clone()
-    );
     let shares_correction = withdraw_adjustment.shares_correction;
     withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
-    dbg!(
-        "apply_points_correction",
-        shares_per_point,
-        diff,
-        shares_correction - shares_per_point as i128 * diff
-    );
-    dbg!("REEEE SAVING THIS HELLISH ADJUSTMENT: ", withdraw_adjustment.clone());
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
@@ -194,13 +175,8 @@ pub fn withdrawable_rewards(
     let points = (ppw * points as u128) as i128;
 
     let correction = adjustment.shares_correction;
-    dbg!("WITHDRAWABLE REWARDS ---------");
-    dbg!("POINTS", points);
-    dbg!("SHARES CORRECTION", correction);
     let points = points + correction;
     let amount = points >> SHARES_SHIFT;
-    dbg!("AMOUNT", amount);
-    dbg!("withdraw rewards", adjustment.withdrawn_rewards);
     amount as u128 - adjustment.withdrawn_rewards
 }
 
@@ -256,7 +232,6 @@ pub fn calc_power(
     multiplier: Decimal,
     token_per_power: i32,
 ) -> i128 {
-    dbg!("calc_power", stakes, token_per_power);
     if stakes < config.min_bond {
         return 0;
     } else {

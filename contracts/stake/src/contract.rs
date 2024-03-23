@@ -138,7 +138,6 @@ impl StakingTrait for Staking {
     }
 
     fn bond(env: Env, sender: Address, tokens: i128) {
-        dbg!("BONDGING");
         sender.require_auth();
 
         let ledger = env.ledger();
@@ -165,11 +164,6 @@ impl StakingTrait for Staking {
         // creating multiple stakes the same day
 
         for distribution_address in get_distributions(&env) {
-            dbg!(get_withdraw_adjustment(
-                &env,
-                &sender,
-                &distribution_address.clone()
-            ));
             let mut distribution = get_distribution(&env, &distribution_address);
             let stakes: u128 = get_stakes(&env, &sender).total_stake;
             let old_power = calc_power(&config, stakes as i128, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
@@ -179,7 +173,6 @@ impl StakingTrait for Staking {
                 Decimal::one(),
                 TOKEN_PER_POWER,
             );
-            dbg!(old_power, new_power);
             update_rewards(
                 &env,
                 &sender,
@@ -188,11 +181,6 @@ impl StakingTrait for Staking {
                 old_power,
                 new_power,
             );
-            dbg!(get_withdraw_adjustment(
-                &env,
-                &sender,
-                &distribution_address.clone()
-            ));
         }
 
         stakes.stakes.push_back(stake);
@@ -205,65 +193,40 @@ impl StakingTrait for Staking {
     }
 
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
-        dbg!("UNBONDING");
         sender.require_auth();
 
         let config = get_config(&env);
 
-        // let total_staked = utils::get_total_staked_counter(&env);
-        // for distribution_address in get_distributions(&env) {
-        //     dbg!(get_withdraw_adjustment(
-        //         &env,
-        //         &sender,
-        //         &distribution_address.clone()
-        //     ));
-        //     let mut distribution = get_distribution(&env, &distribution_address);
-        //     let stakes = get_stakes(&env, &sender).total_stake;
-        //     let old_power = calc_power(&config, stakes as i128, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-        //     let new_power = calc_power(
-        //         &config,
-        //         stakes as i128 - stake_amount,
-        //         Decimal::one(),
-        //         TOKEN_PER_POWER,
-        //     );
-        //     dbg!("unbonding", old_power, new_power);
-        //     update_rewards(
-        //         &env,
-        //         &sender,
-        //         &distribution_address,
-        //         &mut distribution,
-        //         old_power,
-        //         new_power,
-        //     );
-        //     dbg!(get_withdraw_adjustment(
-        //         &env,
-        //         &sender,
-        //         &distribution_address.clone()
-        //     ));
-        // }
-        // check for rewards and withdraw them
-        // let found_rewards: WithdrawableRewardsResponse =
-        //     dbg!(Self::query_withdrawable_rewards(env.clone(), sender.clone()));
-        // // poi we alread have withdrawn the rewards - how is this still not empty?
+        for distribution_address in get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address);
+            let stakes = get_stakes(&env, &sender).total_stake;
+            let old_power = calc_power(&config, stakes as i128, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let new_power = calc_power(
+                &config,
+                stakes as i128 - stake_amount,
+                Decimal::one(),
+                TOKEN_PER_POWER,
+            );
+            update_rewards(
+                &env,
+                &sender,
+                &distribution_address,
+                &mut distribution,
+                old_power,
+                new_power,
+            );
+        }
 
-        // if !found_rewards.rewards.is_empty() {
-        //     Self::withdraw_rewards(env.clone(), sender.clone());
-        // }
-
-        dbg!("HE?");
         let mut stakes = get_stakes(&env, &sender);
         remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
         stakes.total_stake -= stake_amount as u128;
 
-        dbg!("HE??");
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
 
-        dbg!("HE???");
         save_stakes(&env, &sender, &stakes);
         utils::decrease_total_staked(&env, &stake_amount);
 
-        dbg!("HE????");
         env.events().publish(("unbond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
         env.events().publish(("bond", "amount"), stake_amount);
@@ -339,61 +302,15 @@ impl StakingTrait for Staking {
             let points = (amount << SHARES_SHIFT) + leftover;
             // poi 2 why is that happening
             let points_per_share = points / total_rewards_power;
-            dbg!(
-                "distribute rewards",
-                amount,
-                points,
-                points_per_share,
-                total_rewards_power,
-            );
             distribution.shares_leftover = (points % total_rewards_power) as u64;
 
             // Everything goes back to 128-bits/16-bytes
             // Full amount is added here to total withdrawable, as it should not be considered on its own
             // on future distributions - even if because of calculation offsets it is not fully
             // distributed, the error is handled by leftover.
-            // poi 1
-            dbg!(
-                "Those stupid funcking debugas........",
-                distribution.shares_per_point,
-                points_per_share,
-                distribution.shares_per_point + points_per_share
-            );
             distribution.shares_per_point += points_per_share;
             distribution.distributed_total += amount;
             distribution.withdrawable_total += amount;
-            dbg!(distribution.clone());
-
-            // FIXME
-            // Phoenix
-            // [contracts/stake/src/contract.rs:355:13] distribution.clone() = Distribution {
-            //     shares_per_point: 429496729600001,
-            //     shares_leftover: 0,
-            //     distributed_total: 100000,
-            //     withdrawable_total: 100000,
-            //     max_bonus_bps: 0,
-            //     bonus_per_day_bps: 0,
-            // }
-
-            // WYND
-            // [contracts/stake/src/distribution.rs:94:9] distribution.clone() = Distribution {
-            //     shares_per_point: Uint128(
-            //         2147483648000,
-            //     ),
-            //     shares_leftover: 0,
-            //     distributed_total: Uint128(
-            //         500,
-            //     ),
-            //     withdrawable_total: Uint128(
-            //         500,
-            //     ),
-            //     reward_multipliers: [
-            //         (
-            //             10000,
-            //             Decimal(1),
-            //         ),
-            //     ],
-            // }
 
             save_distribution(&env, &distribution_address, &distribution);
 
@@ -416,26 +333,16 @@ impl StakingTrait for Staking {
             // get withdraw adjustment for the given distribution
             let mut withdraw_adjustment =
                 get_withdraw_adjustment(&env, &sender, &distribution_address);
-            dbg!("WITHDRAW REWARDS");
-            dbg!(withdraw_adjustment.clone());
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
-            dbg!("Am i failing here?");
             let reward_amount =
                 withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment, &config);
-            dbg!("Am i failing here?22222");
 
             if reward_amount == 0 {
                 continue;
             }
-            dbg!("HERE I COME -----------------------");
-            dbg!(withdraw_adjustment.clone());
             withdraw_adjustment.withdrawn_rewards += reward_amount;
-            // continue from here
-            dbg!("BEFORE", distribution.withdrawable_total, reward_amount);
             distribution.withdrawable_total -= reward_amount;
-            dbg!("AFTER WITHDRAW REWARDS YOU FUCKING MORON", distribution.withdrawable_total.clone());
-            dbg!(withdraw_adjustment.clone());
 
             save_distribution(&env, &distribution_address, &distribution);
             save_withdraw_adjustment(&env, &sender, &distribution_address, &withdraw_adjustment);

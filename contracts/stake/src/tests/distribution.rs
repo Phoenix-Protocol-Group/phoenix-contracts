@@ -460,7 +460,7 @@ fn two_users_both_bonds_after_distribution_starts() {
                 &env,
                 WithdrawableReward {
                     reward_address: reward_token.address.clone(),
-                    reward_amount: 33_332
+                    reward_amount: 33_333
                 }
             ]
         }
@@ -833,6 +833,11 @@ fn test_v_phx_vul_010_unbond_brakes_reward_distribution() {
     env.ledger().with_mut(|li| {
         li.timestamp = 5_000;
     });
+    staking.distribute_rewards();
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        50_000
+    );
     staking.unbond(&user_1, &1_000, &0);
 
     env.ledger().with_mut(|li| {
@@ -876,7 +881,7 @@ fn test_v_phx_vul_010_unbond_brakes_reward_distribution() {
     );
 
     staking.withdraw_rewards(&user_1);
-    assert_eq!(reward_token.balance(&user_1), 50_000i128);
+    assert_eq!(reward_token.balance(&user_1), 25_000i128);
 }
 
 #[test]
@@ -899,7 +904,6 @@ fn test_bond_withdraw_unbond() {
     reward_token.mint(&admin, &(reward_amount as i128));
 
     lp_token.mint(&user, &1_000);
-    dbg!("BONDING");
     staking.bond(&user, &1_000);
 
     let reward_duration = 10_000;
@@ -916,13 +920,35 @@ fn test_bond_withdraw_unbond() {
         li.timestamp = 10_000;
     });
 
-    dbg!("DISTRIBUTE REWARDS");
     staking.distribute_rewards();
-    staking.withdraw_rewards(&user);
 
-    dbg!("UNBOND");
     staking.unbond(&user, &1_000, &0);
 
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 100_000
+                }
+            ]
+        }
+    );
+    staking.withdraw_rewards(&user);
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 0
+                }
+            ]
+        }
+    );
     assert_eq!(
         staking.query_withdrawable_rewards(&user),
         WithdrawableRewardsResponse {
