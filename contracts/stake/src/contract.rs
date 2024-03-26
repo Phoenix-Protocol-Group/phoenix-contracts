@@ -165,7 +165,7 @@ impl StakingTrait for Staking {
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address);
             let stakes: i128 = get_stakes(&env, &sender).total_stake;
-            let old_power = calc_power(&config, stakes as i128, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
             let new_power = calc_power(&config, stakes + tokens, Decimal::one(), TOKEN_PER_POWER);
             update_rewards(
                 &env,
@@ -202,7 +202,7 @@ impl StakingTrait for Staking {
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address);
             let stakes = get_stakes(&env, &sender).total_stake;
-            let old_power = calc_power(&config, stakes as i128, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
             let new_power = calc_power(
                 &config,
                 stakes - stake_amount,
@@ -267,10 +267,10 @@ impl StakingTrait for Staking {
     }
 
     fn distribute_rewards(env: Env) {
-        let total_staked_amount = get_total_staked_counter(&env) as u128;
+        let total_staked_amount = get_total_staked_counter(&env);
         let total_rewards_power = calc_power(
             &get_config(&env),
-            total_staked_amount as i128,
+            total_staked_amount,
             Decimal::one(),
             TOKEN_PER_POWER,
         ) as u128;
@@ -454,15 +454,11 @@ impl StakingTrait for Staking {
         let now = env.ledger().timestamp();
         let mut aprs = vec![&env];
         let config = get_config(&env);
-        let total_stake_amount = get_total_staked_counter(&env) as u128;
+        let total_stake_amount = get_total_staked_counter(&env);
 
         for distribution_address in get_distributions(&env) {
-            let total_stake_power = calc_power(
-                &config,
-                total_stake_amount as i128,
-                Decimal::one(),
-                TOKEN_PER_POWER,
-            );
+            let total_stake_power =
+                calc_power(&config, total_stake_amount, Decimal::one(), TOKEN_PER_POWER);
             if total_stake_power == 0 {
                 aprs.push_back(AnnualizedReward {
                     asset: distribution_address.clone(),
