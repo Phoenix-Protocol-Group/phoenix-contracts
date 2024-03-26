@@ -4,6 +4,7 @@ use soroban_sdk::{
 };
 
 use crate::distribution::calc_power;
+use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
         calculate_annualized_payout, get_distribution, get_reward_curve, get_withdraw_adjustment,
@@ -26,7 +27,6 @@ use crate::{
     token_contract,
 };
 use curve::Curve;
-const TOKEN_PER_POWER: i32 = 1_000;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -158,20 +158,15 @@ impl StakingTrait for Staking {
             stake: tokens,
             stake_timestamp: ledger.timestamp(),
         };
-        stakes.total_stake += tokens as u128;
+        stakes.total_stake += tokens;
         // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
         // creating multiple stakes the same day
 
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address);
-            let stakes: u128 = get_stakes(&env, &sender).total_stake;
+            let stakes: i128 = get_stakes(&env, &sender).total_stake;
             let old_power = calc_power(&config, stakes as i128, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-            let new_power = calc_power(
-                &config,
-                stakes as i128 + tokens,
-                Decimal::one(),
-                TOKEN_PER_POWER,
-            );
+            let new_power = calc_power(&config, stakes + tokens, Decimal::one(), TOKEN_PER_POWER);
             update_rewards(
                 &env,
                 &sender,
@@ -210,7 +205,7 @@ impl StakingTrait for Staking {
             let old_power = calc_power(&config, stakes as i128, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
             let new_power = calc_power(
                 &config,
-                stakes as i128 - stake_amount,
+                stakes - stake_amount,
                 Decimal::one(),
                 TOKEN_PER_POWER,
             );
@@ -226,7 +221,7 @@ impl StakingTrait for Staking {
 
         let mut stakes = get_stakes(&env, &sender);
         remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
-        stakes.total_stake -= stake_amount as u128;
+        stakes.total_stake -= stake_amount;
 
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
@@ -307,7 +302,6 @@ impl StakingTrait for Staking {
 
             let leftover: u128 = distribution.shares_leftover.into();
             let points = (amount << SHARES_SHIFT) + leftover;
-            // poi 2 why is that happening
             let points_per_share = points / total_rewards_power;
             distribution.shares_leftover = (points % total_rewards_power) as u64;
 
