@@ -4,6 +4,8 @@ use crate::admin::{has_administrator, read_administrator, write_administrator};
 use crate::allowance::{read_allowance, spend_allowance, write_allowance};
 use crate::balance::{read_balance, receive_balance, spend_balance};
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
+#[cfg(test)]
+use crate::storage_types::{AllowanceDataKey, AllowanceValue, DataKey};
 use crate::storage_types::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::token::{self, Interface as _};
 use soroban_sdk::{contract, contractimpl, Address, Env, String};
@@ -23,7 +25,6 @@ pub struct Token;
 impl Token {
     #[allow(dead_code)]
     pub fn initialize(e: Env, admin: Address, decimal: u32, name: String, symbol: String) {
-        #[allow(dead_code)]
         if has_administrator(&e) {
             panic!("already initialized")
         }
@@ -67,6 +68,12 @@ impl Token {
 
         write_administrator(&e, &new_admin);
         TokenUtils::new(&e).events().set_admin(admin, new_admin);
+    }
+
+    #[cfg(test)]
+    pub fn get_allowance(e: Env, from: Address, spender: Address) -> Option<AllowanceValue> {
+        let key = DataKey::Allowance(AllowanceDataKey { from, spender });
+        e.storage().temporary().get::<_, AllowanceValue>(&key)
     }
 }
 
