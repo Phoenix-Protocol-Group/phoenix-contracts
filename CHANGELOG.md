@@ -8,6 +8,8 @@ and this project adheres to
 
 ## Changed
 - Token: Update the contract to latest version from soroban-examples
+- Update soroban-sdk-rs to 20.5.0
+- CI: Update rust to 1.77.0
 
 ## Added
 - all: changes panic! to panic_with_error ([#269])
