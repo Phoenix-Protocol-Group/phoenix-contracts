@@ -692,7 +692,7 @@ fn do_swap(
     // referral: Option<Referral>,
     offer_asset: Address,
     offer_amount: i128,
-    belief_price: Option<i64>,
+    belief_price_bps: Option<i64>,
     max_spread: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
@@ -710,7 +710,7 @@ fn do_swap(
         }
     }
 
-    let belief_price = belief_price.map(Decimal::percent);
+    let belief_price = belief_price_bps.map(Decimal::bps);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
 
     let pool_balance_a = utils::get_pool_balance_a(&env);
