@@ -307,7 +307,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 if (actual_b_from_swap - b_from_swap).abs() > 1 {
                     log!(
                         &env,
-                        "Pool: ProvideLiquidity: Off by more than rounding error! a: {}, b: {}",
+                        "Pool: ProvideLiquidity: B token off by more than rounding error! actual: {}, predicted: {}",
                         actual_b_from_swap,
                         b_from_swap
                     );
@@ -340,7 +340,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 if (actual_a_from_swap - a_from_swap).abs() > 1 {
                     log!(
                         &env,
-                        "Pool: ProvideLiquidity: Off by more than rounding error! a: {}, b: {}",
+                        "Pool: ProvideLiquidity: A token off by more than rounding error! actual: {}, predicted: {}",
                         actual_a_from_swap,
                         a_from_swap
                     );
