@@ -7,6 +7,7 @@ and this project adheres to
 ## [Unreleased]
 
 ## Changed
+- Token: Update the contract to latest version from soroban-examples
 
 ## Added
 - all: changes panic! to panic_with_error ([#269])
