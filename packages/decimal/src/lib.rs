@@ -865,7 +865,7 @@ mod tests {
 
     #[test]
     fn decimal_abs_with_negative_number() {
-        let decimal = Decimal::new(128);
+        let decimal = Decimal::new(-128);
 
         assert_eq!(decimal.abs(), Decimal(128));
     }

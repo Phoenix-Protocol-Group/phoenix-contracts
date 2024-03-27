@@ -991,4 +991,44 @@ mod tests {
         curve.validate_complexity(3).unwrap();
         curve.validate_complexity(4).unwrap();
     }
+
+    #[test]
+    fn test_curve_end() {
+        let constant = Curve::constant(10);
+        let saturating_linear = Curve::SaturatingLinear(SaturatingLinear {
+            min_x: 10,
+            min_y: 10,
+            max_x: 20,
+            max_y: 20,
+        });
+        let piecewiselinear = Curve::PiecewiseLinear(PiecewiseLinear {
+            steps: vec![
+                &Env::default(),
+                Step {
+                    time: 10,
+                    value: 10,
+                },
+            ],
+        });
+
+        assert_eq!(constant.end(), None);
+        assert_eq!(saturating_linear.end(), Some(20));
+        assert_eq!(piecewiselinear.end(), Some(10));
+    }
+
+    #[test]
+    #[should_panic(expected = "Steps are empty or error in reading steps")]
+    fn test_piecewise_value() {
+        let env = Env::default();
+        let curve = Curve::PiecewiseLinear(PiecewiseLinear { steps: vec![&env] });
+        curve.value(5);
+    }
+
+    #[test]
+    fn test_piecewise_linear_validate_should_fail_when_steps_are_missing() {
+        let env = Env::default();
+        let curve = Curve::PiecewiseLinear(PiecewiseLinear { steps: vec![&env] });
+        let err = curve.validate().unwrap_err();
+        assert_eq!(err, CurveError::MissingSteps);
+    }
 }
