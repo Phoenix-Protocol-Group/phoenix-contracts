@@ -3,7 +3,10 @@ use soroban_sdk::{contracttype, Address, Env};
 use curve::Curve;
 use decimal::Decimal;
 
-use crate::storage::get_stakes;
+use crate::{
+    storage::{get_stakes, Config},
+    TOKEN_PER_POWER,
+};
 
 /// How much points is the worth of single token in rewards distribution.
 /// The scaling is performed to have better precision of fixed point division.
@@ -46,6 +49,7 @@ pub fn get_reward_curve(env: &Env, asset: &Address) -> Option<Curve> {
 }
 
 #[contracttype]
+#[derive(Debug, Default, Clone)]
 pub struct Distribution {
     /// How many shares is single point worth
     pub shares_per_point: u128,
@@ -86,8 +90,9 @@ pub fn update_rewards(
     if old_rewards_power == new_rewards_power {
         return;
     }
-    let ppw = distribution.shares_per_point;
     let diff = new_rewards_power - old_rewards_power;
+    // Apply the points correction with the calculated difference.
+    let ppw = distribution.shares_per_point;
     apply_points_correction(env, user, asset, diff, ppw);
 }
 
@@ -159,16 +164,20 @@ pub fn withdrawable_rewards(
     owner: &Address,
     distribution: &Distribution,
     adjustment: &WithdrawAdjustment,
+    config: &Config,
 ) -> u128 {
     let ppw = distribution.shares_per_point;
 
-    let points = get_stakes(env, owner).total_stake;
-    let points = (ppw * points) as i128;
+    let stakes: i128 = get_stakes(env, owner).total_stake;
+    // Decimal::one() represents the standart multiplier per token
+    // 1_000 represents the contsant token per power. TODO: make it configurable
+    let points = calc_power(config, stakes as i128, Decimal::one(), TOKEN_PER_POWER);
+    let points = (ppw * points as u128) as i128;
 
     let correction = adjustment.shares_correction;
     let points = points + correction;
-    let amount = points as u128 >> SHARES_SHIFT;
-    amount - adjustment.withdrawn_rewards
+    let amount = points >> SHARES_SHIFT;
+    amount as u128 - adjustment.withdrawn_rewards
 }
 
 pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {
@@ -214,5 +223,18 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
             }
         }
         None => Decimal::zero(),
+    }
+}
+
+pub fn calc_power(
+    config: &Config,
+    stakes: i128,
+    multiplier: Decimal,
+    token_per_power: i32,
+) -> i128 {
+    if stakes < config.min_bond {
+        0
+    } else {
+        stakes * multiplier / token_per_power as i128
     }
 }

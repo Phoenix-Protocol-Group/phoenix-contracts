@@ -5,6 +5,8 @@ mod error;
 mod msg;
 mod storage;
 
+pub const TOKEN_PER_POWER: i32 = 1_000;
+
 pub mod token_contract {
     // The import will code generate:
     // - A ContractClient type that can be used to invoke functions on the contract.

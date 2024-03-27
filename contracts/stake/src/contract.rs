@@ -1,7 +1,10 @@
+use decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, String, Vec,
 };
 
+use crate::distribution::calc_power;
+use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
         calculate_annualized_payout, get_distribution, get_reward_curve, get_withdraw_adjustment,
@@ -155,21 +158,23 @@ impl StakingTrait for Staking {
             stake: tokens,
             stake_timestamp: ledger.timestamp(),
         };
-        stakes.total_stake += tokens as u128;
+        stakes.total_stake += tokens;
         // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
         // creating multiple stakes the same day
 
-        let total_staked = utils::get_total_staked_counter(&env);
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address);
+            let stakes: i128 = get_stakes(&env, &sender).total_stake;
+            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let new_power = calc_power(&config, stakes + tokens, Decimal::one(), TOKEN_PER_POWER);
             update_rewards(
                 &env,
                 &sender,
                 &distribution_address,
                 &mut distribution,
-                total_staked,
-                total_staked + tokens,
-            )
+                old_power,
+                new_power,
+            );
         }
 
         stakes.stakes.push_back(stake);
@@ -194,9 +199,29 @@ impl StakingTrait for Staking {
             Self::withdraw_rewards(env.clone(), sender.clone());
         }
 
+        for distribution_address in get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address);
+            let stakes = get_stakes(&env, &sender).total_stake;
+            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let new_power = calc_power(
+                &config,
+                stakes - stake_amount,
+                Decimal::one(),
+                TOKEN_PER_POWER,
+            );
+            update_rewards(
+                &env,
+                &sender,
+                &distribution_address,
+                &mut distribution,
+                old_power,
+                new_power,
+            );
+        }
+
         let mut stakes = get_stakes(&env, &sender);
         remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
-        stakes.total_stake -= stake_amount as u128;
+        stakes.total_stake -= stake_amount;
 
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
@@ -242,7 +267,14 @@ impl StakingTrait for Staking {
     }
 
     fn distribute_rewards(env: Env) {
-        let total_rewards_power = get_total_staked_counter(&env) as u128;
+        let total_staked_amount = get_total_staked_counter(&env);
+        let total_rewards_power = calc_power(
+            &get_config(&env),
+            total_staked_amount,
+            Decimal::one(),
+            TOKEN_PER_POWER,
+        ) as u128;
+
         if total_rewards_power == 0 {
             log!(&env, "Stake: No rewards to distribute!");
             return;
@@ -294,6 +326,7 @@ impl StakingTrait for Staking {
 
     fn withdraw_rewards(env: Env, sender: Address) {
         env.events().publish(("withdraw_rewards", "user"), &sender);
+        let config = get_config(&env);
 
         for distribution_address in get_distributions(&env) {
             // get distribution data for the given reward
@@ -304,12 +337,11 @@ impl StakingTrait for Staking {
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
-                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment);
+                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment, &config);
 
             if reward_amount == 0 {
                 continue;
             }
-
             withdraw_adjustment.withdrawn_rewards += reward_amount;
             distribution.withdrawable_total -= reward_amount;
 
@@ -328,7 +360,7 @@ impl StakingTrait for Staking {
                 &reward_token_client.address,
             );
             env.events()
-                .publish(("withdraw_rewards", "reward_amount"), reward_amount as i128);
+                .publish(("withdraw_rewards", "reward_amount"), reward_amount);
         }
     }
 
@@ -421,10 +453,13 @@ impl StakingTrait for Staking {
     fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
         let now = env.ledger().timestamp();
         let mut aprs = vec![&env];
-        let total_rewards_power = get_total_staked_counter(&env) as u128;
+        let config = get_config(&env);
+        let total_stake_amount = get_total_staked_counter(&env);
 
         for distribution_address in get_distributions(&env) {
-            if total_rewards_power == 0 {
+            let total_stake_power =
+                calc_power(&config, total_stake_amount, Decimal::one(), TOKEN_PER_POWER);
+            if total_stake_power == 0 {
                 aprs.push_back(AnnualizedReward {
                     asset: distribution_address.clone(),
                     amount: String::from_str(&env, "0"),
@@ -436,8 +471,8 @@ impl StakingTrait for Staking {
             let distribution = get_distribution(&env, &distribution_address);
             let curve = get_reward_curve(&env, &distribution_address);
             let annualized_payout = calculate_annualized_payout(curve, now);
-            let apr =
-                annualized_payout / (total_rewards_power * distribution.shares_per_point) as i128;
+            let apr = annualized_payout
+                / (total_stake_power as u128 * distribution.shares_per_point) as i128;
 
             aprs.push_back(AnnualizedReward {
                 asset: distribution_address.clone(),
@@ -449,6 +484,7 @@ impl StakingTrait for Staking {
     }
 
     fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
+        let config = get_config(&env);
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
         for distribution_address in get_distributions(&env) {
@@ -459,7 +495,7 @@ impl StakingTrait for Staking {
             // calculate current reward amount given the distribution and subtracting withdraw
             // adjustments
             let reward_amount =
-                withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment);
+                withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
             rewards.push_back(WithdrawableReward {
                 reward_address: distribution_address,
                 reward_amount,
