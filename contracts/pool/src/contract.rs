@@ -70,7 +70,8 @@ pub trait LiquidityPoolTrait {
         // referral: Option<Referral>,
         offer_asset: Address,
         offer_amount: i128,
-        belief_price: Option<i64>,
+        /// Minimum amount of the ask token user expects to receive
+        ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
     ) -> i128;
 
@@ -393,7 +394,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         // referral: Option<Referral>,
         offer_asset: Address,
         offer_amount: i128,
-        belief_price: Option<i64>,
+        ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
     ) -> i128 {
         validate_int_parameters!(offer_amount);
@@ -406,7 +407,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             // referral,
             offer_asset,
             offer_amount,
-            belief_price,
+            ask_asset_min_amount,
             max_spread_bps,
         )
     }
@@ -692,7 +693,7 @@ fn do_swap(
     // referral: Option<Referral>,
     offer_asset: Address,
     offer_amount: i128,
-    belief_price_bps: Option<i64>,
+    ask_asset_min_amount: Option<i128>,
     max_spread: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
@@ -710,7 +711,6 @@ fn do_swap(
         }
     }
 
-    let belief_price = belief_price_bps.map(Decimal::bps);
     let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
 
     let pool_balance_a = utils::get_pool_balance_a(&env);
@@ -747,7 +747,7 @@ fn do_swap(
 
     assert_max_spread(
         &env,
-        belief_price,
+        ask_asset_min_amount,
         max_spread,
         offer_amount,
         total_return_amount,
@@ -975,7 +975,7 @@ fn assert_slippage_tolerance(
 }
 
 /// This function asserts that the spread (slippage) does not exceed a given maximum.
-/// * `belief_price` - An optional user-provided belief price, i.e., the expected price per token.
+/// * `ask_asset_min_amount` - User provided minimum amount of the ask asset he expects to receive..
 /// * `max_spread` - The maximum allowed spread (slippage) as a fraction of the return amount.
 /// * `offer_amount` - The amount of tokens that the user offers to swap.
 /// * `return_amount` - The amount of tokens that the user receives in return.
@@ -984,22 +984,19 @@ fn assert_slippage_tolerance(
 /// * An error if the spread exceeds the maximum allowed, otherwise Ok.
 pub fn assert_max_spread(
     env: &Env,
-    belief_price: Option<Decimal>,
+    ask_asset_min_amount: Option<i128>,
     max_spread: Decimal,
     offer_amount: i128,
     return_amount: i128,
     spread_amount: i128,
 ) {
-    // Calculate the expected return if a belief price is provided
-    let expected_return = belief_price.map(|price| offer_amount * price);
-
     // Total return is the sum of the amount received and the spread
     let total_return = return_amount + spread_amount;
 
     // Calculate the spread ratio, the fraction of the return that is due to spread
     // If the user has specified a belief price, use it to calculate the expected return
     // Otherwise, use the total return
-    let spread_ratio = if let Some(expected_return) = expected_return {
+    let spread_ratio = if let Some(ask_asset_min_amount) = expected_return {
         Decimal::from_ratio(spread_amount, expected_return)
     } else {
         Decimal::from_ratio(spread_amount, total_return)
