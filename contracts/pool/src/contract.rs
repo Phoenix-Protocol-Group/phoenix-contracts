@@ -743,13 +743,22 @@ fn do_swap(
         referral_fee_bps,
     );
 
+    if let Some(ask_asset_min_amount) = ask_asset_min_amount {
+        if ask_asset_min_amount > compute_swap.return_amount {
+            log!(
+                &env,
+                "Pool: do_swap: Return amount is smaller then expected minimum amount"
+            );
+            panic_with_error!(&env, ContractError::SwapMinReceivedBiggerThanReturn);
+        }
+    }
+
     let total_return_amount = compute_swap.return_amount
         + compute_swap.commission_amount
         + compute_swap.referral_fee_amount;
 
     assert_max_spread(
         &env,
-        ask_asset_min_amount,
         max_spread,
         total_return_amount,
         compute_swap.spread_amount,
@@ -976,31 +985,14 @@ fn assert_slippage_tolerance(
 }
 
 /// This function asserts that the spread (slippage) does not exceed a given maximum.
-/// * `ask_asset_min_amount` - User provided minimum amount of the ask asset he expects to receive..
 /// * `max_spread` - The maximum allowed spread (slippage) as a fraction of the return amount.
-/// * `offer_amount` - The amount of tokens that the user offers to swap.
 /// * `return_amount` - The amount of tokens that the user receives in return.
 /// * `spread_amount` - The spread (slippage) amount, i.e., the difference between the expected and actual return.
 /// # Returns
 /// * An error if the spread exceeds the maximum allowed, otherwise Ok.
-pub fn assert_max_spread(
-    env: &Env,
-    ask_asset_min_amount: Option<i128>,
-    max_spread: Decimal,
-    return_amount: i128,
-    spread_amount: i128,
-) {
-    // Total return is the sum of the amount received and the spread
-    let total_return = return_amount + spread_amount;
-
+pub fn assert_max_spread(env: &Env, max_spread: Decimal, return_amount: i128, spread_amount: i128) {
     // Calculate the spread ratio, the fraction of the return that is due to spread
-    // If the user has specified a minimum amount to receive, use it as the expected return
-    // Otherwise, use the total return
-    let spread_ratio = if let Some(expected_return) = ask_asset_min_amount {
-        Decimal::from_ratio(spread_amount, expected_return)
-    } else {
-        Decimal::from_ratio(spread_amount, total_return)
-    };
+    let spread_ratio = Decimal::from_ratio(spread_amount, return_amount);
 
     if spread_ratio > max_spread {
         log!(env, "Pool: Spread exceeds maximum allowed");
@@ -1144,16 +1136,9 @@ mod tests {
     fn test_assert_max_spread_success() {
         let env = Env::default();
         // Test case that should pass:
-        // belief price of 2.0, max spread of 10%, offer amount of 100k, return amount of 100k and 1 unit, spread amount of 1
+        // max spread of 10%, offer amount of 100k, return amount of 100k and 1 unit, spread amount of 1
         // The spread ratio is 10% which is equal to the max spread
-        assert_max_spread(
-            &env,
-            Some(Decimal::percent(200)),
-            Decimal::percent(10),
-            100_000,
-            100_001,
-            1,
-        );
+        assert_max_spread(&env, Decimal::percent(10), 100_001, 1);
     }
 
     #[test]
@@ -1161,37 +1146,28 @@ mod tests {
     fn test_assert_max_spread_fail_max_spread_exceeded() {
         let env = Env::default();
 
-        let belief_price = Some(Decimal::percent(250)); // belief price is 2.5
         let max_spread = Decimal::percent(10); // 10% is the maximum allowed spread
-        let offer_amount = 100;
         let return_amount = 100; // These values are chosen such that the spread ratio will be more than 10%
         let spread_amount = 35;
 
-        assert_max_spread(
-            &env,
-            belief_price,
-            max_spread,
-            offer_amount,
-            return_amount,
-            spread_amount,
-        );
+        assert_max_spread(&env, max_spread, return_amount, spread_amount);
     }
 
     #[test]
     fn test_assert_max_spread_success_no_belief_price() {
         let env = Env::default();
-        // no belief price, max spread of 100 (0.1 or 10%), offer amount of 10, return amount of 10, spread amount of 1
+        // max spread of 100 (0.1 or 10%), return amount of 10, spread amount of 1
         // The spread ratio is 10% which is equal to the max spread
-        assert_max_spread(&env, None, Decimal::percent(10), 10, 10, 1);
+        assert_max_spread(&env, Decimal::percent(10), 10, 1);
     }
 
     #[test]
     #[should_panic(expected = "HostError: Error(Contract, #1)")]
     fn test_assert_max_spread_fail_no_belief_price_max_spread_exceeded() {
         let env = Env::default();
-        // no belief price, max spread of 10%, offer amount of 10, return amount of 10, spread amount of 2
+        // max spread of 10%, return amount of 10, spread amount of 2
         // The spread ratio is 20% which is greater than the max spread
-        assert_max_spread(&env, None, Decimal::percent(10), 10, 10, 2);
+        assert_max_spread(&env, Decimal::percent(10), 10, 2);
     }
 
     #[test]
