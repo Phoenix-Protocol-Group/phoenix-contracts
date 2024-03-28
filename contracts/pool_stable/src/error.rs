@@ -18,4 +18,5 @@ pub enum ContractError {
     IncorrectAssetSwap = 12,
     NewtonMethodFailed = 13,
     CalcYErr = 14,
+    SwapMinReceivedBiggerThanReturn = 15,
 }
