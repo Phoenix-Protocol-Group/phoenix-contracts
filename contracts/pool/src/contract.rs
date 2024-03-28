@@ -70,7 +70,7 @@ pub trait LiquidityPoolTrait {
         // referral: Option<Referral>,
         offer_asset: Address,
         offer_amount: i128,
-        /// Minimum amount of the ask token user expects to receive
+        // Minimum amount of the ask token user expects to receive
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
     ) -> i128;
@@ -301,7 +301,8 @@ impl LiquidityPoolTrait for LiquidityPool {
                     // None,
                     config.clone().token_a,
                     a_for_swap,
-                    None,
+                    // expected amount of ask token from swap
+                    Some(b_from_swap),
                     None,
                 );
                 // return: rest of Token A amount, simulated result of swap of portion A
@@ -324,7 +325,8 @@ impl LiquidityPoolTrait for LiquidityPool {
                     // None,
                     config.clone().token_b,
                     b_for_swap,
-                    None,
+                    // expected amount of ask token from swap
+                    Some(a_from_swap),
                     None,
                 );
                 // return: simulated result of swap of portion B, rest of Token B amount
@@ -749,7 +751,6 @@ fn do_swap(
         &env,
         ask_asset_min_amount,
         max_spread,
-        offer_amount,
         total_return_amount,
         compute_swap.spread_amount,
     );
@@ -986,7 +987,6 @@ pub fn assert_max_spread(
     env: &Env,
     ask_asset_min_amount: Option<i128>,
     max_spread: Decimal,
-    offer_amount: i128,
     return_amount: i128,
     spread_amount: i128,
 ) {
@@ -994,9 +994,9 @@ pub fn assert_max_spread(
     let total_return = return_amount + spread_amount;
 
     // Calculate the spread ratio, the fraction of the return that is due to spread
-    // If the user has specified a belief price, use it to calculate the expected return
+    // If the user has specified a minimum amount to receive, use it as the expected return
     // Otherwise, use the total return
-    let spread_ratio = if let Some(ask_asset_min_amount) = expected_return {
+    let spread_ratio = if let Some(expected_return) = ask_asset_min_amount {
         Decimal::from_ratio(spread_amount, expected_return)
     } else {
         Decimal::from_ratio(spread_amount, total_return)
