@@ -934,3 +934,101 @@ fn test_v_phx_vul_017_should_panic_when_simulating_reverse_swap_for_non_existing
         &1,
     );
 }
+
+#[test]
+fn test_should_swap_with_valid_ask_asset_min_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user = Address::generate(&env);
+
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0i64,
+        None,
+        None,
+        None,
+        Address::generate(&env),
+        Address::generate(&env),
+    );
+
+    token1.mint(&user, &1_050_000);
+    token2.mint(&user, &1_050_000);
+    // 1:1 pool with large liquidity
+    pool.provide_liquidity(
+        &user,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+    );
+
+    pool.swap(&user, &token1.address, &10, &Some(10), &None::<i64>);
+    assert_eq!(token1.balance(&user), 49_990);
+    assert_eq!(token2.balance(&user), 50_010);
+
+    pool.swap(
+        &user,
+        &token2.address,
+        &5_000i128,
+        &Some(4_900i128),
+        &Some(500i64),
+    );
+
+    assert_eq!(token1.balance(&user), 54_966);
+    assert_eq!(token2.balance(&user), 45_010);
+}
+
+#[test]
+#[should_panic(expected = "Pool: do_swap: Return amount is smaller then expected minimum amount")]
+fn test_should_fail_when_invalid_ask_asset_min_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
+    let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    token1.mint(&user, &1_001_000);
+    token2.mint(&user, &1_001_000);
+    pool.provide_liquidity(
+        &user,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+    );
+
+    let spread = 100i64; // 1% maximum spread allowed
+    pool.swap(&user, &token1.address, &1, &Some(10), &Some(spread));
+}

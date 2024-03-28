@@ -96,7 +96,7 @@ impl MultihopTrait for Multihop {
                 // &referral,
                 &op.offer_asset,
                 &next_offer_amount,
-                &op.max_belief_price,
+                &op.ask_asset_min_amount,
                 &max_spread_bps,
             );
         });
