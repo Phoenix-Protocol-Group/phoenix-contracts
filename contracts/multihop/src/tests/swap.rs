@@ -74,17 +74,17 @@ fn swap_three_equal_pools_no_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
     let swap2 = Swap {
         offer_asset: token2.address.clone(),
         ask_asset: token3.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
     let swap3 = Swap {
         offer_asset: token3.address.clone(),
         ask_asset: token4.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
@@ -158,17 +158,17 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
     let swap2 = Swap {
         offer_asset: token2.address.clone(),
         ask_asset: token3.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
     let swap3 = Swap {
         offer_asset: token3.address.clone(),
         ask_asset: token4.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
@@ -235,7 +235,7 @@ fn swap_single_pool_no_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
 
     let operations = vec![&env, swap1];
@@ -282,7 +282,7 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
 
     let operations = vec![&env, swap1];
@@ -327,7 +327,7 @@ fn swap_single_pool_with_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
 
     let operations = vec![&env, swap1];
@@ -403,17 +403,17 @@ fn swap_three_different_pools_no_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
     let swap2 = Swap {
         offer_asset: token2.address.clone(),
         ask_asset: token3.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
     let swap3 = Swap {
         offer_asset: token3.address.clone(),
         ask_asset: token4.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
@@ -488,17 +488,17 @@ fn swap_three_different_pools_with_fees() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
     let swap2 = Swap {
         offer_asset: token2.address.clone(),
         ask_asset: token3.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
     let swap3 = Swap {
         offer_asset: token3.address.clone(),
         ask_asset: token4.address.clone(),
-        max_belief_price: None::<i64>,
+        ask_asset_min_amount: None::<i128>,
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
@@ -606,17 +606,17 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
     let swap1 = Swap {
         offer_asset: token1.address.clone(),
         ask_asset: token2.address.clone(),
-        max_belief_price: Some(1_050),
+        ask_asset_min_amount: Some(1_050),
     };
     let swap2 = Swap {
         offer_asset: token2.address.clone(),
         ask_asset: token3.address.clone(),
-        max_belief_price: Some(2_100),
+        ask_asset_min_amount: Some(2_100),
     };
     let swap3 = Swap {
         offer_asset: token3.address.clone(),
         ask_asset: token4.address.clone(),
-        max_belief_price: Some(3_150),
+        ask_asset_min_amount: Some(3_150),
     };
 
     let operations = vec![&env, swap1, swap2, swap3];
