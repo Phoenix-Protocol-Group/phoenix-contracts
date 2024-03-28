@@ -634,3 +634,56 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
         "token4 balance incorrect"
     );
 }
+
+#[test]
+#[should_panic(expected = "Error(Contract, #21)")]
+fn test_swap_with_ask_asset_min_amount() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
+    let token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
+
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+
+    deploy_and_initialize_lp(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        1_000_000,
+        token2.address.clone(),
+        1_000_000,
+        None,
+    );
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+    let recipient = Address::generate(&env);
+    token1.mint(&recipient, &5_000i128);
+    assert_eq!(token1.balance(&recipient), 5_000i128);
+    assert_eq!(token2.balance(&recipient), 0i128);
+
+    let swap1 = Swap {
+        offer_asset: token1.address.clone(),
+        ask_asset: token2.address.clone(),
+        ask_asset_min_amount: Some(1_000),
+    };
+
+    let operations = vec![&env, swap1];
+
+    multihop.swap(&recipient, &operations, &None, &1_000);
+
+    assert_eq!(token1.balance(&recipient), 4_000i128);
+    assert_eq!(token2.balance(&recipient), 1_000i128);
+
+    let greedy_swap = Swap {
+        offer_asset: token1.address.clone(),
+        ask_asset: token2.address.clone(),
+        ask_asset_min_amount: Some(10_000),
+    };
+    let operations = vec![&env, greedy_swap];
+    multihop.swap(&recipient, &operations, &None, &1_000);
+}
