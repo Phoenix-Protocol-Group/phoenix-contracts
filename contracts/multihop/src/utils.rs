@@ -39,17 +39,17 @@ mod tests {
         let swap1 = Swap {
             offer_asset: token1.clone(),
             ask_asset: token2.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
         let swap2 = Swap {
             offer_asset: token2.clone(),
             ask_asset: token3.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
         let swap3 = Swap {
             offer_asset: token3.clone(),
             ask_asset: token4.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
 
         let operations = vec![&env, swap1, swap2, swap3];
@@ -69,17 +69,17 @@ mod tests {
         let swap1 = Swap {
             offer_asset: token3.clone(),
             ask_asset: token4.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
         let swap2 = Swap {
             offer_asset: token2.clone(),
             ask_asset: token3.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
         let swap3 = Swap {
             offer_asset: token1.clone(),
             ask_asset: token2.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
 
         let operations = vec![&env, swap1, swap2, swap3];
@@ -100,12 +100,12 @@ mod tests {
         let swap1 = Swap {
             offer_asset: token1.clone(),
             ask_asset: token2.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
         let swap2 = Swap {
             offer_asset: token3.clone(),
             ask_asset: token4.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
 
         let operations = vec![&env, swap1, swap2];
@@ -126,12 +126,12 @@ mod tests {
         let swap1 = Swap {
             offer_asset: token1.clone(),
             ask_asset: token2.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
         let swap2 = Swap {
             offer_asset: token3.clone(),
             ask_asset: token4.clone(),
-            max_belief_price: None::<i64>,
+            ask_asset_min_amount: None::<i128>,
         };
 
         let operations = vec![&env, swap1, swap2];
