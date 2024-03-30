@@ -7,14 +7,20 @@ and this project adheres to
 ## [Unreleased]
 
 ## Changed
-- Token: Update the contract to latest version from soroban-examples
-- Update soroban-sdk-rs to 20.5.0
-- CI: Update rust to 1.77.0
+
+- Token: Update the contract to latest version from soroban-examples ([#274])
+- Update soroban-sdk-rs to 20.5.0 ([#275])
+- CI: Update rust to 1.77.0 ([#275])
+- Pool: Replace belief_price swap parameter with minimum amount of tokens expected to be received ([#280])
 
 ## Added
+
 - all: changes panic! to panic_with_error ([#269])
 
 [#269]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/269
+[#275]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/275
+[#274]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/274
+[#280]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/280
 
 ## Bug fixes
 
