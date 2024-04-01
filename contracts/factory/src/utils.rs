@@ -6,12 +6,6 @@ pub fn deploy_lp_contract(
     token_a: &Address,
     token_b: &Address,
 ) -> Address {
-    let deployer = env.current_contract_address();
-
-    if deployer != env.current_contract_address() {
-        deployer.require_auth();
-    }
-
     let mut salt = Bytes::new(env);
     salt.append(&token_a.to_xdr(env));
     salt.append(&token_b.to_xdr(env));
