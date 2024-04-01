@@ -26,6 +26,14 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
 }
 
 #[allow(clippy::too_many_arguments)]
+pub fn install_new_lp_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm"
+    );
+    env.deployer().upload_contract_wasm(WASM)
+}
+
+#[allow(clippy::too_many_arguments)]
 pub fn deploy_liquidity_pool_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,
