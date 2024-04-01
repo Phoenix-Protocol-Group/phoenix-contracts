@@ -7,12 +7,13 @@ use soroban_sdk::{
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
 use crate::{
+    contract::{Staking, StakingClient},
     msg::ConfigResponse,
     storage::{Config, Stake},
 };
 
 #[test]
-fn initializa_staking_contract() {
+fn initialize_staking_contract() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -275,4 +276,42 @@ fn pay_rewards_during_unbond() {
     assert_eq!(reward_token.balance(&user), 0);
     staking.unbond(&user, &STAKED_AMOUNT, &0);
     assert_eq!(reward_token.balance(&user), 5_000);
+}
+
+#[should_panic(
+    expected = "Stake: initialize: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+)]
+#[test]
+fn initialize_staking_contract_should_panic_when_min_bond_invalid() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let staking = StakingClient::new(&env, &env.register_contract(None, Staking {}));
+
+    staking.initialize(
+        &Address::generate(&env),
+        &Address::generate(&env),
+        &0,
+        &1_000,
+        &Address::generate(&env),
+        &Address::generate(&env),
+    );
+}
+
+#[should_panic(expected = "Stake: initialize: min_reward must be bigger than 0!")]
+#[test]
+fn initialize_staking_contract_should_panic_when_min_rewards_invalid() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let staking = StakingClient::new(&env, &env.register_contract(None, Staking {}));
+
+    staking.initialize(
+        &Address::generate(&env),
+        &Address::generate(&env),
+        &1_000,
+        &0,
+        &Address::generate(&env),
+        &Address::generate(&env),
+    );
 }
