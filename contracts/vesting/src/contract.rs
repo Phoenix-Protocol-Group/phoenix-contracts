@@ -13,6 +13,7 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Vesting");
 pub struct Vesting;
 
 pub trait VestingTrait {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
@@ -62,6 +63,7 @@ pub trait VestingTrait {
 
 #[contractimpl]
 impl VestingTrait for Vesting {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
