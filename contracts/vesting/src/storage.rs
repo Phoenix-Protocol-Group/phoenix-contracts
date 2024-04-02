@@ -1,12 +1,29 @@
 use curve::Curve;
 use soroban_sdk::{
-    contracttype, log, panic_with_error, symbol_short, Address, Env, String, Symbol, Vec,
+    contracttype, log, panic_with_error, symbol_short, Address, ConversionError, Env, String,
+    Symbol, TryFromVal, Val, Vec,
 };
 
 use crate::error::ContractError;
 
-const CONFIG_KEY: Symbol = symbol_short!("config");
-const ADMIN: Symbol = symbol_short!("admin");
+// const CONFIG_KEY: Symbol = symbol_short!("config");
+// const ADMIN: Symbol = symbol_short!("admin");
+
+impl TryFromVal<Env, DataKey> for Val {
+    type Error = ConversionError;
+
+    fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
+        Ok((*v as u32).into())
+    }
+}
+
+#[derive(Clone, Copy)]
+#[repr(u32)]
+pub enum DataKey {
+    Admin = 1,
+    Config = 2,
+    Minter = 3,
+}
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -18,7 +35,7 @@ pub struct Config {
     /// `token_info` information about the token used in the vesting contract.
     pub token_info: VestingTokenInfo,
     /// `max_vesting_complexity` the maximum complexity an account's vesting curve is allowed to have
-    pub max_vesting_complexity: u64,
+    pub max_vesting_complexity: u32,
 }
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -37,13 +54,13 @@ pub struct VestingBalance {
 }
 
 pub fn save_config(env: &Env, config: &Config) {
-    env.storage().persistent().set(&CONFIG_KEY, config);
+    env.storage().persistent().set(&DataKey::Config, config);
 }
 
 pub fn get_config(env: &Env) -> Config {
     env.storage()
         .persistent()
-        .get(&CONFIG_KEY)
+        .get(&DataKey::Config)
         .unwrap_or_else(|| {
             log!(
                 &env,
@@ -54,24 +71,27 @@ pub fn get_config(env: &Env) -> Config {
 }
 
 pub fn save_admin(env: &Env, admin: &Address) {
-    env.storage().persistent().set(&ADMIN, admin);
+    env.storage().persistent().set(&DataKey::Admin, admin);
 }
 
 pub fn get_admin(env: &Env) -> Address {
-    env.storage().persistent().get(&ADMIN).unwrap_or_else(|| {
-        log!(&env, "Vesting: Get admin: Critical error - No admin found");
-        panic_with_error!(env, ContractError::NoAdminFound);
-    })
+    env.storage()
+        .persistent()
+        .get(&DataKey::Admin)
+        .unwrap_or_else(|| {
+            log!(&env, "Vesting: Get admin: Critical error - No admin found");
+            panic_with_error!(env, ContractError::NoAdminFound);
+        })
 }
 
-pub fn save_vesting_schedule(env: &Env, address: &Address, vesting: &Curve) {
-    env.storage().persistent().set(address, vesting);
+pub fn save_vesting(env: &Env, address: &Address, balance_curve: (i128, Curve)) {
+    env.storage().persistent().set(address, &balance_curve);
 }
 
-pub fn get_vesting_schedule(env: &Env, address: &Address) -> Curve {
+pub fn get_vesting(env: &Env, address: &Address) -> Curve {
     env.storage().persistent().get(address).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
-        panic_with_error!(env, ContractError::VestingScheduleNotFoundForAddress);
+        panic_with_error!(env, ContractError::VestingNotFoundForAddress);
     })
 }
 
@@ -86,30 +106,19 @@ pub fn get_allowances(env: &Env, owner_spender: &(&Address, &Address)) -> i128 {
         })
 }
 
-pub fn save_balance(env: &Env, address: &Address, balance: &i128) {
-    env.storage().persistent().set(address, balance);
+pub fn save_minter(env: &Env, minter: &Address) {
+    env.storage().persistent().set(&DataKey::Minter, minter);
 }
 
-pub fn get_balance(env: &Env, address: &Address) -> i128 {
-    env.storage().persistent().get(address).unwrap_or_else(|| {
-        log!(
-            &env,
-            "Vesting: Get balance: Critical error - No balance found for the given address"
-        );
-        panic_with_error!(env, ContractError::NoBalanceFoundForAddress);
-    })
-}
-
-pub fn save_minter(env: &Env, minter: &Address, curve: &Option<Curve>) {
-    env.storage().persistent().set(minter, curve);
-}
-
-pub fn get_minter(env: &Env, minter: &Address) -> Option<Curve> {
-    env.storage().persistent().get(minter).unwrap_or_else(|| {
-        log!(
-            &env,
-            "Vesting: Get minter: Critical error - No minter found for the given address"
-        );
-        panic_with_error!(env, ContractError::MinterNotFoundForAddress);
-    })
+pub fn get_minter(env: &Env) -> Address {
+    env.storage()
+        .persistent()
+        .get(&DataKey::Minter)
+        .unwrap_or_else(|| {
+            log!(
+                &env,
+                "Vesting: Get minter: Critical error - No minter found "
+            );
+            panic_with_error!(env, ContractError::MinterNotFound);
+        })
 }
