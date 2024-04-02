@@ -30,17 +30,10 @@ pub struct VestingTokenInfo {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VestingInitialBalance {
-    pub address: Address,
-    pub amount: i128,
-    /// this has to be an enum
-    pub curve: Curve,
-}
-
-pub struct BalanceInfo {
+pub struct VestingBalance {
     pub address: Address,
     pub balance: i128,
-    pub curve: Option<Curve>,
+    pub curve: Curve,
 }
 
 pub fn save_config(env: &Env, config: &Config) {

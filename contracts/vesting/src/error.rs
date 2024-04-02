@@ -10,4 +10,5 @@ pub enum ContractError {
     NoBalanceFoundForAddress = 4,
     NoConfigFound = 5,
     NoAdminFound = 6,
+    MissingBalance = 7,
 }
