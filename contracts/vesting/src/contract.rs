@@ -1,9 +1,10 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, panic_with_error, Address, Env, Vec};
 
 use curve::Curve;
 
-use crate::storage::{
-    save_admin, save_config, save_minter, Config, VestingInitialBalance, VestingTokenInfo,
+use crate::{
+    error::ContractError,
+    storage::{save_admin, save_config, save_minter, Config, VestingBalance, VestingTokenInfo},
 };
 
 // Metadata that is added on to the WASM custom section
@@ -18,10 +19,9 @@ pub trait VestingTrait {
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
-        initial_balances: VestingInitialBalance,
-        initial_balances_curve: Option<Curve>,
-        minter_addr: Address,
-        minter_curve: Option<Curve>,
+        vesting_balances: Vec<VestingBalance>,
+        minter_addr: Address, // FIXME - this should be just an account that can mint
+        minter_curve: Option<Curve>, // FIXME why? probably not needed / might want to change the name /
         allowed_vesters: Option<Vec<Address>>,
         max_curve_complexity: u64,
     );
@@ -68,8 +68,7 @@ impl VestingTrait for Vesting {
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
-        initial_balances: VestingInitialBalance,
-        initial_balances_curve: Option<Curve>,
+        vesting_balances: Vec<VestingBalance>,
         minter_addr: Address,
         minter_curve: Option<Curve>,
         allowed_vesters: Option<Vec<Address>>,
@@ -97,6 +96,15 @@ impl VestingTrait for Vesting {
 
         save_config(&env, &config);
         //save balances
+        if vesting_balances.len() <= 0 {
+            log!(
+                &env,
+                "Vesting: Initialize: At least one balance must be provided."
+            );
+            panic_with_error!(env, ContractError::MissingBalance);
+        }
+
+        create_vesting_accounts(vesting_balances);
 
         save_minter(&env, &minter_addr, &minter_curve);
     }
@@ -168,4 +176,13 @@ impl VestingTrait for Vesting {
     fn query_allowance(env: Env, owner_spender: (Address, Address)) -> i128 {
         todo!("query_allowance")
     }
+}
+
+fn create_vesting_accounts(vesting_balances: Vec<VestingBalance>) -> Result<u128, ContractError> {
+    let mut addresses: Vec<Address> = vesting_balances
+        .into_iter()
+        .map(|vb| vb.address)
+        .collect::<Address>();
+
+    Ok(5)
 }
