@@ -4,7 +4,10 @@ use curve::Curve;
 
 use crate::{
     error::ContractError,
-    storage::{save_admin, save_config, save_minter, Config, VestingBalance, VestingTokenInfo},
+    storage::{
+        save_admin, save_balance, save_config, save_minter, save_vesting, save_vesting_schedule,
+        Config, VestingBalance, VestingTokenInfo,
+    },
 };
 
 // Metadata that is added on to the WASM custom section
@@ -14,16 +17,14 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Vesting");
 pub struct Vesting;
 
 pub trait VestingTrait {
-    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
-        minter_addr: Address, // FIXME - this should be just an account that can mint
-        minter_curve: Option<Curve>, // FIXME why? probably not needed / might want to change the name /
+        minter_addr: Address,
         allowed_vesters: Option<Vec<Address>>,
-        max_curve_complexity: u64,
+        max_vesting_complexity: u32,
     );
 
     fn create_vesting_accounts(env: Env, accounts: Vec<Address>);
@@ -63,16 +64,14 @@ pub trait VestingTrait {
 
 #[contractimpl]
 impl VestingTrait for Vesting {
-    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
         minter_addr: Address,
-        minter_curve: Option<Curve>,
         allowed_vesters: Option<Vec<Address>>,
-        max_vesting_complexity: u64,
+        max_vesting_complexity: u32,
     ) {
         save_admin(&env, &admin);
 
@@ -95,7 +94,7 @@ impl VestingTrait for Vesting {
         };
 
         save_config(&env, &config);
-        //save balances
+
         if vesting_balances.len() <= 0 {
             log!(
                 &env,
@@ -104,9 +103,9 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::MissingBalance);
         }
 
-        create_vesting_accounts(vesting_balances);
+        create_vesting_accounts(&env, max_vesting_complexity, vesting_balances);
 
-        save_minter(&env, &minter_addr, &minter_curve);
+        save_minter(&env, &minter_addr);
     }
 
     fn create_vesting_accounts(env: Env, accounts: Vec<Address>) {
@@ -178,11 +177,26 @@ impl VestingTrait for Vesting {
     }
 }
 
-fn create_vesting_accounts(vesting_balances: Vec<VestingBalance>) -> Result<u128, ContractError> {
-    let mut addresses: Vec<Address> = vesting_balances
-        .into_iter()
-        .map(|vb| vb.address)
-        .collect::<Address>();
+fn create_vesting_accounts(
+    env: &Env,
+    vesting_complexity: u32,
+    vesting_balances: Vec<VestingBalance>,
+) -> Result<i128, ContractError> {
+    let mut total_supply = 0;
 
-    Ok(5)
+    vesting_balances.into_iter().for_each(|vb| {
+        if vesting_complexity <= vb.curve.size() {
+            log!(
+                &env,
+                "Vesting: Create vesting account: Invalid curve complexity for {}",
+                vb.address
+            );
+            panic_with_error!(env, ContractError::VestingComplexityTooHigh);
+        }
+
+        save_vesting(&env, &vb.address, (vb.balance, vb.curve));
+        total_supply += vb.balance;
+    });
+
+    Ok(total_supply)
 }
