@@ -5,8 +5,8 @@ use curve::Curve;
 use crate::{
     error::ContractError,
     storage::{
-        save_admin, save_balance, save_config, save_minter, save_vesting, save_vesting_schedule,
-        Config, VestingBalance, VestingTokenInfo,
+        save_admin, save_config, save_minter, save_vesting, Config, MinterInfo, VestingBalance,
+        VestingTokenInfo,
     },
 };
 
@@ -22,10 +22,10 @@ pub trait VestingTrait {
         admin: Address,
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
-        minter_addr: Address,
+        minter_info: MinterInfo,
         allowed_vesters: Option<Vec<Address>>,
         max_vesting_complexity: u32,
-    );
+    ) -> Result<(), ContractError>;
 
     fn create_vesting_accounts(env: Env, accounts: Vec<Address>);
 
@@ -69,10 +69,10 @@ impl VestingTrait for Vesting {
         admin: Address,
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
-        minter_addr: Address,
+        minter_info: MinterInfo,
         allowed_vesters: Option<Vec<Address>>,
         max_vesting_complexity: u32,
-    ) {
+    ) -> Result<(), ContractError> {
         save_admin(&env, &admin);
 
         let whitelisted_accounts = match allowed_vesters {
@@ -103,9 +103,16 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::MissingBalance);
         }
 
-        create_vesting_accounts(&env, max_vesting_complexity, vesting_balances);
+        let total_supply = create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
+        let cap_limit = minter_info.cap.value(env.ledger().timestamp()) as i128;
+        if total_supply > cap_limit {
+            log!(&env, "Vesting: Initialize: total supply over the cap");
+            panic_with_error!(env, ContractError::SupplyOverTheCap);
+        };
 
-        save_minter(&env, &minter_addr);
+        save_minter(&env, &minter_info.address, &minter_info.cap);
+
+        Ok(())
     }
 
     fn create_vesting_accounts(env: Env, accounts: Vec<Address>) {
