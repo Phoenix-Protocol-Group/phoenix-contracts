@@ -169,7 +169,15 @@ impl VestingTrait for Vesting {
     }
 
     fn transfer_vesting(env: Env, from: Address, to: Address, amount: i128, curve: Curve) {
-        // check if caller is in the allowlist
+        // check if caller is in the allowlist if not throw exception
+
+        // check if amount is not zero
+
+        // assert vesting is valid
+
+        // if not fully vested we update
+
+        // transfer
     }
 
     fn burn(env: Env, amount: i128) {
