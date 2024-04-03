@@ -238,3 +238,75 @@ pub fn calc_power(
         stakes * multiplier / token_per_power as i128
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use curve::SaturatingLinear;
+    use soroban_sdk::testutils::Address as _;
+
+    #[test]
+    fn update_rewards_should_return_early_if_old_power_is_same_as_new_power() {
+        let env = Env::default();
+        let user = Address::generate(&env);
+        let asset = Address::generate(&env);
+        let mut distribution = Distribution::default();
+
+        let old_rewards_power = 100;
+        let new_rewards_power = 100;
+
+        // it's only enough not to panic as the inner method call to apply_points_correction calls get_withdraw_adjustment
+        // this would trigger InternalError otherwise
+        update_rewards(
+            &env,
+            &user,
+            &asset,
+            &mut distribution,
+            old_rewards_power,
+            new_rewards_power,
+        );
+    }
+
+    #[test]
+    fn calculate_annualized_payout_should_return_zero_when_last_timestamp_in_the_past() {
+        let reward_curve = Some(Curve::SaturatingLinear(SaturatingLinear {
+            min_x: 15,
+            min_y: 1,
+            max_x: 60,
+            max_y: 120,
+        }));
+        let result = calculate_annualized_payout(reward_curve, 121);
+        assert_eq!(result, Decimal::zero());
+    }
+
+    #[test]
+    fn calculate_annualized_payout_extrapolating_an_year() {
+        let reward_curve = Some(Curve::SaturatingLinear(SaturatingLinear {
+            min_x: 15,
+            min_y: 1,
+            max_x: SECONDS_PER_YEAR + 60,
+            max_y: (SECONDS_PER_YEAR + 120) as u128,
+        }));
+        // we take the last timestamp in the curve and extrapolate the rewards for a year
+        let result = calculate_annualized_payout(reward_curve, SECONDS_PER_YEAR + 1);
+        // a bit weird assertion, but we're testing the extrapolation with a large number
+        assert_eq!(
+            result,
+            Decimal::new(16_856_291_324_745_762_711_864_406_779_661)
+        );
+    }
+
+    #[test]
+    fn calculate_annualized_payout_should_return_zero_no_end_in_curve() {
+        let reward_curve = Some(Curve::Constant(10));
+        let result = calculate_annualized_payout(reward_curve, 121);
+        assert_eq!(result, Decimal::zero());
+    }
+
+    #[test]
+    fn calculate_annualized_payout_should_return_zero_no_curve() {
+        let reward_curve = None::<Curve>;
+        let result = calculate_annualized_payout(reward_curve, 121);
+        assert_eq!(result, Decimal::zero());
+    }
+}

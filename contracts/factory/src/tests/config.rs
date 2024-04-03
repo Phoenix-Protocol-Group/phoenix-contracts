@@ -1,4 +1,8 @@
-use super::setup::{deploy_factory_contract, lp_contract};
+use super::setup::{
+    deploy_factory_contract, install_lp_contract, install_multihop_wasm, install_stake_wasm,
+    install_token_wasm, lp_contract,
+};
+use crate::contract::{Factory, FactoryClient};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::{
@@ -158,6 +162,36 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
     );
 }
 
+#[should_panic(
+    expected = "Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools."
+)]
+#[test]
+fn factory_fails_to_init_lp_when_no_whitelisted_accounts() {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let factory = FactoryClient::new(&env, &env.register_contract(None, Factory {}));
+    let multihop_wasm_hash = install_multihop_wasm(&env);
+    let whitelisted_accounts = vec![&env];
+
+    let lp_wasm_hash = install_lp_contract(&env);
+    let stake_wasm_hash = install_stake_wasm(&env);
+    let token_wasm_hash = install_token_wasm(&env);
+
+    factory.initialize(
+        &admin,
+        &multihop_wasm_hash,
+        &lp_wasm_hash,
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &whitelisted_accounts,
+        &10u32,
+    );
+}
+
 #[test]
 fn successfully_updates_new_list_of_whitelisted_accounts() {
     let env = Env::default();
@@ -204,6 +238,26 @@ fn doesn_not_change_whitelisted_accounts_when_removing_non_existent() {
 
     assert!(config.whitelisted_accounts.contains(admin));
     assert!(config.whitelisted_accounts.len() == 1);
+}
+
+#[should_panic(expected = "Factory: Update whitelisted accounts: You are not authorized!")]
+#[test]
+fn fails_to_update_whitelisted_accounts_when_not_authorized() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let first_wl_addr = Address::generate(&env);
+    let second_wl_addr = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, admin.clone());
+
+    let to_add = vec![&env, first_wl_addr.clone(), second_wl_addr.clone()];
+    factory.update_whitelisted_accounts(&admin.clone(), &to_add, &vec![&env]);
+
+    let to_remove = vec![&env, admin.clone()];
+
+    factory.update_whitelisted_accounts(&Address::generate(&env), &vec![&env], &to_remove);
 }
 
 #[test]

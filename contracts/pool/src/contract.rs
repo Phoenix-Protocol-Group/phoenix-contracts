@@ -263,7 +263,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             if custom_slippage > config.max_allowed_slippage_bps {
                 log!(
                     &env,
-                    "Pool: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage toleranc"
+                    "Pool: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage tolerance"
                 );
                 panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
             }
@@ -1085,6 +1085,7 @@ pub fn compute_offer_amount(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use soroban_sdk::{testutils::Address as _, Address};
 
     #[test]
     fn test_assert_slippage_tolerance_success() {
@@ -1229,5 +1230,32 @@ mod tests {
 
         // Test that the commission amount is exactly 10% of the offer amount
         assert_eq!(result.2, result.0 * Decimal::percent(10));
+    }
+
+    #[should_panic(expected = "Pool: Token offered to swap not found in Pool")]
+    #[test]
+    fn should_panic_when_splitting_non_existent_token() {
+        let env = Env::default();
+        let config = &Config {
+            token_a: Address::generate(&env),
+            token_b: Address::generate(&env),
+            share_token: Address::generate(&env),
+            stake_contract: Address::generate(&env),
+            pool_type: PairType::Xyk,
+            total_fee_bps: 0i64,
+            fee_recipient: Address::generate(&env),
+            max_allowed_slippage_bps: 100i64,
+            max_allowed_spread_bps: 100i64,
+            max_referral_bps: 1_000i64,
+        };
+        split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
+    }
+
+    #[test]
+    fn assert_slippage_tolerance_with_none_as_tolerance() {
+        let env = Env::default();
+
+        // assert slippage tolerance with None as tolerance should pass as well
+        assert_slippage_tolerance(&env, None::<i64>, &[10, 20], &[30, 60], Decimal::bps(5_000));
     }
 }

@@ -963,3 +963,21 @@ fn test_bond_withdraw_unbond() {
         }
     );
 }
+
+#[should_panic(expected = "Stake: Add distribution: Distribution already added")]
+#[test]
+fn panic_when_adding_same_distribution_twice() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+
+    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(&manager, &reward_token.address);
+}

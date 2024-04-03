@@ -116,7 +116,7 @@ impl StakingTrait for Staking {
             panic_with_error!(&env, ContractError::InvalidMinBond);
         }
         if min_reward <= 0 {
-            log!(&env, "Stake: initialize: min_reward must be bigger then 0!");
+            log!(&env, "Stake: initialize: min_reward must be bigger than 0!");
             panic_with_error!(&env, ContractError::InvalidMinReward);
         }
 
