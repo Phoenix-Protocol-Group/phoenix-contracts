@@ -129,6 +129,8 @@ impl VestingTrait for Vesting {
         to: Address,
         amount: i128,
     ) -> Result<(), ContractError> {
+        from.require_auth();
+
         if amount <= 0 {
             log!(&env, "Vesting: Transfer token: Invalid transfer amount");
             panic_with_error!(env, ContractError::InvalidZeroAmount);
@@ -167,7 +169,7 @@ impl VestingTrait for Vesting {
     }
 
     fn transfer_vesting(env: Env, from: Address, to: Address, amount: i128, curve: Curve) {
-        todo!("transfer_vesting")
+        // check if caller is in the allowlist
     }
 
     fn burn(env: Env, amount: i128) {
