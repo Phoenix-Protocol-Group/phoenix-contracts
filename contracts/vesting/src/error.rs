@@ -1,9 +1,11 @@
+use curve::CurveError;
 use soroban_sdk::contracterror;
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum ContractError {
+    Std = 0,
     VestingNotFoundForAddress = 1,
     AllowanceNotFoundForGivenPair = 2,
     MinterNotFound = 3,
@@ -13,7 +15,16 @@ pub enum ContractError {
     MissingBalance = 7,
     VestingComplexityTooHigh = 8,
     SupplyOverTheCap = 9,
-    InvalidZeroAmount = 10,
+    InvalidTransferAmount = 10,
     CantMoveVestingTokens = 11,
     NotEnoughBalance = 12,
+    NotAuthorized = 13,
+    NeverFullyVested = 14,
+    VestsMoreThanSent = 15,
+}
+
+impl From<CurveError> for ContractError {
+    fn from(_: CurveError) -> Self {
+        ContractError::Std
+    }
 }
