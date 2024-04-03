@@ -6,7 +6,7 @@ use crate::{
     error::ContractError,
     storage::{
         get_config, get_vesting, remove_vesting, save_admin, save_config, save_minter,
-        save_vesting, Config, MinterInfo, VestingBalance, VestingTokenInfo,
+        save_vesting, update_vesting, Config, MinterInfo, VestingBalance, VestingTokenInfo,
     },
     token_contract,
 };
@@ -35,7 +35,13 @@ pub trait VestingTrait {
         amount: i128,
     ) -> Result<(), ContractError>;
 
-    fn transfer_vesting(env: Env, from: Address, to: Address, amount: i128, curve: Curve);
+    fn transfer_vesting(
+        env: Env,
+        from: Address,
+        to: Address,
+        amount: i128,
+        curve: Curve,
+    ) -> Result<(), ContractError>;
 
     fn burn(env: Env, amount: i128);
 
@@ -49,7 +55,7 @@ pub trait VestingTrait {
 
     fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address);
 
-    fn query_config(env: Env) -> Config;
+    fn query_config(env: Env) -> Result<Config, ContractError>;
 
     fn query_balance(env: Env, address: Address) -> i128;
 
@@ -129,11 +135,11 @@ impl VestingTrait for Vesting {
         to: Address,
         amount: i128,
     ) -> Result<(), ContractError> {
-        from.require_auth();
+        from.require_auth(); // what if the caller is different from the sender?
 
         if amount <= 0 {
             log!(&env, "Vesting: Transfer token: Invalid transfer amount");
-            panic_with_error!(env, ContractError::InvalidZeroAmount);
+            panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
         let vesting_amount = get_vesting(&env, &from).0; // FIXME - probably use a struct
@@ -168,16 +174,79 @@ impl VestingTrait for Vesting {
         Ok(())
     }
 
-    fn transfer_vesting(env: Env, from: Address, to: Address, amount: i128, curve: Curve) {
-        // check if caller is in the allowlist if not throw exception
+    fn transfer_vesting(
+        env: Env,
+        from: Address,
+        to: Address,
+        amount: i128,
+        curve: Curve,
+    ) -> Result<(), ContractError> {
+        from.require_auth();
 
-        // check if amount is not zero
+        let white_list = get_config(&env).whitelist;
+        if !white_list.contains(from.clone()) {
+            log!(
+                &env,
+                "Vesting: Transfer Vesting: Not authorized to transfer vesting"
+            );
+            panic_with_error!(env, ContractError::NotAuthorized);
+        }
 
-        // assert vesting is valid
+        if amount <= 0 {
+            log!(&env, "Vesting: Transfer Vesting: Invalid transfer amount");
+            panic_with_error!(env, ContractError::InvalidTransferAmount);
+        }
+
+        curve.validate_monotonic_decreasing()?;
+        let (low, high) = curve.range();
+        if low != 0 {
+            log!(&env, "Vesting: Transfer Vesting: Invalid low value");
+            panic_with_error!(env, ContractError::NeverFullyVested);
+        } else if high as i128 > amount {
+            log!(
+                &env,
+                "Vesting: Transfer Vesting: Vesting more than being sent"
+            );
+            panic_with_error!(env, ContractError::VestsMoreThanSent);
+        }
 
         // if not fully vested we update
+        if !curve.value(env.ledger().timestamp()) == 0 {
+            update_vesting(&env, &to, curve)?;
+        }
+
+        let vesting_amount = get_vesting(&env, &from).0; // FIXME - probably use a struct
+
+        // if vesting is equal to zero we can remove it
+        if vesting_amount == 0 {
+            remove_vesting(&env, &from)
+        }
 
         // transfer
+        let vesting_token_address = get_config(&env).token_info.address;
+
+        let vestint_token_client = token_contract::Client::new(&env, &vesting_token_address);
+
+        let sender_balance = vestint_token_client.balance(&from);
+
+        if let Some(remainder) = sender_balance.checked_sub(amount) {
+            if vesting_amount > remainder {
+                log!(
+                    &env,
+                    "Vesting: Transfer Token: Remaining amount must be at least equal to vested amount"
+                );
+                panic_with_error!(env, ContractError::CantMoveVestingTokens);
+            }
+            vestint_token_client.transfer(&from, &to, &amount)
+        } else {
+            log!(
+                &env,
+                "Vesting: Transfer Token: Not enough balance to transfer"
+            );
+            panic_with_error!(env, ContractError::NotEnoughBalance);
+        }
+
+        Ok(())
     }
 
     fn burn(env: Env, amount: i128) {
@@ -204,8 +273,10 @@ impl VestingTrait for Vesting {
         todo!("remove_from_whitelist")
     }
 
-    fn query_config(env: Env) -> Config {
-        todo!("query_config")
+    fn query_config(env: Env) -> Result<Config, ContractError> {
+        let config = get_config(&env);
+
+        Ok(config)
     }
 
     fn query_balance(env: Env, address: Address) -> i128 {
