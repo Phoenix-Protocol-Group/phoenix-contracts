@@ -12,4 +12,5 @@ pub enum ContractError {
     NoAdminFound = 6,
     MissingBalance = 7,
     VestingComplexityTooHigh = 8,
+    SupplyOverTheCap = 9,
 }
