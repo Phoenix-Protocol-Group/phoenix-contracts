@@ -5,9 +5,10 @@ use curve::Curve;
 use crate::{
     error::ContractError,
     storage::{
-        save_admin, save_config, save_minter, save_vesting, Config, MinterInfo, VestingBalance,
-        VestingTokenInfo,
+        get_config, get_vesting, remove_vesting, save_admin, save_config, save_minter,
+        save_vesting, Config, MinterInfo, VestingBalance, VestingTokenInfo,
     },
+    token_contract,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -27,9 +28,12 @@ pub trait VestingTrait {
         max_vesting_complexity: u32,
     ) -> Result<(), ContractError>;
 
-    fn create_vesting_accounts(env: Env, accounts: Vec<Address>);
-
-    fn transfer_token(env: Env, from: Address, to: Address, amount: i128);
+    fn transfer_token(
+        env: Env,
+        from: Address,
+        to: Address,
+        amount: i128,
+    ) -> Result<(), ContractError>;
 
     fn transfer_vesting(env: Env, from: Address, to: Address, amount: i128, curve: Curve);
 
@@ -84,10 +88,11 @@ impl VestingTrait for Vesting {
             name: vesting_token.name,
             symbol: vesting_token.symbol,
             decimals: vesting_token.decimals,
+            address: vesting_token.address,
         };
 
         let config = Config {
-            admin,
+            admin: admin.clone(),
             whitelist: whitelisted_accounts,
             token_info,
             max_vesting_complexity,
@@ -112,15 +117,53 @@ impl VestingTrait for Vesting {
 
         save_minter(&env, &minter_info.address, &minter_info.cap);
 
+        env.events()
+            .publish(("Initialize", "Vesting contract with admin: "), admin);
+
         Ok(())
     }
 
-    fn create_vesting_accounts(env: Env, accounts: Vec<Address>) {
-        todo!("create_vesting_accounts")
-    }
+    fn transfer_token(
+        env: Env,
+        from: Address,
+        to: Address,
+        amount: i128,
+    ) -> Result<(), ContractError> {
+        if amount <= 0 {
+            log!(&env, "Vesting: Transfer token: Invalid transfer amount");
+            panic_with_error!(env, ContractError::InvalidZeroAmount);
+        }
 
-    fn transfer_token(env: Env, from: Address, to: Address, amount: i128) {
-        todo!("transfer_token")
+        let vesting_amount = get_vesting(&env, &from).0; // FIXME - probably use a struct
+
+        // if vesting is equal to zero we can remove it
+        if vesting_amount == 0 {
+            remove_vesting(&env, &from)
+        }
+
+        let vesting_token_address = get_config(&env).token_info.address;
+
+        let vestint_token_client = token_contract::Client::new(&env, &vesting_token_address);
+
+        let sender_balance = vestint_token_client.balance(&from);
+        if let Some(remainder) = sender_balance.checked_sub(amount) {
+            if vesting_amount > remainder {
+                log!(
+                    &env,
+                    "Vesting: Transfer Token: Remaining amount must be at least equal to vested amount"
+                );
+                panic_with_error!(env, ContractError::CantMoveVestingTokens);
+            }
+            vestint_token_client.transfer(&from, &to, &amount)
+        } else {
+            log!(
+                &env,
+                "Vesting: Transfer Token: Not enough balance to transfer"
+            );
+            panic_with_error!(env, ContractError::NotEnoughBalance);
+        }
+
+        Ok(())
     }
 
     fn transfer_vesting(env: Env, from: Address, to: Address, amount: i128, curve: Curve) {
