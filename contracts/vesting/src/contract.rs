@@ -144,6 +144,7 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
+        // TODO get rid of this shit, use the new deduct coints. WHen sending from line 155 use current contract addr, instead of &from
         let vesting_amount = get_vesting(&env, &from).amount;
 
         // if vesting is equal to zero we can remove it
