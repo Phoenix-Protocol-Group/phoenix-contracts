@@ -13,4 +13,7 @@ pub enum ContractError {
     MissingBalance = 7,
     VestingComplexityTooHigh = 8,
     SupplyOverTheCap = 9,
+    InvalidZeroAmount = 10,
+    CantMoveVestingTokens = 11,
+    NotEnoughBalance = 12,
 }

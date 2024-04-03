@@ -1,3 +1,5 @@
+use core::ops::Add;
+
 use curve::Curve;
 use soroban_sdk::{
     contracttype, log, panic_with_error, symbol_short, Address, ConversionError, Env, String,
@@ -43,6 +45,7 @@ pub struct VestingTokenInfo {
     pub name: String,
     pub symbol: String,
     pub decimals: u32,
+    pub address: Address,
 }
 
 #[contracttype]
@@ -95,11 +98,15 @@ pub fn save_vesting(env: &Env, address: &Address, balance_curve: (i128, Curve)) 
     env.storage().persistent().set(address, &balance_curve);
 }
 
-pub fn get_vesting(env: &Env, address: &Address) -> Curve {
+pub fn get_vesting(env: &Env, address: &Address) -> (i128, Curve) {
     env.storage().persistent().get(address).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
     })
+}
+
+pub fn remove_vesting(env: &Env, address: &Address) {
+    env.storage().persistent().remove(&address);
 }
 
 pub fn update_allowances(env: &Env, owner_spender: &(&Address, &Address), allowance: &i128) {
