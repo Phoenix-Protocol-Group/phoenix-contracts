@@ -6,7 +6,8 @@ use crate::{
     error::ContractError,
     storage::{
         get_config, get_vesting, remove_vesting, save_admin, save_config, save_minter,
-        save_vesting, update_vesting, Config, MinterInfo, VestingBalance, VestingTokenInfo,
+        save_vesting, update_vesting, Config, MinterInfo, VestingBalance, VestingInfo,
+        VestingTokenInfo,
     },
     token_contract,
     utils::transfer,
@@ -143,7 +144,7 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
-        let vesting_amount = get_vesting(&env, &from).0; // FIXME - probably use a struct
+        let vesting_amount = get_vesting(&env, &from).amount;
 
         // if vesting is equal to zero we can remove it
         if vesting_amount == 0 {
@@ -196,7 +197,7 @@ impl VestingTrait for Vesting {
             update_vesting(&env, &to, curve)?;
         }
 
-        let vesting_amount = get_vesting(&env, &from).0; // FIXME - probably use a struct
+        let vesting_amount = get_vesting(&env, &from).amount;
 
         // if vesting is equal to zero we can remove it
         if vesting_amount == 0 {
@@ -211,6 +212,7 @@ impl VestingTrait for Vesting {
 
     fn burn(env: Env, amount: i128) {
         todo!("burn")
+        // verity the amount
     }
 
     fn mint(env: Env, sender: Address, to: Address, amount: i128) {
@@ -285,7 +287,14 @@ fn create_vesting_accounts(
             panic_with_error!(env, ContractError::VestingComplexityTooHigh);
         }
 
-        save_vesting(&env, &vb.address, (vb.balance, vb.curve));
+        save_vesting(
+            &env,
+            &vb.address,
+            VestingInfo {
+                amount: vb.balance,
+                curve: vb.curve,
+            },
+        );
         total_supply += vb.balance;
     });
 

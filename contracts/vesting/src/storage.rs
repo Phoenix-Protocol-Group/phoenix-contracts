@@ -63,6 +63,13 @@ pub struct MinterInfo {
     pub cap: Curve,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingInfo {
+    pub amount: i128,
+    pub curve: Curve,
+}
+
 pub fn save_config(env: &Env, config: &Config) {
     env.storage().persistent().set(&DataKey::Config, config);
 }
@@ -94,11 +101,11 @@ pub fn get_admin(env: &Env) -> Address {
         })
 }
 
-pub fn save_vesting(env: &Env, address: &Address, balance_curve: (i128, Curve)) {
+pub fn save_vesting(env: &Env, address: &Address, balance_curve: VestingInfo) {
     env.storage().persistent().set(address, &balance_curve);
 }
 
-pub fn get_vesting(env: &Env, address: &Address) -> (i128, Curve) {
+pub fn get_vesting(env: &Env, address: &Address) -> VestingInfo {
     env.storage().persistent().get(address).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
@@ -160,4 +167,18 @@ pub fn get_minter_cap(env: &Env, minter_addr: &Address) -> Curve {
             );
             panic_with_error!(env, ContractError::MinterNotFound);
         })
+}
+
+pub fn get_delegated(env: &Env, address: &Address) -> i128 {
+    env.storage().persistent().get(address).unwrap_or(0)
+}
+
+pub fn update_delegated(env: &Env, address: &Address, amount: i128) {
+    env.storage()
+        .persistent()
+        .update(address, |current_value: Option<i128>| {
+            current_value
+                .map(|current_value| current_value + amount)
+                .unwrap_or(amount)
+        });
 }
