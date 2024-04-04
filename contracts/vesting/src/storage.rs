@@ -147,7 +147,7 @@ pub fn update_allowances(env: &Env, owner_spender: &(&Address, &Address), allowa
     env.storage().persistent().set(owner_spender, allowance);
 }
 
-pub fn get_allowances(env: &Env, owner_spender: &(&Address, &Address)) -> i128 {
+pub fn get_allowances(env: &Env, owner_spender: &(Address, Address)) -> i128 {
     env.storage().persistent().get(owner_spender).unwrap_or_else(|| {
             log!(&env, "Vesting: Get allowance: Critical error - No allowance found for the given address pair");
             panic_with_error!(env, ContractError::AllowanceNotFoundForGivenPair);
