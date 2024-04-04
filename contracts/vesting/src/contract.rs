@@ -250,11 +250,27 @@ impl VestingTrait for Vesting {
         }
 
         // update supply and cap
-        let vesting_token_client =
-            token_contract::Client::new(&env, &get_config(&env).token_info.address);
-        let total_balance = vesting_token_client.balance(&env.current_contract_address());
+        let total_supply = get_vesting_total_supply(&env)
+            .checked_add(amount)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Vesting: Mint: Critical error - total supply cannot be negative"
+                );
+                panic_with_error!(env, ContractError::Std);
+            });
+
+        update_vesting_total_supply(&env, total_supply);
+
+        let limit = get_minter(&env).cap.value(env.ledger().timestamp());
+        if total_supply > limit as i128 {
+            log!(&env, "Vesting: Mint: total supply over the cap");
+            panic_with_error!(env, ContractError::SupplyOverTheCap);
+        }
 
         // mint to recipient
+        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        token_client.mint(&to, &amount);
     }
 
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
