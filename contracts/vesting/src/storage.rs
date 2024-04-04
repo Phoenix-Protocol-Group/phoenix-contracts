@@ -123,6 +123,7 @@ pub fn update_vesting(env: &Env, address: &Address, new_curve: Curve) -> Result<
         .persistent()
         .update(&address, |current_value: Option<Curve>| {
             let new_curve_schedule = current_value
+                // FIXME: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/227
                 .map(|current_value| current_value.combine(&env, &new_curve))
                 .unwrap_or(new_curve);
 
