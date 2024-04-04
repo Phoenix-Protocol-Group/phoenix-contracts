@@ -5,9 +5,10 @@ use curve::Curve;
 use crate::{
     error::ContractError,
     storage::{
-        get_config, get_minter, get_vesting, get_vesting_total_supply, remove_vesting, save_admin,
-        save_config, save_minter, save_vesting, update_vesting, update_vesting_total_supply,
-        Config, MinterInfo, VestingBalance, VestingInfo, VestingTokenInfo,
+        get_allowances, get_config, get_delegated, get_minter, get_vesting,
+        get_vesting_total_supply, remove_vesting, save_admin, save_config, save_minter,
+        save_vesting, update_vesting, update_vesting_total_supply, Config, MinterInfo,
+        VestingBalance, VestingInfo, VestingTokenInfo,
     },
     token_contract,
     utils::{deduct_coins, transfer},
@@ -274,19 +275,61 @@ impl VestingTrait for Vesting {
     }
 
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
-        todo!("update_minter")
+        if sender != get_minter(&env).address {
+            log!(
+                &env,
+                "Vesting: Update minter: Not authorized to update minter"
+            );
+            panic_with_error!(env, ContractError::NotAuthorized);
+        }
+
+        save_minter(
+            &env,
+            MinterInfo {
+                address: new_minter,
+                cap: get_minter(&env).cap,
+            },
+        );
     }
 
     fn send_tokens_to_contract(env: Env, sender: Address, contract: Address, amount: i128) {
-        todo!("send_tokens_to_contract")
+        if amount <= 0 {
+            log!(&env, "Vesting: Send tokens to contract: Invalid amount");
+            panic_with_error!(env, ContractError::InvalidTransferAmount);
+        }
+
+        let _ = deduct_coins(&env, &sender, amount);
     }
 
     fn add_to_whitelist(env: Env, sender: Address, to_add: Address) {
-        todo!("add_to_whitelist")
+        let mut config = get_config(&env);
+        if sender != config.admin {
+            log!(
+                &env,
+                "Vesting: Add to whitelist: Not authorized to add to whitelist"
+            );
+            panic_with_error!(env, ContractError::NotAuthorized);
+        }
+
+        config.whitelist.push_back(to_add);
+        save_config(&env, &config);
     }
 
     fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address) {
-        todo!("remove_from_whitelist")
+        let mut config = get_config(&env);
+        if sender != config.admin {
+            log!(
+                &env,
+                "Vesting: Remove from whitelist: Not authorized to remove from whitelist"
+            );
+            panic_with_error!(env, ContractError::NotAuthorized);
+        }
+
+        config.whitelist.first_index_of(to_remove).map(|index| {
+            config.whitelist.remove(index);
+        });
+
+        save_config(&env, &config);
     }
 
     fn query_config(env: Env) -> Result<Config, ContractError> {
@@ -296,31 +339,32 @@ impl VestingTrait for Vesting {
     }
 
     fn query_balance(env: Env, address: Address) -> i128 {
-        todo!("query_balance")
+        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        token_client.balance(&address)
     }
 
     fn query_vesting(env: Env, address: Address) -> Curve {
-        todo!("query_vesting")
+        get_vesting(&env, &address).curve
     }
 
     fn query_delegated(env: Env, address: Address) -> i128 {
-        todo!("query_delegated")
+        get_delegated(&env, &address)
     }
 
     fn query_vesting_allowlist(env: Env) -> Vec<Address> {
-        todo!("query_vesting_allowlist")
+        get_config(&env).whitelist
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {
-        todo!("query_token_info")
+        get_config(&env).token_info
     }
 
     fn query_minter(env: Env) -> Address {
-        todo!("query_minter")
+        get_minter(&env).address
     }
 
     fn query_allowance(env: Env, owner_spender: (Address, Address)) -> i128 {
-        todo!("query_allowance")
+        get_allowances(&env, &owner_spender)
     }
 }
 
