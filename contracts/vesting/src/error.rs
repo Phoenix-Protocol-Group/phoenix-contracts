@@ -21,6 +21,7 @@ pub enum ContractError {
     NotAuthorized = 13,
     NeverFullyVested = 14,
     VestsMoreThanSent = 15,
+    InvalidBurnAmount = 16,
 }
 
 impl From<CurveError> for ContractError {

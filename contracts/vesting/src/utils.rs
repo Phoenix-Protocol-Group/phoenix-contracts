@@ -42,7 +42,7 @@ pub fn transfer(
 /// This reduces the account by the given amount, but it also checks the vesting schedule to
 /// ensure there is enough liquidity to do the transfer.
 /// (Always use this to enforce the vesting schedule)
-pub fn deduct_coints(env: &Env, sender: &Address, amount: i128) -> Result<i128, ContractError> {
+pub fn deduct_coins(env: &Env, sender: &Address, amount: i128) -> Result<i128, ContractError> {
     let vesting_amount = get_vesting(env, sender)
         .curve
         .value(env.ledger().timestamp()) as i128;

@@ -10,7 +10,7 @@ use crate::{
         VestingTokenInfo,
     },
     token_contract,
-    utils::{deduct_coints, transfer},
+    utils::{deduct_coins, transfer},
 };
 
 // Metadata that is added on to the WASM custom section
@@ -45,7 +45,7 @@ pub trait VestingTrait {
         curve: Curve,
     ) -> Result<(), ContractError>;
 
-    fn burn(env: Env, amount: i128);
+    fn burn(env: Env, sender: Address, amount: i128) -> Result<(), ContractError>;
 
     fn mint(env: Env, sender: Address, to: Address, amount: i128);
 
@@ -144,7 +144,7 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
-        let vesting_amount_result = deduct_coints(&env, &from, amount)?;
+        let vesting_amount_result = deduct_coins(&env, &from, amount)?;
 
         transfer(
             &env,
@@ -198,7 +198,7 @@ impl VestingTrait for Vesting {
             update_vesting(&env, &to, curve)?;
         }
 
-        let vesting_amount_result = deduct_coints(&env, &from, amount)?;
+        let vesting_amount_result = deduct_coins(&env, &from, amount)?;
 
         transfer(
             &env,
@@ -210,9 +210,22 @@ impl VestingTrait for Vesting {
         Ok(())
     }
 
-    fn burn(env: Env, amount: i128) {
-        todo!("burn")
+    fn burn(env: Env, sender: Address, amount: i128) -> Result<(), ContractError> {
         // verity the amount
+        if amount <= 0 {
+            log!(&env, "Vesting: Burn: Invalid burn amount");
+            panic_with_error!(env, ContractError::InvalidBurnAmount);
+        }
+
+        // deduct the amount from the sender
+        let _ = deduct_coins(&env, &sender, amount)?;
+        let vesting_token_address = &get_config(&env).token_info.address;
+        let token_client = token_contract::Client::new(&env, vesting_token_address);
+
+        // reduce the total supply
+        // TODO: check if we can burn the amount send?
+        token_client.burn(vesting_token_address, &amount);
+        Ok(())
     }
 
     fn mint(env: Env, sender: Address, to: Address, amount: i128) {
