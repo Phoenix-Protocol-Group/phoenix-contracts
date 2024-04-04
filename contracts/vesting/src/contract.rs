@@ -5,9 +5,9 @@ use curve::Curve;
 use crate::{
     error::ContractError,
     storage::{
-        get_config, get_vesting, remove_vesting, save_admin, save_config, save_minter,
-        save_vesting, update_vesting, Config, MinterInfo, VestingBalance, VestingInfo,
-        VestingTokenInfo,
+        get_config, get_minter, get_vesting, get_vesting_total_supply, remove_vesting, save_admin,
+        save_config, save_minter, save_vesting, update_vesting, update_vesting_total_supply,
+        Config, MinterInfo, VestingBalance, VestingInfo, VestingTokenInfo,
     },
     token_contract,
     utils::{deduct_coins, transfer},
@@ -97,6 +97,7 @@ impl VestingTrait for Vesting {
             symbol: vesting_token.symbol,
             decimals: vesting_token.decimals,
             address: vesting_token.address,
+            total_supply: 0,
         };
 
         let config = Config {
@@ -123,7 +124,7 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::SupplyOverTheCap);
         };
 
-        save_minter(&env, &minter_info.address, &minter_info.cap);
+        save_minter(&env, minter_info);
 
         env.events()
             .publish(("Initialize", "Vesting contract with admin: "), admin);
@@ -219,17 +220,41 @@ impl VestingTrait for Vesting {
 
         // deduct the amount from the sender
         let _ = deduct_coins(&env, &sender, amount)?;
-        let vesting_token_address = &get_config(&env).token_info.address;
-        let token_client = token_contract::Client::new(&env, vesting_token_address);
 
-        // reduce the total supply
-        // TODO: check if we can burn the amount send?
-        token_client.burn(vesting_token_address, &amount);
+        let total_supply = get_vesting_total_supply(&env)
+            .checked_sub(amount)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Vesting: Burn: Critical error - total supply cannot be negative"
+                );
+                panic_with_error!(env, ContractError::Std);
+            });
+
+        update_vesting_total_supply(&env, total_supply);
+
         Ok(())
     }
 
     fn mint(env: Env, sender: Address, to: Address, amount: i128) {
-        todo!("mint")
+        // check amount
+        if amount <= 0 {
+            log!(&env, "Vesting: Mint: Invalid mint amount");
+            panic_with_error!(env, ContractError::InvalidMintAmount);
+        }
+
+        // check if sender is minter
+        if sender != get_minter(&env).address {
+            log!(&env, "Vesting: Mint: Not authorized to mint");
+            panic_with_error!(env, ContractError::NotAuthorized);
+        }
+
+        // update supply and cap
+        let vesting_token_client =
+            token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        let total_balance = vesting_token_client.balance(&env.current_contract_address());
+
+        // mint to recipient
     }
 
     fn update_minter(env: Env, sender: Address, new_minter: Address) {

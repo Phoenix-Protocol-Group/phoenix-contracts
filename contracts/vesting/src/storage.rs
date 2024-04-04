@@ -46,6 +46,7 @@ pub struct VestingTokenInfo {
     pub symbol: String,
     pub decimals: u32,
     pub address: Address,
+    pub total_supply: i128,
 }
 
 #[contracttype]
@@ -152,18 +153,18 @@ pub fn get_allowances(env: &Env, owner_spender: &(&Address, &Address)) -> i128 {
         })
 }
 
-pub fn save_minter(env: &Env, minter_addr: &Address, curve: &Curve) {
-    env.storage().persistent().set(&minter_addr, curve);
+pub fn save_minter(env: &Env, minter: MinterInfo) {
+    env.storage().persistent().set(&DataKey::Minter, &minter);
 }
 
-pub fn get_minter_cap(env: &Env, minter_addr: &Address) -> Curve {
+pub fn get_minter(env: &Env) -> MinterInfo {
     env.storage()
         .persistent()
-        .get(&minter_addr)
+        .get(&DataKey::Minter)
         .unwrap_or_else(|| {
             log!(
                 &env,
-                "Vesting: Get minter cap: Critical error - No minter found "
+                "Vesting: Get minter: Critical error - No minter found "
             );
             panic_with_error!(env, ContractError::MinterNotFound);
         })
@@ -181,4 +182,21 @@ pub fn update_delegated(env: &Env, address: &Address, amount: i128) {
                 .map(|current_value| current_value + amount)
                 .unwrap_or(amount)
         });
+}
+
+pub fn get_vesting_total_supply(env: &Env) -> i128 {
+    get_config(&env).token_info.total_supply
+}
+
+pub fn update_vesting_total_supply(env: &Env, amount: i128) {
+    let config = get_config(&env);
+    let new_total_supply = config.token_info.total_supply.add(amount);
+    let new_config = Config {
+        token_info: VestingTokenInfo {
+            total_supply: new_total_supply,
+            ..config.token_info
+        },
+        ..config
+    };
+    save_config(env, &new_config);
 }
