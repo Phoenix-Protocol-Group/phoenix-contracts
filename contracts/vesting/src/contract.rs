@@ -10,7 +10,7 @@ use crate::{
         VestingTokenInfo,
     },
     token_contract,
-    utils::transfer,
+    utils::{deduct_coints, transfer},
 };
 
 // Metadata that is added on to the WASM custom section
@@ -144,15 +144,15 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
-        // TODO get rid of this shit, use the new deduct coints. WHen sending from line 155 use current contract addr, instead of &from
-        let vesting_amount = get_vesting(&env, &from).amount;
+        let vesting_amount_result = deduct_coints(&env, &from, amount)?;
 
-        // if vesting is equal to zero we can remove it
-        if vesting_amount == 0 {
-            remove_vesting(&env, &from)
-        }
-
-        transfer(&env, &from, &to, amount, vesting_amount)?;
+        transfer(
+            &env,
+            &env.current_contract_address(),
+            &to,
+            amount,
+            vesting_amount_result,
+        )?;
 
         Ok(())
     }
@@ -198,16 +198,15 @@ impl VestingTrait for Vesting {
             update_vesting(&env, &to, curve)?;
         }
 
-        let vesting_amount = get_vesting(&env, &from).amount;
+        let vesting_amount_result = deduct_coints(&env, &from, amount)?;
 
-        // if vesting is equal to zero we can remove it
-        if vesting_amount == 0 {
-            remove_vesting(&env, &from)
-        }
-
-        // transfer
-        transfer(&env, &from, &to, amount, vesting_amount)?;
-
+        transfer(
+            &env,
+            &env.current_contract_address(),
+            &to,
+            amount,
+            vesting_amount_result,
+        )?;
         Ok(())
     }
 
