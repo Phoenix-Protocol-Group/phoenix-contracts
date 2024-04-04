@@ -12,3 +12,6 @@ pub mod token_contract {
         file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
     );
 }
+
+#[cfg(test)]
+mod tests;
