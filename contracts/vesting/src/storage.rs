@@ -2,14 +2,11 @@ use core::ops::Add;
 
 use curve::Curve;
 use soroban_sdk::{
-    contracttype, log, panic_with_error, symbol_short, Address, ConversionError, Env, String,
-    Symbol, TryFromVal, Val, Vec,
+    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
+    Vec,
 };
 
 use crate::error::ContractError;
-
-// const CONFIG_KEY: Symbol = symbol_short!("config");
-// const ADMIN: Symbol = symbol_short!("admin");
 
 impl TryFromVal<Env, DataKey> for Val {
     type Error = ConversionError;
@@ -92,16 +89,6 @@ pub fn save_admin(env: &Env, admin: &Address) {
     env.storage().persistent().set(&DataKey::Admin, admin);
 }
 
-pub fn get_admin(env: &Env) -> Address {
-    env.storage()
-        .persistent()
-        .get(&DataKey::Admin)
-        .unwrap_or_else(|| {
-            log!(&env, "Vesting: Get admin: Critical error - No admin found");
-            panic_with_error!(env, ContractError::NoAdminFound);
-        })
-}
-
 pub fn save_vesting(env: &Env, address: &Address, balance_curve: VestingInfo) {
     env.storage().persistent().set(address, &balance_curve);
 }
@@ -118,13 +105,13 @@ pub fn remove_vesting(env: &Env, address: &Address) {
 }
 
 pub fn update_vesting(env: &Env, address: &Address, new_curve: Curve) -> Result<(), ContractError> {
-    let max_complexity = get_config(&env).max_vesting_complexity;
+    let max_complexity = get_config(env).max_vesting_complexity;
     env.storage()
         .persistent()
         .update(&address, |current_value: Option<Curve>| {
             let new_curve_schedule = current_value
                 // FIXME: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/227
-                .map(|current_value| current_value.combine(&env, &new_curve))
+                .map(|current_value| current_value.combine(env, &new_curve))
                 .unwrap_or(new_curve);
 
             new_curve_schedule
@@ -141,10 +128,6 @@ pub fn update_vesting(env: &Env, address: &Address, new_curve: Curve) -> Result<
         });
 
     Ok(())
-}
-
-pub fn update_allowances(env: &Env, owner_spender: &(&Address, &Address), allowance: &i128) {
-    env.storage().persistent().set(owner_spender, allowance);
 }
 
 pub fn get_allowances(env: &Env, owner_spender: &(Address, Address)) -> i128 {
@@ -175,22 +158,12 @@ pub fn get_delegated(env: &Env, address: &Address) -> i128 {
     env.storage().persistent().get(address).unwrap_or(0)
 }
 
-pub fn update_delegated(env: &Env, address: &Address, amount: i128) {
-    env.storage()
-        .persistent()
-        .update(address, |current_value: Option<i128>| {
-            current_value
-                .map(|current_value| current_value + amount)
-                .unwrap_or(amount)
-        });
-}
-
 pub fn get_vesting_total_supply(env: &Env) -> i128 {
-    get_config(&env).token_info.total_supply
+    get_config(env).token_info.total_supply
 }
 
 pub fn update_vesting_total_supply(env: &Env, amount: i128) {
-    let config = get_config(&env);
+    let config = get_config(env);
     let new_total_supply = config.token_info.total_supply.add(amount);
     let new_config = Config {
         token_info: VestingTokenInfo {

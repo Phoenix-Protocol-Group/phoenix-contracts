@@ -13,11 +13,11 @@ pub fn transfer(
     amount: i128,
     vesting_amount: i128,
 ) -> Result<(), ContractError> {
-    let vesting_token_address = get_config(&env).token_info.address;
+    let vesting_token_address = get_config(env).token_info.address;
 
-    let vestint_token_client = token_contract::Client::new(&env, &vesting_token_address);
+    let vestint_token_client = token_contract::Client::new(env, &vesting_token_address);
 
-    let sender_balance = vestint_token_client.balance(&from);
+    let sender_balance = vestint_token_client.balance(from);
 
     if let Some(remainder) = sender_balance.checked_sub(amount) {
         if vesting_amount > remainder {
@@ -27,7 +27,7 @@ pub fn transfer(
             );
             panic_with_error!(env, ContractError::CantMoveVestingTokens);
         }
-        vestint_token_client.transfer(&from, &to, &amount);
+        vestint_token_client.transfer(from, to, &amount);
     } else {
         log!(
             &env,
@@ -52,7 +52,7 @@ pub fn deduct_coins(env: &Env, sender: &Address, amount: i128) -> Result<i128, C
     }
 
     let delegated = get_delegated(env, sender);
-    let token_client = token_contract::Client::new(&env, &get_config(env).token_info.address);
+    let token_client = token_contract::Client::new(env, &get_config(env).token_info.address);
     let balance = token_client.balance(sender);
 
     let remainder = (balance + delegated)

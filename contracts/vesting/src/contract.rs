@@ -6,9 +6,9 @@ use crate::{
     error::ContractError,
     storage::{
         get_allowances, get_config, get_delegated, get_minter, get_vesting,
-        get_vesting_total_supply, remove_vesting, save_admin, save_config, save_minter,
-        save_vesting, update_vesting, update_vesting_total_supply, Config, MinterInfo,
-        VestingBalance, VestingInfo, VestingTokenInfo,
+        get_vesting_total_supply, save_admin, save_config, save_minter, save_vesting,
+        update_vesting, update_vesting_total_supply, Config, MinterInfo, VestingBalance,
+        VestingInfo, VestingTokenInfo,
     },
     token_contract,
     utils::{deduct_coins, transfer},
@@ -110,7 +110,7 @@ impl VestingTrait for Vesting {
 
         save_config(&env, &config);
 
-        if vesting_balances.len() <= 0 {
+        if vesting_balances.is_empty() {
             log!(
                 &env,
                 "Vesting: Initialize: At least one balance must be provided."
@@ -292,12 +292,14 @@ impl VestingTrait for Vesting {
         );
     }
 
-    fn send_tokens_to_contract(env: Env, sender: Address, contract: Address, amount: i128) {
+    fn send_tokens_to_contract(env: Env, sender: Address, _contract: Address, amount: i128) {
         if amount <= 0 {
             log!(&env, "Vesting: Send tokens to contract: Invalid amount");
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
+        // deduct coins already sends tokens from the sender to the vesting contract
+        // unless we want to send tokens from the vesting contract to another contract
         let _ = deduct_coins(&env, &sender, amount);
     }
 
@@ -325,9 +327,9 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        config.whitelist.first_index_of(to_remove).map(|index| {
+        if let Some(index) = config.whitelist.first_index_of(to_remove) {
             config.whitelist.remove(index);
-        });
+        }
 
         save_config(&env, &config);
     }
@@ -386,7 +388,7 @@ fn create_vesting_accounts(
         }
 
         save_vesting(
-            &env,
+            env,
             &vb.address,
             VestingInfo {
                 amount: vb.balance,
