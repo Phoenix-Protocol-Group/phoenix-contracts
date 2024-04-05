@@ -428,17 +428,27 @@ impl StakingTrait for Staking {
             panic_with_error!(&env, ContractError::RewardsInvalid);
         }
 
-        // now combine old distribution with the new schedule
-        let new_reward_curve = previous_reward_curve.combine(&env, &new_reward_distribution);
-        new_reward_curve
-            .validate_complexity(max_complexity)
-            .unwrap_or_else(|_| {
-                log!(
-                    &env,
-                    "Stake: Fund distribution: Curve complexity validation failed"
-                );
-                panic_with_error!(&env, ContractError::InvalidMaxComplexity);
-            });
+        let new_reward_curve: Curve;
+        // if the previous reward curve has ended, we can just use the new curve
+        if let Some(reward_curve) = previous_reward_curve.end() {
+            if reward_curve < env.ledger().timestamp() {
+                new_reward_curve = new_reward_distribution;
+            } else {
+                // if the previous distribution is still ongoing, we need to combine the two
+                new_reward_curve = previous_reward_curve.combine(&env, &new_reward_distribution);
+                new_reward_curve
+                    .validate_complexity(max_complexity)
+                    .unwrap_or_else(|_| {
+                        log!(
+                            &env,
+                            "Stake: Fund distribution: Curve complexity validation failed"
+                        );
+                        panic_with_error!(&env, ContractError::InvalidMaxComplexity);
+                    });
+            }
+        } else {
+            new_reward_curve = new_reward_distribution;
+        }
 
         save_reward_curve(&env, token_address.clone(), &new_reward_curve);
 
