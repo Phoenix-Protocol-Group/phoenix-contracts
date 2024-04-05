@@ -213,6 +213,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &min_reward,
             &manager,
             &factory_addr,
+            &stake_init_info.max_complexity,
         );
 
         let config = Config {

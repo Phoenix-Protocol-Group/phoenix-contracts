@@ -18,6 +18,7 @@ pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
@@ -52,6 +53,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         min_bond: 10i128,
         min_reward: 5i128,
         manager: stake_manager,
+        max_complexity: 10u32,
     };
 
     let token_wasm_hash = install_token_wasm(env);

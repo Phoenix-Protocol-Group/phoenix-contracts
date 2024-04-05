@@ -151,6 +151,7 @@ pub fn deploy_and_initialize_lp(
         min_bond: 10i128,
         min_reward: 5i128,
         manager: Address::generate(env),
+        max_complexity: 10u32,
     };
 
     let lp_init_info = LiquidityPoolInitInfo {

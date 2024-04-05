@@ -64,6 +64,7 @@ fn factory_successfully_inits_lp() {
         min_bond: 10i128,
         min_reward: 5i128,
         manager: Address::generate(&env),
+        max_complexity: 10u32,
     };
 
     let lp_init_info = LiquidityPoolInitInfo {
@@ -139,6 +140,7 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
         min_bond: 10i128,
         min_reward: 5i128,
         manager: Address::generate(&env),
+        max_complexity: 10u32,
     };
 
     let lp_init_info = LiquidityPoolInitInfo {

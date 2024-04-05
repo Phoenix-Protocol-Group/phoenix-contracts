@@ -39,6 +39,7 @@ pub struct Staking;
 
 pub trait StakingTrait {
     // Sets the token contract addresses for this pool
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,
@@ -90,6 +91,7 @@ pub trait StakingTrait {
 
 #[contractimpl]
 impl StakingTrait for Staking {
+    #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
         admin: Address,

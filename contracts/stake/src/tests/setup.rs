@@ -30,7 +30,7 @@ pub fn deploy_staking_contract<'a>(
         &MIN_REWARD,
         manager,
         owner,
-        &max_complexity,
+        max_complexity,
     );
     staking
 }

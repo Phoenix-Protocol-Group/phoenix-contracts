@@ -72,6 +72,7 @@ fn confirm_stake_contract_deployment() {
                 min_reward: 5,
                 manager: stake_manager,
                 owner: stake_owner,
+                max_complexity: 10,
             }
         }
     );
@@ -111,6 +112,7 @@ fn second_pool_deployment_should_fail() {
         min_bond: 10i128,
         min_reward: 5i128,
         manager: Address::generate(&env),
+        max_complexity: 10u32,
     };
 
     let lp_init_info = LiquidityPoolInitInfo {
