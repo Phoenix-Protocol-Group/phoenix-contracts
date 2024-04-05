@@ -22,7 +22,14 @@ fn add_distribution_and_distribute_reward() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -95,7 +102,14 @@ fn two_distributions() {
     let reward_token = deploy_token_contract(&env, &admin);
     let reward_token_2 = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
     staking.create_distribution_flow(&manager, &reward_token_2.address);
@@ -216,7 +230,14 @@ fn four_users_with_different_stakes() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -326,7 +347,14 @@ fn two_users_one_starts_after_distribution_begins() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -423,7 +451,14 @@ fn two_users_both_bonds_after_distribution_starts() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -548,7 +583,14 @@ fn fund_rewards_without_establishing_distribution() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     reward_token.mint(&admin, &1000);
 
@@ -567,7 +609,14 @@ fn try_to_withdraw_rewards_without_bonding() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -626,7 +675,14 @@ fn fund_distribution_starting_before_current_timestamp() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -660,7 +716,14 @@ fn fund_distribution_with_reward_below_required_minimum() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -687,7 +750,14 @@ fn calculate_apr() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -779,7 +849,14 @@ fn add_distribution_should_fail_when_not_authorized() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&Address::generate(&env), &reward_token.address);
 }
@@ -797,7 +874,14 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -908,7 +992,14 @@ fn test_bond_withdraw_unbond() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
@@ -976,8 +1067,47 @@ fn panic_when_adding_same_distribution_twice() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
     staking.create_distribution_flow(&manager, &reward_token.address);
+}
+
+#[should_panic(expected = "Stake: Fund distribution: Curve complexity validation failed")]
+#[test]
+fn panic_when_funding_distribution_with_invalid_curve() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &1u32,
+    );
+
+    staking.create_distribution_flow(&manager, &reward_token.address);
+
+    reward_token.mint(&admin, &1000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 2_000;
+    });
+
+    staking.fund_distribution(&admin, &2_000, &600, &reward_token.address, &1000);
 }

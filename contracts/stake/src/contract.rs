@@ -47,6 +47,7 @@ pub trait StakingTrait {
         min_reward: i128,
         manager: Address,
         owner: Address,
+        max_complexity: u32,
     );
 
     fn bond(env: Env, sender: Address, tokens: i128);
@@ -97,6 +98,7 @@ impl StakingTrait for Staking {
         min_reward: i128,
         manager: Address,
         owner: Address,
+        max_complexity: u32,
     ) {
         if is_initialized(&env) {
             log!(
@@ -120,6 +122,14 @@ impl StakingTrait for Staking {
             panic_with_error!(&env, ContractError::InvalidMinReward);
         }
 
+        if max_complexity == 0 {
+            log!(
+                &env,
+                "Stake: initialize: max_complexity must be bigger than 0!"
+            );
+            panic_with_error!(&env, ContractError::InvalidMaxComplexity);
+        }
+
         env.events()
             .publish(("initialize", "LP Share token staking contract"), &lp_token);
 
@@ -129,6 +139,7 @@ impl StakingTrait for Staking {
             min_reward,
             manager,
             owner,
+            max_complexity,
         };
         save_config(&env, config);
 
@@ -377,6 +388,7 @@ impl StakingTrait for Staking {
         // Load previous reward curve; it must exist if the distribution exists
         // In case of first time funding, it will be a constant 0 curve
         let previous_reward_curve = get_reward_curve(&env, &token_address).expect("Stake: Fund distribution: Not reward curve exists, probably distribution haven't been created");
+        let max_complexity = get_config(&env).max_complexity;
 
         let current_time = env.ledger().timestamp();
         if start_time < current_time {
@@ -416,6 +428,16 @@ impl StakingTrait for Staking {
 
         // now combine old distribution with the new schedule
         let new_reward_curve = previous_reward_curve.combine(&env, &new_reward_distribution);
+        new_reward_curve
+            .validate_complexity(max_complexity)
+            .unwrap_or_else(|_| {
+                log!(
+                    &env,
+                    "Stake: Fund distribution: Curve complexity validation failed"
+                );
+                panic_with_error!(&env, ContractError::InvalidMaxComplexity);
+            });
+
         save_reward_curve(&env, token_address.clone(), &new_reward_curve);
 
         env.events()

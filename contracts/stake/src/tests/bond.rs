@@ -22,7 +22,14 @@ fn initialize_staking_contract() {
     let manager = Address::generate(&env);
     let owner = Address::generate(&env);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     let response = staking.query_config();
     assert_eq!(
@@ -34,6 +41,7 @@ fn initialize_staking_contract() {
                 min_reward: 1_000i128,
                 manager,
                 owner,
+                max_complexity: 50u32,
             }
         }
     );
@@ -53,7 +61,14 @@ fn test_deploying_stake_twice_should_fail() {
     let manager = Address::generate(&env);
     let owner = Address::generate(&env);
 
-    let first = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let first = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     first.initialize(
         &admin,
@@ -62,6 +77,7 @@ fn test_deploying_stake_twice_should_fail() {
         &50i128,
         &manager,
         &owner,
+        &50u32,
     );
 }
 
@@ -77,7 +93,14 @@ fn bond_too_few() {
     let manager = Address::generate(&env);
     let owner = Address::generate(&env);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     lp_token.mint(&user, &999);
 
@@ -95,7 +118,14 @@ fn bond_simple() {
     let manager = Address::generate(&env);
     let owner = Address::generate(&env);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     lp_token.mint(&user, &10_000);
 
@@ -130,7 +160,14 @@ fn unbond_simple() {
     let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     lp_token.mint(&user, &35_000);
     lp_token.mint(&user2, &10_000);
@@ -188,7 +225,14 @@ fn initializing_contract_sets_total_staked_var() {
     let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     assert_eq!(staking.query_total_staked(), 0);
 }
@@ -206,7 +250,14 @@ fn unbond_wrong_user_stake_not_found() {
     let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
 
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     lp_token.mint(&user, &35_000);
     lp_token.mint(&user2, &10_000);
@@ -241,7 +292,14 @@ fn pay_rewards_during_unbond() {
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
-    let staking = deploy_staking_contract(&env, admin.clone(), &lp_token.address, &manager, &owner);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &50u32,
+    );
 
     lp_token.mint(&user, &10_000);
     reward_token.mint(&admin, &10_000);
@@ -295,6 +353,7 @@ fn initialize_staking_contract_should_panic_when_min_bond_invalid() {
         &1_000,
         &Address::generate(&env),
         &Address::generate(&env),
+        &50u32,
     );
 }
 
@@ -313,5 +372,25 @@ fn initialize_staking_contract_should_panic_when_min_rewards_invalid() {
         &0,
         &Address::generate(&env),
         &Address::generate(&env),
+        &50u32,
+    );
+}
+
+#[should_panic(expected = "Stake: initialize: max_complexity must be bigger than 0!")]
+#[test]
+fn initialize_staking_contract_should_panic_when_max_complexity_invalid() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let staking = StakingClient::new(&env, &env.register_contract(None, Staking {}));
+
+    staking.initialize(
+        &Address::generate(&env),
+        &Address::generate(&env),
+        &1_000,
+        &1_000,
+        &Address::generate(&env),
+        &Address::generate(&env),
+        &0u32,
     );
 }
