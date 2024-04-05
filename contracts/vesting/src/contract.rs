@@ -213,6 +213,7 @@ impl VestingTrait for Vesting {
     }
 
     fn burn(env: Env, sender: Address, amount: i128) -> Result<(), ContractError> {
+        sender.require_auth();
         // verity the amount
         if amount <= 0 {
             log!(&env, "Vesting: Burn: Invalid burn amount");
@@ -238,6 +239,7 @@ impl VestingTrait for Vesting {
     }
 
     fn mint(env: Env, sender: Address, to: Address, amount: i128) {
+        sender.require_auth();
         // check amount
         if amount <= 0 {
             log!(&env, "Vesting: Mint: Invalid mint amount");
