@@ -430,10 +430,11 @@ impl StakingTrait for Staking {
 
         let new_reward_curve: Curve;
         // if the previous reward curve has ended, we can just use the new curve
-        if let Some(reward_curve) = previous_reward_curve.end() {
-            if reward_curve < env.ledger().timestamp() {
+        match previous_reward_curve.end() {
+            Some(end_distribution_timestamp) if end_distribution_timestamp < current_time => {
                 new_reward_curve = new_reward_distribution;
-            } else {
+            }
+            _ => {
                 // if the previous distribution is still ongoing, we need to combine the two
                 new_reward_curve = previous_reward_curve.combine(&env, &new_reward_distribution);
                 new_reward_curve
@@ -446,8 +447,6 @@ impl StakingTrait for Staking {
                         panic_with_error!(&env, ContractError::InvalidMaxComplexity);
                     });
             }
-        } else {
-            new_reward_curve = new_reward_distribution;
         }
 
         save_reward_curve(&env, token_address.clone(), &new_reward_curve);
