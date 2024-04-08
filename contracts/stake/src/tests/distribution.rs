@@ -1082,8 +1082,8 @@ fn panic_when_adding_same_distribution_twice() {
 
 #[should_panic(expected = "Stake: Fund distribution: Curve complexity validation failed")]
 #[test]
-#[ignore = "reason: figure out how to make old_distribution return Some. Currently we return Constant Curve"]
-fn panic_when_funding_distribution_with_invalid_curve() {
+fn panic_when_funding_distribution_above_end_distribution_timestamp() {
+    const DISTRIBUTION_MAX_COMPLEXITY: u32 = 1;
     let env = Env::default();
     env.mock_all_auths();
 
@@ -1092,7 +1092,6 @@ fn panic_when_funding_distribution_with_invalid_curve() {
     let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
-    let reward_token_2 = deploy_token_contract(&env, &admin);
 
     let staking = deploy_staking_contract(
         &env,
@@ -1100,19 +1099,17 @@ fn panic_when_funding_distribution_with_invalid_curve() {
         &lp_token.address,
         &manager,
         &owner,
-        &1u32,
+        &DISTRIBUTION_MAX_COMPLEXITY,
     );
 
     staking.create_distribution_flow(&manager, &reward_token.address);
-    staking.create_distribution_flow(&manager, &reward_token_2.address);
 
-    reward_token.mint(&admin, &1000);
-    reward_token_2.mint(&admin, &1000);
+    reward_token.mint(&admin, &2000);
+
+    staking.fund_distribution(&admin, &0, &600, &reward_token.address, &1000);
+    staking.fund_distribution(&admin, &0, &600, &reward_token.address, &1000);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
+        li.timestamp = 601;
     });
-
-    staking.fund_distribution(&admin, &2_000, &600, &reward_token.address, &1000);
-    staking.fund_distribution(&admin, &2_000, &600, &reward_token_2.address, &1000);
 }
