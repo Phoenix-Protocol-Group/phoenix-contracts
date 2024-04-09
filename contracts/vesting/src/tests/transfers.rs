@@ -9,6 +9,8 @@ use crate::{
     tests::setup::instantiate_vesting_client,
 };
 
+use super::setup::deploy_token_contract;
+
 #[test]
 fn transfer_tokens_succesfully() {
     let env = Env::default();
@@ -19,12 +21,13 @@ fn transfer_tokens_succesfully() {
     let vester1 = Address::generate(&env);
     let vester2 = Address::generate(&env);
     let whitelisted_account = Address::generate(&env);
+    let token = deploy_token_contract(&env, &admin);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
-        address: Address::generate(&env),
+        address: token.address.clone(),
         total_supply: 0,
     };
     let vesting_balances = vec![
@@ -74,5 +77,6 @@ fn transfer_tokens_succesfully() {
         &10u32,
     );
 
+    token.mint(&vester1, &1_000);
     vesting_client.transfer_token(&vester1, &vester2, &100);
 }
