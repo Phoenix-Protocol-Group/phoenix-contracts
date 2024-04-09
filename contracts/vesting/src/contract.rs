@@ -1,7 +1,9 @@
+use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{contract, contractimpl, contractmeta, log, panic_with_error, Address, Env, Vec};
 
 use curve::Curve;
 
+use crate::utils::verify_vesting_and_transfer;
 use crate::{
     error::ContractError,
     storage::{
@@ -11,7 +13,6 @@ use crate::{
         VestingBalance, VestingInfo, VestingTokenInfo,
     },
     token_contract,
-    utils::{deduct_coins, transfer},
 };
 
 // Metadata that is added on to the WASM custom section
@@ -165,22 +166,23 @@ impl VestingTrait for Vesting {
         to: Address,
         amount: i128,
     ) -> Result<(), ContractError> {
-        from.require_auth(); // what if the caller is different from the sender?
+        from.require_auth();
 
         if amount <= 0 {
             log!(&env, "Vesting: Transfer token: Invalid transfer amount");
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
-        let vesting_amount_result = deduct_coins(&env, &from, amount)?;
+        // let balance_remainder = deduct_coins(&env, &from, amount)?;
 
-        transfer(
-            &env,
-            &env.current_contract_address(),
-            &to,
-            amount,
-            vesting_amount_result,
-        )?;
+        // transfer(
+        //     &env,
+        //     &env.current_contract_address(),
+        //     &to,
+        //     amount,
+        //     balance_remainder,
+        // )?;
+        verify_vesting_and_transfer(&env, &from, &to, amount)?;
 
         Ok(())
     }
@@ -226,15 +228,16 @@ impl VestingTrait for Vesting {
             update_vesting(&env, &to, curve)?;
         }
 
-        let vesting_amount_result = deduct_coins(&env, &from, amount)?;
+        // let vesting_amount_result = deduct_coins(&env, &from, amount)?;
 
-        transfer(
-            &env,
-            &env.current_contract_address(),
-            &to,
-            amount,
-            vesting_amount_result,
-        )?;
+        // transfer(
+        //     &env,
+        //     &env.current_contract_address(),
+        //     &to,
+        //     amount,
+        //     vesting_amount_result,
+        // )?;
+        verify_vesting_and_transfer(&env, &from, &to, amount)?;
         Ok(())
     }
 
@@ -245,9 +248,6 @@ impl VestingTrait for Vesting {
             log!(&env, "Vesting: Burn: Invalid burn amount");
             panic_with_error!(env, ContractError::InvalidBurnAmount);
         }
-
-        // deduct the amount from the sender
-        let _ = deduct_coins(&env, &sender, amount)?;
 
         let total_supply = get_vesting_total_supply(&env)
             .checked_sub(amount)
@@ -260,6 +260,9 @@ impl VestingTrait for Vesting {
             });
 
         update_vesting_total_supply(&env, total_supply);
+
+        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        token_client.burn(&sender, &amount);
 
         Ok(())
     }
@@ -350,7 +353,9 @@ impl VestingTrait for Vesting {
         to: Address,
         amount: i128,
     ) -> Result<(), ContractError> {
-        owner_spender.1.require_auth();
+        let owner = owner_spender.0.clone();
+        let spender = owner_spender.1.clone();
+        spender.require_auth();
 
         if amount <= 0 {
             log!(&env, "Vesting: Transfer from: Invalid transfer amount");
@@ -371,16 +376,7 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::Std);
         });
 
-        let vesting_amount_result = deduct_coins(&env, &owner_spender.0, amount)?;
-        // update the allowance
-
-        transfer(
-            &env,
-            &env.current_contract_address(),
-            &to,
-            amount,
-            vesting_amount_result,
-        )?;
+        verify_vesting_and_transfer(&env, &owner, &to, amount)?;
 
         save_allowances(&env, &owner_spender, new_allowance);
 
@@ -414,8 +410,6 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::Std);
         });
 
-        let _ = deduct_coins(&env, &owner, amount)?;
-
         let total_supply = get_vesting_total_supply(&env)
             .checked_sub(amount)
             .unwrap_or_else(|| {
@@ -427,6 +421,9 @@ impl VestingTrait for Vesting {
             });
 
         update_vesting_total_supply(&env, total_supply);
+
+        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        token_client.burn(&owner, &amount);
 
         save_allowances(&env, &(owner, sender), new_allowance);
 
@@ -448,9 +445,8 @@ impl VestingTrait for Vesting {
         //used to verify that the sender is authorized by the owner
         let _ = get_allowances(&env, &(owner.clone(), sender.clone()));
 
-        let _ = deduct_coins(&env, &owner, amount)?;
-
-        transfer(&env, &owner, &contract, amount, amount)?;
+        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        token_client.transfer(&owner, &contract, &amount);
 
         Ok(())
     }
@@ -473,15 +469,14 @@ impl VestingTrait for Vesting {
         );
     }
 
-    fn send_tokens_to_contract(env: Env, sender: Address, _contract: Address, amount: i128) {
+    fn send_tokens_to_contract(env: Env, sender: Address, contract: Address, amount: i128) {
         if amount <= 0 {
             log!(&env, "Vesting: Send tokens to contract: Invalid amount");
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
-        // deduct coins already sends tokens from the sender to the vesting contract
-        // unless we want to send tokens from the vesting contract to another contract
-        let _ = deduct_coins(&env, &sender, amount);
+        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        token_client.transfer(&sender, &contract, &amount);
     }
 
     fn add_to_whitelist(env: Env, sender: Address, to_add: Address) {
@@ -530,6 +525,7 @@ impl VestingTrait for Vesting {
         get_vesting(&env, &address).curve
     }
 
+    // FIXME: we might not need this
     fn query_delegated(env: Env, address: Address) -> i128 {
         get_delegated(&env, &address)
     }
