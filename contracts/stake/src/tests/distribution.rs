@@ -1,3 +1,4 @@
+use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env, String,
@@ -6,8 +7,15 @@ use soroban_sdk::{
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 use pretty_assertions::assert_eq;
 
-use crate::msg::{
-    AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward, WithdrawableRewardsResponse,
+use crate::contract::{Staking, StakingClient};
+use crate::distribution::get_reward_curve;
+use crate::{
+    distribution::get_distribution,
+    msg::{
+        AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward,
+        WithdrawableRewardsResponse,
+    },
+    storage::utils::get_distributions,
 };
 
 #[test]
@@ -1112,4 +1120,42 @@ fn panic_when_funding_distribution_above_end_distribution_timestamp() {
     env.ledger().with_mut(|li| {
         li.timestamp = 601;
     });
+}
+
+#[test]
+fn test_check_complexity_over_time() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let contract_addr = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = StakingClient::new(
+        &env,
+        &env.register_contract(Some(&contract_addr), Staking {}),
+    );
+
+    staking.initialize(
+        &admin,
+        &lp_token.address,
+        &1_000,
+        &1_000,
+        &manager,
+        &owner,
+        &10,
+    );
+
+    // dbg!(env.current_contract_address());
+    staking.create_distribution_flow(&manager, &reward_token.address);
+
+    reward_token.mint(&admin, &2000);
+
+    staking.fund_distribution(&admin, &0, &600, &reward_token.address, &1000);
+    dbg!("before");
+    let result = get_reward_curve(&env, &reward_token.address);
+    dbg!(result);
 }
