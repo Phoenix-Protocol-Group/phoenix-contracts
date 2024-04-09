@@ -23,6 +23,7 @@ pub enum ContractError {
     VestsMoreThanSent = 15,
     InvalidBurnAmount = 16,
     InvalidMintAmount = 17,
+    InvalidAllowanceAmount = 18,
 }
 
 impl From<CurveError> for ContractError {

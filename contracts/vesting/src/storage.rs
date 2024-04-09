@@ -137,6 +137,10 @@ pub fn get_allowances(env: &Env, owner_spender: &(Address, Address)) -> i128 {
         })
 }
 
+pub fn save_allowances(env: &Env, owner_spender: &(Address, Address), amount: i128) {
+    env.storage().persistent().set(owner_spender, &amount);
+}
+
 pub fn save_minter(env: &Env, minter: MinterInfo) {
     env.storage().persistent().set(&DataKey::Minter, &minter);
 }

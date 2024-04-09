@@ -6,9 +6,9 @@ use crate::{
     error::ContractError,
     storage::{
         get_allowances, get_config, get_delegated, get_minter, get_vesting,
-        get_vesting_total_supply, save_admin, save_config, save_minter, save_vesting,
-        update_vesting, update_vesting_total_supply, Config, MinterInfo, VestingBalance,
-        VestingInfo, VestingTokenInfo,
+        get_vesting_total_supply, save_admin, save_allowances, save_config, save_minter,
+        save_vesting, update_vesting, update_vesting_total_supply, Config, MinterInfo,
+        VestingBalance, VestingInfo, VestingTokenInfo,
     },
     token_contract,
     utils::{deduct_coins, transfer},
@@ -49,6 +49,32 @@ pub trait VestingTrait {
     fn burn(env: Env, sender: Address, amount: i128) -> Result<(), ContractError>;
 
     fn mint(env: Env, sender: Address, to: Address, amount: i128);
+
+    fn increase_allowance(env: Env, owner_spender: (Address, Address), amount: i128);
+
+    fn decrease_allowance(env: Env, owner_spender: (Address, Address), amount: i128);
+
+    fn transfer_from(
+        env: Env,
+        owner_spender: (Address, Address),
+        to: Address,
+        amount: i128,
+    ) -> Result<(), ContractError>;
+
+    fn burn_from(
+        env: Env,
+        sender: Address,
+        owner: Address,
+        amount: i128,
+    ) -> Result<(), ContractError>;
+
+    fn send_to_contract_from(
+        env: Env,
+        sender: Address,
+        owner: Address,
+        contract: Address,
+        amount: i128,
+    ) -> Result<(), ContractError>;
 
     fn update_minter(env: Env, sender: Address, new_minter: Address);
 
@@ -274,6 +300,159 @@ impl VestingTrait for Vesting {
         // mint to recipient
         let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
         token_client.mint(&to, &amount);
+    }
+
+    fn increase_allowance(env: Env, owner_spender: (Address, Address), amount: i128) {
+        owner_spender.0.require_auth();
+
+        if amount <= 0 {
+            log!(&env, "Vesting: Increase allowance: Invalid amount");
+            panic_with_error!(env, ContractError::InvalidAllowanceAmount);
+        }
+
+        let allowance = get_allowances(&env, &owner_spender)
+            .checked_add(amount)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Vesting: Increase allowance: Critical error - allowance cannot be negative"
+                );
+                panic_with_error!(env, ContractError::Std);
+            });
+
+        save_allowances(&env, &owner_spender, allowance);
+    }
+
+    fn decrease_allowance(env: Env, owner_spender: (Address, Address), amount: i128) {
+        owner_spender.0.require_auth();
+
+        if amount <= 0 {
+            log!(&env, "Vesting: Decrease allowance: Invalid amount");
+            panic_with_error!(env, ContractError::InvalidAllowanceAmount);
+        }
+
+        let allowance = get_allowances(&env, &owner_spender)
+            .checked_sub(amount)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Vesting: Decrease allowance: Critical error - allowance cannot be negative"
+                );
+                panic_with_error!(env, ContractError::Std);
+            });
+
+        save_allowances(&env, &owner_spender, allowance);
+    }
+
+    fn transfer_from(
+        env: Env,
+        owner_spender: (Address, Address),
+        to: Address,
+        amount: i128,
+    ) -> Result<(), ContractError> {
+        owner_spender.1.require_auth();
+
+        if amount <= 0 {
+            log!(&env, "Vesting: Transfer from: Invalid transfer amount");
+            panic_with_error!(env, ContractError::InvalidTransferAmount);
+        }
+
+        // todo deduct_allowances
+        let allowance = get_allowances(&env, &owner_spender);
+        if allowance < amount {
+            log!(&env, "Vesting: Transfer from: Not enough allowance");
+            panic_with_error!(env, ContractError::NotEnoughBalance);
+        }
+        let new_allowance = allowance.checked_sub(amount).unwrap_or_else(|| {
+            log!(
+                &env,
+                "Vesting: Transfer from: Critical error - allowance cannot be negative"
+            );
+            panic_with_error!(env, ContractError::Std);
+        });
+
+        let vesting_amount_result = deduct_coins(&env, &owner_spender.0, amount)?;
+        // update the allowance
+
+        transfer(
+            &env,
+            &env.current_contract_address(),
+            &to,
+            amount,
+            vesting_amount_result,
+        )?;
+
+        save_allowances(&env, &owner_spender, new_allowance);
+
+        Ok(())
+    }
+
+    fn burn_from(
+        env: Env,
+        sender: Address,
+        owner: Address,
+        amount: i128,
+    ) -> Result<(), ContractError> {
+        sender.require_auth();
+
+        if amount <= 0 {
+            log!(&env, "Vesting: Burn from: Invalid burn amount");
+            panic_with_error!(env, ContractError::InvalidBurnAmount);
+        }
+
+        let allowance = get_allowances(&env, &(owner.clone(), sender.clone()));
+        if allowance < amount {
+            log!(&env, "Vesting: Burn from: Not enough allowance");
+            panic_with_error!(env, ContractError::NotEnoughBalance);
+        }
+
+        let new_allowance = allowance.checked_sub(amount).unwrap_or_else(|| {
+            log!(
+                &env,
+                "Vesting: Burn from: Critical error - allowance cannot be negative"
+            );
+            panic_with_error!(env, ContractError::Std);
+        });
+
+        let _ = deduct_coins(&env, &owner, amount)?;
+
+        let total_supply = get_vesting_total_supply(&env)
+            .checked_sub(amount)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Vesting: Burn from: Critical error - total supply cannot be negative"
+                );
+                panic_with_error!(env, ContractError::Std);
+            });
+
+        update_vesting_total_supply(&env, total_supply);
+
+        save_allowances(&env, &(owner, sender), new_allowance);
+
+        Ok(())
+    }
+
+    fn send_to_contract_from(
+        env: Env,
+        sender: Address,
+        owner: Address,
+        contract: Address,
+        amount: i128,
+    ) -> Result<(), ContractError> {
+        sender.require_auth();
+        if amount <= 0 {
+            log!(&env, "Vesting: Send to contract from: Invalid amount");
+            panic_with_error!(env, ContractError::InvalidTransferAmount);
+        }
+        //used to verify that the sender is authorized by the owner
+        let _ = get_allowances(&env, &(owner.clone(), sender.clone()));
+
+        let _ = deduct_coins(&env, &owner, amount)?;
+
+        transfer(&env, &owner, &contract, amount, amount)?;
+
+        Ok(())
     }
 
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
