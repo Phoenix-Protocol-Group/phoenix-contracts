@@ -24,6 +24,7 @@ pub enum ContractError {
     InvalidBurnAmount = 16,
     InvalidMintAmount = 17,
     InvalidAllowanceAmount = 18,
+    DuplicateInitialBalanceAddresses = 19,
 }
 
 impl From<CurveError> for ContractError {

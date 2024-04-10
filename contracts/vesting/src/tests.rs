@@ -1,4 +1,4 @@
-mod config;
+mod instantiate;
 mod queries;
 mod setup;
-mod transfers;
+mod transfer;
