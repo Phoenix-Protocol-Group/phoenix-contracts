@@ -27,7 +27,7 @@ fn instantiate_contract_succesffuly() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: Address::generate(&env),
-        total_supply: 0,
+        total_supply: 480,
     };
     let vesting_balances = vec![
         &env,
