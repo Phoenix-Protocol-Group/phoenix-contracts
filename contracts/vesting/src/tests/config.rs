@@ -136,8 +136,6 @@ fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
         }),
     };
 
-    let allowed_vesters = vec![&env];
-
     let vesting_client = instantiate_vesting_client(&env);
     env.ledger().with_mut(|li| li.timestamp = 1000);
     vesting_client.initialize(
@@ -145,7 +143,7 @@ fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
         &vesting_token,
         &vesting_balances,
         minter_info,
-        &Some(allowed_vesters),
+        &None,
         &10u32,
     );
 
