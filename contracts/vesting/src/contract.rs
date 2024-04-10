@@ -175,6 +175,14 @@ impl VestingTrait for Vesting {
 
         verify_vesting_and_transfer(&env, &from, &to, amount)?;
 
+        env.events().publish(
+            (
+                "Transfer token",
+                "Transfering tokens between accounts: {}, {}, {}",
+            ),
+            (from, to, amount),
+        );
+
         Ok(())
     }
 
@@ -221,6 +229,14 @@ impl VestingTrait for Vesting {
 
         verify_vesting_and_transfer(&env, &from, &to, amount)?;
 
+        env.events().publish(
+            (
+                "Transfer vesting",
+                "Transfering vesting between accounts: {}, {}, {}",
+            ),
+            (from, to, amount),
+        );
+
         Ok(())
     }
 
@@ -246,6 +262,8 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
         token_client.burn(&sender, &amount);
+
+        env.events().publish(("Burn", "Burned tokens: "), amount);
 
         Ok(())
     }
@@ -286,6 +304,8 @@ impl VestingTrait for Vesting {
         // mint to recipient
         let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
         token_client.mint(&to, &amount);
+
+        env.events().publish(("Mint", "Minted tokens: "), amount);
     }
 
     fn increase_allowance(env: Env, owner_spender: (Address, Address), amount: i128) {
@@ -307,6 +327,14 @@ impl VestingTrait for Vesting {
             });
 
         save_allowances(&env, &owner_spender, allowance);
+
+        env.events().publish(
+            (
+                "Increase allowance",
+                "Increased allowance between accounts: {}, {}, {}",
+            ),
+            (owner_spender.0, owner_spender.1, amount),
+        );
     }
 
     fn decrease_allowance(env: Env, owner_spender: (Address, Address), amount: i128) {
@@ -328,6 +356,14 @@ impl VestingTrait for Vesting {
             });
 
         save_allowances(&env, &owner_spender, allowance);
+
+        env.events().publish(
+            (
+                "Decrease allowance",
+                "Decreased allowance between accounts: {}, {}, {}",
+            ),
+            (owner_spender.0, owner_spender.1, amount),
+        );
     }
 
     fn transfer_from(
@@ -362,6 +398,14 @@ impl VestingTrait for Vesting {
         verify_vesting_and_transfer(&env, &owner, &to, amount)?;
 
         save_allowances(&env, &owner_spender, new_allowance);
+
+        env.events().publish(
+            (
+                "Transfer from",
+                "Transfering tokens between accounts: {}, {}, {}",
+            ),
+            (owner, to, amount),
+        );
 
         Ok(())
     }
@@ -410,6 +454,9 @@ impl VestingTrait for Vesting {
 
         save_allowances(&env, &(owner, sender), new_allowance);
 
+        env.events()
+            .publish(("Burn from", "Burned tokens: "), amount);
+
         Ok(())
     }
 
@@ -431,6 +478,14 @@ impl VestingTrait for Vesting {
         let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
         token_client.transfer(&owner, &contract, &amount);
 
+        env.events().publish(
+            (
+                "Send to contract from",
+                "Sent tokens to contract from account: {}, {}, {}",
+            ),
+            (owner, contract, amount),
+        );
+
         Ok(())
     }
 
@@ -446,10 +501,13 @@ impl VestingTrait for Vesting {
         save_minter(
             &env,
             MinterInfo {
-                address: new_minter,
+                address: new_minter.clone(),
                 cap: get_minter(&env).cap,
             },
         );
+
+        env.events()
+            .publish(("Update minter", "Updated minter to: "), new_minter);
     }
 
     fn send_tokens_to_contract(env: Env, sender: Address, contract: Address, amount: i128) {
@@ -460,6 +518,14 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
         token_client.transfer(&sender, &contract, &amount);
+
+        env.events().publish(
+            (
+                "Send tokens to contract",
+                "Sent tokens to contract from account: {}, {}",
+            ),
+            (sender, contract),
+        );
     }
 
     fn add_to_whitelist(env: Env, sender: Address, to_add: Address) {
@@ -472,8 +538,11 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        config.whitelist.push_back(to_add);
+        config.whitelist.push_back(to_add.clone());
         save_config(&env, &config);
+
+        env.events()
+            .publish(("Add to whitelist", "Added to whitelist: "), to_add);
     }
 
     fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address) {
@@ -486,11 +555,16 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        if let Some(index) = config.whitelist.first_index_of(to_remove) {
+        if let Some(index) = config.whitelist.first_index_of(to_remove.clone()) {
             config.whitelist.remove(index);
         }
 
         save_config(&env, &config);
+
+        env.events().publish(
+            ("Remove from whitelist", "Removed from whitelist: "),
+            to_remove,
+        );
     }
 
     fn query_config(env: Env) -> Result<Config, ContractError> {
