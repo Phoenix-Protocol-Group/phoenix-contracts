@@ -173,15 +173,6 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
-        // let balance_remainder = deduct_coins(&env, &from, amount)?;
-
-        // transfer(
-        //     &env,
-        //     &env.current_contract_address(),
-        //     &to,
-        //     amount,
-        //     balance_remainder,
-        // )?;
         verify_vesting_and_transfer(&env, &from, &to, amount)?;
 
         Ok(())
@@ -228,16 +219,8 @@ impl VestingTrait for Vesting {
             update_vesting(&env, &to, curve)?;
         }
 
-        // let vesting_amount_result = deduct_coins(&env, &from, amount)?;
-
-        // transfer(
-        //     &env,
-        //     &env.current_contract_address(),
-        //     &to,
-        //     amount,
-        //     vesting_amount_result,
-        // )?;
         verify_vesting_and_transfer(&env, &from, &to, amount)?;
+
         Ok(())
     }
 
