@@ -1,5 +1,4 @@
 use core::ops::Add;
-use soroban_sdk::testutils::arbitrary::std::dbg;
 
 use curve::Curve;
 use soroban_sdk::{
@@ -88,6 +87,10 @@ pub fn get_config(env: &Env) -> Config {
 
 pub fn save_admin(env: &Env, admin: &Address) {
     env.storage().persistent().set(&DataKey::Admin, admin);
+}
+
+pub fn save_balance(env: &Env, address: &Address, balance: i128) {
+    env.storage().persistent().set(address, &balance);
 }
 
 pub fn save_vesting(env: &Env, address: &Address, balance_curve: VestingInfo) {

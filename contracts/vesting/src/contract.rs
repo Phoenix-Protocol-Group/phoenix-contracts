@@ -1,16 +1,18 @@
 use soroban_sdk::testutils::arbitrary::std::dbg;
-use soroban_sdk::{contract, contractimpl, contractmeta, log, panic_with_error, Address, Env, Vec};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, Vec,
+};
 
 use curve::Curve;
 
-use crate::utils::verify_vesting_and_transfer;
+use crate::utils::{create_vesting_accounts, verify_vesting_and_transfer};
 use crate::{
     error::ContractError,
     storage::{
         get_allowances, get_config, get_delegated, get_minter, get_vesting,
         get_vesting_total_supply, save_admin, save_allowances, save_config, save_minter,
-        save_vesting, update_vesting, update_vesting_total_supply, Config, MinterInfo,
-        VestingBalance, VestingInfo, VestingTokenInfo,
+        update_vesting, update_vesting_total_supply, Config, MinterInfo, VestingBalance,
+        VestingTokenInfo,
     },
     token_contract,
 };
@@ -27,7 +29,7 @@ pub trait VestingTrait {
         admin: Address,
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
-        minter_info: MinterInfo,
+        minter_info: Option<MinterInfo>,
         allowed_vesters: Option<Vec<Address>>,
         max_vesting_complexity: u32,
     ) -> Result<(), ContractError>;
@@ -109,34 +111,20 @@ impl VestingTrait for Vesting {
         admin: Address,
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
-        minter_info: MinterInfo,
+        minter_info: Option<MinterInfo>,
         allowed_vesters: Option<Vec<Address>>,
         max_vesting_complexity: u32,
     ) -> Result<(), ContractError> {
         save_admin(&env, &admin);
 
+        dbg!();
         let whitelisted_accounts = match allowed_vesters {
             Some(whitelisted) => whitelisted,
-            None => Vec::new(&env),
+            None => vec![&env, admin.clone()],
         };
 
-        let token_info = VestingTokenInfo {
-            name: vesting_token.name,
-            symbol: vesting_token.symbol,
-            decimals: vesting_token.decimals,
-            address: vesting_token.address,
-            total_supply: 0,
-        };
-
-        let config = Config {
-            admin: admin.clone(),
-            whitelist: whitelisted_accounts,
-            token_info,
-            max_vesting_complexity,
-        };
-
-        save_config(&env, &config);
-
+        dbg!();
+        // TODO: this check might make no sense
         if vesting_balances.is_empty() {
             log!(
                 &env,
@@ -145,14 +133,41 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::MissingBalance);
         }
 
+        dbg!();
         let total_supply = create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
-        let cap_limit = minter_info.cap.value(env.ledger().timestamp()) as i128;
-        if total_supply > cap_limit {
-            log!(&env, "Vesting: Initialize: total supply over the cap");
-            panic_with_error!(env, ContractError::SupplyOverTheCap);
+        dbg!();
+        if let Some(mi) = minter_info {
+            let cap = mi.cap.value(env.ledger().timestamp()) as i128;
+            if total_supply > cap {
+                log!(&env, "Vesting: Initialize: total supply over the cap");
+                panic_with_error!(env, ContractError::SupplyOverTheCap);
+            }
+            save_minter(&env, mi);
+        }
+        // let cap_limit = minter_info.cap.value(env.ledger().timestamp()) as i128;
+        // dbg!(total_supply, cap_limit);
+        // if total_supply > cap_limit {
+        //     log!(&env, "Vesting: Initialize: total supply over the cap");
+        //     panic_with_error!(env, ContractError::SupplyOverTheCap);
+        // };
+        dbg!();
+
+        let token_info = VestingTokenInfo {
+            name: vesting_token.name,
+            symbol: vesting_token.symbol,
+            decimals: vesting_token.decimals,
+            address: vesting_token.address,
+            total_supply,
         };
 
-        save_minter(&env, minter_info);
+        let config = Config {
+            admin: admin.clone(),
+            whitelist: whitelisted_accounts,
+            token_info,
+            max_vesting_complexity,
+        };
+        dbg!();
+        save_config(&env, &config);
 
         env.events()
             .publish(("Initialize", "Vesting contract with admin: "), admin);
@@ -208,7 +223,6 @@ impl VestingTrait for Vesting {
             log!(&env, "Vesting: Transfer Vesting: Invalid transfer amount");
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
-
         curve.validate_monotonic_decreasing()?;
         let (low, high) = curve.range();
         if low != 0 {
@@ -226,9 +240,7 @@ impl VestingTrait for Vesting {
         if !curve.value(env.ledger().timestamp()) == 0 {
             update_vesting(&env, &to, curve)?;
         }
-
         verify_vesting_and_transfer(&env, &from, &to, amount)?;
-
         env.events().publish(
             (
                 "Transfer vesting",
@@ -602,35 +614,4 @@ impl VestingTrait for Vesting {
     fn query_allowance(env: Env, owner_spender: (Address, Address)) -> i128 {
         get_allowances(&env, &owner_spender)
     }
-}
-
-fn create_vesting_accounts(
-    env: &Env,
-    vesting_complexity: u32,
-    vesting_balances: Vec<VestingBalance>,
-) -> Result<i128, ContractError> {
-    let mut total_supply = 0;
-
-    vesting_balances.into_iter().for_each(|vb| {
-        if vesting_complexity <= vb.curve.size() {
-            log!(
-                &env,
-                "Vesting: Create vesting account: Invalid curve complexity for {}",
-                vb.address
-            );
-            panic_with_error!(env, ContractError::VestingComplexityTooHigh);
-        }
-
-        save_vesting(
-            env,
-            &vb.address,
-            VestingInfo {
-                amount: vb.balance,
-                curve: vb.curve,
-            },
-        );
-        total_supply += vb.balance;
-    });
-
-    Ok(total_supply)
 }
