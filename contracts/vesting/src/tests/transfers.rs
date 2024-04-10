@@ -23,6 +23,8 @@ fn transfer_tokens_succesfully() {
     let whitelisted_account = Address::generate(&env);
     let token = deploy_token_contract(&env, &admin);
 
+    token.mint(&vester1, &1_000);
+
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
@@ -77,6 +79,8 @@ fn transfer_tokens_succesfully() {
         &10u32,
     );
 
-    token.mint(&vester1, &1_000);
+    assert_eq!(token.balance(&vester2), 0);
     vesting_client.transfer_token(&vester1, &vester2, &100);
+    assert_eq!(vesting_client.query_balance(&vester1), 900);
+    assert_eq!(token.balance(&vester2), 100);
 }
