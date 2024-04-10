@@ -8,13 +8,8 @@ use pretty_assertions::assert_eq;
 
 use crate::contract::{Staking, StakingClient};
 use crate::distribution::get_reward_curve;
-use crate::{
-    distribution::get_distribution,
-    msg::{
-        AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward,
-        WithdrawableRewardsResponse,
-    },
-    storage::utils::get_distributions,
+use crate::msg::{
+    AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward, WithdrawableRewardsResponse,
 };
 
 #[test]
@@ -1155,5 +1150,5 @@ fn test_check_complexity_over_time() {
     reward_token.mint(&admin, &2000);
 
     staking.fund_distribution(&admin, &0, &600, &reward_token.address, &1000);
-    let result = get_reward_curve(&env, &reward_token.address);
+    let _result = get_reward_curve(&env, &reward_token.address);
 }
