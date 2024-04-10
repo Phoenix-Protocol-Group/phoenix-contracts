@@ -1,4 +1,3 @@
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env, String,
@@ -1123,6 +1122,7 @@ fn panic_when_funding_distribution_above_end_distribution_timestamp() {
 }
 
 #[test]
+#[ignore = "cannot access the state directly to check the reward curve"]
 fn test_check_complexity_over_time() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1155,7 +1155,5 @@ fn test_check_complexity_over_time() {
     reward_token.mint(&admin, &2000);
 
     staking.fund_distribution(&admin, &0, &600, &reward_token.address, &1000);
-    dbg!("before");
     let result = get_reward_curve(&env, &reward_token.address);
-    dbg!(result);
 }
