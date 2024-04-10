@@ -22,3 +22,4 @@ soroban-sdk = { workspace = true }
 curve = { workspace = true, features = ["testutils"] }
 soroban-sdk = { workspace = true, features = ["testutils"] }
 pretty_assertions = { workspace = true }
+test-case = "3.3.1"
