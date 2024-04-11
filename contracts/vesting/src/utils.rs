@@ -62,7 +62,7 @@ pub fn create_vesting_accounts(
     let mut total_supply = 0;
 
     vesting_accounts.into_iter().for_each(|vb| {
-        assert_schedule_vests_amount(&vb.curve, vb.balance as u128)
+        assert_schedule_vests_amount(&env, &vb.curve, vb.balance as u128)
             .expect("Invalid curve and amount");
 
         if vesting_complexity <= vb.curve.size() {
@@ -98,15 +98,27 @@ pub fn create_vesting_accounts(
 
 /// Asserts the vesting schedule decreases to 0 eventually, and is never more than the
 /// amount being sent. If it doesn't match these conditions, returns an error.
-pub fn assert_schedule_vests_amount(schedule: &Curve, amount: u128) -> Result<(), ContractError> {
+pub fn assert_schedule_vests_amount(
+    env: &Env,
+    schedule: &Curve,
+    amount: u128,
+) -> Result<(), ContractError> {
     dbg!(schedule, amount);
     schedule.validate_monotonic_decreasing()?;
     let (low, high) = schedule.range();
-    dbg!(low, high, amount);
+    dbg!(low, high, amount, low != 0);
     if low != 0 {
-        Err(ContractError::NeverFullyVested)
+        log!(
+            &env,
+            "Vesting: Assert Schedule Vest Amount: Never fully vested"
+        );
+        panic_with_error!(&env, ContractError::NeverFullyVested)
     } else if high > amount {
-        Err(ContractError::VestsMoreThanSent)
+        log!(
+            &env,
+            "Vesting: Assert Schedule Vest Amount: Vesting amount more than sent"
+        );
+        panic_with_error!(&env, ContractError::VestsMoreThanSent)
     } else {
         Ok(())
     }
@@ -223,5 +235,51 @@ mod test {
         ];
 
         validate_accounts(&env, accounts).unwrap_err();
+    }
+
+    #[test]
+    fn assert_schedule_vests_amount_works() {
+        let env = Env::default();
+        let curve = Curve::SaturatingLinear(SaturatingLinear {
+            min_x: 15,
+            min_y: 120,
+            max_x: 60,
+            max_y: 0,
+        });
+
+        assert_eq!(assert_schedule_vests_amount(&env, &curve, 121), Ok(()));
+    }
+
+    #[test]
+    #[should_panic(expected = "Vesting: Assert Schedule Vest Amount: Never fully vested")]
+    fn assert_schedule_vests_amount_fails_when_low_not_zero() {
+        const MIN_NOT_ZERO: u128 = 1;
+        let env = Env::default();
+        let curve = Curve::SaturatingLinear(SaturatingLinear {
+            min_x: 15,
+            min_y: 120,
+            max_x: 60,
+            max_y: MIN_NOT_ZERO,
+        });
+
+        assert_schedule_vests_amount(&env, &curve, 1_000).unwrap();
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Vesting: Assert Schedule Vest Amount: Vesting amount more than sent"
+    )]
+    fn assert_schedule_vests_amount_fails_when_high_bigger_than_amount() {
+        const HIGH: u128 = 2;
+        const AMOUNT: u128 = 1;
+        let env = Env::default();
+        let curve = Curve::SaturatingLinear(SaturatingLinear {
+            min_x: 15,
+            min_y: HIGH,
+            max_x: 60,
+            max_y: 0,
+        });
+
+        assert_schedule_vests_amount(&env, &curve, AMOUNT).unwrap();
     }
 }
