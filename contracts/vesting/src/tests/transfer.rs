@@ -36,7 +36,7 @@ fn transfer_tokens() {
         &env,
         VestingBalance {
             address: vester1.clone(),
-            balance: 100,
+            balance: 200,
             curve: Curve::SaturatingLinear(SaturatingLinear {
                 min_x: 15,
                 min_y: 120,
@@ -44,32 +44,12 @@ fn transfer_tokens() {
                 max_y: 0,
             }),
         },
-        VestingBalance {
-            address: vester2.clone(),
-            balance: 100,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 30,
-                min_y: 240,
-                max_x: 120,
-                max_y: 0,
-            }),
-        },
     ];
-
-    let minter_info = &MinterInfo {
-        address: Address::generate(&env),
-        cap: Curve::SaturatingLinear(SaturatingLinear {
-            min_x: 30,
-            min_y: 2,
-            max_x: 120,
-            max_y: 240,
-        }),
-    };
 
     let allowed_vesters = vec![&env, whitelisted_account.clone()];
 
     let vesting_client = instantiate_vesting_client(&env);
-    env.ledger().with_mut(|li| li.timestamp = 1000);
+
     vesting_client.initialize(
         &admin,
         &vesting_token,
@@ -78,11 +58,13 @@ fn transfer_tokens() {
         &Some(allowed_vesters),
         &10u32,
     );
-
     assert_eq!(token.balance(&vester2), 0);
+    dbg!("before");
     vesting_client.transfer_token(&vester1, &vester2, &100);
+    dbg!("after");
     assert_eq!(vesting_client.query_balance(&vester1), 900);
     assert_eq!(token.balance(&vester2), 100);
+    assert_eq!(vesting_client.query_total_supply(), 1_000);
 }
 
 #[test]

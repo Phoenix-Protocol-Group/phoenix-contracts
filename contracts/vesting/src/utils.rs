@@ -17,21 +17,28 @@ pub fn verify_vesting_and_transfer(
     to: &Address,
     amount: i128,
 ) -> Result<(), ContractError> {
-    let vesting_amount = get_vesting(env, sender)
+    dbg!("looking for vesting", sender);
+    let vesting_amount = get_vesting(env, sender)?
         .curve
         .value(env.ledger().timestamp()) as i128;
+    dbg!("after");
 
+    dbg!();
     if vesting_amount <= 0 {
         remove_vesting(env, sender);
     }
 
+    dbg!();
     let token_client = token_contract::Client::new(env, &get_config(env).token_info.address);
-    let balance = token_client.balance(sender);
-    let remainder = balance
+    dbg!();
+    let sender_balance = token_client.balance(sender);
+    dbg!();
+    let sender_remainder = sender_balance
         .checked_sub(amount)
         .ok_or(ContractError::NotEnoughBalance)?;
 
-    if vesting_amount > remainder {
+    dbg!();
+    if vesting_amount > sender_remainder {
         log!(
             &env,
             "Vesting: Mixture: Remaining amount must be at least equal to vested amount"
@@ -39,6 +46,7 @@ pub fn verify_vesting_and_transfer(
         panic_with_error!(env, ContractError::CantMoveVestingTokens);
     }
 
+    dbg!();
     token_client.transfer(sender, to, &amount);
 
     Ok(())
@@ -66,6 +74,12 @@ pub fn create_vesting_accounts(
             panic_with_error!(env, ContractError::VestingComplexityTooHigh);
         }
 
+        dbg!(
+            "will save vesting",
+            vb.address.clone(),
+            vb.balance.clone(),
+            vb.curve.clone()
+        );
         save_vesting(
             env,
             &vb.address,
@@ -112,5 +126,102 @@ fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) -> Result<(), Con
         panic_with_error!(env, ContractError::DuplicateInitialBalanceAddresses);
     } else {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use curve::SaturatingLinear;
+    use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::vec;
+
+    use super::*;
+
+    #[test]
+    fn validate_accounts_works() {
+        let env = Env::default();
+        let address1 = Address::generate(&env);
+        let address2 = Address::generate(&env);
+        let address3 = Address::generate(&env);
+
+        let accounts = vec![
+            &env,
+            VestingBalance {
+                address: address1.clone(),
+                balance: 100,
+                curve: Curve::SaturatingLinear(SaturatingLinear {
+                    min_x: 15,
+                    min_y: 120,
+                    max_x: 60,
+                    max_y: 0,
+                }),
+            },
+            VestingBalance {
+                address: address2.clone(),
+                balance: 200,
+                curve: Curve::SaturatingLinear(SaturatingLinear {
+                    min_x: 15,
+                    min_y: 120,
+                    max_x: 60,
+                    max_y: 0,
+                }),
+            },
+            VestingBalance {
+                address: address3.clone(),
+                balance: 300,
+                curve: Curve::SaturatingLinear(SaturatingLinear {
+                    min_x: 15,
+                    min_y: 120,
+                    max_x: 60,
+                    max_y: 0,
+                }),
+            },
+        ];
+
+        assert_eq!(validate_accounts(&env, accounts), Ok(()));
+    }
+
+    #[test]
+    #[should_panic(expected = "Vesting: Initialize: Duplicate addresses found")]
+    fn validate_accounts_should_panic() {
+        let env = Env::default();
+        let address1 = Address::generate(&env);
+        let address2 = Address::generate(&env);
+
+        let accounts = vec![
+            &env,
+            VestingBalance {
+                address: address1.clone(),
+                balance: 100,
+                curve: Curve::SaturatingLinear(SaturatingLinear {
+                    min_x: 15,
+                    min_y: 120,
+                    max_x: 60,
+                    max_y: 0,
+                }),
+            },
+            VestingBalance {
+                address: address2.clone(),
+                balance: 200,
+                curve: Curve::SaturatingLinear(SaturatingLinear {
+                    min_x: 15,
+                    min_y: 120,
+                    max_x: 60,
+                    max_y: 0,
+                }),
+            },
+            VestingBalance {
+                address: address1.clone(),
+                balance: 300,
+                curve: Curve::SaturatingLinear(SaturatingLinear {
+                    min_x: 15,
+                    min_y: 120,
+                    max_x: 60,
+                    max_y: 0,
+                }),
+            },
+        ];
+
+        validate_accounts(&env, accounts).unwrap_err();
     }
 }

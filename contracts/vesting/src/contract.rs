@@ -91,7 +91,7 @@ pub trait VestingTrait {
 
     fn query_balance(env: Env, address: Address) -> i128;
 
-    fn query_vesting(env: Env, address: Address) -> Curve;
+    fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError>;
 
     fn query_delegated(env: Env, address: Address) -> i128;
 
@@ -102,6 +102,8 @@ pub trait VestingTrait {
     fn query_minter(env: Env) -> Address;
 
     fn query_allowance(env: Env, owner_spender: (Address, Address)) -> i128;
+
+    fn query_total_supply(env: Env) -> i128;
 }
 
 #[contractimpl]
@@ -584,8 +586,9 @@ impl VestingTrait for Vesting {
         token_client.balance(&address)
     }
 
-    fn query_vesting(env: Env, address: Address) -> Curve {
-        get_vesting(&env, &address).curve
+    fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError> {
+        let curve = get_vesting(&env, &address)?.curve;
+        Ok(curve)
     }
 
     // FIXME: we might not need this
@@ -607,5 +610,9 @@ impl VestingTrait for Vesting {
 
     fn query_allowance(env: Env, owner_spender: (Address, Address)) -> i128 {
         get_allowances(&env, &owner_spender)
+    }
+
+    fn query_total_supply(env: Env) -> i128 {
+        get_vesting_total_supply(&env)
     }
 }
