@@ -91,28 +91,28 @@ fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: Address::generate(&env),
-        total_supply: 0,
+        total_supply: 480,
     };
     let vesting_balances = vec![
         &env,
         VestingBalance {
             address: vester1,
-            balance: 100,
+            balance: 240,
             curve: Curve::SaturatingLinear(SaturatingLinear {
                 min_x: 15,
-                min_y: 1,
+                min_y: 120,
                 max_x: 60,
-                max_y: 120,
+                max_y: 0,
             }),
         },
         VestingBalance {
             address: vester2,
-            balance: 100,
+            balance: 240,
             curve: Curve::SaturatingLinear(SaturatingLinear {
                 min_x: 30,
-                min_y: 2,
+                min_y: 240,
                 max_x: 120,
-                max_y: 240,
+                max_y: 0,
             }),
         },
     ];
@@ -141,8 +141,8 @@ fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
     assert_eq!(
         vesting_client.query_config(),
         Config {
-            admin,
-            whitelist: vec![&env],
+            admin: admin.clone(),
+            whitelist: vec![&env, admin],
             token_info: vesting_token,
             max_vesting_complexity: 10,
         }
@@ -216,9 +216,9 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
             balance: 1_000,
             curve: Curve::SaturatingLinear(SaturatingLinear {
                 min_x: 15,
-                min_y: 1,
+                min_y: 120,
                 max_x: 60,
-                max_y: 120,
+                max_y: 0,
             }),
         },
         VestingBalance {
@@ -226,9 +226,9 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
             balance: 1_000,
             curve: Curve::SaturatingLinear(SaturatingLinear {
                 min_x: 30,
-                min_y: 2,
+                min_y: 240,
                 max_x: 120,
-                max_y: 240,
+                max_y: 0,
             }),
         },
     ];

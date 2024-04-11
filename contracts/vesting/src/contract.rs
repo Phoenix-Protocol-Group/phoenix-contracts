@@ -144,12 +144,6 @@ impl VestingTrait for Vesting {
             }
             save_minter(&env, mi);
         }
-        // let cap_limit = minter_info.cap.value(env.ledger().timestamp()) as i128;
-        // dbg!(total_supply, cap_limit);
-        // if total_supply > cap_limit {
-        //     log!(&env, "Vesting: Initialize: total supply over the cap");
-        //     panic_with_error!(env, ContractError::SupplyOverTheCap);
-        // };
         dbg!();
 
         let token_info = VestingTokenInfo {
