@@ -1,6 +1,7 @@
 use core::ops::Add;
-
 use curve::Curve;
+use soroban_sdk::testutils::arbitrary::std::dbg;
+use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{
     contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
     Vec,
@@ -99,10 +100,12 @@ pub fn save_vesting(env: &Env, address: &Address, vesting_info: VestingInfo) {
 
 pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, ContractError> {
     // FIXME why does this throws an error when we try to access the persistent storage?
+    dbg!("before", env.storage().persistent().has(&address));
     let vesting_info = env.storage().persistent().get(address).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
     });
+    dbg!("after");
 
     Ok(vesting_info)
 }
@@ -167,6 +170,10 @@ pub fn get_minter(env: &Env) -> MinterInfo {
 
 pub fn get_delegated(env: &Env, address: &Address) -> i128 {
     env.storage().persistent().get(address).unwrap_or(0)
+}
+
+pub fn save_delegated(env: &Env, address: &Address, amount: i128) {
+    env.storage().persistent().set(address, &amount);
 }
 
 pub fn get_vesting_total_supply(env: &Env) -> i128 {

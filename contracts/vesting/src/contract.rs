@@ -5,6 +5,7 @@ use soroban_sdk::{
 
 use curve::Curve;
 
+use crate::storage::{save_balance, save_delegated};
 use crate::utils::{create_vesting_accounts, verify_vesting_and_transfer};
 use crate::{
     error::ContractError,
@@ -78,6 +79,10 @@ pub trait VestingTrait {
         contract: Address,
         amount: i128,
     ) -> Result<(), ContractError>;
+
+    fn delegate(env: Env, sender: Address, to: Address, amount: i128);
+
+    fn undelegate(env: Env, sender: Address, to: Address, amount: i128);
 
     fn update_minter(env: Env, sender: Address, new_minter: Address);
 
@@ -495,6 +500,36 @@ impl VestingTrait for Vesting {
         );
 
         Ok(())
+    }
+
+    fn delegate(env: Env, sender: Address, to: Address, amount: i128) {
+        sender.require_auth();
+        if amount <= 0 {
+            log!(&env, "Vesting: Delegate: Invalid amount");
+            panic_with_error!(env, ContractError::InvalidTransferAmount);
+        }
+
+        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+
+        token_client.burn(&sender, &amount);
+        token_client.mint(&to, &amount);
+
+        let curr_delegated = get_delegated(&env, &sender);
+        save_delegated(&env, &sender, curr_delegated + amount);
+
+        env.events()
+            .publish(("Delegate", "Delegated tokens: "), amount);
+        env.events()
+            .publish(("Delegate", "Delegated from: "), sender);
+        env.events().publish(("Delegate", "Delegated to: "), to);
+    }
+
+    fn undelegate(env: Env, sender: Address, to: Address, amount: i128) {
+        sender.require_auth();
+        if amount <= 0 {
+            log!(&env, "Vesting: Undelegate: Invalid amount");
+            panic_with_error!(env, ContractError::InvalidTransferAmount);
+        }
     }
 
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
