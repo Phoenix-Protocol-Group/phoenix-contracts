@@ -1,55 +1,63 @@
-// # [test]
-// fn transfer_tokens() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//     env.budget().reset_unlimited();
+use curve::{Curve, SaturatingLinear};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
-//     let admin = Address::generate(&env);
-//     let vester1 = Address::generate(&env);
-//     let vester2 = Address::generate(&env);
-//     let whitelisted_account = Address::generate(&env);
-//     let token = deploy_token_contract(&env, &admin);
+use soroban_sdk::testutils::arbitrary::std::dbg;
 
-//     token.mint(&vester1, &1_000);
+use crate::{contract::{Sample, SampleClient}, storage::VestingBalance};
 
-//     let vesting_token = VestingTokenInfo {
-//         name: String::from_str(&env, "Phoenix"),
-//         symbol: String::from_str(&env, "PHO"),
-//         decimals: 6,
-//         address: token.address.clone(),
-//         total_supply: 0,
-//     };
-//     let vesting_balances = vec![
-//         &env,
-//         VestingBalance {
-//             address: vester1.clone(),
-//             balance: 200,
-//             curve: Curve::SaturatingLinear(SaturatingLinear {
-//                 min_x: 15,
-//                 min_y: 120,
-//                 max_x: 60,
-//                 max_y: 0,
-//             }),
-//         },
-//     ];
+#[test]
+fn test_get_from_persistent_storage() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+    let user = Address::generate(&env);
 
-//     let allowed_vesters = vec![&env, whitelisted_account.clone()];
+    let sample_client = SampleClient::new(&env, &env.register_contract(None, Sample {}));
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            address: user.clone(),
+            balance: 200,
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 15,
+                min_y: 120,
+                max_x: 60,
+                max_y: 0,
+            }),
+        },
+    ];
 
-//     let vesting_client = instantiate_vesting_client(&env);
+    sample_client.initialize(&vesting_balances);
+    let result = sample_client.query_vesting_in_persistent(&user);
 
-//     vesting_client.initialize(
-//         &admin,
-//         &vesting_token,
-//         &vesting_balances,
-//         &None,
-//         &Some(allowed_vesters),
-//         &10u32,
-//     );
-//     assert_eq!(token.balance(&vester2), 0);
-//     dbg!("before");
-//     vesting_client.transfer_token(&vester1, &vester2, &100);
-//     dbg!("after");
-//     assert_eq!(vesting_client.query_balance(&vester1), 900);
-//     assert_eq!(token.balance(&vester2), 100);
-//     assert_eq!(vesting_client.query_total_supply(), 1_000);
-// }
+    dbg!(result);
+
+}
+
+#[test]
+fn test_get_from_instance_storage() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+    let user = Address::generate(&env);
+
+    let sample_client = SampleClient::new(&env, &env.register_contract(None, Sample {}));
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            address: user.clone(),
+            balance: 200,
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 15,
+                min_y: 120,
+                max_x: 60,
+                max_y: 0,
+            }),
+        },
+    ];
+
+    sample_client.initialize(&vesting_balances);
+    let result = sample_client.query_vesting_in_instance(&user);
+
+    dbg!(result);
+}

@@ -9,9 +9,9 @@ use crate::{error::ContractError, storage::VestingBalance};
 contractmeta!(key = "Description", val = "Phoenix Protocol Vesting");
 
 #[contract]
-pub struct Vesting;
+pub struct Sample;
 
-pub trait VestingTrait {
+pub trait SampleTrait {
     fn initialize(env: Env, vesting_balances: Vec<VestingBalance>) -> Result<(), ContractError>;
 
     fn query_vesting_in_persistent(env: Env, address: Address) -> Result<Curve, ContractError>;
@@ -20,7 +20,7 @@ pub trait VestingTrait {
 }
 
 #[contractimpl]
-impl VestingTrait for Vesting {
+impl SampleTrait for Sample {
     fn initialize(env: Env, vesting_balances: Vec<VestingBalance>) -> Result<(), ContractError> {
         vesting_balances.into_iter().for_each(|vb| {
             save_vesting_in_persistent(
