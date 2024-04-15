@@ -1119,11 +1119,13 @@ fn panic_when_funding_distribution_with_curve_too_complex() {
         &1000,
     );
 
+    // assert just to prove that we have 2 successful fund distributions
     assert_eq!(
         staking.query_undistributed_rewards(&reward_token.address),
         2000
     );
 
+    // uh-oh fail
     staking.fund_distribution(
         &admin,
         &TEN_MINUTES,
