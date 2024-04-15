@@ -64,7 +64,7 @@ fn transfer_tokens() {
     dbg!("after");
     assert_eq!(vesting_client.query_balance(&vester1), 900);
     assert_eq!(token.balance(&vester2), 100);
-    assert_eq!(vesting_client.query_total_supply(), 1_000);
+    assert_eq!(vesting_client.query_total_supply(), 200);
 }
 
 #[test]

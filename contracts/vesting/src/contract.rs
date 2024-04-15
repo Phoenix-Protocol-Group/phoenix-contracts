@@ -5,7 +5,7 @@ use soroban_sdk::{
 
 use curve::Curve;
 
-use crate::storage::{save_balance, save_delegated};
+use crate::storage::save_delegated;
 use crate::utils::{create_vesting_accounts, verify_vesting_and_transfer};
 use crate::{
     error::ContractError,
@@ -151,7 +151,7 @@ impl VestingTrait for Vesting {
             }
             save_minter(&env, mi);
         }
-        dbg!();
+        dbg!(total_supply);
 
         let token_info = VestingTokenInfo {
             name: vesting_token.name,
