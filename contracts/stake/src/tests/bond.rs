@@ -12,6 +12,8 @@ use crate::{
     storage::{Config, Stake},
 };
 
+const DEFAULT_COMPLEXITY: u32 = 7;
+
 #[test]
 fn initialize_staking_contract() {
     let env = Env::default();
@@ -28,7 +30,7 @@ fn initialize_staking_contract() {
         &lp_token.address,
         &manager,
         &owner,
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 
     let response = staking.query_config();
@@ -41,7 +43,7 @@ fn initialize_staking_contract() {
                 min_reward: 1_000i128,
                 manager,
                 owner,
-                max_complexity: 50u32,
+                max_complexity: 7,
             }
         }
     );
@@ -67,7 +69,7 @@ fn test_deploying_stake_twice_should_fail() {
         &lp_token.address,
         &manager,
         &owner,
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 
     first.initialize(
@@ -77,7 +79,7 @@ fn test_deploying_stake_twice_should_fail() {
         &50i128,
         &manager,
         &owner,
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 }
 
@@ -99,7 +101,7 @@ fn bond_too_few() {
         &lp_token.address,
         &manager,
         &owner,
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 
     lp_token.mint(&user, &999);
@@ -124,7 +126,7 @@ fn bond_simple() {
         &lp_token.address,
         &manager,
         &owner,
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 
     lp_token.mint(&user, &10_000);
@@ -166,7 +168,7 @@ fn unbond_simple() {
         &lp_token.address,
         &manager,
         &owner,
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 
     lp_token.mint(&user, &35_000);
@@ -231,7 +233,7 @@ fn initializing_contract_sets_total_staked_var() {
         &lp_token.address,
         &manager,
         &owner,
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 
     assert_eq!(staking.query_total_staked(), 0);
@@ -256,7 +258,7 @@ fn unbond_wrong_user_stake_not_found() {
         &lp_token.address,
         &manager,
         &owner,
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 
     lp_token.mint(&user, &35_000);
@@ -298,7 +300,7 @@ fn pay_rewards_during_unbond() {
         &lp_token.address,
         &manager,
         &owner,
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 
     lp_token.mint(&user, &10_000);
@@ -353,7 +355,7 @@ fn initialize_staking_contract_should_panic_when_min_bond_invalid() {
         &1_000,
         &Address::generate(&env),
         &Address::generate(&env),
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 }
 
@@ -372,7 +374,7 @@ fn initialize_staking_contract_should_panic_when_min_rewards_invalid() {
         &0,
         &Address::generate(&env),
         &Address::generate(&env),
-        &50u32,
+        &DEFAULT_COMPLEXITY,
     );
 }
 

@@ -6,8 +6,6 @@ use soroban_sdk::{
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 use pretty_assertions::assert_eq;
 
-use crate::contract::{Staking, StakingClient};
-use crate::distribution::get_reward_curve;
 use crate::msg::{
     AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward, WithdrawableRewardsResponse,
 };
@@ -1084,8 +1082,12 @@ fn panic_when_adding_same_distribution_twice() {
 
 #[should_panic(expected = "Stake: Fund distribution: Curve complexity validation failed")]
 #[test]
-fn panic_when_funding_distribution_above_end_distribution_timestamp() {
-    const DISTRIBUTION_MAX_COMPLEXITY: u32 = 1;
+fn panic_when_funding_distribution_with_curve_too_complex() {
+    const DISTRIBUTION_MAX_COMPLEXITY: u32 = 3;
+    const FIVE_MINUTES: u64 = 300;
+    const TEN_MINUTES: u64 = 600;
+    const ONE_WEEK: u64 = 604_800;
+
     let env = Env::default();
     env.mock_all_auths();
 
@@ -1106,49 +1108,27 @@ fn panic_when_funding_distribution_above_end_distribution_timestamp() {
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
-    reward_token.mint(&admin, &2000);
+    reward_token.mint(&admin, &3000);
 
-    staking.fund_distribution(&admin, &0, &600, &reward_token.address, &1000);
-    staking.fund_distribution(&admin, &0, &600, &reward_token.address, &1000);
-
-    env.ledger().with_mut(|li| {
-        li.timestamp = 601;
-    });
-}
-
-#[test]
-#[ignore = "cannot access the state directly to check the reward curve"]
-fn test_check_complexity_over_time() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let admin = Address::generate(&env);
-    let contract_addr = Address::generate(&env);
-    let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
-    let lp_token = deploy_token_contract(&env, &admin);
-    let reward_token = deploy_token_contract(&env, &admin);
-
-    let staking = StakingClient::new(
-        &env,
-        &env.register_contract(Some(&contract_addr), Staking {}),
-    );
-
-    staking.initialize(
+    staking.fund_distribution(&admin, &0, &FIVE_MINUTES, &reward_token.address, &1000);
+    staking.fund_distribution(
         &admin,
-        &lp_token.address,
-        &1_000,
-        &1_000,
-        &manager,
-        &owner,
-        &10,
+        &FIVE_MINUTES,
+        &TEN_MINUTES,
+        &reward_token.address,
+        &1000,
     );
 
-    // dbg!(env.current_contract_address());
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        2000
+    );
 
-    reward_token.mint(&admin, &2000);
-
-    staking.fund_distribution(&admin, &0, &600, &reward_token.address, &1000);
-    let _result = get_reward_curve(&env, &reward_token.address);
+    staking.fund_distribution(
+        &admin,
+        &TEN_MINUTES,
+        &ONE_WEEK,
+        &reward_token.address,
+        &1000,
+    );
 }
