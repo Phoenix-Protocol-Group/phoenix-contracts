@@ -12,6 +12,7 @@ and this project adheres to
 - Update soroban-sdk-rs to 20.5.0 ([#275])
 - CI: Update rust to 1.77.0 ([#275])
 - Pool: Replace belief_price swap parameter with minimum amount of tokens expected to be received ([#280])
+- Stake: Checks if curve complexity is too high during operations and also optimises the curve combine process ([#283])
 
 ## Added
 
@@ -21,6 +22,7 @@ and this project adheres to
 [#275]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/275
 [#274]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/274
 [#280]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/280
+[#283]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/283
 
 ## Bug fixes
 
