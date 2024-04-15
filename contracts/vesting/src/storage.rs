@@ -95,13 +95,13 @@ pub fn save_balance(env: &Env, address: &Address, balance: i128) {
 }
 
 pub fn save_vesting(env: &Env, address: &Address, vesting_info: VestingInfo) {
-    env.storage().persistent().set(address, &vesting_info);
+    env.storage().instance().set(address, &vesting_info);
 }
 
 pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, ContractError> {
     // FIXME why does this throws an error when we try to access the persistent storage?
-    dbg!("before", env.storage().persistent().has(&address));
-    let vesting_info = env.storage().persistent().get(address).unwrap_or_else(|| {
+    dbg!("before", env.storage().instance().has(&address));
+    let vesting_info = env.storage().instance().get(address).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
     });
