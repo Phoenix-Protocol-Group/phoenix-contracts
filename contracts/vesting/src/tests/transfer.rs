@@ -93,35 +93,15 @@ fn transfer_tokens_should_fail_invalid_amount() {
         &env,
         VestingBalance {
             address: vester1.clone(),
-            balance: 100,
+            balance: 200,
             curve: Curve::SaturatingLinear(SaturatingLinear {
                 min_x: 15,
-                min_y: 1,
+                min_y: 120,
                 max_x: 60,
-                max_y: 120,
-            }),
-        },
-        VestingBalance {
-            address: vester2.clone(),
-            balance: 100,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 30,
-                min_y: 2,
-                max_x: 120,
-                max_y: 240,
+                max_y: 0,
             }),
         },
     ];
-
-    let minter_info = &MinterInfo {
-        address: Address::generate(&env),
-        cap: Curve::SaturatingLinear(SaturatingLinear {
-            min_x: 30,
-            min_y: 2,
-            max_x: 120,
-            max_y: 240,
-        }),
-    };
 
     let allowed_vesters = vec![&env, whitelisted_account.clone()];
 
@@ -151,6 +131,7 @@ fn transfer_vesting_works() {
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
     let vester2 = Address::generate(&env);
+    dbg!(&vester1, &vester2, &admin);
     let token = deploy_token_contract(&env, &admin);
 
     token.mint(&vester1, &1_000);
@@ -166,35 +147,15 @@ fn transfer_vesting_works() {
         &env,
         VestingBalance {
             address: vester1.clone(),
-            balance: 100,
+            balance: 200,
             curve: Curve::SaturatingLinear(SaturatingLinear {
                 min_x: 15,
-                min_y: 1,
+                min_y: 120,
                 max_x: 60,
-                max_y: 120,
-            }),
-        },
-        VestingBalance {
-            address: vester2.clone(),
-            balance: 100,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 30,
-                min_y: 2,
-                max_x: 120,
-                max_y: 240,
+                max_y: 0,
             }),
         },
     ];
-
-    let minter_info = &MinterInfo {
-        address: Address::generate(&env),
-        cap: Curve::SaturatingLinear(SaturatingLinear {
-            min_x: 30,
-            min_y: 2,
-            max_x: 120,
-            max_y: 240,
-        }),
-    };
 
     let allowed_vesters = vec![&env, vester1.clone()];
 

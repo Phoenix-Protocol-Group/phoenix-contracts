@@ -283,3 +283,29 @@ mod test {
         assert_schedule_vests_amount(&env, &curve, AMOUNT).unwrap();
     }
 }
+
+pub fn update_vesting(env: &Env, address: &Address, new_curve: Curve) -> Result<(), ContractError> {
+    let max_complexity = get_config(env).max_vesting_complexity;
+    env.storage()
+        .persistent()
+        .update(&address, |current_value: Option<Curve>| {
+            let new_curve_schedule = current_value
+                // FIXME: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/227
+                .map(|current_value| current_value.combine(env, &new_curve))
+                .unwrap_or(new_curve);
+
+            new_curve_schedule
+                .validate_complexity(max_complexity)
+                .unwrap_or_else(|_| {
+                    log!(
+                        &env,
+                        "Vesting: Update Vesting: new vesting complexity invalid"
+                    );
+                    panic_with_error!(env, ContractError::VestingComplexityTooHigh);
+                });
+
+            new_curve_schedule
+        });
+
+    Ok(())
+}
