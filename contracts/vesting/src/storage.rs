@@ -1,7 +1,6 @@
 use core::ops::Add;
 use curve::Curve;
 use soroban_sdk::testutils::arbitrary::std::dbg;
-use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{
     contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
     Vec,
@@ -95,12 +94,17 @@ pub fn save_balance(env: &Env, address: &Address, balance: i128) {
 }
 
 pub fn save_vesting(env: &Env, address: &Address, vesting_info: VestingInfo) {
+    dbg!("saving vesting", address, vesting_info.clone());
     env.storage().instance().set(address, &vesting_info);
 }
 
 pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, ContractError> {
     // FIXME why does this throws an error when we try to access the persistent storage?
-    dbg!("before", env.storage().instance().has(&address));
+    dbg!(
+        "looking up for vesting",
+        &address,
+        env.storage().instance().has(&address)
+    );
     let vesting_info = env.storage().instance().get(address).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
@@ -112,32 +116,6 @@ pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, Contract
 
 pub fn remove_vesting(env: &Env, address: &Address) {
     env.storage().persistent().remove(&address);
-}
-
-pub fn update_vesting(env: &Env, address: &Address, new_curve: Curve) -> Result<(), ContractError> {
-    let max_complexity = get_config(env).max_vesting_complexity;
-    env.storage()
-        .persistent()
-        .update(&address, |current_value: Option<Curve>| {
-            let new_curve_schedule = current_value
-                // FIXME: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/227
-                .map(|current_value| current_value.combine(env, &new_curve))
-                .unwrap_or(new_curve);
-
-            new_curve_schedule
-                .validate_complexity(max_complexity)
-                .unwrap_or_else(|_| {
-                    log!(
-                        &env,
-                        "Vesting: Update Vesting: new vesting complexity invalid"
-                    );
-                    panic_with_error!(env, ContractError::VestingComplexityTooHigh);
-                });
-
-            new_curve_schedule
-        });
-
-    Ok(())
 }
 
 pub fn get_allowances(env: &Env, owner_spender: &(Address, Address)) -> i128 {

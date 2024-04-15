@@ -6,14 +6,13 @@ use soroban_sdk::{
 use curve::Curve;
 
 use crate::storage::save_delegated;
-use crate::utils::{create_vesting_accounts, verify_vesting_and_transfer};
+use crate::utils::{create_vesting_accounts, update_vesting, verify_vesting_and_transfer};
 use crate::{
     error::ContractError,
     storage::{
         get_allowances, get_config, get_delegated, get_minter, get_vesting,
         get_vesting_total_supply, save_admin, save_allowances, save_config, save_minter,
-        update_vesting, update_vesting_total_supply, Config, MinterInfo, VestingBalance,
-        VestingTokenInfo,
+        update_vesting_total_supply, Config, MinterInfo, VestingBalance, VestingTokenInfo,
     },
     token_contract,
 };
