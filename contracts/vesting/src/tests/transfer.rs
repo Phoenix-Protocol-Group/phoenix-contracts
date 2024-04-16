@@ -205,6 +205,63 @@ fn transfer_vesting_works() {
 }
 
 #[test]
+#[should_panic(expected = "Vesting: Transfer Vesting: Invalid transfer amount")]
+fn transfer_vesting_should_fail_when_invalid_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let vester2 = Address::generate(&env);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: Address::generate(&env),
+        total_supply: 0,
+    };
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            address: vester1.clone(),
+            balance: 200,
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 15,
+                min_y: 120,
+                max_x: 60,
+                max_y: 0,
+            }),
+        },
+    ];
+
+    let allowed_vesters = vec![&env, vester1.clone()];
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(
+        &admin,
+        &vesting_token,
+        &vesting_balances,
+        &None,
+        &Some(allowed_vesters),
+        &10u32,
+    );
+
+    vesting_client.transfer_vesting(
+        &vester1,
+        &vester2,
+        &0,
+        &Curve::SaturatingLinear(SaturatingLinear {
+            min_x: 15,
+            min_y: 120,
+            max_x: 60,
+            max_y: 0,
+        }),
+    );
+}
+
+#[test]
 #[should_panic(expected = "Vesting: Transfer Vesting: Not authorized to transfer vesting")]
 fn transfer_vesting_should_fail_when_sender_not_in_auth_list() {
     let env = Env::default();
@@ -302,7 +359,6 @@ fn transfer_vesting_should_fail_when_invalid_low_value() {
     let allowed_vesters = vec![&env, vester1.clone()];
 
     let vesting_client = instantiate_vesting_client(&env);
-    dbg!("before init");
     vesting_client.initialize(
         &admin,
         &vesting_token,
@@ -311,7 +367,6 @@ fn transfer_vesting_should_fail_when_invalid_low_value() {
         &Some(allowed_vesters),
         &10u32,
     );
-    dbg!("after init");
 
     vesting_client.transfer_vesting(
         &vester1,
