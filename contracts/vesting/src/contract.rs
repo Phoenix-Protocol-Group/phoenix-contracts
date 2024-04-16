@@ -1,4 +1,3 @@
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, Vec,
 };
@@ -100,7 +99,7 @@ pub trait VestingTrait {
 
     fn query_minter(env: Env) -> Address;
 
-    fn query_total_supply(env: Env) -> i128;
+    fn query_vesting_total_supply(env: Env) -> i128;
 }
 
 #[contractimpl]
@@ -198,7 +197,6 @@ impl VestingTrait for Vesting {
         from.require_auth();
 
         let whitelist = get_config(&env).whitelist;
-        dbg!(whitelist.clone(), from.clone());
         if !whitelist.contains(from.clone()) {
             log!(
                 &env,
@@ -213,7 +211,6 @@ impl VestingTrait for Vesting {
         }
         curve.validate_monotonic_decreasing()?;
         let (low, high) = curve.range();
-        dbg!(curve.clone(), low, high, amount);
         if low != 0 {
             log!(&env, "Vesting: Transfer Vesting: Invalid low value");
             panic_with_error!(env, ContractError::NeverFullyVested);
@@ -251,17 +248,16 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidBurnAmount);
         }
 
-        let total_supply = get_vesting_total_supply(&env)
-            .checked_sub(amount)
-            .unwrap_or_else(|| {
+        match get_vesting_total_supply(&env) - amount < 0 {
+            true => {
                 log!(
                     &env,
                     "Vesting: Burn: Critical error - total supply cannot be negative"
                 );
                 panic_with_error!(env, ContractError::Std);
-            });
-
-        update_vesting_total_supply(&env, total_supply);
+            }
+            false => update_vesting_total_supply(&env, get_vesting_total_supply(&env) - amount),
+        };
 
         let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
         token_client.burn(&sender, &amount);
@@ -291,7 +287,7 @@ impl VestingTrait for Vesting {
             .unwrap_or_else(|| {
                 log!(
                     &env,
-                    "Vesting: Mint: Critical error - total supply cannot be negative"
+                    "Vesting: Mint: Critical error - total supply overflow"
                 );
                 panic_with_error!(env, ContractError::Std);
             });
@@ -599,7 +595,7 @@ impl VestingTrait for Vesting {
         get_minter(&env).address
     }
 
-    fn query_total_supply(env: Env) -> i128 {
+    fn query_vesting_total_supply(env: Env) -> i128 {
         get_vesting_total_supply(&env)
     }
 }
