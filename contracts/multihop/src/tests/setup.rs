@@ -57,6 +57,7 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
     token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
@@ -150,6 +151,7 @@ pub fn deploy_and_initialize_lp(
         min_bond: 10i128,
         min_reward: 5i128,
         manager: Address::generate(env),
+        max_complexity: 10u32,
     };
 
     let lp_init_info = LiquidityPoolInitInfo {

@@ -38,6 +38,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         min_bond: 10i128,
         min_reward: 5i128,
         manager: Address::generate(&env),
+        max_complexity: 10u32,
     };
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);

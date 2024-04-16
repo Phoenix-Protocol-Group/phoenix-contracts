@@ -15,4 +15,5 @@ pub enum ContractError {
     InvalidTime = 9,
     DistributionExists = 10,
     InvalidRewardAmount = 11,
+    InvalidMaxComplexity = 12,
 }

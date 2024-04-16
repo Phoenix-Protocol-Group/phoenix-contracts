@@ -51,6 +51,7 @@ pub struct StakeInitInfo {
     pub min_bond: i128,
     pub min_reward: i128,
     pub manager: Address,
+    pub max_complexity: u32,
 }
 
 #[contracttype]

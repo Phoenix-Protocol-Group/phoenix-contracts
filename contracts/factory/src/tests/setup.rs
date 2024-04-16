@@ -8,6 +8,7 @@ pub mod lp_contract {
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 pub mod stake_contract {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
@@ -32,6 +33,7 @@ pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
@@ -79,6 +81,7 @@ pub(crate) fn generate_lp_init_info(
         min_bond: 10,
         min_reward: 10,
         manager,
+        max_complexity: 10u32,
     };
 
     LiquidityPoolInitInfo {

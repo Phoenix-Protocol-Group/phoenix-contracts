@@ -18,10 +18,19 @@ pub fn deploy_staking_contract<'a>(
     lp_token: &Address,
     manager: &Address,
     owner: &Address,
+    max_complexity: &u32,
 ) -> StakingClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
     let staking = StakingClient::new(env, &env.register_contract(None, Staking {}));
 
-    staking.initialize(&admin, lp_token, &MIN_BOND, &MIN_REWARD, manager, owner);
+    staking.initialize(
+        &admin,
+        lp_token,
+        &MIN_BOND,
+        &MIN_REWARD,
+        manager,
+        owner,
+        max_complexity,
+    );
     staking
 }

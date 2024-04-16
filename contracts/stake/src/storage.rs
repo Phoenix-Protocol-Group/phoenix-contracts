@@ -10,6 +10,8 @@ pub struct Config {
     pub manager: Address,
     // Address of the factory contract that initialized this pool and stake contract
     pub owner: Address,
+    // Maximum complexity for the reward distribution curve
+    pub max_complexity: u32,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 

@@ -419,6 +419,7 @@ mod tests {
             min_bond: 10,
             min_reward: 10,
             manager: Address::generate(&env),
+            max_complexity: 10,
         };
         validate_token_info(&env, &token_init_info, &stake_init_info);
     }
@@ -439,6 +440,7 @@ mod tests {
             min_bond: 0,
             min_reward: 10,
             manager: Address::generate(&env),
+            max_complexity: 10,
         };
 
         validate_token_info(&env, &token_init_info, &stake_init_info);
@@ -460,6 +462,7 @@ mod tests {
             min_bond: 10,
             min_reward: 0,
             manager: Address::generate(&env),
+            max_complexity: 10,
         };
         validate_token_info(&env, &token_init_info, &stake_init_info);
     }

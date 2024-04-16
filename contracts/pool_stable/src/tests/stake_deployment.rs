@@ -69,6 +69,7 @@ fn confirm_stake_contract_deployment() {
                 min_reward: 5,
                 owner: factory,
                 manager: stake_manager,
+                max_complexity: 10,
             }
         }
     );
@@ -112,6 +113,7 @@ fn second_pool_stable_deployment_should_fail() {
         min_bond: 10i128,
         min_reward: 5i128,
         manager: stake_manager.clone(),
+        max_complexity: 10,
     };
 
     let lp_init_info = LiquidityPoolInitInfo {
@@ -187,6 +189,7 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
         min_bond: 10i128,
         min_reward: 5i128,
         manager: stake_manager.clone(),
+        max_complexity: 10,
     };
 
     let lp_init_info = LiquidityPoolInitInfo {
