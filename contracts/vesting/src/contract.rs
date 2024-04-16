@@ -489,6 +489,7 @@ impl VestingTrait for Vesting {
     //     Ok(())
     // }
 
+    // TODO: this updated only the address, should it update the curve as well?
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
         if sender != get_minter(&env).address {
             log!(
