@@ -70,10 +70,12 @@ fn instantiate_contract_succesffuly() {
         Config {
             admin,
             whitelist: vec![&env, whitelisted_account],
-            token_info: vesting_token,
+            token_info: vesting_token.clone(),
             max_vesting_complexity: 10,
         }
     );
+
+    assert_eq!(vesting_client.query_token_info(), vesting_token);
 }
 
 #[test]
