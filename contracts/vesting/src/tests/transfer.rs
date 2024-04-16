@@ -167,8 +167,11 @@ fn transfer_vesting_works() {
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 600;
+        li.timestamp = 50;
     });
+
+    assert_eq!(vesting_client.query_balance(&vester1), 1000);
+    assert_eq!(vesting_client.query_balance(&vester2), 0);
 
     vesting_client.transfer_vesting(
         &vester1,
@@ -182,5 +185,29 @@ fn transfer_vesting_works() {
         }),
     );
 
-    assert_eq!(1, 1);
+    assert_eq!(vesting_client.query_balance(&vester1), 800);
+    assert_eq!(vesting_client.query_balance(&vester2), 200);
+
+    // vester1 starts with this curve and it automatically transfers to vester2
+    // since vester2 has no curve before hand
+    assert_eq!(
+        vesting_client.query_vesting(&vester1),
+        Curve::SaturatingLinear(SaturatingLinear {
+            min_x: 15,
+            min_y: 120,
+            max_x: 60,
+            max_y: 0,
+        })
+    );
+    assert_eq!(
+        vesting_client.query_vesting(&vester2),
+        Curve::SaturatingLinear(SaturatingLinear {
+            min_x: 15,
+            min_y: 120,
+            max_x: 60,
+            max_y: 0,
+        })
+    );
+
+    // TODO: add more tests for this
 }

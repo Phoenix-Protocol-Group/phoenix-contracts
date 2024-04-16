@@ -4,7 +4,7 @@ use soroban_sdk::{
 
 use curve::Curve;
 
-use crate::utils::{create_vesting_accounts, update_vesting, verify_vesting_and_transfer};
+use crate::utils::{create_vesting_accounts, update_vesting, verify_vesting_and_transfer_tokens};
 use crate::{
     error::ContractError,
     storage::{
@@ -174,7 +174,7 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
-        verify_vesting_and_transfer(&env, &from, &to, amount)?;
+        verify_vesting_and_transfer_tokens(&env, &from, &to, amount)?;
 
         env.events().publish(
             (
@@ -224,9 +224,11 @@ impl VestingTrait for Vesting {
 
         // if not fully vested we update
         if curve.value(env.ledger().timestamp()) != 0 {
-            update_vesting(&env, &to, curve)?;
+            update_vesting(&env, &to, amount, curve)?;
         }
-        verify_vesting_and_transfer(&env, &from, &to, amount)?;
+
+        verify_vesting_and_transfer_tokens(&env, &from, &to, amount)?;
+
         env.events().publish(
             (
                 "Transfer vesting",
@@ -394,7 +396,7 @@ impl VestingTrait for Vesting {
     //         panic_with_error!(env, ContractError::Std);
     //     });
 
-    //     verify_vesting_and_transfer(&env, &owner, &to, amount)?;
+    //     verify_vesting_and_transfer_tokens(&env, &owner, &to, amount)?;
 
     //     save_allowances(&env, &owner_spender, new_allowance);
 

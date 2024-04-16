@@ -10,7 +10,7 @@ use crate::{
     token_contract,
 };
 
-pub fn verify_vesting_and_transfer(
+pub fn verify_vesting_and_transfer_tokens(
     env: &Env,
     sender: &Address,
     to: &Address,
@@ -33,7 +33,7 @@ pub fn verify_vesting_and_transfer(
     if vesting_amount > sender_remainder {
         log!(
             &env,
-            "Vesting: Mixture: Remaining amount must be at least equal to vested amount"
+            "Vesting: Verity Vesting: Remaining amount must be at least equal to vested amount"
         );
         panic_with_error!(env, ContractError::CantMoveVestingTokens);
     }
@@ -124,11 +124,16 @@ fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) -> Result<(), Con
     }
 }
 
-pub fn update_vesting(env: &Env, address: &Address, new_curve: Curve) -> Result<(), ContractError> {
+pub fn update_vesting(
+    env: &Env,
+    to_address: &Address,
+    amount: i128,
+    new_curve: Curve,
+) -> Result<(), ContractError> {
     let max_complexity = get_config(env).max_vesting_complexity;
     env.storage()
         .persistent()
-        .update(&address, |current_value: Option<Curve>| {
+        .update(&to_address, |current_value: Option<Curve>| {
             let new_curve_schedule = current_value
                 // FIXME: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/227
                 .map(|current_value| current_value.combine(env, &new_curve))
@@ -143,6 +148,15 @@ pub fn update_vesting(env: &Env, address: &Address, new_curve: Curve) -> Result<
                     );
                     panic_with_error!(env, ContractError::VestingComplexityTooHigh);
                 });
+
+            save_vesting(
+                env,
+                to_address,
+                VestingInfo {
+                    amount,
+                    curve: new_curve_schedule.clone(),
+                },
+            );
 
             new_curve_schedule
         });
