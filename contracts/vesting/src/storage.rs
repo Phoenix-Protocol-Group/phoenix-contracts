@@ -1,4 +1,3 @@
-use core::ops::Add;
 use curve::Curve;
 use soroban_sdk::{
     contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
@@ -145,10 +144,9 @@ pub fn get_vesting_total_supply(env: &Env) -> i128 {
 
 pub fn update_vesting_total_supply(env: &Env, amount: i128) {
     let config = get_config(env);
-    let new_total_supply = config.token_info.total_supply.add(amount);
     let new_config = Config {
         token_info: VestingTokenInfo {
-            total_supply: new_total_supply,
+            total_supply: amount,
             ..config.token_info
         },
         ..config
