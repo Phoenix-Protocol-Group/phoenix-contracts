@@ -1,3 +1,4 @@
+use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, Vec,
 };
@@ -196,8 +197,9 @@ impl VestingTrait for Vesting {
     ) -> Result<(), ContractError> {
         from.require_auth();
 
-        let white_list = get_config(&env).whitelist;
-        if !white_list.contains(from.clone()) {
+        let whitelist = get_config(&env).whitelist;
+        dbg!(whitelist.clone(), from.clone());
+        if !whitelist.contains(from.clone()) {
             log!(
                 &env,
                 "Vesting: Transfer Vesting: Not authorized to transfer vesting"
@@ -211,6 +213,7 @@ impl VestingTrait for Vesting {
         }
         curve.validate_monotonic_decreasing()?;
         let (low, high) = curve.range();
+        dbg!(curve.clone(), low, high, amount);
         if low != 0 {
             log!(&env, "Vesting: Transfer Vesting: Invalid low value");
             panic_with_error!(env, ContractError::NeverFullyVested);
