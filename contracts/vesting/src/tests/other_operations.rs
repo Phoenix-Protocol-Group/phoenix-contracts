@@ -417,3 +417,120 @@ fn mint_should_panic_when_mint_over_the_cap() {
 
     vesting_client.mint(&vester1, &rcpt, &500);
 }
+
+#[test]
+fn update_minter_works_correctly() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let new_minter = Address::generate(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token.address.clone(),
+        total_supply: 0,
+    };
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            address: vester1.clone(),
+            balance: 200,
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 15,
+                min_y: 120,
+                max_x: 60,
+                max_y: 0,
+            }),
+        },
+    ];
+
+    let minter_info = MinterInfo {
+        address: vester1.clone(),
+        cap: Curve::Constant(500),
+    };
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(
+        &admin,
+        &vesting_token,
+        &vesting_balances,
+        &Some(minter_info.clone()),
+        &None,
+        &10u32,
+    );
+
+    assert_eq!(vesting_client.query_minter(), minter_info.address);
+
+    let new_minter_info = MinterInfo {
+        address: new_minter.clone(),
+        cap: Curve::Constant(1_000),
+    };
+
+    vesting_client.update_minter(&vester1, &new_minter_info.address);
+
+    assert_eq!(vesting_client.query_minter(), new_minter_info.address);
+}
+
+#[test]
+#[should_panic(expected = "Vesting: Update minter: Not authorized to update minter")]
+fn update_minter_fails_when_not_authorized() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let new_minter = Address::generate(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token.address.clone(),
+        total_supply: 0,
+    };
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            address: vester1.clone(),
+            balance: 200,
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 15,
+                min_y: 120,
+                max_x: 60,
+                max_y: 0,
+            }),
+        },
+    ];
+
+    let minter_info = MinterInfo {
+        address: Address::generate(&env),
+        cap: Curve::Constant(500),
+    };
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(
+        &admin,
+        &vesting_token,
+        &vesting_balances,
+        &Some(minter_info.clone()),
+        &None,
+        &10u32,
+    );
+
+    let new_minter_info = MinterInfo {
+        address: new_minter.clone(),
+        cap: Curve::Constant(1_000),
+    };
+
+    vesting_client.update_minter(&vester1, &new_minter_info.address);
+}
