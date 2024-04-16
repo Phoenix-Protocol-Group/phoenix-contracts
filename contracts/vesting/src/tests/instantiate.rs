@@ -1,5 +1,4 @@
 use curve::{Curve, SaturatingLinear};
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env, String,
@@ -175,16 +174,6 @@ fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
         },
     ];
 
-    let minter_info = &MinterInfo {
-        address: Address::generate(&env),
-        cap: Curve::SaturatingLinear(SaturatingLinear {
-            min_x: 30,
-            min_y: 2,
-            max_x: 120,
-            max_y: 240,
-        }),
-    };
-
     let vesting_client = instantiate_vesting_client(&env);
     env.ledger().with_mut(|li| li.timestamp = 1000);
     vesting_client.initialize(
@@ -224,16 +213,6 @@ fn instantiate_contract_without_any_vesting_balances_should_fail() {
         total_supply: 0,
     };
     let vesting_balances = vec![&env];
-
-    let minter_info = &MinterInfo {
-        address: Address::generate(&env),
-        cap: Curve::SaturatingLinear(SaturatingLinear {
-            min_x: 30,
-            min_y: 2,
-            max_x: 120,
-            max_y: 240,
-        }),
-    };
 
     let allowed_vesters = vec![&env, whitelisted_account.clone()];
 

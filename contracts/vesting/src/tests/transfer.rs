@@ -1,11 +1,11 @@
 use curve::{Curve, SaturatingLinear};
 use soroban_sdk::{
-    testutils::{arbitrary::std::dbg, Address as _, Ledger},
+    testutils::{Address as _, Ledger},
     vec, Address, Env, String,
 };
 
 use crate::{
-    storage::{MinterInfo, VestingBalance, VestingTokenInfo},
+    storage::{VestingBalance, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,
 };
 
@@ -59,9 +59,7 @@ fn transfer_tokens() {
         &10u32,
     );
     assert_eq!(token.balance(&vester2), 0);
-    dbg!("before");
     vesting_client.transfer_token(&vester1, &vester2, &100);
-    dbg!("after");
     assert_eq!(vesting_client.query_balance(&vester1), 900);
     assert_eq!(token.balance(&vester2), 100);
     assert_eq!(vesting_client.query_total_supply(), 200);
@@ -131,7 +129,6 @@ fn transfer_vesting_works() {
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
     let vester2 = Address::generate(&env);
-    dbg!(&vester1, &vester2, &admin);
     let token = deploy_token_contract(&env, &admin);
 
     token.mint(&vester1, &1_000);
@@ -160,7 +157,6 @@ fn transfer_vesting_works() {
     let allowed_vesters = vec![&env, vester1.clone()];
 
     let vesting_client = instantiate_vesting_client(&env);
-    env.ledger().with_mut(|li| li.timestamp = 1000);
     vesting_client.initialize(
         &admin,
         &vesting_token,
@@ -170,8 +166,10 @@ fn transfer_vesting_works() {
         &10u32,
     );
 
-    dbg!(vesting_client.query_vesting(&vester1));
-    dbg!(vesting_client.query_vesting(&vester2));
+    env.ledger().with_mut(|li| {
+        li.timestamp = 600;
+    });
+
     vesting_client.transfer_vesting(
         &vester1,
         &vester2,
@@ -184,6 +182,5 @@ fn transfer_vesting_works() {
         }),
     );
 
-    dbg!("after", vesting_client.query_vesting(&vester2));
     assert_eq!(1, 1);
 }
