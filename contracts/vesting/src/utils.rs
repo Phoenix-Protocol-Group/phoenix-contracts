@@ -1,5 +1,4 @@
 use curve::Curve;
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{log, panic_with_error, Address, Env, Vec};
 
 use crate::{
@@ -17,27 +16,20 @@ pub fn verify_vesting_and_transfer(
     to: &Address,
     amount: i128,
 ) -> Result<(), ContractError> {
-    dbg!("looking for vesting", sender);
     let vesting_amount = get_vesting(env, sender)?
         .curve
         .value(env.ledger().timestamp()) as i128;
-    dbg!("after");
 
-    dbg!();
     if vesting_amount <= 0 {
         remove_vesting(env, sender);
     }
 
-    dbg!();
     let token_client = token_contract::Client::new(env, &get_config(env).token_info.address);
-    dbg!();
     let sender_balance = token_client.balance(sender);
-    dbg!();
     let sender_remainder = sender_balance
         .checked_sub(amount)
         .ok_or(ContractError::NotEnoughBalance)?;
 
-    dbg!();
     if vesting_amount > sender_remainder {
         log!(
             &env,
@@ -46,7 +38,6 @@ pub fn verify_vesting_and_transfer(
         panic_with_error!(env, ContractError::CantMoveVestingTokens);
     }
 
-    dbg!();
     token_client.transfer(sender, to, &amount);
 
     Ok(())
@@ -62,7 +53,7 @@ pub fn create_vesting_accounts(
     let mut total_supply = 0;
 
     vesting_accounts.into_iter().for_each(|vb| {
-        assert_schedule_vests_amount(&env, &vb.curve, vb.balance as u128)
+        assert_schedule_vests_amount(env, &vb.curve, vb.balance as u128)
             .expect("Invalid curve and amount");
 
         if vesting_complexity <= vb.curve.size() {
@@ -74,12 +65,6 @@ pub fn create_vesting_accounts(
             panic_with_error!(env, ContractError::VestingComplexityTooHigh);
         }
 
-        dbg!(
-            "will save vesting",
-            vb.address.clone(),
-            vb.balance.clone(),
-            vb.curve.clone()
-        );
         save_vesting(
             env,
             &vb.address,
@@ -103,10 +88,8 @@ pub fn assert_schedule_vests_amount(
     schedule: &Curve,
     amount: u128,
 ) -> Result<(), ContractError> {
-    dbg!(schedule, amount);
     schedule.validate_monotonic_decreasing()?;
     let (low, high) = schedule.range();
-    dbg!(low, high, amount, low != 0);
     if low != 0 {
         log!(
             &env,
@@ -141,6 +124,31 @@ fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) -> Result<(), Con
     }
 }
 
+pub fn update_vesting(env: &Env, address: &Address, new_curve: Curve) -> Result<(), ContractError> {
+    let max_complexity = get_config(env).max_vesting_complexity;
+    env.storage()
+        .persistent()
+        .update(&address, |current_value: Option<Curve>| {
+            let new_curve_schedule = current_value
+                // FIXME: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/227
+                .map(|current_value| current_value.combine(env, &new_curve))
+                .unwrap_or(new_curve);
+
+            new_curve_schedule
+                .validate_complexity(max_complexity)
+                .unwrap_or_else(|_| {
+                    log!(
+                        &env,
+                        "Vesting: Update Vesting: new vesting complexity invalid"
+                    );
+                    panic_with_error!(env, ContractError::VestingComplexityTooHigh);
+                });
+
+            new_curve_schedule
+        });
+
+    Ok(())
+}
 #[cfg(test)]
 mod test {
     use curve::SaturatingLinear;
@@ -282,30 +290,4 @@ mod test {
 
         assert_schedule_vests_amount(&env, &curve, AMOUNT).unwrap();
     }
-}
-
-pub fn update_vesting(env: &Env, address: &Address, new_curve: Curve) -> Result<(), ContractError> {
-    let max_complexity = get_config(env).max_vesting_complexity;
-    env.storage()
-        .persistent()
-        .update(&address, |current_value: Option<Curve>| {
-            let new_curve_schedule = current_value
-                // FIXME: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/227
-                .map(|current_value| current_value.combine(env, &new_curve))
-                .unwrap_or(new_curve);
-
-            new_curve_schedule
-                .validate_complexity(max_complexity)
-                .unwrap_or_else(|_| {
-                    log!(
-                        &env,
-                        "Vesting: Update Vesting: new vesting complexity invalid"
-                    );
-                    panic_with_error!(env, ContractError::VestingComplexityTooHigh);
-                });
-
-            new_curve_schedule
-        });
-
-    Ok(())
 }

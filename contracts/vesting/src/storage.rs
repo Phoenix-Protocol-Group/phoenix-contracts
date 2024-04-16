@@ -1,6 +1,5 @@
 use core::ops::Add;
 use curve::Curve;
-use soroban_sdk::testutils::arbitrary::std::dbg;
 use soroban_sdk::{
     contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
     Vec,
@@ -94,22 +93,15 @@ pub fn save_balance(env: &Env, address: &Address, balance: i128) {
 }
 
 pub fn save_vesting(env: &Env, address: &Address, vesting_info: VestingInfo) {
-    dbg!("saving vesting", address, vesting_info.clone());
     env.storage().instance().set(address, &vesting_info);
 }
 
 pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, ContractError> {
     // FIXME why does this throws an error when we try to access the persistent storage?
-    dbg!(
-        "looking up for vesting",
-        &address,
-        env.storage().instance().has(&address)
-    );
     let vesting_info = env.storage().instance().get(address).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
     });
-    dbg!("after");
 
     Ok(vesting_info)
 }
@@ -118,16 +110,17 @@ pub fn remove_vesting(env: &Env, address: &Address) {
     env.storage().persistent().remove(&address);
 }
 
-pub fn get_allowances(env: &Env, owner_spender: &(Address, Address)) -> i128 {
-    env.storage().persistent().get(owner_spender).unwrap_or_else(|| {
-            log!(&env, "Vesting: Get allowance: Critical error - No allowance found for the given address pair");
-            panic_with_error!(env, ContractError::AllowanceNotFoundForGivenPair);
-        })
-}
+// TODO: uncomment when needed
+// pub fn get_allowances(env: &Env, owner_spender: &(Address, Address)) -> i128 {
+//     env.storage().persistent().get(owner_spender).unwrap_or_else(|| {
+//             log!(&env, "Vesting: Get allowance: Critical error - No allowance found for the given address pair");
+//             panic_with_error!(env, ContractError::AllowanceNotFoundForGivenPair);
+//         })
+// }
 
-pub fn save_allowances(env: &Env, owner_spender: &(Address, Address), amount: i128) {
-    env.storage().persistent().set(owner_spender, &amount);
-}
+// pub fn save_allowances(env: &Env, owner_spender: &(Address, Address), amount: i128) {
+//     env.storage().persistent().set(owner_spender, &amount);
+// }
 
 pub fn save_minter(env: &Env, minter: MinterInfo) {
     env.storage().persistent().set(&DataKey::Minter, &minter);
@@ -144,14 +137,6 @@ pub fn get_minter(env: &Env) -> MinterInfo {
             );
             panic_with_error!(env, ContractError::MinterNotFound);
         })
-}
-
-pub fn get_delegated(env: &Env, address: &Address) -> i128 {
-    env.storage().persistent().get(address).unwrap_or(0)
-}
-
-pub fn save_delegated(env: &Env, address: &Address, amount: i128) {
-    env.storage().persistent().set(address, &amount);
 }
 
 pub fn get_vesting_total_supply(env: &Env) -> i128 {
