@@ -25,10 +25,23 @@ pub enum ContractError {
     InvalidMintAmount = 17,
     InvalidAllowanceAmount = 18,
     DuplicateInitialBalanceAddresses = 19,
+    CurveError = 20,
 }
 
 impl From<CurveError> for ContractError {
     fn from(_: CurveError) -> Self {
-        ContractError::Std
+        ContractError::CurveError
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_from_curve_error() {
+        let curve_error = CurveError::TooComplex;
+        let contract_error = ContractError::from(curve_error);
+        assert_eq!(contract_error, ContractError::CurveError);
     }
 }

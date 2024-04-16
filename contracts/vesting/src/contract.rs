@@ -93,7 +93,7 @@ pub trait VestingTrait {
 
     fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError>;
 
-    fn query_vesting_allowlist(env: Env) -> Vec<Address>;
+    fn query_vesting_whitelist(env: Env) -> Vec<Address>;
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
@@ -511,6 +511,7 @@ impl VestingTrait for Vesting {
             .publish(("Update minter", "Updated minter to: "), new_minter);
     }
 
+    // TOOD: the only difference between this and  `transfer_token` is that here we do not check the vesting
     fn send_tokens_to_contract(env: Env, sender: Address, contract: Address, amount: i128) {
         if amount <= 0 {
             log!(&env, "Vesting: Send tokens to contract: Invalid amount");
@@ -584,7 +585,7 @@ impl VestingTrait for Vesting {
         Ok(curve)
     }
 
-    fn query_vesting_allowlist(env: Env) -> Vec<Address> {
+    fn query_vesting_whitelist(env: Env) -> Vec<Address> {
         get_config(&env).whitelist
     }
 
