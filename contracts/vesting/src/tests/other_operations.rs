@@ -207,3 +207,55 @@ fn mint_should_work_correctly() {
     assert_eq!(token.balance(&rcpt), 100);
     assert_eq!(vesting_client.query_vesting_total_supply(), 300);
 }
+
+#[test]
+#[should_panic(expected = "Vesting: Mint: Invalid mint amount")]
+fn mint_should_panic_when_invalid_amount() {
+    let env = Env::default();
+    env.mock_all_auths_allowing_non_root_auth();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let rcpt = Address::generate(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token.address.clone(),
+        total_supply: 0,
+    };
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            address: vester1.clone(),
+            balance: 200,
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 15,
+                min_y: 120,
+                max_x: 60,
+                max_y: 0,
+            }),
+        },
+    ];
+
+    let minter_info = MinterInfo {
+        address: vester1.clone(),
+        cap: Curve::Constant(500),
+    };
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(
+        &admin,
+        &vesting_token,
+        &vesting_balances,
+        &Some(minter_info),
+        &None,
+        &10u32,
+    );
+
+    vesting_client.mint(&vester1, &rcpt, &0);
+}
