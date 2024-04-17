@@ -567,8 +567,7 @@ impl VestingTrait for Vesting {
     }
 
     fn query_balance(env: Env, address: Address) -> i128 {
-        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
-        token_client.balance(&address)
+        token_contract::Client::new(&env, &get_config(&env).token_info.address).balance(&address)
     }
 
     fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError> {
