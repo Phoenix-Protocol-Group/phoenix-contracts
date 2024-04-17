@@ -5,6 +5,7 @@ use soroban_sdk::{
 };
 
 use crate::{
+    error::ContractError,
     storage::{VestingBalance, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,
 };
@@ -120,6 +121,7 @@ fn transfer_vesting_works() {
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
     let vester2 = Address::generate(&env);
+    let vester3 = Address::generate(&env);
     let token = deploy_token_contract(&env, &admin);
 
     token.mint(&vester1, &1_000);
@@ -200,7 +202,26 @@ fn transfer_vesting_works() {
         })
     );
 
-    // TODO: add more tests for this
+    vesting_client.transfer_token(&vester2, &vester3, &100);
+
+    assert_eq!(vesting_client.query_balance(&vester2), 100);
+    assert_eq!(vesting_client.query_balance(&vester3), 100);
+
+    // vesting does not allows us to transfer any more tokens
+    assert_eq!(
+        vesting_client.try_transfer_token(&vester2, &vester3, &100),
+        Err(Ok(ContractError::CantMoveVestingTokens))
+    );
+
+    // fast forward time and we should be able to transfer
+    env.ledger().with_mut(|li| {
+        li.timestamp = 3000;
+    });
+
+    vesting_client.transfer_token(&vester2, &vester3, &100);
+
+    assert_eq!(vesting_client.query_balance(&vester2), 0);
+    assert_eq!(vesting_client.query_balance(&vester3), 200);
 }
 
 #[test]
