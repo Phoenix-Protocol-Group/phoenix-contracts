@@ -27,12 +27,6 @@ pub enum DataKey {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Config {
-    /// `max_vesting_complexity` the maximum complexity an account's vesting curve is allowed to have
-    pub max_vesting_complexity: u32,
-}
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingTokenInfo {
     pub name: String,
     pub symbol: String,
@@ -61,23 +55,6 @@ pub struct MinterInfo {
 pub struct VestingInfo {
     pub amount: i128,
     pub curve: Curve,
-}
-
-pub fn save_config(env: &Env, config: &Config) {
-    env.storage().persistent().set(&DataKey::Config, config);
-}
-
-pub fn get_config(env: &Env) -> Config {
-    env.storage()
-        .persistent()
-        .get(&DataKey::Config)
-        .unwrap_or_else(|| {
-            log!(
-                &env,
-                "Vesting: Get config: Critical error - No config found"
-            );
-            panic_with_error!(env, ContractError::NoConfigFound);
-        })
 }
 
 pub fn save_admin(env: &Env, admin: &Address) {
@@ -190,5 +167,24 @@ pub fn get_token_info(env: &Env) -> VestingTokenInfo {
                 "Vesting: Get token info: Critical error - No token info found"
             );
             panic_with_error!(env, ContractError::NoTokenInfoFound);
+        })
+}
+
+pub fn save_max_vesting_complexity(env: &Env, max_vesting_complexity: &u32) {
+    env.storage()
+        .persistent()
+        .set(&DataKey::MaxVestingComplexity, max_vesting_complexity);
+}
+
+pub fn get_max_vesting_complexity(env: &Env) -> u32 {
+    env.storage()
+        .persistent()
+        .get(&DataKey::MaxVestingComplexity)
+        .unwrap_or_else(|| {
+            log!(
+                &env,
+                "Vesting: Get max vesting complexity: Critical error - No max vesting complexity value found"
+            );
+            panic_with_error!(env, ContractError::NoVestingComplexityValueFound);
         })
 }

@@ -4,14 +4,16 @@ use soroban_sdk::{
 
 use curve::Curve;
 
-use crate::storage::{get_admin, get_token_info, get_whitelist, save_token_info, save_whitelist};
+use crate::storage::{
+    get_admin, get_token_info, get_whitelist, save_max_vesting_complexity, save_token_info,
+    save_whitelist,
+};
 use crate::utils::{create_vesting_accounts, update_vesting, verify_vesting};
 use crate::{
     error::ContractError,
     storage::{
-        get_config, get_minter, get_vesting, get_vesting_total_supply, save_admin, save_config,
-        save_minter, update_vesting_total_supply, Config, MinterInfo, VestingBalance,
-        VestingTokenInfo,
+        get_minter, get_vesting, get_vesting_total_supply, save_admin, save_minter,
+        update_vesting_total_supply, MinterInfo, VestingBalance, VestingTokenInfo,
     },
     token_contract,
 };
@@ -88,8 +90,6 @@ pub trait VestingTrait {
 
     fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address);
 
-    fn query_config(env: Env) -> Result<Config, ContractError>;
-
     fn query_balance(env: Env, address: Address) -> i128;
 
     fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError>;
@@ -121,9 +121,6 @@ impl VestingTrait for Vesting {
             None => vec![&env, admin.clone()],
         };
 
-        save_whitelist(&env, &whitelisted_accounts);
-
-        // TODO: this check might make no sense
         if vesting_balances.is_empty() {
             log!(
                 &env,
@@ -132,7 +129,6 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::MissingBalance);
         }
 
-        // TODO: I might be confusing total_vesting with this in a few places
         let total_supply = create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
         if let Some(mi) = minter_info {
             let capacity = mi.capacity.value(env.ledger().timestamp()) as i128;
@@ -151,12 +147,9 @@ impl VestingTrait for Vesting {
             total_supply,
         };
 
+        save_whitelist(&env, &whitelisted_accounts);
         save_token_info(&env, &token_info);
-
-        let config = Config {
-            max_vesting_complexity,
-        };
-        save_config(&env, &config);
+        save_max_vesting_complexity(&env, &max_vesting_complexity);
 
         env.events()
             .publish(("Initialize", "Vesting contract with admin: "), admin);
@@ -567,10 +560,6 @@ impl VestingTrait for Vesting {
             ("Remove from whitelist", "Removed from whitelist: "),
             to_remove,
         );
-    }
-
-    fn query_config(env: Env) -> Result<Config, ContractError> {
-        Ok(get_config(&env))
     }
 
     fn query_balance(env: Env, address: Address) -> i128 {
