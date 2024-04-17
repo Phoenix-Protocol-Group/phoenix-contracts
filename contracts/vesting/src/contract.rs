@@ -208,7 +208,10 @@ impl VestingTrait for Vesting {
         }
 
         if amount <= 0 {
-            log!(&env, "Vesting: Transfer Vesting: Invalid transfer amount");
+            log!(
+                &env,
+                "Vesting: Transfer Vesting: Transfer amount must be positive"
+            );
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
         curve.validate_monotonic_decreasing()?;
