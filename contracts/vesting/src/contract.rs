@@ -86,6 +86,13 @@ pub trait VestingTrait {
 
     fn update_minter(env: Env, sender: Address, new_minter: Address);
 
+    fn update_minter_capacity(
+        env: Env,
+        sender: Address,
+        new_capacity: Curve,
+        remove_old_capacity: bool,
+    );
+
     fn add_to_whitelist(env: Env, sender: Address, to_add: Address);
 
     fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address);
@@ -98,7 +105,7 @@ pub trait VestingTrait {
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
-    fn query_minter(env: Env) -> Address;
+    fn query_minter(env: Env) -> MinterInfo;
 
     fn query_vesting_total_supply(env: Env) -> i128;
 }
@@ -497,9 +504,8 @@ impl VestingTrait for Vesting {
     //     Ok(())
     // }
 
-    // TODO: this updated only the address, should it update the curve as well?
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
-        if sender != get_minter(&env).address {
+        if sender != get_minter(&env).address && sender != get_admin(&env) {
             log!(
                 &env,
                 "Vesting: Update minter: Not authorized to update minter"
@@ -517,6 +523,48 @@ impl VestingTrait for Vesting {
 
         env.events()
             .publish(("Update minter", "Updated minter to: "), new_minter);
+    }
+
+    fn update_minter_capacity(
+        env: Env,
+        sender: Address,
+        new_capacity: Curve,
+        remove_old_capacity: bool,
+    ) {
+        if sender != get_minter(&env).address && sender != get_admin(&env) {
+            log!(
+                &env,
+                "Vesting: Update minter capacity: Not authorized to update minter capacity"
+            );
+            panic_with_error!(env, ContractError::NotAuthorized);
+        }
+
+        match remove_old_capacity {
+            true => {
+                save_minter(
+                    &env,
+                    MinterInfo {
+                        address: get_minter(&env).address,
+                        capacity: new_capacity.clone(),
+                    },
+                );
+            }
+            false => {
+                let new_curve_capacity = get_minter(&env).capacity.combine(&env, &new_capacity);
+                save_minter(
+                    &env,
+                    MinterInfo {
+                        address: get_minter(&env).address,
+                        capacity: new_curve_capacity,
+                    },
+                );
+            }
+        }
+
+        env.events().publish(
+            ("Update minter capacity", "Updated minter capacity to: "),
+            new_capacity,
+        );
     }
 
     fn add_to_whitelist(env: Env, sender: Address, to_add: Address) {
@@ -578,8 +626,8 @@ impl VestingTrait for Vesting {
         get_token_info(&env)
     }
 
-    fn query_minter(env: Env) -> Address {
-        get_minter(&env).address
+    fn query_minter(env: Env) -> MinterInfo {
+        get_minter(&env)
     }
 
     fn query_vesting_total_supply(env: Env) -> i128 {
