@@ -28,8 +28,6 @@ pub enum DataKey {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
-    /// `token_info` information about the token used in the vesting contract.
-    pub token_info: VestingTokenInfo,
     /// `max_vesting_complexity` the maximum complexity an account's vesting curve is allowed to have
     pub max_vesting_complexity: u32,
 }
@@ -148,25 +146,19 @@ pub fn get_minter(env: &Env) -> MinterInfo {
 }
 
 pub fn get_vesting_total_supply(env: &Env) -> i128 {
-    get_config(env).token_info.total_supply
+    get_token_info(env).total_supply
 }
 
 pub fn update_vesting_total_supply(env: &Env, amount: i128) {
-    let config = get_config(env);
-    let new_config = Config {
-        token_info: VestingTokenInfo {
-            total_supply: amount,
-            ..config.token_info
-        },
-        ..config
-    };
-    save_config(env, &new_config);
+    let mut token_info = get_token_info(env);
+    token_info.total_supply = amount;
+    save_token_info(env, &token_info);
 }
 
-pub fn save_whitelist(env: &Env, whitelist: Vec<Address>) {
+pub fn save_whitelist(env: &Env, whitelist: &Vec<Address>) {
     env.storage()
         .persistent()
-        .set(&DataKey::Whitelist, &whitelist);
+        .set(&DataKey::Whitelist, whitelist);
 }
 
 pub fn get_whitelist(env: &Env) -> Vec<Address> {
@@ -179,5 +171,24 @@ pub fn get_whitelist(env: &Env) -> Vec<Address> {
                 "Vesting: Get whitelist: Critical error - No whitelist found"
             );
             panic_with_error!(env, ContractError::NoWhitelistFound);
+        })
+}
+
+pub fn save_token_info(env: &Env, token_info: &VestingTokenInfo) {
+    env.storage()
+        .persistent()
+        .set(&DataKey::VestingTokenInfo, token_info);
+}
+
+pub fn get_token_info(env: &Env) -> VestingTokenInfo {
+    env.storage()
+        .persistent()
+        .get(&DataKey::VestingTokenInfo)
+        .unwrap_or_else(|| {
+            log!(
+                &env,
+                "Vesting: Get token info: Critical error - No token info found"
+            );
+            panic_with_error!(env, ContractError::NoTokenInfoFound);
         })
 }

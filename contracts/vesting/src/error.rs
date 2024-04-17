@@ -27,6 +27,7 @@ pub enum ContractError {
     DuplicateInitialBalanceAddresses = 19,
     CurveError = 20,
     NoWhitelistFound = 21,
+    NoTokenInfoFound = 22,
 }
 
 impl From<CurveError> for ContractError {
