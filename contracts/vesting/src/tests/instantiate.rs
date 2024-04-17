@@ -66,8 +66,6 @@ fn instantiate_contract_succesffuly() {
     assert_eq!(
         vesting_client.query_config(),
         Config {
-            admin,
-            whitelist: vec![&env, whitelisted_account],
             token_info: vesting_token.clone(),
             max_vesting_complexity: 10,
         }
@@ -126,8 +124,6 @@ fn instantiate_contract_succesffuly_with_constant_curve_minter_info() {
     assert_eq!(
         vesting_client.query_config(),
         Config {
-            admin,
-            whitelist: vec![&env, whitelisted_account],
             token_info: vesting_token,
             max_vesting_complexity: 10,
         }
@@ -188,8 +184,6 @@ fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
     assert_eq!(
         vesting_client.query_config(),
         Config {
-            admin: admin.clone(),
-            whitelist: vec![&env, admin],
             token_info: vesting_token,
             max_vesting_complexity: 10,
         }
