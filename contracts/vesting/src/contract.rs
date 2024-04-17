@@ -217,7 +217,10 @@ impl VestingTrait for Vesting {
         curve.validate_monotonic_decreasing()?;
         let (low, high) = curve.range();
         if low != 0 {
-            log!(&env, "Vesting: Transfer Vesting: Invalid low value");
+            log!(
+                &env,
+                "Vesting: Transfer Vesting: Cannot transfer when non-fully vested"
+            );
             panic_with_error!(env, ContractError::NeverFullyVested);
         } else if high as i128 > amount {
             log!(

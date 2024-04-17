@@ -225,7 +225,7 @@ fn transfer_vesting_works() {
 }
 
 #[test]
-#[should_panic(expected = "Vesting: Transfer Vesting: Invalid transfer amount")]
+#[should_panic(expected = "Vesting: Transfer Vesting: Transfer amount must be positive")]
 fn transfer_vesting_should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -342,7 +342,7 @@ fn transfer_vesting_should_fail_when_sender_not_in_auth_list() {
 }
 
 #[test]
-#[should_panic(expected = "Vesting: Transfer Vesting: Invalid low value")]
+#[should_panic(expected = "Vesting: Transfer Vesting: Cannot transfer when non-fully vested")]
 fn transfer_vesting_should_fail_when_invalid_low_value() {
     let env = Env::default();
     env.mock_all_auths();
