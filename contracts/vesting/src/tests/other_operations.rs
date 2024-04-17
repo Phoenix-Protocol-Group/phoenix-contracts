@@ -186,7 +186,7 @@ fn mint_should_work_correctly() {
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        cap: Curve::Constant(500),
+        capacity: Curve::Constant(500),
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -244,7 +244,7 @@ fn mint_should_panic_when_invalid_amount() {
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        cap: Curve::Constant(500),
+        capacity: Curve::Constant(500),
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -296,7 +296,7 @@ fn mint_should_panic_when_not_authorized_to_mint() {
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        cap: Curve::Constant(500),
+        capacity: Curve::Constant(500),
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -350,7 +350,7 @@ fn mint_should_panic_when_supply_overflow() {
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        cap: Curve::Constant(500),
+        capacity: Curve::Constant(500),
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -367,7 +367,7 @@ fn mint_should_panic_when_supply_overflow() {
 }
 
 #[test]
-#[should_panic(expected = "Vesting: Mint: total supply over the cap")]
+#[should_panic(expected = "Vesting: Mint: total supply over the capacity")]
 fn mint_should_panic_when_mint_over_the_cap() {
     let env = Env::default();
     env.mock_all_auths();
@@ -402,7 +402,7 @@ fn mint_should_panic_when_mint_over_the_cap() {
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        cap: Curve::Constant(500),
+        capacity: Curve::Constant(500),
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -453,7 +453,7 @@ fn update_minter_works_correctly() {
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        cap: Curve::Constant(500),
+        capacity: Curve::Constant(500),
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -470,7 +470,7 @@ fn update_minter_works_correctly() {
 
     let new_minter_info = MinterInfo {
         address: new_minter.clone(),
-        cap: Curve::Constant(1_000),
+        capacity: Curve::Constant(1_000),
     };
 
     vesting_client.update_minter(&vester1, &new_minter_info.address);
@@ -514,7 +514,7 @@ fn update_minter_fails_when_not_authorized() {
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        cap: Curve::Constant(500),
+        capacity: Curve::Constant(500),
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -529,7 +529,7 @@ fn update_minter_fails_when_not_authorized() {
 
     let new_minter_info = MinterInfo {
         address: new_minter.clone(),
-        cap: Curve::Constant(1_000),
+        capacity: Curve::Constant(1_000),
     };
 
     vesting_client.update_minter(&vester1, &new_minter_info.address);
