@@ -5,7 +5,7 @@ use soroban_sdk::{
 };
 
 use crate::{
-    storage::{Config, MinterInfo, VestingBalance, VestingTokenInfo},
+    storage::{MinterInfo, VestingBalance, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,
 };
 
@@ -59,18 +59,12 @@ fn instantiate_contract_succesffuly() {
         &vesting_token,
         &vesting_balances,
         &None,
-        &Some(allowed_vesters),
+        &Some(allowed_vesters.clone()),
         &10u32,
     );
 
-    assert_eq!(
-        vesting_client.query_config(),
-        Config {
-            max_vesting_complexity: 10,
-        }
-    );
-
     assert_eq!(vesting_client.query_token_info(), vesting_token);
+    assert_eq!(vesting_client.query_vesting_whitelist(), allowed_vesters);
 }
 
 #[test]
@@ -116,16 +110,12 @@ fn instantiate_contract_succesffuly_with_constant_curve_minter_info() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info),
-        &Some(allowed_vesters),
+        &Some(allowed_vesters.clone()),
         &10u32,
     );
 
-    assert_eq!(
-        vesting_client.query_config(),
-        Config {
-            max_vesting_complexity: 10,
-        }
-    );
+    assert_eq!(vesting_client.query_token_info(), vesting_token);
+    assert_eq!(vesting_client.query_vesting_whitelist(), allowed_vesters);
 }
 
 #[test]
@@ -179,11 +169,10 @@ fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
         &10u32,
     );
 
+    assert_eq!(vesting_client.query_token_info(), vesting_token);
     assert_eq!(
-        vesting_client.query_config(),
-        Config {
-            max_vesting_complexity: 10,
-        }
+        vesting_client.query_vesting_whitelist(),
+        vec![&env, admin.clone()]
     );
 }
 

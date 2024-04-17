@@ -4,8 +4,8 @@ use soroban_sdk::{log, panic_with_error, Address, Env, Vec};
 use crate::{
     error::ContractError,
     storage::{
-        get_config, get_vesting, remove_vesting, save_balance, save_vesting, VestingBalance,
-        VestingInfo,
+        get_max_vesting_complexity, get_vesting, remove_vesting, save_balance, save_vesting,
+        VestingBalance, VestingInfo,
     },
     token_contract,
 };
@@ -127,7 +127,7 @@ pub fn update_vesting(
     amount: i128,
     new_curve: Curve,
 ) -> Result<(), ContractError> {
-    let max_complexity = get_config(env).max_vesting_complexity;
+    let max_complexity = get_max_vesting_complexity(env);
     env.storage()
         .persistent()
         .update(&to_address, |current_value: Option<Curve>| {
