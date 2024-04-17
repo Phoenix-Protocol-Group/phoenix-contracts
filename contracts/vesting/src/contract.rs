@@ -16,8 +16,10 @@ use crate::{
 };
 
 // Metadata that is added on to the WASM custom section
-contractmeta!(key = "Description", val = "Phoenix Protocol Vesting");
-
+contractmeta!(
+    key = "Description",
+    val = "Phoenix Protocol Token Vesting Contract"
+);
 #[contract]
 pub struct Vesting;
 
