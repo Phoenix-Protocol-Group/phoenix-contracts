@@ -4,7 +4,7 @@ use soroban_sdk::{
 
 use curve::Curve;
 
-use crate::storage::{get_admin, get_whitelist, save_whitelist};
+use crate::storage::{get_admin, get_token_info, get_whitelist, save_token_info, save_whitelist};
 use crate::utils::{create_vesting_accounts, update_vesting, verify_vesting};
 use crate::{
     error::ContractError,
@@ -121,7 +121,7 @@ impl VestingTrait for Vesting {
             None => vec![&env, admin.clone()],
         };
 
-        save_whitelist(&env, whitelisted_accounts);
+        save_whitelist(&env, &whitelisted_accounts);
 
         // TODO: this check might make no sense
         if vesting_balances.is_empty() {
@@ -132,6 +132,7 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::MissingBalance);
         }
 
+        // TODO: I might be confusing total_vesting with this in a few places
         let total_supply = create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
         if let Some(mi) = minter_info {
             let capacity = mi.capacity.value(env.ledger().timestamp()) as i128;
@@ -150,8 +151,9 @@ impl VestingTrait for Vesting {
             total_supply,
         };
 
+        save_token_info(&env, &token_info);
+
         let config = Config {
-            token_info,
             max_vesting_complexity,
         };
         save_config(&env, &config);
@@ -175,7 +177,7 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
 
-        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
         verify_vesting(&env, &from, amount, &token_client)?;
         token_client.transfer(&from, &to, &amount);
@@ -237,7 +239,7 @@ impl VestingTrait for Vesting {
             update_vesting(&env, &to, amount, curve)?;
         }
 
-        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
         verify_vesting(&env, &from, amount, &token_client)?;
         token_client.transfer(&from, &to, &amount);
@@ -272,7 +274,7 @@ impl VestingTrait for Vesting {
             false => update_vesting_total_supply(&env, get_vesting_total_supply(&env) - amount),
         };
 
-        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
         token_client.burn(&sender, &amount);
 
         env.events().publish(("Burn", "Burned tokens: "), amount);
@@ -314,7 +316,7 @@ impl VestingTrait for Vesting {
         }
 
         // mint to recipient
-        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
+        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
         token_client.mint(&to, &amount);
 
         env.events().publish(("Mint", "Minted tokens: "), amount);
@@ -537,7 +539,7 @@ impl VestingTrait for Vesting {
         }
 
         whitelist.push_back(to_add.clone());
-        save_whitelist(&env, whitelist);
+        save_whitelist(&env, &whitelist);
 
         env.events()
             .publish(("Add to whitelist", "Added to whitelist: "), to_add);
@@ -559,7 +561,7 @@ impl VestingTrait for Vesting {
             whitelist.remove(index);
         }
 
-        save_whitelist(&env, whitelist);
+        save_whitelist(&env, &whitelist);
 
         env.events().publish(
             ("Remove from whitelist", "Removed from whitelist: "),
@@ -572,7 +574,7 @@ impl VestingTrait for Vesting {
     }
 
     fn query_balance(env: Env, address: Address) -> i128 {
-        token_contract::Client::new(&env, &get_config(&env).token_info.address).balance(&address)
+        token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
     fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError> {
@@ -584,7 +586,7 @@ impl VestingTrait for Vesting {
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {
-        get_config(&env).token_info
+        get_token_info(&env)
     }
 
     fn query_minter(env: Env) -> Address {
