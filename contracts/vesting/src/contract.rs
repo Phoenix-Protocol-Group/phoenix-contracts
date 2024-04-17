@@ -181,7 +181,7 @@ impl VestingTrait for Vesting {
         env.events().publish(
             (
                 "Transfer token",
-                "Transfering tokens between accounts: {}, {}, {}",
+                "Transfering tokens between accounts: from: {}, to:{}, amount: {}",
             ),
             (from, to, amount),
         );
@@ -234,7 +234,7 @@ impl VestingTrait for Vesting {
         env.events().publish(
             (
                 "Transfer vesting",
-                "Transfering vesting between accounts: {}, {}, {}",
+                "Transfering vesting between accounts: from: {}, to: {}, amount: {}",
             ),
             (from, to, amount),
         );
@@ -333,7 +333,7 @@ impl VestingTrait for Vesting {
     //     env.events().publish(
     //         (
     //             "Increase allowance",
-    //             "Increased allowance between accounts: {}, {}, {}",
+    //             "Increased allowance between accounts: from: {}, to: {}, increase: {}",
     //         ),
     //         (owner_spender.0, owner_spender.1, amount),
     //     );
@@ -362,7 +362,7 @@ impl VestingTrait for Vesting {
     //     env.events().publish(
     //         (
     //             "Decrease allowance",
-    //             "Decreased allowance between accounts: {}, {}, {}",
+    //             "Decreased allowance between accounts: from: {}, to: {}, decrease: {}",
     //         ),
     //         (owner_spender.0, owner_spender.1, amount),
     //     );
@@ -404,7 +404,7 @@ impl VestingTrait for Vesting {
     //     env.events().publish(
     //         (
     //             "Transfer from",
-    //             "Transfering tokens between accounts: {}, {}, {}",
+    //             "Transfering tokens between accounts: from: {}, to: {}, amount: {}",
     //         ),
     //         (owner, to, amount),
     //     );
@@ -483,7 +483,7 @@ impl VestingTrait for Vesting {
     //     env.events().publish(
     //         (
     //             "Send to contract from",
-    //             "Sent tokens to contract from account: {}, {}, {}",
+    //             "Sent tokens to contract from account: from: {}, to: {}, amount: {}",
     //         ),
     //         (owner, contract, amount),
     //     );
