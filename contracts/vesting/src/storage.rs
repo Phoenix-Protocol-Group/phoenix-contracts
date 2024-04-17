@@ -20,15 +20,14 @@ pub enum DataKey {
     Admin = 1,
     Config = 2,
     Minter = 3,
+    Whitelist = 4,
+    VestingTokenInfo = 5,
+    MaxVestingComplexity = 6,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
-    /// `admin` who can manage the contract with administrative privileges.
-    pub admin: Address,
-    /// `whitelist` list of addresses that can interact with the contract.
-    pub whitelist: Vec<Address>,
     /// `token_info` information about the token used in the vesting contract.
     pub token_info: VestingTokenInfo,
     /// `max_vesting_complexity` the maximum complexity an account's vesting curve is allowed to have
@@ -85,6 +84,16 @@ pub fn get_config(env: &Env) -> Config {
 
 pub fn save_admin(env: &Env, admin: &Address) {
     env.storage().persistent().set(&DataKey::Admin, admin);
+}
+
+pub fn get_admin(env: &Env) -> Address {
+    env.storage()
+        .persistent()
+        .get(&DataKey::Admin)
+        .unwrap_or_else(|| {
+            log!(&env, "Vesting: Get admin: Critical error - No admin found");
+            panic_with_error!(env, ContractError::NoAdminFound);
+        })
 }
 
 pub fn save_balance(env: &Env, address: &Address, balance: i128) {
@@ -152,4 +161,23 @@ pub fn update_vesting_total_supply(env: &Env, amount: i128) {
         ..config
     };
     save_config(env, &new_config);
+}
+
+pub fn save_whitelist(env: &Env, whitelist: Vec<Address>) {
+    env.storage()
+        .persistent()
+        .set(&DataKey::Whitelist, &whitelist);
+}
+
+pub fn get_whitelist(env: &Env) -> Vec<Address> {
+    env.storage()
+        .persistent()
+        .get(&DataKey::Whitelist)
+        .unwrap_or_else(|| {
+            log!(
+                &env,
+                "Vesting: Get whitelist: Critical error - No whitelist found"
+            );
+            panic_with_error!(env, ContractError::NoWhitelistFound);
+        })
 }

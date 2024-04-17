@@ -4,6 +4,7 @@ use soroban_sdk::{
 
 use curve::Curve;
 
+use crate::storage::{get_admin, get_whitelist, save_whitelist};
 use crate::utils::{create_vesting_accounts, update_vesting, verify_vesting};
 use crate::{
     error::ContractError,
@@ -120,6 +121,8 @@ impl VestingTrait for Vesting {
             None => vec![&env, admin.clone()],
         };
 
+        save_whitelist(&env, whitelisted_accounts);
+
         // TODO: this check might make no sense
         if vesting_balances.is_empty() {
             log!(
@@ -148,8 +151,6 @@ impl VestingTrait for Vesting {
         };
 
         let config = Config {
-            admin: admin.clone(),
-            whitelist: whitelisted_accounts,
             token_info,
             max_vesting_complexity,
         };
@@ -199,7 +200,7 @@ impl VestingTrait for Vesting {
     ) -> Result<(), ContractError> {
         from.require_auth();
 
-        let whitelist = get_config(&env).whitelist;
+        let whitelist = get_whitelist(&env);
         if !whitelist.contains(from.clone()) {
             log!(
                 &env,
@@ -524,8 +525,10 @@ impl VestingTrait for Vesting {
     }
 
     fn add_to_whitelist(env: Env, sender: Address, to_add: Address) {
-        let mut config = get_config(&env);
-        if sender != config.admin {
+        let mut whitelist = get_whitelist(&env);
+        let admin = get_admin(&env);
+
+        if sender != admin {
             log!(
                 &env,
                 "Vesting: Add to whitelist: Not authorized to add to whitelist"
@@ -533,16 +536,18 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        config.whitelist.push_back(to_add.clone());
-        save_config(&env, &config);
+        whitelist.push_back(to_add.clone());
+        save_whitelist(&env, whitelist);
 
         env.events()
             .publish(("Add to whitelist", "Added to whitelist: "), to_add);
     }
 
     fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address) {
-        let mut config = get_config(&env);
-        if sender != config.admin {
+        let mut whitelist = get_whitelist(&env);
+        let admin = get_admin(&env);
+
+        if sender != admin {
             log!(
                 &env,
                 "Vesting: Remove from whitelist: Not authorized to remove from whitelist"
@@ -550,11 +555,11 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        if let Some(index) = config.whitelist.first_index_of(to_remove.clone()) {
-            config.whitelist.remove(index);
+        if let Some(index) = whitelist.first_index_of(to_remove.clone()) {
+            whitelist.remove(index);
         }
 
-        save_config(&env, &config);
+        save_whitelist(&env, whitelist);
 
         env.events().publish(
             ("Remove from whitelist", "Removed from whitelist: "),
@@ -575,7 +580,7 @@ impl VestingTrait for Vesting {
     }
 
     fn query_vesting_whitelist(env: Env) -> Vec<Address> {
-        get_config(&env).whitelist
+        get_whitelist(&env)
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {

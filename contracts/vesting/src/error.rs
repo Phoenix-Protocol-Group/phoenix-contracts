@@ -26,6 +26,7 @@ pub enum ContractError {
     InvalidAllowanceAmount = 18,
     DuplicateInitialBalanceAddresses = 19,
     CurveError = 20,
+    NoWhitelistFound = 21,
 }
 
 impl From<CurveError> for ContractError {
