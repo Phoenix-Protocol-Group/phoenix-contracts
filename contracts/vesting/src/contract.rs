@@ -563,9 +563,7 @@ impl VestingTrait for Vesting {
     }
 
     fn query_config(env: Env) -> Result<Config, ContractError> {
-        let config = get_config(&env);
-
-        Ok(config)
+        Ok(get_config(&env))
     }
 
     fn query_balance(env: Env, address: Address) -> i128 {
