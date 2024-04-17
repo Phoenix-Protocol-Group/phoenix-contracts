@@ -83,8 +83,6 @@ pub trait VestingTrait {
 
     fn update_minter(env: Env, sender: Address, new_minter: Address);
 
-    fn send_tokens_to_contract(env: Env, sender: Address, contract: Address, amount: i128);
-
     fn add_to_whitelist(env: Env, sender: Address, to_add: Address);
 
     fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address);
@@ -523,25 +521,6 @@ impl VestingTrait for Vesting {
 
         env.events()
             .publish(("Update minter", "Updated minter to: "), new_minter);
-    }
-
-    // TOOD: the only difference between this and  `transfer_token` is that here we do not check the vesting
-    fn send_tokens_to_contract(env: Env, sender: Address, contract: Address, amount: i128) {
-        if amount <= 0 {
-            log!(&env, "Vesting: Send tokens to contract: Invalid amount");
-            panic_with_error!(env, ContractError::InvalidTransferAmount);
-        }
-
-        let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
-        token_client.transfer(&sender, &contract, &amount);
-
-        env.events().publish(
-            (
-                "Send tokens to contract",
-                "Sent tokens to contract from account: {}, {}",
-            ),
-            (sender, contract),
-        );
     }
 
     fn add_to_whitelist(env: Env, sender: Address, to_add: Address) {
