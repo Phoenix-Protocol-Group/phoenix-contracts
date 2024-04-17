@@ -133,9 +133,9 @@ impl VestingTrait for Vesting {
 
         let total_supply = create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
         if let Some(mi) = minter_info {
-            let cap = mi.cap.value(env.ledger().timestamp()) as i128;
-            if total_supply > cap {
-                log!(&env, "Vesting: Initialize: total supply over the cap");
+            let capacity = mi.capacity.value(env.ledger().timestamp()) as i128;
+            if total_supply > capacity {
+                log!(&env, "Vesting: Initialize: total supply over the capacity");
                 panic_with_error!(env, ContractError::SupplyOverTheCap);
             }
             save_minter(&env, mi);
@@ -295,8 +295,8 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        // update supply and cap
-        let total_supply = get_vesting_total_supply(&env)
+        // update supply and capacity
+        let updated_total_supply = get_vesting_total_supply(&env)
             .checked_add(amount)
             .unwrap_or_else(|| {
                 log!(
@@ -306,11 +306,11 @@ impl VestingTrait for Vesting {
                 panic_with_error!(env, ContractError::Std);
             });
 
-        update_vesting_total_supply(&env, total_supply);
+        update_vesting_total_supply(&env, updated_total_supply);
 
-        let limit = get_minter(&env).cap.value(env.ledger().timestamp());
-        if total_supply > limit as i128 {
-            log!(&env, "Vesting: Mint: total supply over the cap");
+        let limit = get_minter(&env).capacity.value(env.ledger().timestamp());
+        if updated_total_supply >= limit as i128 {
+            log!(&env, "Vesting: Mint: total supply over the capacity");
             panic_with_error!(env, ContractError::SupplyOverTheCap);
         }
 
@@ -517,7 +517,7 @@ impl VestingTrait for Vesting {
             &env,
             MinterInfo {
                 address: new_minter.clone(),
-                cap: get_minter(&env).cap,
+                capacity: get_minter(&env).capacity,
             },
         );
 

@@ -109,7 +109,7 @@ fn instantiate_contract_succesffuly_with_constant_curve_minter_info() {
     let allowed_vesters = vec![&env, whitelisted_account.clone()];
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        cap: Curve::Constant(511223344),
+        capacity: Curve::Constant(511223344),
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -271,7 +271,7 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
     ];
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        cap: Curve::SaturatingLinear(SaturatingLinear {
+        capacity: Curve::SaturatingLinear(SaturatingLinear {
             min_x: 30,
             min_y: 2,
             max_x: 120,

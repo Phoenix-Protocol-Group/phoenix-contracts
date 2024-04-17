@@ -56,7 +56,7 @@ pub struct VestingBalance {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MinterInfo {
     pub address: Address,
-    pub cap: Curve,
+    pub capacity: Curve,
 }
 
 #[contracttype]
