@@ -4,8 +4,6 @@ use soroban_sdk::{
     vec, Address, Env, String,
 };
 
-use pretty_assertions::assert_eq;
-
 use crate::{
     storage::{Config, MinterInfo, VestingBalance, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,

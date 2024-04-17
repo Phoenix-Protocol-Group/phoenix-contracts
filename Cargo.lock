@@ -791,9 +791,7 @@ dependencies = [
  "curve",
  "decimal",
  "phoenix",
- "pretty_assertions",
  "soroban-sdk",
- "test-case",
 ]
 
 [[package]]
