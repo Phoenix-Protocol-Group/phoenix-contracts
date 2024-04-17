@@ -571,8 +571,7 @@ impl VestingTrait for Vesting {
     }
 
     fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError> {
-        let curve = get_vesting(&env, &address)?.curve;
-        Ok(curve)
+        Ok(get_vesting(&env, &address)?.curve)
     }
 
     fn query_vesting_whitelist(env: Env) -> Vec<Address> {
