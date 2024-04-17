@@ -10,11 +10,11 @@ use crate::{
     token_contract,
 };
 
-pub fn verify_vesting_and_transfer_tokens(
+pub fn verify_vesting(
     env: &Env,
     sender: &Address,
-    to: &Address,
     amount: i128,
+    token_client: &token_contract::Client,
 ) -> Result<(), ContractError> {
     let vesting_amount = get_vesting(env, sender)?
         .curve
@@ -24,7 +24,6 @@ pub fn verify_vesting_and_transfer_tokens(
         remove_vesting(env, sender);
     }
 
-    let token_client = token_contract::Client::new(env, &get_config(env).token_info.address);
     let sender_balance = token_client.balance(sender);
     let sender_remainder = sender_balance
         .checked_sub(amount)
@@ -37,8 +36,6 @@ pub fn verify_vesting_and_transfer_tokens(
         );
         panic_with_error!(env, ContractError::CantMoveVestingTokens);
     }
-
-    token_client.transfer(sender, to, &amount);
 
     Ok(())
 }
