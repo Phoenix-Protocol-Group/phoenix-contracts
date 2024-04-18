@@ -214,15 +214,13 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
-    let vester2 = Address::generate(&env);
-    let whitelisted_account = Address::generate(&env);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: Address::generate(&env),
-        total_supply: 0,
+        total_supply: 1_000,
     };
     let vesting_balances = vec![
         &env,
@@ -236,17 +234,8 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
                 max_y: 0,
             }),
         },
-        VestingBalance {
-            address: vester2,
-            balance: 1_000,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 30,
-                min_y: 240,
-                max_x: 120,
-                max_y: 0,
-            }),
-        },
     ];
+
     let minter_info = MinterInfo {
         address: Address::generate(&env),
         capacity: Curve::SaturatingLinear(SaturatingLinear {
@@ -257,8 +246,6 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
         }),
     };
 
-    let allowed_vesters = vec![&env, whitelisted_account.clone()];
-
     let vesting_client = instantiate_vesting_client(&env);
     env.ledger().with_mut(|li| li.timestamp = 1000);
     vesting_client.initialize(
@@ -266,7 +253,7 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info),
-        &Some(allowed_vesters),
+        &None,
         &10u32,
     );
 }
