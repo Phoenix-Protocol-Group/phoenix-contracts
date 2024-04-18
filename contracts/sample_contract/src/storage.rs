@@ -12,6 +12,21 @@ pub struct VestingBalance {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingInfo {
-    pub amount: i128,
+    pub balance: i128,
+    pub curve: Curve,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Key {
+    pub balance: i128,
+    pub curve: Curve,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Value {
+    pub address: Address,
+    pub balance: i128,
     pub curve: Curve,
 }
