@@ -16,8 +16,10 @@ and this project adheres to
 
 ## Added
 
+- vesting: Add vesting contract ([#267])
 - all: changes panic! to panic_with_error ([#269])
 
+[#267]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/267
 [#269]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/269
 [#275]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/275
 [#274]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/274
