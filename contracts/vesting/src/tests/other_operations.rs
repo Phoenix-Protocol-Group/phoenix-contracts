@@ -794,7 +794,7 @@ fn test_should_remove_from_whitelist_should_fail_when_unauthorized() {
 }
 
 #[test]
-#[should_panic(executed = "Vesting: Add to whitelist: No addresses to add")]
+#[should_panic(expected = "Vesting: Add to whitelist: No addresses to add")]
 fn test_should_panic_when_no_addresses_to_add() {
     let env = Env::default();
     env.mock_all_auths();

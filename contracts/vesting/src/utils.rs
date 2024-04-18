@@ -50,8 +50,7 @@ pub fn create_vesting_accounts(
     let mut total_supply = 0;
 
     vesting_accounts.into_iter().for_each(|vb| {
-        assert_schedule_vests_amount(env, &vb.curve, vb.balance as u128)
-            .expect("Invalid curve and amount");
+        assert_schedule_vests_amount(env, &vb.curve, vb.balance).expect("Invalid curve and amount");
 
         if vesting_complexity <= vb.curve.size() {
             log!(
@@ -83,7 +82,7 @@ pub fn create_vesting_accounts(
 pub fn assert_schedule_vests_amount(
     env: &Env,
     schedule: &Curve,
-    amount: u128,
+    amount: i128,
 ) -> Result<(), ContractError> {
     schedule.validate_monotonic_decreasing()?;
     let (low, high) = schedule.range();
@@ -93,7 +92,7 @@ pub fn assert_schedule_vests_amount(
             "Vesting: Assert Schedule Vest Amount: Never fully vested"
         );
         panic_with_error!(&env, ContractError::NeverFullyVested)
-    } else if high > amount {
+    } else if high as i128 > amount {
         log!(
             &env,
             "Vesting: Assert Schedule Vest Amount: Vesting amount more than sent"
@@ -289,7 +288,7 @@ mod test {
     )]
     fn assert_schedule_vests_amount_fails_when_high_bigger_than_amount() {
         const HIGH: u128 = 2;
-        const AMOUNT: u128 = 1;
+        const AMOUNT: i128 = 1;
         let env = Env::default();
         let curve = Curve::SaturatingLinear(SaturatingLinear {
             min_x: 15,
