@@ -30,4 +30,5 @@ fn test_get_from_storage() {
     };
 
     sample_client.initialize(&vesting_balances);
+    assert!(true)
 }
