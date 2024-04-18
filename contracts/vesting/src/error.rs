@@ -29,6 +29,7 @@ pub enum ContractError {
     NoWhitelistFound = 21,
     NoTokenInfoFound = 22,
     NoVestingComplexityValueFound = 23,
+    NoAddressesToAdd = 24,
 }
 
 impl From<CurveError> for ContractError {

@@ -546,6 +546,8 @@ fn test_add_to_whitelist_should_work() {
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
+    let whitelisted1 = Address::generate(&env);
+    let whitelisted2 = Address::generate(&env);
 
     let token = deploy_token_contract(&env, &admin);
 
@@ -587,11 +589,19 @@ fn test_add_to_whitelist_should_work() {
         vec![&env, admin.clone()]
     );
 
-    vesting_client.add_to_whitelist(&admin, &vester1);
+    vesting_client.add_to_whitelist(
+        &admin,
+        &vec![
+            &env,
+            vester1.clone(),
+            whitelisted1.clone(),
+            whitelisted2.clone(),
+        ],
+    );
 
     assert_eq!(
         vesting_client.query_vesting_whitelist(),
-        vec![&env, admin, vester1]
+        vec![&env, admin, vester1, whitelisted1, whitelisted2]
     );
 }
 
@@ -645,17 +655,18 @@ fn test_add_to_whitelist_should_fail_when_unauthorized() {
         vec![&env, admin.clone()]
     );
 
-    vesting_client.add_to_whitelist(&Address::generate(&env), &vester1);
+    vesting_client.add_to_whitelist(&Address::generate(&env), &vec![&env, vester1]);
 }
 
 #[test]
-fn test_should_remove_from_whitelist_should_work() {
+fn test_remove_from_whitelist_should_work() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
+    let transit_account = Address::generate(&env);
 
     let token = deploy_token_contract(&env, &admin);
 
@@ -697,18 +708,26 @@ fn test_should_remove_from_whitelist_should_work() {
         vec![&env, admin.clone()]
     );
 
-    vesting_client.add_to_whitelist(&admin, &vester1);
-
-    assert_eq!(
-        vesting_client.query_vesting_whitelist(),
-        vec![&env, admin.clone(), vester1.clone()]
+    vesting_client.add_to_whitelist(
+        &admin,
+        &vec![&env, vester1.clone(), transit_account.clone()],
     );
 
-    vesting_client.remove_from_whitelist(&admin, &vester1);
+    assert_eq!(
+        vesting_client.query_vesting_whitelist(),
+        vec![
+            &env,
+            admin.clone(),
+            vester1.clone(),
+            transit_account.clone()
+        ]
+    );
+
+    vesting_client.remove_from_whitelist(&admin, &transit_account);
 
     assert_eq!(
         vesting_client.query_vesting_whitelist(),
-        vec![&env, admin.clone()]
+        vec![&env, admin, vester1]
     );
 }
 
@@ -764,7 +783,7 @@ fn test_should_remove_from_whitelist_should_fail_when_unauthorized() {
         vec![&env, admin.clone()]
     );
 
-    vesting_client.add_to_whitelist(&admin, &vester1);
+    vesting_client.add_to_whitelist(&admin, &vec![&env, vester1.clone()]);
 
     assert_eq!(
         vesting_client.query_vesting_whitelist(),
@@ -772,6 +791,53 @@ fn test_should_remove_from_whitelist_should_fail_when_unauthorized() {
     );
 
     vesting_client.remove_from_whitelist(&Address::generate(&env), &admin);
+}
+
+#[test]
+#[should_panic(executed = "Vesting: Add to whitelist: No addresses to add")]
+fn test_should_panic_when_no_addresses_to_add() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token.address.clone(),
+        total_supply: 0,
+    };
+
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            address: vester1.clone(),
+            balance: 200,
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 15,
+                min_y: 120,
+                max_x: 60,
+                max_y: 0,
+            }),
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(
+        &admin,
+        &vesting_token,
+        &vesting_balances,
+        &None,
+        &None,
+        &10u32,
+    );
+
+    vesting_client.add_to_whitelist(&admin, &vec![&env]);
 }
 
 #[test]
