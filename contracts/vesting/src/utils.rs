@@ -65,7 +65,7 @@ pub fn create_vesting_accounts(
         save_vesting(
             env,
             &vb.address,
-            VestingInfo {
+            &VestingInfo {
                 amount: vb.balance,
                 curve: vb.curve,
             },
@@ -149,7 +149,7 @@ pub fn update_vesting(
             save_vesting(
                 env,
                 to_address,
-                VestingInfo {
+                &VestingInfo {
                     amount,
                     curve: new_curve_schedule.clone(),
                 },
