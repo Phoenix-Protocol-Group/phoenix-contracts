@@ -133,7 +133,7 @@ impl VestingTrait for Vesting {
         if vesting_balances.is_empty() {
             log!(
                 &env,
-                "Vesting: Initialize: At least one balance must be provided."
+                "Vesting: Initialize: At least one vesting schedule must be provided."
             );
             panic_with_error!(env, ContractError::MissingBalance);
         }

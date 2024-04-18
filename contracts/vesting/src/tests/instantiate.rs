@@ -174,7 +174,7 @@ fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
     );
 }
 
-#[should_panic(expected = "Vesting: Initialize: At least one balance must be provided.")]
+#[should_panic(expected = "Vesting: Initialize: At least one vesting schedule must be provided.")]
 #[test]
 fn instantiate_contract_without_any_vesting_balances_should_fail() {
     let env = Env::default();
