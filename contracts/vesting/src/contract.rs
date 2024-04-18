@@ -263,8 +263,9 @@ impl VestingTrait for Vesting {
             }
             false => update_vesting_total_supply(&env, remainder),
         };
-
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
+
+        verify_vesting(&env, &sender, amount, &token_client)?;
         token_client.burn(&sender, &amount);
 
         env.events().publish(("Burn", "Burned tokens: "), amount);
