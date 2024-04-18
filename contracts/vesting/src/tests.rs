@@ -1,4 +1,4 @@
 mod instantiate;
-mod other_operations;
+mod messages;
 mod setup;
 mod transfer;
