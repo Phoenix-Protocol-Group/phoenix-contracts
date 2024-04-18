@@ -89,7 +89,7 @@ pub fn assert_schedule_vests_amount(
     if low != 0 {
         log!(
             &env,
-            "Vesting: Assert Schedule Vest Amount: Never fully vested"
+            "Vesting: Transfer Vesting: Cannot transfer when non-fully vested"
         );
         panic_with_error!(&env, ContractError::NeverFullyVested)
     } else if high as i128 > amount {
@@ -268,7 +268,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Vesting: Assert Schedule Vest Amount: Never fully vested")]
+    #[should_panic(expected = "Vesting: Transfer Vesting: Cannot transfer when non-fully vested")]
     fn assert_schedule_vests_amount_fails_when_low_not_zero() {
         const MIN_NOT_ZERO: u128 = 1;
         let env = Env::default();
