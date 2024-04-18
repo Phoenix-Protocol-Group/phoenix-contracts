@@ -159,7 +159,6 @@ fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
     ];
 
     let vesting_client = instantiate_vesting_client(&env);
-    env.ledger().with_mut(|li| li.timestamp = 1000);
     vesting_client.initialize(
         &admin,
         &vesting_token,
