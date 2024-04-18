@@ -263,7 +263,8 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidBurnAmount);
         }
 
-        match get_vesting_total_supply(&env) - amount < 0 {
+        let remainder = get_vesting_total_supply(&env) - amount;
+        match remainder < 0 {
             true => {
                 log!(
                     &env,
@@ -271,7 +272,7 @@ impl VestingTrait for Vesting {
                 );
                 panic_with_error!(env, ContractError::Std);
             }
-            false => update_vesting_total_supply(&env, get_vesting_total_supply(&env) - amount),
+            false => update_vesting_total_supply(&env, remainder),
         };
 
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
