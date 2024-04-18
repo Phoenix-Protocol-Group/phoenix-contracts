@@ -532,7 +532,7 @@ impl VestingTrait for Vesting {
         new_capacity: Curve,
         remove_old_capacity: bool,
     ) {
-        if sender != get_minter(&env).address && sender != get_admin(&env) {
+        if sender != get_admin(&env) {
             log!(
                 &env,
                 "Vesting: Update minter capacity: Not authorized to update minter capacity"
