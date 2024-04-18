@@ -93,7 +93,7 @@ pub trait VestingTrait {
         remove_old_capacity: bool,
     );
 
-    fn add_to_whitelist(env: Env, sender: Address, to_add: Address);
+    fn add_to_whitelist(env: Env, sender: Address, to_add: Vec<Address>);
 
     fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address);
 
@@ -568,7 +568,7 @@ impl VestingTrait for Vesting {
         );
     }
 
-    fn add_to_whitelist(env: Env, sender: Address, to_add: Address) {
+    fn add_to_whitelist(env: Env, sender: Address, to_add: Vec<Address>) {
         let mut whitelist = get_whitelist(&env);
         let admin = get_admin(&env);
 
@@ -580,7 +580,15 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        whitelist.push_back(to_add.clone());
+        if to_add.is_empty() {
+            log!(&env, "Vesting: Add to whitelist: No addresses to add");
+            panic_with_error!(env, ContractError::NoAddressesToAdd);
+        }
+
+        to_add.clone().into_iter().for_each(|a| {
+            whitelist.push_back(a.clone());
+        });
+
         save_whitelist(&env, &whitelist);
 
         env.events()
