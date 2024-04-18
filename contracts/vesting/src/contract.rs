@@ -8,7 +8,9 @@ use crate::storage::{
     get_admin, get_token_info, get_whitelist, save_max_vesting_complexity, save_token_info,
     save_whitelist,
 };
-use crate::utils::{create_vesting_accounts, update_vesting, verify_vesting};
+use crate::utils::{
+    assert_schedule_vests_amount, create_vesting_accounts, update_vesting, verify_vesting,
+};
 use crate::{
     error::ContractError,
     storage::{
@@ -218,21 +220,8 @@ impl VestingTrait for Vesting {
             );
             panic_with_error!(env, ContractError::InvalidTransferAmount);
         }
-        curve.validate_monotonic_decreasing()?;
-        let (low, high) = curve.range();
-        if low != 0 {
-            log!(
-                &env,
-                "Vesting: Transfer Vesting: Cannot transfer when non-fully vested"
-            );
-            panic_with_error!(env, ContractError::NeverFullyVested);
-        } else if high as i128 > amount {
-            log!(
-                &env,
-                "Vesting: Transfer Vesting: Vesting more than being sent"
-            );
-            panic_with_error!(env, ContractError::VestsMoreThanSent);
-        }
+
+        assert_schedule_vests_amount(&env, &curve, amount)?;
 
         // if not fully vested we update
         if curve.value(env.ledger().timestamp()) != 0 {
@@ -551,6 +540,7 @@ impl VestingTrait for Vesting {
                 );
             }
             false => {
+                // TODO: we will eventually need to verify the new minter capacity curve complexity at some point
                 let new_curve_capacity = get_minter(&env).capacity.combine(&env, &new_capacity);
                 save_minter(
                     &env,
