@@ -6,7 +6,7 @@ use crate::storage::{MinterInfo, VestingBalance, VestingTokenInfo};
 use super::setup::{deploy_token_contract, instantiate_vesting_client};
 
 #[test]
-fn burn_should_work_correctly() {
+fn burn_works() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -106,7 +106,6 @@ fn burn_should_panic_when_invalid_amount() {
 #[test]
 #[should_panic(expected = "Vesting: Burn: Critical error - total supply cannot be negative")]
 fn burn_should_panic_when_total_supply_becomes_negative() {
-    const TOO_MUCH: i128 = 1_000;
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -137,7 +136,6 @@ fn burn_should_panic_when_total_supply_becomes_negative() {
             }),
         },
     ];
-
     let vesting_client = instantiate_vesting_client(&env);
     vesting_client.initialize(
         &admin,
@@ -147,12 +145,11 @@ fn burn_should_panic_when_total_supply_becomes_negative() {
         &None,
         &10u32,
     );
-
-    vesting_client.burn(&vester1, &TOO_MUCH);
+    vesting_client.burn(&vester1, &600);
 }
 
 #[test]
-fn mint_should_work_correctly() {
+fn mint_works() {
     let env = Env::default();
     env.mock_all_auths_allowing_non_root_auth();
     env.budget().reset_unlimited();
