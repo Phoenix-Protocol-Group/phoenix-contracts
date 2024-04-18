@@ -115,7 +115,7 @@ fn burn_should_panic_when_total_supply_becomes_negative() {
     let vester1 = Address::generate(&env);
     let token = deploy_token_contract(&env, &admin);
 
-    token.mint(&vester1, &1_000);
+    token.mint(&vester1, &1_300);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
