@@ -402,7 +402,7 @@ fn transfer_vesting_should_fail_when_invalid_low_value() {
 }
 
 #[test]
-#[should_panic(expected = "Vesting: Transfer Vesting: Vesting more than being sent")]
+#[should_panic(expected = "Vesting: Assert Schedule Vest Amount: Vesting amount more than sent")]
 fn transfer_vesting_should_fail_when_vesting_more_than_sent_amount() {
     let env = Env::default();
     env.mock_all_auths();
