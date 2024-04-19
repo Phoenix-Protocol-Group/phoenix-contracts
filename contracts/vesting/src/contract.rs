@@ -14,8 +14,8 @@ use crate::utils::{
 use crate::{
     error::ContractError,
     storage::{
-        get_minter, get_vesting, get_vesting_total_supply, save_admin, save_minter,
-        update_vesting_total_supply, MinterInfo, VestingBalance, VestingTokenInfo,
+        get_minter, get_vesting_total_supply, save_admin, save_minter, update_vesting_total_supply,
+        MinterInfo, VestingBalance, VestingTokenInfo,
     },
     token_contract,
 };
@@ -101,7 +101,7 @@ pub trait VestingTrait {
 
     fn query_balance(env: Env, address: Address) -> i128;
 
-    fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError>;
+    // fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError>;
 
     fn query_vesting_whitelist(env: Env) -> Vec<Address>;
 
@@ -614,9 +614,9 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
-    fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError> {
-        Ok(get_vesting(&env, &address)?.curve)
-    }
+    // fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError> {
+    //     Ok(get_vesting(&env, &address)?.curve)
+    // }
 
     fn query_vesting_whitelist(env: Env) -> Vec<Address> {
         get_whitelist(&env)

@@ -75,18 +75,18 @@ pub fn save_balance(env: &Env, address: &Address, balance: i128) {
     env.storage().persistent().set(address, &balance);
 }
 
-pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
-    env.storage().instance().set(address, vesting_info);
-}
+// pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
+//     env.storage().instance().set(address, vesting_info);
+// }
 
-pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, ContractError> {
-    let vesting_info = env.storage().instance().get(address).unwrap_or_else(|| {
-        log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
-        panic_with_error!(env, ContractError::VestingNotFoundForAddress);
-    });
+// pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, ContractError> {
+//     let vesting_info = env.storage().persistent().get(address).unwrap_or_else(|| {
+//         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
+//         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
+//     });
 
-    Ok(vesting_info)
-}
+//     Ok(vesting_info)
+// }
 
 pub fn remove_vesting(env: &Env, address: &Address) {
     env.storage().persistent().remove(&address);

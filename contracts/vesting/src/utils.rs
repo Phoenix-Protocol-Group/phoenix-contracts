@@ -4,8 +4,7 @@ use soroban_sdk::{log, panic_with_error, Address, Env, Vec};
 use crate::{
     error::ContractError,
     storage::{
-        get_max_vesting_complexity, get_vesting, remove_vesting, save_balance, save_vesting,
-        VestingBalance, VestingInfo,
+        get_max_vesting_complexity, remove_vesting, save_balance, VestingBalance, VestingInfo,
     },
     token_contract,
 };
@@ -16,7 +15,14 @@ pub fn verify_vesting(
     amount: i128,
     token_client: &token_contract::Client,
 ) -> Result<(), ContractError> {
-    let vesting_amount = get_vesting(env, sender)?
+    // let vesting_amount = get_vesting(env, sender)?
+    //     .curve
+    //     .value(env.ledger().timestamp()) as i128;
+    let vesting_amount = env
+        .storage()
+        .persistent()
+        .get::<Address, VestingInfo>(&sender)
+        .unwrap()
         .curve
         .value(env.ledger().timestamp()) as i128;
 
@@ -49,32 +55,49 @@ pub fn create_vesting_accounts(
 
     let mut total_supply = 0;
 
-    vesting_accounts.into_iter().for_each(|vb| {
-        assert_schedule_vests_amount(env, &vb.curve, vb.balance).expect("Invalid curve and amount");
+    // vesting_accounts.into_iter().for_each(|vb| {
+    //     assert_schedule_vests_amount(env, &vb.curve, vb.balance).expect("Invalid curve and amount");
 
-        if vesting_complexity <= vb.curve.size() {
-            log!(
-                &env,
-                "Vesting: Create vesting account: Invalid curve complexity for {}",
-                vb.address
-            );
-            panic_with_error!(env, ContractError::VestingComplexityTooHigh);
-        }
+    //     if vesting_complexity <= vb.curve.size() {
+    //         log!(
+    //             &env,
+    //             "Vesting: Create vesting account: Invalid curve complexity for {}",
+    //             vb.address
+    //         );
+    //         panic_with_error!(env, ContractError::VestingComplexityTooHigh);
+    //     }
 
-        save_vesting(
-            env,
-            &vb.address,
-            &VestingInfo {
-                amount: vb.balance,
-                curve: vb.curve,
-            },
-        );
+    // save_vesting(
+    //     env,
+    //     &vb.address,
+    //     &VestingInfo {
+    //         amount: vb.balance,
+    //         curve: vb.curve,
+    //     },
+    // );
+    // env.storage().persistent().set::<Address, VestingInfo>(
+    //     &vb.address,
+    //     &VestingInfo {
+    //         amount: vb.balance,
+    //         curve: vb.curve,
+    //     },
+    // );
 
-        save_balance(env, &vb.address, vb.balance);
-        total_supply += vb.balance;
-    });
+    //     save_balance(env, &vb.address, vb.balance);
+    //     total_supply += vb.balance;
+    // });
 
-    Ok(total_supply)
+    let vb = vesting_accounts.get(0).unwrap();
+    env.storage().persistent().set::<Address, VestingInfo>(
+        &vb.address,
+        &VestingInfo {
+            amount: vb.balance,
+            curve: vb.curve.clone(),
+        },
+    );
+
+    Ok(total_supply + vb.balance)
+    // Ok(total_supply)
 }
 
 /// Asserts the vesting schedule decreases to 0 eventually, and is never more than the
@@ -144,14 +167,22 @@ pub fn update_vesting(
                     panic_with_error!(env, ContractError::VestingComplexityTooHigh);
                 });
 
-            save_vesting(
-                env,
-                to_address,
+            env.storage().persistent().set(
+                &to_address,
                 &VestingInfo {
                     amount,
                     curve: new_curve_schedule.clone(),
                 },
             );
+
+            // save_vesting(
+            //     env,
+            //     to_address,
+            //     &VestingInfo {
+            //         amount,
+            //         curve: new_curve_schedule.clone(),
+            //     },
+            // );
 
             new_curve_schedule
         });
