@@ -27,7 +27,6 @@ pub enum ContractError {
     TokenABiggerThanTokenB = 18,
     InvalidBps = 19,
     SlippageInvalid = 20,
-
     SwapMinReceivedBiggerThanReturn = 21,
-    OffByMoreThanRoundingError = 21,
+    OffByMoreThanRoundingError = 22,
 }
