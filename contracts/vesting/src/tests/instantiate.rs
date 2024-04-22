@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[test]
-fn instantiate_contract_succesffuly() {
+fn instantiate_contract_succesffully() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -68,7 +68,7 @@ fn instantiate_contract_succesffuly() {
 }
 
 #[test]
-fn instantiate_contract_succesffuly_with_constant_curve_minter_info() {
+fn instantiate_contract_succesffully_with_constant_curve_minter_info() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -118,7 +118,7 @@ fn instantiate_contract_succesffuly_with_constant_curve_minter_info() {
 }
 
 #[test]
-fn instantiate_contract_succesffuly_with_empty_list_of_whitelisted_accounts() {
+fn instantiate_contract_succesffully_with_empty_list_of_whitelisted_accounts() {
     let env = Env::default();
     env.mock_all_auths();
 
