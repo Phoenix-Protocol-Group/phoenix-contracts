@@ -267,6 +267,7 @@ impl VestingTrait for Vesting {
         verify_vesting(&env, &sender, amount, &token_client)?;
         token_client.burn(&sender, &amount);
 
+        env.events().publish(("Burn", "Burned from: "), sender);
         env.events().publish(("Burn", "Burned tokens: "), amount);
 
         Ok(())
@@ -309,6 +310,8 @@ impl VestingTrait for Vesting {
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
         token_client.mint(&to, &amount);
 
+        env.events().publish(("Mint", "sender: "), sender);
+        env.events().publish(("Mint", "Recipient: "), to);
         env.events().publish(("Mint", "Minted tokens: "), amount);
     }
 
