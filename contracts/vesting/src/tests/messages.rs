@@ -950,7 +950,7 @@ fn test_should_update_minter_capacity_when_combining_old_capacity() {
 
 #[test]
 #[should_panic(
-    expected = "Vesting: Update minter capacity: Not authorized to update minter capacity"
+    expected = "Vesting: Update minter capacity: Only contract's admin can update the minter's capacity"
 )]
 fn test_should_panic_when_updating_minter_capacity_without_auth() {
     let env = Env::default();

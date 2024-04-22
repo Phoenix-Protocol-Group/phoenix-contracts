@@ -527,7 +527,7 @@ impl VestingTrait for Vesting {
         if sender != get_admin(&env) {
             log!(
                 &env,
-                "Vesting: Update minter capacity: Not authorized to update minter capacity"
+                "Vesting: Update minter capacity: Only contract's admin can update the minter's capacity"
             );
             panic_with_error!(env, ContractError::NotAuthorized);
         }
