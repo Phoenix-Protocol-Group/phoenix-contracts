@@ -64,8 +64,8 @@ fn transfer_tokens() {
     vesting_client.transfer_token(&vester1, &vester2, &100);
     soroban_sdk::testutils::arbitrary::std::dbg!("after");
     vesting_client.transfer_token(&vester1, &vester2, &100);
-    assert_eq!(vesting_client.query_balance(&vester1), 900);
-    assert_eq!(token.balance(&vester2), 100);
+    assert_eq!(vesting_client.query_balance(&vester1), 800);
+    assert_eq!(token.balance(&vester2), 200);
     assert_eq!(vesting_client.query_vesting_total_supply(), 200);
 }
 

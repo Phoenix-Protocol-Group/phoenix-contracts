@@ -1,5 +1,5 @@
 use curve::Curve;
-use soroban_sdk::{log, panic_with_error, Address, Env, Vec};
+use soroban_sdk::{log, panic_with_error, testutils::arbitrary, Address, Env, Vec};
 
 use crate::{
     error::ContractError,
@@ -18,6 +18,7 @@ pub fn verify_vesting(
     // let vesting_amount = get_vesting(env, sender)?
     //     .curve
     //     .value(env.ledger().timestamp()) as i128;
+    soroban_sdk::testutils::arbitrary::std::dbg!("before");
     let vesting_amount = env
         .storage()
         .persistent()
@@ -25,6 +26,7 @@ pub fn verify_vesting(
         .unwrap()
         .curve
         .value(env.ledger().timestamp()) as i128;
+    soroban_sdk::testutils::arbitrary::std::dbg!("after");
 
     if vesting_amount <= 0 {
         remove_vesting(env, sender);
@@ -88,6 +90,8 @@ pub fn create_vesting_accounts(
     // });
 
     let vb = vesting_accounts.get(0).unwrap();
+    save_balance(env, &vb.address, &vb.balance);
+    soroban_sdk::testutils::arbitrary::std::dbg!("before");
     env.storage().persistent().set::<Address, VestingInfo>(
         &vb.address,
         &VestingInfo {
@@ -95,6 +99,7 @@ pub fn create_vesting_accounts(
             curve: vb.curve.clone(),
         },
     );
+    soroban_sdk::testutils::arbitrary::std::dbg!("before");
 
     Ok(total_supply + vb.balance)
     // Ok(total_supply)

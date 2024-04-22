@@ -71,8 +71,8 @@ pub fn get_admin(env: &Env) -> Address {
         })
 }
 
-pub fn save_balance(env: &Env, address: &Address, balance: i128) {
-    env.storage().persistent().set(address, &balance);
+pub fn save_balance(env: &Env, address: &Address, balance: &i128) {
+    env.storage().persistent().set(address, balance);
 }
 
 // pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
