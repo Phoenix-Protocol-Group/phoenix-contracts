@@ -600,7 +600,7 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        if let Some(index) = whitelist.first_index_of(to_remove.clone()) {
+        if let Some(index) = whitelist.first_index_of(&to_remove) {
             whitelist.remove(index);
         }
 
