@@ -71,8 +71,8 @@ pub fn get_admin(env: &Env) -> Address {
         })
 }
 
-pub fn save_balance(env: &Env, address: &Address, balance: i128) {
-    env.storage().persistent().set(address, &balance);
+pub fn save_balance(env: &Env, address: &Address, balance: &i128) {
+    env.storage().persistent().set(address, balance);
 }
 
 pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
@@ -89,7 +89,7 @@ pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, Contract
 }
 
 pub fn remove_vesting(env: &Env, address: &Address) {
-    env.storage().instance().remove(&address);
+    env.storage().instance().remove(address);
 }
 
 // TODO: uncomment when needed
@@ -104,8 +104,8 @@ pub fn remove_vesting(env: &Env, address: &Address) {
 //     env.storage().persistent().set(owner_spender, &amount);
 // }
 
-pub fn save_minter(env: &Env, minter: MinterInfo) {
-    env.storage().persistent().set(&DataKey::Minter, &minter);
+pub fn save_minter(env: &Env, minter: &MinterInfo) {
+    env.storage().persistent().set(&DataKey::Minter, minter);
 }
 
 pub fn get_minter(env: &Env) -> MinterInfo {

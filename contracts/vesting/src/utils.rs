@@ -70,7 +70,7 @@ pub fn create_vesting_accounts(
             },
         );
 
-        save_balance(env, &vb.address, vb.balance);
+        save_balance(env, &vb.address, &vb.balance);
         total_supply += vb.balance;
     });
 

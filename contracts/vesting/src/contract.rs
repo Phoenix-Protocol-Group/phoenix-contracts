@@ -145,7 +145,7 @@ impl VestingTrait for Vesting {
                 log!(&env, "Vesting: Initialize: total supply over the capacity");
                 panic_with_error!(env, ContractError::SupplyOverTheCap);
             }
-            save_minter(&env, mi);
+            save_minter(&env, &mi);
         }
 
         let token_info = VestingTokenInfo {
@@ -508,7 +508,7 @@ impl VestingTrait for Vesting {
 
         save_minter(
             &env,
-            MinterInfo {
+            &MinterInfo {
                 address: new_minter.clone(),
                 capacity: get_minter(&env).capacity,
             },
@@ -536,7 +536,7 @@ impl VestingTrait for Vesting {
             true => {
                 save_minter(
                     &env,
-                    MinterInfo {
+                    &MinterInfo {
                         address: get_minter(&env).address,
                         capacity: new_capacity.clone(),
                     },
@@ -547,7 +547,7 @@ impl VestingTrait for Vesting {
                 let new_curve_capacity = get_minter(&env).capacity.combine(&env, &new_capacity);
                 save_minter(
                     &env,
-                    MinterInfo {
+                    &MinterInfo {
                         address: get_minter(&env).address,
                         capacity: new_curve_capacity,
                     },
