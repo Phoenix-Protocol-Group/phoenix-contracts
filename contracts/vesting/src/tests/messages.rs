@@ -532,7 +532,7 @@ fn update_minter_fails_when_not_authorized() {
         capacity: Curve::Constant(1_000),
     };
 
-    vesting_client.update_minter(&vester1, &new_minter_info.address);
+    vesting_client.update_minter(&Address::generate(&env), &new_minter_info.address);
 }
 
 #[test]
