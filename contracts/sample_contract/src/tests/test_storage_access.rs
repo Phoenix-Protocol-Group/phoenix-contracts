@@ -29,6 +29,7 @@ fn test_get_from_storage() {
         }),
     };
 
-    sample_client.initialize(&vesting_balances);
+    sample_client.initialize(&vec![&env, vesting_balances]);
+    sample_client.query(&user);
     assert!(true)
 }
