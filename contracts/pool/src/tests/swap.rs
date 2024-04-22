@@ -1037,8 +1037,8 @@ fn test_should_fail_when_invalid_ask_asset_min_amount() {
     pool.swap(&user, &token1.address, &1, &Some(10), &Some(spread));
 }
 
-#[test_case(0; "when fee is 0%")]
-#[test_case(1_000; "when fee is 10%")]
+#[test_case(0; "when fee is 0 percent")]
+#[test_case(1_000; "when fee is 10 percent")]
 fn provide_liqudity_single_asset_poc_split_good_target(swap_fees: i64) {
     let env = Env::default();
     env.mock_all_auths();
