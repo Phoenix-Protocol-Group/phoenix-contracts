@@ -89,7 +89,7 @@ pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, Contract
 }
 
 pub fn remove_vesting(env: &Env, address: &Address) {
-    env.storage().persistent().remove(&address);
+    env.storage().instance().remove(&address);
 }
 
 // TODO: uncomment when needed
