@@ -380,7 +380,7 @@ fn provide_liqudity_single_asset_equal_with_fees() {
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
 
-    let swap_fees = 1_000i64; // 10% bps
+    let swap_fees = 1; // 10% bps
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
@@ -562,6 +562,7 @@ fn provide_liqudity_single_asset_one_third_with_fees() {
     token2.mint(&user1, &100_000);
     // providing liquidity with a single asset - token2
     pool.provide_liquidity(&user1, &None, &None, &Some(100_000), &None, &None);
+    soroban_sdk::testutils::arbitrary::std::dbg!("after2");
     // before swap : A(10_000_000), B(30_000_000)
     // since pool is 1/3 algorithm will split it around 15794/52734
     // swap 47_226k B for A = 17_548 (-10% fee = 15_793)

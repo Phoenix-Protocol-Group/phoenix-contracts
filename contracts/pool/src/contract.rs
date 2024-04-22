@@ -325,7 +325,6 @@ impl LiquidityPoolTrait for LiquidityPool {
                     b,
                     &config.token_b,
                 );
-                soroban_sdk::testutils::arbitrary::std::dbg!(b_for_swap, a_from_swap);
                 let actual_a_from_swap = do_swap(
                     env.clone(),
                     sender.clone(),
@@ -761,10 +760,6 @@ fn do_swap(
     );
 
     if let Some(ask_asset_min_amount) = ask_asset_min_amount {
-        soroban_sdk::testutils::arbitrary::std::dbg!(
-            ask_asset_min_amount,
-            compute_swap.return_amount
-        );
         if ask_asset_min_amount > compute_swap.return_amount {
             log!(
                 &env,
