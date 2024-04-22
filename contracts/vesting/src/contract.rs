@@ -253,15 +253,14 @@ impl VestingTrait for Vesting {
         }
 
         let remainder = get_vesting_total_supply(&env) - amount;
-        match remainder < 0 {
-            true => {
-                log!(
-                    &env,
-                    "Vesting: Burn: Critical error - total supply cannot be negative"
-                );
-                panic_with_error!(env, ContractError::Std);
-            }
-            false => update_vesting_total_supply(&env, remainder),
+        if remainder >= 0 {
+            update_vesting_total_supply(&env, remainder);
+        } else {
+            log!(
+                &env,
+                "Vesting: Burn: Critical error - total supply cannot be negative"
+            );
+            panic_with_error!(env, ContractError::Std);
         };
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
