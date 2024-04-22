@@ -1037,8 +1037,9 @@ fn test_should_fail_when_invalid_ask_asset_min_amount() {
     pool.swap(&user, &token1.address, &1, &Some(10), &Some(spread));
 }
 
-#[test]
-fn provide_liqudity_single_asset_no_fees_poc_split_good_target() {
+#[test_case(0; "when fee is 0%")]
+#[test_case(1_000; "when fee is 10%")]
+fn provide_liqudity_single_asset_poc_split_good_target(swap_fees: i64) {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -1055,7 +1056,6 @@ fn provide_liqudity_single_asset_no_fees_poc_split_good_target() {
     let user1 = Address::generate(&env);
     let user2 = Address::generate(&env);
 
-    let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
