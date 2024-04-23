@@ -13,7 +13,6 @@ Params:
 - `vesting_token`: `VestingTokenInfo` Struct representing relevant informatio to the token that will be vested.
 - `vesting_balances`: `Vec<VestingBalance>` vector of structs that holds the address, balance and curve of the initial vesting balances.
 - `minter_info`: `Option<MinterInfo>` address and capacity (curve) for the minter.
-- `allowed_vesters`: `Option<Vec<Address>>` vector of addresses that are allowed to vest tokens.
 - `max_vesting_complexity`: `u32` maximum allowed complexity of the vesting curve.
 
 Return type:
@@ -28,7 +27,7 @@ Initializes the vesting contract with the given parameters.
 
 Params:
 - `from`: `Address` of the sender.
-- 'to': `Address` of the receiver.
+- `to`: `Address` of the receiver.
 - `amount`: `i128` amount of tokens to transfer.
 
 Return type:
@@ -36,22 +35,6 @@ Return type:
 
 Description:
 Transfers the given amount of tokens from the sender to the receiver obeying the vesting rules.
-
-<hr>
-
-`transfer_vesting`
-
-Params:
-- `from`: `Address` of the sender.
-- 'to': `Address` of the receiver.
-- `amount`: `i128` amount of tokens to transfer.
-- `curve`: `Curve` curve of the transferred vesting.
-
-Return type:
-`Result<(), ContractError>`
-
-Description:
-Transfers the given amount of tokens and vesting curve from the sender to the receiver by combining the old curve with the new one.
 
 <hr>
 
@@ -102,42 +85,13 @@ Updates the minter address.
 
 Params:
 - `sender`: `Address` of the sender.
-- `new_capacity`: `Curve` new capacity of the minter.
-- `remove_old_capacity`: `bool` flag that decided whether to remove the old capacity completely or combine it with the new one.
+- `new_capacity`: `u128` new capacity of the minter.
 
 Return type:
 Void
 
 Description:
-Updates the minter capacity.
-
-<hr>
-
-`add_to_whitelist`
-
-Params:
-- `sender`: `Address` of the sender.
-- `to_add`: `Vec<Address>` vector of addresses to add to the whitelist.
-
-Return type:
-Void
-
-Description:
-Adds the given addresses to the whitelist of allowed vesters.
-
-<hr>
-
-`remove_from_whitelist`
-
-Params:
-- `sender`: `Address` of the sender.
-- `to_remove`: `Address` address to remove from the whitelist.
-
-Return type:
-Void
-
-Description:
-Removes the given address from the whitelist of allowed vesters.
+Updates the minter capacity by completely replacing it.
 
 <hr>
 
@@ -156,29 +110,16 @@ Queries the balance of the given account.
 
 <hr>
 
-`query_vesting`
+`query_distribution_info`
 
 Params:
 - `address`: `Address` of the account we query
 
 Return type:
-`Result<Curve, ContractError>` curve of the account.
+`Result<DistributionInfo, ContractError>` curve of the account.
 
 Description:
-Queries the vesting curve of the given account.
-
-<hr>
-
-`query_vesting_whitelist`
-
-Params:
-None
-
-Return type:
-`Vec<Address>` vector of addresses that are allowed to vest tokens.
-
-Description:
-Queries the whitelist of allowed vesters.
+Queries the distribution info (Curve) of the given account.
 
 <hr>
 
