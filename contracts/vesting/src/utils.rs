@@ -16,7 +16,8 @@ pub fn verify_vesting(
     token_client: &token_contract::Client,
 ) -> Result<(), ContractError> {
     let vesting_amount = get_vesting(env, sender)?
-        .curve
+        .distribution_info
+        .get_curve()
         .value(env.ledger().timestamp()) as i128;
 
     if vesting_amount <= 0 {
@@ -49,9 +50,10 @@ pub fn create_vesting_accounts(
     let mut total_supply = 0;
 
     vesting_accounts.into_iter().for_each(|vb| {
-        assert_schedule_vests_amount(env, &vb.curve, vb.balance).expect("Invalid curve and amount");
+        assert_schedule_vests_amount(env, &vb.distribution_info.get_curve(), vb.balance)
+            .expect("Invalid curve and amount");
 
-        if vesting_complexity <= vb.curve.size() {
+        if vesting_complexity <= vb.distribution_info.get_curve().size() {
             log!(
                 &env,
                 "Vesting: Create vesting account: Invalid curve complexity for {}",
@@ -65,7 +67,7 @@ pub fn create_vesting_accounts(
             &vb.address,
             &VestingInfo {
                 amount: vb.balance,
-                curve: vb.curve,
+                distribution_info: vb.distribution_info,
             },
         );
 
@@ -125,6 +127,8 @@ mod test {
     use soroban_sdk::testutils::Address as _;
     use soroban_sdk::vec;
 
+    use crate::storage::DistributionInfo;
+
     use super::*;
 
     #[test]
@@ -139,32 +143,32 @@ mod test {
             VestingBalance {
                 address: address1.clone(),
                 balance: 100,
-                curve: Curve::SaturatingLinear(SaturatingLinear {
-                    min_x: 15,
-                    min_y: 120,
-                    max_x: 60,
-                    max_y: 0,
-                }),
+                distribution_info: DistributionInfo {
+                    start_timestamp: 15,
+                    min_value_at_start: 120,
+                    end_timestamp: 60,
+                    max_value_at_end: 0,
+                },
             },
             VestingBalance {
                 address: address2.clone(),
                 balance: 200,
-                curve: Curve::SaturatingLinear(SaturatingLinear {
-                    min_x: 15,
-                    min_y: 120,
-                    max_x: 60,
-                    max_y: 0,
-                }),
+                distribution_info: DistributionInfo {
+                    start_timestamp: 15,
+                    min_value_at_start: 120,
+                    end_timestamp: 60,
+                    max_value_at_end: 0,
+                },
             },
             VestingBalance {
                 address: address3.clone(),
                 balance: 300,
-                curve: Curve::SaturatingLinear(SaturatingLinear {
-                    min_x: 15,
-                    min_y: 120,
-                    max_x: 60,
-                    max_y: 0,
-                }),
+                distribution_info: DistributionInfo {
+                    start_timestamp: 15,
+                    min_value_at_start: 120,
+                    end_timestamp: 60,
+                    max_value_at_end: 0,
+                },
             },
         ];
 
@@ -183,32 +187,32 @@ mod test {
             VestingBalance {
                 address: address1.clone(),
                 balance: 100,
-                curve: Curve::SaturatingLinear(SaturatingLinear {
-                    min_x: 15,
-                    min_y: 120,
-                    max_x: 60,
-                    max_y: 0,
-                }),
+                distribution_info: DistributionInfo {
+                    start_timestamp: 15,
+                    min_value_at_start: 120,
+                    end_timestamp: 60,
+                    max_value_at_end: 0,
+                },
             },
             VestingBalance {
                 address: address2.clone(),
                 balance: 200,
-                curve: Curve::SaturatingLinear(SaturatingLinear {
-                    min_x: 15,
-                    min_y: 120,
-                    max_x: 60,
-                    max_y: 0,
-                }),
+                distribution_info: DistributionInfo {
+                    start_timestamp: 15,
+                    min_value_at_start: 120,
+                    end_timestamp: 60,
+                    max_value_at_end: 0,
+                },
             },
             VestingBalance {
                 address: address1.clone(),
                 balance: 300,
-                curve: Curve::SaturatingLinear(SaturatingLinear {
-                    min_x: 15,
-                    min_y: 120,
-                    max_x: 60,
-                    max_y: 0,
-                }),
+                distribution_info: DistributionInfo {
+                    start_timestamp: 15,
+                    min_value_at_start: 120,
+                    end_timestamp: 60,
+                    max_value_at_end: 0,
+                },
             },
         ];
 

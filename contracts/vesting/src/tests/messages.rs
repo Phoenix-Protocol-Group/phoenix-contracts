@@ -1,7 +1,6 @@
-use curve::{Curve, SaturatingLinear};
 use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
-use crate::storage::{MinterInfo, VestingBalance, VestingTokenInfo};
+use crate::storage::{DistributionInfo, MinterInfo, VestingBalance, VestingTokenInfo};
 
 use super::setup::{deploy_token_contract, instantiate_vesting_client};
 
@@ -29,12 +28,12 @@ fn burn_works() {
         VestingBalance {
             address: vester1.clone(),
             balance: 1_000,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
@@ -74,12 +73,12 @@ fn burn_should_panic_when_invalid_amount() {
         VestingBalance {
             address: vester1.clone(),
             balance: 1_000,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
@@ -114,12 +113,12 @@ fn burn_should_panic_when_total_supply_becomes_negative() {
         VestingBalance {
             address: vester1.clone(),
             balance: 500,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
     let vesting_client = instantiate_vesting_client(&env);
@@ -151,18 +150,18 @@ fn mint_works() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -208,18 +207,18 @@ fn mint_should_panic_when_invalid_amount() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -259,18 +258,18 @@ fn mint_should_panic_when_not_authorized_to_mint() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -312,18 +311,18 @@ fn mint_should_panic_when_supply_overflow() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -363,18 +362,18 @@ fn mint_should_panic_when_mint_over_the_cap() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -413,18 +412,18 @@ fn update_minter_works_correctly() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -440,7 +439,7 @@ fn update_minter_works_correctly() {
 
     let new_minter_info = MinterInfo {
         address: new_minter.clone(),
-        capacity: Curve::Constant(1_000),
+        mint_cap: 1_000,
     };
 
     vesting_client.update_minter(&vester1, &new_minter_info.address);
@@ -476,18 +475,18 @@ fn update_minter_fails_when_not_authorized() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -501,7 +500,7 @@ fn update_minter_fails_when_not_authorized() {
 
     let new_minter_info = MinterInfo {
         address: new_minter.clone(),
-        capacity: Curve::Constant(1_000),
+        mint_cap: 1_000,
     };
 
     vesting_client.update_minter(&Address::generate(&env), &new_minter_info.address);
@@ -531,18 +530,18 @@ fn test_should_update_minter_capacity_when_replacing_old_capacity() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -554,10 +553,10 @@ fn test_should_update_minter_capacity_when_replacing_old_capacity() {
         &10u32,
     );
 
-    let new_capacity = Curve::Constant(1_000);
-    vesting_client.update_minter_capacity(&admin, &new_capacity, &true);
+    let new_minter_capacity = 1_000;
+    vesting_client.update_minter_capacity(&admin, &new_minter_capacity);
 
-    assert_eq!(vesting_client.query_minter().capacity, new_capacity);
+    assert_eq!(vesting_client.query_minter().mint_cap, new_minter_capacity);
 }
 
 #[test]
@@ -584,18 +583,18 @@ fn test_should_update_minter_capacity_when_combining_old_capacity() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -607,13 +606,10 @@ fn test_should_update_minter_capacity_when_combining_old_capacity() {
         &10u32,
     );
 
-    let new_capacity = Curve::Constant(1_000);
-    vesting_client.update_minter_capacity(&admin, &new_capacity, &false);
+    let new_capacity = 1_000;
+    vesting_client.update_minter_capacity(&admin, &new_capacity);
 
-    assert_eq!(
-        vesting_client.query_minter().capacity,
-        Curve::Constant(1_500)
-    );
+    assert_eq!(vesting_client.query_minter().mint_cap, 1_000);
 }
 
 #[test]
@@ -643,18 +639,18 @@ fn test_should_panic_when_updating_minter_capacity_without_auth() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: vester1.clone(),
-        capacity: Curve::Constant(500),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -666,5 +662,5 @@ fn test_should_panic_when_updating_minter_capacity_without_auth() {
         &10u32,
     );
 
-    vesting_client.update_minter_capacity(&Address::generate(&env), &Curve::Constant(1_000), &true);
+    vesting_client.update_minter_capacity(&Address::generate(&env), &1_000);
 }

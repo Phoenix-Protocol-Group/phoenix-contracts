@@ -1,11 +1,10 @@
-use curve::{Curve, SaturatingLinear};
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
     vec, Address, Env, String,
 };
 
 use crate::{
-    storage::{MinterInfo, VestingBalance, VestingTokenInfo},
+    storage::{DistributionInfo, MinterInfo, VestingBalance, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,
 };
 
@@ -30,22 +29,22 @@ fn instantiate_contract_succesffully() {
         VestingBalance {
             address: vester1,
             balance: 240,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
         VestingBalance {
             address: vester2,
             balance: 240,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 30,
-                min_y: 240,
-                max_x: 120,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 30,
+                min_value_at_start: 240,
+                end_timestamp: 120,
+                max_value_at_end: 0,
+            },
         },
     ];
 
@@ -76,18 +75,18 @@ fn instantiate_contract_succesffully_with_constant_curve_minter_info() {
         VestingBalance {
             address: vester1,
             balance: 240,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        capacity: Curve::Constant(511223344),
+        mint_cap: 511223344,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -145,23 +144,18 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
         VestingBalance {
             address: vester1,
             balance: 1_000,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        capacity: Curve::SaturatingLinear(SaturatingLinear {
-            min_x: 30,
-            min_y: 2,
-            max_x: 120,
-            max_y: 240,
-        }),
+        mint_cap: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);

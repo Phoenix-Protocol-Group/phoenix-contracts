@@ -1,8 +1,7 @@
-use curve::{Curve, SaturatingLinear};
 use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 use crate::{
-    storage::{VestingBalance, VestingTokenInfo},
+    storage::{DistributionInfo, VestingBalance, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,
 };
 
@@ -33,12 +32,12 @@ fn transfer_tokens() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 
@@ -75,12 +74,12 @@ fn transfer_tokens_should_fail_invalid_amount() {
         VestingBalance {
             address: vester1.clone(),
             balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                min_value_at_start: 120,
+                end_timestamp: 60,
+                max_value_at_end: 0,
+            },
         },
     ];
 

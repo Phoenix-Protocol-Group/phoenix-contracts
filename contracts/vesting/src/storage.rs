@@ -1,4 +1,4 @@
-use curve::Curve;
+use curve::{Curve, SaturatingLinear};
 use soroban_sdk::{
     contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
 };
@@ -39,21 +39,47 @@ pub struct VestingTokenInfo {
 pub struct VestingBalance {
     pub address: Address,
     pub balance: i128,
-    pub curve: Curve,
+    pub distribution_info: DistributionInfo,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MinterInfo {
     pub address: Address,
-    pub capacity: Curve,
+    pub mint_cap: u128, // use this
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DistributionInfo {
+    pub start_timestamp: u64,
+    pub min_value_at_start: u128,
+    pub end_timestamp: u64,
+    pub max_value_at_end: u128,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingInfo {
     pub amount: i128,
-    pub curve: Curve,
+    pub distribution_info: DistributionInfo,
+}
+
+impl MinterInfo {
+    pub fn get_curve(&self) -> Curve {
+        Curve::Constant(self.mint_cap)
+    }
+}
+
+impl DistributionInfo {
+    pub fn get_curve(&self) -> Curve {
+        Curve::SaturatingLinear(SaturatingLinear {
+            min_x: self.start_timestamp,
+            min_y: self.min_value_at_start,
+            max_x: self.end_timestamp,
+            max_y: self.max_value_at_end,
+        })
+    }
 }
 
 pub fn save_admin(env: &Env, admin: &Address) {

@@ -2,7 +2,9 @@ use soroban_sdk::{contract, contractimpl, contractmeta, log, panic_with_error, A
 
 use curve::Curve;
 
-use crate::storage::{get_admin, get_token_info, save_max_vesting_complexity, save_token_info};
+use crate::storage::{
+    get_admin, get_token_info, save_max_vesting_complexity, save_token_info, DistributionInfo,
+};
 use crate::utils::{create_vesting_accounts, verify_vesting};
 use crate::{
     error::ContractError,
@@ -72,16 +74,14 @@ pub trait VestingTrait {
 
     fn update_minter(env: Env, sender: Address, new_minter: Address);
 
-    fn update_minter_capacity(
-        env: Env,
-        sender: Address,
-        new_capacity: Curve,
-        remove_old_capacity: bool,
-    );
+    fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128);
 
     fn query_balance(env: Env, address: Address) -> i128;
 
-    fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError>;
+    fn query_distribution_info(
+        env: Env,
+        address: Address,
+    ) -> Result<DistributionInfo, ContractError>;
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
@@ -112,7 +112,9 @@ impl VestingTrait for Vesting {
 
         let total_supply = create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
         if let Some(mi) = minter_info {
-            let capacity = mi.capacity.value(env.ledger().timestamp()) as i128;
+            let input_curve = Curve::Constant(mi.mint_cap);
+
+            let capacity = input_curve.value(env.ledger().timestamp()) as i128;
             if total_supply > capacity {
                 log!(&env, "Vesting: Initialize: total supply over the capacity");
                 panic_with_error!(env, ContractError::SupplyOverTheCap);
@@ -222,7 +224,7 @@ impl VestingTrait for Vesting {
 
         update_vesting_total_supply(&env, updated_total_supply);
 
-        let limit = get_minter(&env).capacity.value(env.ledger().timestamp());
+        let limit = get_minter(&env).get_curve().value(env.ledger().timestamp());
         if updated_total_supply >= limit as i128 {
             log!(&env, "Vesting: Mint: total supply over the capacity");
             panic_with_error!(env, ContractError::SupplyOverTheCap);
@@ -432,7 +434,7 @@ impl VestingTrait for Vesting {
             &env,
             &MinterInfo {
                 address: new_minter.clone(),
-                capacity: get_minter(&env).capacity,
+                mint_cap: get_minter(&env).mint_cap,
             },
         );
 
@@ -440,12 +442,7 @@ impl VestingTrait for Vesting {
             .publish(("Update minter", "Updated minter to: "), new_minter);
     }
 
-    fn update_minter_capacity(
-        env: Env,
-        sender: Address,
-        new_capacity: Curve,
-        remove_old_capacity: bool,
-    ) {
+    fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128) {
         if sender != get_admin(&env) {
             log!(
                 &env,
@@ -454,28 +451,13 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        match remove_old_capacity {
-            true => {
-                save_minter(
-                    &env,
-                    &MinterInfo {
-                        address: get_minter(&env).address,
-                        capacity: new_capacity.clone(),
-                    },
-                );
-            }
-            false => {
-                // TODO: we will eventually need to verify the new minter capacity curve complexity at some point
-                let new_curve_capacity = get_minter(&env).capacity.combine(&env, &new_capacity);
-                save_minter(
-                    &env,
-                    &MinterInfo {
-                        address: get_minter(&env).address,
-                        capacity: new_curve_capacity,
-                    },
-                );
-            }
-        }
+        save_minter(
+            &env,
+            &MinterInfo {
+                address: get_minter(&env).address,
+                mint_cap: new_capacity,
+            },
+        );
 
         env.events().publish(
             ("Update minter capacity", "Updated minter capacity to: "),
@@ -487,8 +469,11 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
-    fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError> {
-        Ok(get_vesting(&env, &address)?.curve)
+    fn query_distribution_info(
+        env: Env,
+        address: Address,
+    ) -> Result<DistributionInfo, ContractError> {
+        Ok(get_vesting(&env, &address)?.distribution_info)
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {
