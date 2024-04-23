@@ -1,7 +1,6 @@
 use curve::Curve;
 use soroban_sdk::{
     contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
-    Vec,
 };
 
 use crate::error::ContractError;
@@ -131,25 +130,6 @@ pub fn update_vesting_total_supply(env: &Env, amount: i128) {
     save_token_info(env, &token_info);
 }
 
-pub fn save_whitelist(env: &Env, whitelist: &Vec<Address>) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::Whitelist, whitelist);
-}
-
-pub fn get_whitelist(env: &Env) -> Vec<Address> {
-    env.storage()
-        .persistent()
-        .get(&DataKey::Whitelist)
-        .unwrap_or_else(|| {
-            log!(
-                &env,
-                "Vesting: Get whitelist: Critical error - No whitelist found"
-            );
-            panic_with_error!(env, ContractError::NoWhitelistFound);
-        })
-}
-
 pub fn save_token_info(env: &Env, token_info: &VestingTokenInfo) {
     env.storage()
         .persistent()
@@ -173,17 +153,4 @@ pub fn save_max_vesting_complexity(env: &Env, max_vesting_complexity: &u32) {
     env.storage()
         .persistent()
         .set(&DataKey::MaxVestingComplexity, max_vesting_complexity);
-}
-
-pub fn get_max_vesting_complexity(env: &Env) -> u32 {
-    env.storage()
-        .persistent()
-        .get(&DataKey::MaxVestingComplexity)
-        .unwrap_or_else(|| {
-            log!(
-                &env,
-                "Vesting: Get max vesting complexity: Critical error - No max vesting complexity value found"
-            );
-            panic_with_error!(env, ContractError::NoVestingComplexityValueFound);
-        })
 }

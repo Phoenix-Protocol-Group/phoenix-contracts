@@ -39,14 +39,7 @@ fn burn_works() {
     ];
 
     let vesting_client = instantiate_vesting_client(&env);
-    vesting_client.initialize(
-        &admin,
-        &vesting_token,
-        &vesting_balances,
-        &None,
-        &None,
-        &10u32,
-    );
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     assert_eq!(vesting_client.query_vesting_total_supply(), 1_000);
 
@@ -91,14 +84,7 @@ fn burn_should_panic_when_invalid_amount() {
     ];
 
     let vesting_client = instantiate_vesting_client(&env);
-    vesting_client.initialize(
-        &admin,
-        &vesting_token,
-        &vesting_balances,
-        &None,
-        &None,
-        &10u32,
-    );
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     vesting_client.burn(&vester1, &0);
 }
@@ -137,14 +123,7 @@ fn burn_should_panic_when_total_supply_becomes_negative() {
         },
     ];
     let vesting_client = instantiate_vesting_client(&env);
-    vesting_client.initialize(
-        &admin,
-        &vesting_token,
-        &vesting_balances,
-        &None,
-        &None,
-        &10u32,
-    );
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
     vesting_client.burn(&vester1, &600);
 }
 
@@ -192,7 +171,6 @@ fn mint_works() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info),
-        &None,
         &10u32,
     );
 
@@ -250,7 +228,6 @@ fn mint_should_panic_when_invalid_amount() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info),
-        &None,
         &10u32,
     );
 
@@ -302,7 +279,6 @@ fn mint_should_panic_when_not_authorized_to_mint() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info),
-        &None,
         &10u32,
     );
 
@@ -356,7 +332,6 @@ fn mint_should_panic_when_supply_overflow() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info),
-        &None,
         &10u32,
     );
 
@@ -408,7 +383,6 @@ fn mint_should_panic_when_mint_over_the_cap() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info),
-        &None,
         &10u32,
     );
 
@@ -459,7 +433,6 @@ fn update_minter_works_correctly() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info.clone()),
-        &None,
         &10u32,
     );
 
@@ -523,7 +496,6 @@ fn update_minter_fails_when_not_authorized() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info.clone()),
-        &None,
         &10u32,
     );
 
@@ -533,308 +505,6 @@ fn update_minter_fails_when_not_authorized() {
     };
 
     vesting_client.update_minter(&Address::generate(&env), &new_minter_info.address);
-}
-
-#[test]
-fn test_add_to_whitelist_should_work() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
-    let whitelisted1 = Address::generate(&env);
-    let whitelisted2 = Address::generate(&env);
-
-    let token = deploy_token_contract(&env, &admin);
-
-    let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
-        decimals: 6,
-        address: token.address.clone(),
-        total_supply: 0,
-    };
-
-    let vesting_balances = vec![
-        &env,
-        VestingBalance {
-            address: vester1.clone(),
-            balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
-        },
-    ];
-
-    let vesting_client = instantiate_vesting_client(&env);
-    vesting_client.initialize(
-        &admin,
-        &vesting_token,
-        &vesting_balances,
-        &None,
-        &None,
-        &10u32,
-    );
-
-    // no one is whitelisted initially, so we end up with just the admin inside the list
-    assert_eq!(
-        vesting_client.query_vesting_whitelist(),
-        vec![&env, admin.clone()]
-    );
-
-    vesting_client.add_to_whitelist(
-        &admin,
-        &vec![
-            &env,
-            vester1.clone(),
-            whitelisted1.clone(),
-            whitelisted2.clone(),
-        ],
-    );
-
-    assert_eq!(
-        vesting_client.query_vesting_whitelist(),
-        vec![&env, admin, vester1, whitelisted1, whitelisted2]
-    );
-}
-
-#[test]
-#[should_panic(expected = "Vesting: Add to whitelist: Not authorized to add to whitelist")]
-fn test_add_to_whitelist_should_fail_when_unauthorized() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
-
-    let token = deploy_token_contract(&env, &admin);
-
-    let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
-        decimals: 6,
-        address: token.address.clone(),
-        total_supply: 0,
-    };
-
-    let vesting_balances = vec![
-        &env,
-        VestingBalance {
-            address: vester1.clone(),
-            balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
-        },
-    ];
-
-    let vesting_client = instantiate_vesting_client(&env);
-    vesting_client.initialize(
-        &admin,
-        &vesting_token,
-        &vesting_balances,
-        &None,
-        &None,
-        &10u32,
-    );
-
-    // no one is whitelisted initially, so we end up with just the admin inside the list
-    assert_eq!(
-        vesting_client.query_vesting_whitelist(),
-        vec![&env, admin.clone()]
-    );
-
-    vesting_client.add_to_whitelist(&Address::generate(&env), &vec![&env, vester1]);
-}
-
-#[test]
-fn test_remove_from_whitelist_should_work() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
-    let transit_account = Address::generate(&env);
-
-    let token = deploy_token_contract(&env, &admin);
-
-    let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
-        decimals: 6,
-        address: token.address.clone(),
-        total_supply: 0,
-    };
-
-    let vesting_balances = vec![
-        &env,
-        VestingBalance {
-            address: vester1.clone(),
-            balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
-        },
-    ];
-
-    let vesting_client = instantiate_vesting_client(&env);
-    vesting_client.initialize(
-        &admin,
-        &vesting_token,
-        &vesting_balances,
-        &None,
-        &None,
-        &10u32,
-    );
-
-    // no one is whitelisted initially, so we end up with just the admin inside the list
-    assert_eq!(
-        vesting_client.query_vesting_whitelist(),
-        vec![&env, admin.clone()]
-    );
-
-    vesting_client.add_to_whitelist(
-        &admin,
-        &vec![&env, vester1.clone(), transit_account.clone()],
-    );
-
-    assert_eq!(
-        vesting_client.query_vesting_whitelist(),
-        vec![
-            &env,
-            admin.clone(),
-            vester1.clone(),
-            transit_account.clone()
-        ]
-    );
-
-    vesting_client.remove_from_whitelist(&admin, &transit_account);
-
-    assert_eq!(
-        vesting_client.query_vesting_whitelist(),
-        vec![&env, admin, vester1]
-    );
-}
-
-#[test]
-#[should_panic(
-    expected = "Vesting: Remove from whitelist: Not authorized to remove from whitelist"
-)]
-fn test_should_remove_from_whitelist_should_fail_when_unauthorized() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
-
-    let token = deploy_token_contract(&env, &admin);
-
-    let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
-        decimals: 6,
-        address: token.address.clone(),
-        total_supply: 0,
-    };
-
-    let vesting_balances = vec![
-        &env,
-        VestingBalance {
-            address: vester1.clone(),
-            balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
-        },
-    ];
-
-    let vesting_client = instantiate_vesting_client(&env);
-    vesting_client.initialize(
-        &admin,
-        &vesting_token,
-        &vesting_balances,
-        &None,
-        &None,
-        &10u32,
-    );
-
-    // no one is whitelisted initially, so we end up with just the admin inside the list
-    assert_eq!(
-        vesting_client.query_vesting_whitelist(),
-        vec![&env, admin.clone()]
-    );
-
-    vesting_client.add_to_whitelist(&admin, &vec![&env, vester1.clone()]);
-
-    assert_eq!(
-        vesting_client.query_vesting_whitelist(),
-        vec![&env, admin.clone(), vester1.clone()]
-    );
-
-    vesting_client.remove_from_whitelist(&Address::generate(&env), &admin);
-}
-
-#[test]
-#[should_panic(expected = "Vesting: Add to whitelist: No addresses to add")]
-fn test_should_panic_when_no_addresses_to_add() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
-
-    let token = deploy_token_contract(&env, &admin);
-
-    let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
-        decimals: 6,
-        address: token.address.clone(),
-        total_supply: 0,
-    };
-
-    let vesting_balances = vec![
-        &env,
-        VestingBalance {
-            address: vester1.clone(),
-            balance: 200,
-            curve: Curve::SaturatingLinear(SaturatingLinear {
-                min_x: 15,
-                min_y: 120,
-                max_x: 60,
-                max_y: 0,
-            }),
-        },
-    ];
-
-    let vesting_client = instantiate_vesting_client(&env);
-    vesting_client.initialize(
-        &admin,
-        &vesting_token,
-        &vesting_balances,
-        &None,
-        &None,
-        &10u32,
-    );
-
-    vesting_client.add_to_whitelist(&admin, &vec![&env]);
 }
 
 #[test]
@@ -881,7 +551,6 @@ fn test_should_update_minter_capacity_when_replacing_old_capacity() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info.clone()),
-        &None,
         &10u32,
     );
 
@@ -935,7 +604,6 @@ fn test_should_update_minter_capacity_when_combining_old_capacity() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info.clone()),
-        &None,
         &10u32,
     );
 
@@ -995,7 +663,6 @@ fn test_should_panic_when_updating_minter_capacity_without_auth() {
         &vesting_token,
         &vesting_balances,
         &Some(minter_info.clone()),
-        &None,
         &10u32,
     );
 

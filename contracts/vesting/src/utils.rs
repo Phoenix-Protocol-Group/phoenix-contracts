@@ -4,8 +4,7 @@ use soroban_sdk::{log, panic_with_error, Address, Env, Vec};
 use crate::{
     error::ContractError,
     storage::{
-        get_max_vesting_complexity, get_vesting, remove_vesting, save_balance, save_vesting,
-        VestingBalance, VestingInfo,
+        get_vesting, remove_vesting, save_balance, save_vesting, VestingBalance, VestingInfo,
     },
     token_contract,
 };
@@ -120,44 +119,6 @@ fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) -> Result<(), Con
     }
 }
 
-pub fn update_vesting(
-    env: &Env,
-    to_address: &Address,
-    amount: i128,
-    new_curve: Curve,
-) -> Result<(), ContractError> {
-    let max_complexity = get_max_vesting_complexity(env);
-    env.storage()
-        .persistent()
-        .update(&to_address, |current_value: Option<Curve>| {
-            let new_curve_schedule = current_value
-                .map(|current_value| current_value.combine(env, &new_curve))
-                .unwrap_or(new_curve);
-
-            new_curve_schedule
-                .validate_complexity(max_complexity)
-                .unwrap_or_else(|_| {
-                    log!(
-                        &env,
-                        "Vesting: Update Vesting: new vesting complexity invalid"
-                    );
-                    panic_with_error!(env, ContractError::VestingComplexityTooHigh);
-                });
-
-            save_vesting(
-                env,
-                to_address,
-                &VestingInfo {
-                    amount,
-                    curve: new_curve_schedule.clone(),
-                },
-            );
-
-            new_curve_schedule
-        });
-
-    Ok(())
-}
 #[cfg(test)]
 mod test {
     use curve::SaturatingLinear;

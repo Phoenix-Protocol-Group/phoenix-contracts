@@ -1,16 +1,9 @@
-use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, Vec,
-};
+use soroban_sdk::{contract, contractimpl, contractmeta, log, panic_with_error, Address, Env, Vec};
 
 use curve::Curve;
 
-use crate::storage::{
-    get_admin, get_token_info, get_whitelist, save_max_vesting_complexity, save_token_info,
-    save_whitelist,
-};
-use crate::utils::{
-    assert_schedule_vests_amount, create_vesting_accounts, update_vesting, verify_vesting,
-};
+use crate::storage::{get_admin, get_token_info, save_max_vesting_complexity, save_token_info};
+use crate::utils::{create_vesting_accounts, verify_vesting};
 use crate::{
     error::ContractError,
     storage::{
@@ -35,7 +28,6 @@ pub trait VestingTrait {
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
         minter_info: Option<MinterInfo>,
-        allowed_vesters: Option<Vec<Address>>,
         max_vesting_complexity: u32,
     ) -> Result<(), ContractError>;
 
@@ -44,14 +36,6 @@ pub trait VestingTrait {
         from: Address,
         to: Address,
         amount: i128,
-    ) -> Result<(), ContractError>;
-
-    fn transfer_vesting(
-        env: Env,
-        from: Address,
-        to: Address,
-        amount: i128,
-        curve: Curve,
     ) -> Result<(), ContractError>;
 
     fn burn(env: Env, sender: Address, amount: i128) -> Result<(), ContractError>;
@@ -95,15 +79,9 @@ pub trait VestingTrait {
         remove_old_capacity: bool,
     );
 
-    fn add_to_whitelist(env: Env, sender: Address, to_add: Vec<Address>);
-
-    fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address);
-
     fn query_balance(env: Env, address: Address) -> i128;
 
     fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError>;
-
-    fn query_vesting_whitelist(env: Env) -> Vec<Address>;
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
@@ -120,15 +98,9 @@ impl VestingTrait for Vesting {
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
         minter_info: Option<MinterInfo>,
-        allowed_vesters: Option<Vec<Address>>,
         max_vesting_complexity: u32,
     ) -> Result<(), ContractError> {
         save_admin(&env, &admin);
-
-        let whitelisted_accounts = match allowed_vesters {
-            Some(whitelisted) => whitelisted,
-            None => vec![&env, admin.clone()],
-        };
 
         if vesting_balances.is_empty() {
             log!(
@@ -156,7 +128,6 @@ impl VestingTrait for Vesting {
             total_supply,
         };
 
-        save_whitelist(&env, &whitelisted_accounts);
         save_token_info(&env, &token_info);
         save_max_vesting_complexity(&env, &max_vesting_complexity);
 
@@ -188,55 +159,6 @@ impl VestingTrait for Vesting {
             (
                 "Transfer token",
                 "Transfering tokens between accounts: from: {}, to:{}, amount: {}",
-            ),
-            (from, to, amount),
-        );
-
-        Ok(())
-    }
-
-    fn transfer_vesting(
-        env: Env,
-        from: Address,
-        to: Address,
-        amount: i128,
-        curve: Curve,
-    ) -> Result<(), ContractError> {
-        from.require_auth();
-
-        let whitelist = get_whitelist(&env);
-        if !whitelist.contains(from.clone()) {
-            log!(
-                &env,
-                "Vesting: Transfer Vesting: Not authorized to transfer vesting"
-            );
-            panic_with_error!(env, ContractError::NotAuthorized);
-        }
-
-        if amount <= 0 {
-            log!(
-                &env,
-                "Vesting: Transfer Vesting: Transfer amount must be positive"
-            );
-            panic_with_error!(env, ContractError::InvalidTransferAmount);
-        }
-
-        assert_schedule_vests_amount(&env, &curve, amount)?;
-
-        // if not fully vested we update
-        if curve.value(env.ledger().timestamp()) != 0 {
-            update_vesting(&env, &to, amount, curve)?;
-        }
-
-        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
-
-        verify_vesting(&env, &from, amount, &token_client)?;
-        token_client.transfer(&from, &to, &amount);
-
-        env.events().publish(
-            (
-                "Transfer vesting",
-                "Transfering vesting between accounts: from: {}, to: {}, amount: {}",
             ),
             (from, to, amount),
         );
@@ -561,67 +483,12 @@ impl VestingTrait for Vesting {
         );
     }
 
-    fn add_to_whitelist(env: Env, sender: Address, to_add: Vec<Address>) {
-        let mut whitelist = get_whitelist(&env);
-        let admin = get_admin(&env);
-
-        if sender != admin {
-            log!(
-                &env,
-                "Vesting: Add to whitelist: Not authorized to add to whitelist"
-            );
-            panic_with_error!(env, ContractError::NotAuthorized);
-        }
-
-        if to_add.is_empty() {
-            log!(&env, "Vesting: Add to whitelist: No addresses to add");
-            panic_with_error!(env, ContractError::NoAddressesToAdd);
-        }
-
-        to_add.clone().into_iter().for_each(|a| {
-            whitelist.push_back(a.clone());
-        });
-
-        save_whitelist(&env, &whitelist);
-
-        env.events()
-            .publish(("Add to whitelist", "Added to whitelist: "), to_add);
-    }
-
-    fn remove_from_whitelist(env: Env, sender: Address, to_remove: Address) {
-        let mut whitelist = get_whitelist(&env);
-        let admin = get_admin(&env);
-
-        if sender != admin {
-            log!(
-                &env,
-                "Vesting: Remove from whitelist: Not authorized to remove from whitelist"
-            );
-            panic_with_error!(env, ContractError::NotAuthorized);
-        }
-
-        if let Some(index) = whitelist.first_index_of(&to_remove) {
-            whitelist.remove(index);
-        }
-
-        save_whitelist(&env, &whitelist);
-
-        env.events().publish(
-            ("Remove from whitelist", "Removed from whitelist: "),
-            to_remove,
-        );
-    }
-
     fn query_balance(env: Env, address: Address) -> i128 {
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
     fn query_vesting(env: Env, address: Address) -> Result<Curve, ContractError> {
         Ok(get_vesting(&env, &address)?.curve)
-    }
-
-    fn query_vesting_whitelist(env: Env) -> Vec<Address> {
-        get_whitelist(&env)
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {
