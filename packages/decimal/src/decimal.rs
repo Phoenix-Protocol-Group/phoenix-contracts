@@ -863,7 +863,7 @@ mod tests {
 
     #[test]
     fn decimal_abs_with_negative_number() {
-        let decimal = Decimal::new(128);
+        let decimal = Decimal::new(-128);
 
         assert_eq!(decimal.abs(), Decimal(128));
     }
@@ -922,5 +922,63 @@ mod tests {
         // 0.0789
         let value = Decimal::from_atomics(789, 4);
         assert_eq!(format!("{}", value), "0.0789");
+    }
+
+    #[test]
+    fn test_denominator() {
+        let decimal = Decimal::percent(123);
+        assert_eq!(decimal.denominator(), Decimal::DECIMAL_FRACTIONAL);
+    }
+
+    #[test]
+    fn test_atomics() {
+        let decimal = Decimal::percent(123);
+        assert_eq!(decimal.atomics(), 1230000000000000000);
+    }
+
+    #[test]
+    fn test_to_i128_with_precision() {
+        let decimal = Decimal::percent(124);
+        assert_eq!(decimal.to_i128_with_precision(1), 12);
+        assert_eq!(decimal.to_i128_with_precision(2), 124);
+    }
+
+    #[test]
+    fn test_multiply_ratio() {
+        let decimal = Decimal::percent(1);
+        let numerator = Decimal::new(2);
+        let denominator = Decimal::new(5);
+
+        // decimal is 10_000_000_000_000_000, atomics would be same
+        // numerator is 20_000_000_000_000_000, atomics would be same
+        // denominator is 50_000_000_000_000_000, amount would be same
+        // decimal * numerator = 200_000_000_000_000_000_000_000_000_000
+        // decimal from ratio
+        // numerator 200_000_000_000_000_000_000_000_000_000
+        // denominator = 50_000_000_000_000_000
+        // numerator * DECIMAL_FRACTIONAL / denominator is the result
+        assert_eq!(
+            decimal.multiply_ratio(numerator, denominator),
+            Decimal::new(4000000000000000000000000000000000)
+        );
+    }
+
+    #[test]
+    fn test_abs_difference() {
+        let a = Decimal::new(100);
+        let b = Decimal::new(200);
+
+        assert_eq!(a.abs_diff(b), Decimal::new(100));
+
+        let negative_a = Decimal::new(-100);
+        let negative_b = Decimal::new(-200);
+
+        assert_eq!(negative_a.abs_diff(negative_b), Decimal::new(100));
+    }
+
+    #[test]
+    #[should_panic(expected = "There must be at least one fractional digit")]
+    fn test_from_str_with_too_many_fractional_digits() {
+        let _ = Decimal::from_str("123.12345678901187245619827346");
     }
 }
