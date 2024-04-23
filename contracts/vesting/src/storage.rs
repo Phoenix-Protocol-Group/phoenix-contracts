@@ -46,16 +46,15 @@ pub struct VestingBalance {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MinterInfo {
     pub address: Address,
-    pub mint_cap: u128, // use this
+    pub mint_cap: u128,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DistributionInfo {
     pub start_timestamp: u64,
-    pub min_value_at_start: u128,
     pub end_timestamp: u64,
-    pub max_value_at_end: u128,
+    pub amount: u128,
 }
 
 #[contracttype]
@@ -75,9 +74,9 @@ impl DistributionInfo {
     pub fn get_curve(&self) -> Curve {
         Curve::SaturatingLinear(SaturatingLinear {
             min_x: self.start_timestamp,
-            min_y: self.min_value_at_start,
+            min_y: self.amount,
             max_x: self.end_timestamp,
-            max_y: self.max_value_at_end,
+            max_y: 0u128,
         })
     }
 }

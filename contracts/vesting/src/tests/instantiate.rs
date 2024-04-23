@@ -27,13 +27,12 @@ fn instantiate_contract_succesffully() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1,
+            address: vester1.clone(),
             balance: 240,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
         VestingBalance {
@@ -41,9 +40,8 @@ fn instantiate_contract_succesffully() {
             balance: 240,
             distribution_info: DistributionInfo {
                 start_timestamp: 30,
-                min_value_at_start: 240,
                 end_timestamp: 120,
-                max_value_at_end: 0,
+                amount: 240,
             },
         },
     ];
@@ -53,6 +51,10 @@ fn instantiate_contract_succesffully() {
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     assert_eq!(vesting_client.query_token_info(), vesting_token);
+    assert_eq!(
+        vesting_client.query_distribution_info(&vester1),
+        vesting_balances.get(0).unwrap().distribution_info
+    );
 }
 
 #[test]
@@ -77,9 +79,8 @@ fn instantiate_contract_succesffully_with_constant_curve_minter_info() {
             balance: 240,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -146,9 +147,8 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
             balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];

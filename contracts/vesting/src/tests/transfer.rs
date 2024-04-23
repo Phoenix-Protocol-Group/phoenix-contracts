@@ -34,9 +34,8 @@ fn transfer_tokens() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -76,9 +75,8 @@ fn transfer_tokens_should_fail_invalid_amount() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];

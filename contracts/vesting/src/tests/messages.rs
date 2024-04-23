@@ -30,9 +30,8 @@ fn burn_works() {
             balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -75,9 +74,8 @@ fn burn_should_panic_when_invalid_amount() {
             balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -115,9 +113,8 @@ fn burn_should_panic_when_total_supply_becomes_negative() {
             balance: 500,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -152,9 +149,8 @@ fn mint_works() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -209,9 +205,8 @@ fn mint_should_panic_when_invalid_amount() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -260,9 +255,8 @@ fn mint_should_panic_when_not_authorized_to_mint() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -313,9 +307,8 @@ fn mint_should_panic_when_supply_overflow() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -364,9 +357,8 @@ fn mint_should_panic_when_mint_over_the_cap() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -414,9 +406,8 @@ fn update_minter_works_correctly() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -477,9 +468,8 @@ fn update_minter_fails_when_not_authorized() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -532,9 +522,8 @@ fn test_should_update_minter_capacity_when_replacing_old_capacity() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -585,9 +574,8 @@ fn test_should_update_minter_capacity_when_combining_old_capacity() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
@@ -641,9 +629,8 @@ fn test_should_panic_when_updating_minter_capacity_without_auth() {
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
-                min_value_at_start: 120,
                 end_timestamp: 60,
-                max_value_at_end: 0,
+                amount: 120,
             },
         },
     ];
