@@ -15,6 +15,7 @@ pub fn verify_vesting(
     amount: i128,
     token_client: &token_contract::Client,
 ) -> Result<(), ContractError> {
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     let vesting_amount = get_vesting(env, sender)?
         .distribution_info
         .get_curve()
@@ -24,11 +25,20 @@ pub fn verify_vesting(
         remove_vesting(env, sender);
     }
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     let sender_balance = token_client.balance(sender);
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     let sender_remainder = sender_balance
         .checked_sub(amount)
         .ok_or(ContractError::NotEnoughBalance)?;
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    soroban_sdk::testutils::arbitrary::std::dbg!(
+        vesting_amount,
+        sender_remainder,
+        vesting_amount > sender_remainder
+    );
     if vesting_amount > sender_remainder {
         log!(
             &env,
@@ -45,10 +55,12 @@ pub fn create_vesting_accounts(
     vesting_complexity: u32,
     vesting_accounts: Vec<VestingBalance>,
 ) -> Result<i128, ContractError> {
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     validate_accounts(env, vesting_accounts.clone())?;
 
     let mut total_supply = 0;
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     vesting_accounts.into_iter().for_each(|vb| {
         assert_schedule_vests_amount(env, &vb.distribution_info.get_curve(), vb.balance)
             .expect("Invalid curve and amount");
@@ -62,6 +74,7 @@ pub fn create_vesting_accounts(
             panic_with_error!(env, ContractError::VestingComplexityTooHigh);
         }
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         save_vesting(
             env,
             &vb.address,
@@ -71,10 +84,13 @@ pub fn create_vesting_accounts(
             },
         );
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         save_balance(env, &vb.address, &vb.balance);
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         total_supply += vb.balance;
     });
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     Ok(total_supply)
 }
 
@@ -127,6 +143,7 @@ mod test {
     use soroban_sdk::testutils::Address as _;
     use soroban_sdk::vec;
 
+    use crate::contract::Vesting;
     use crate::storage::DistributionInfo;
 
     use super::*;
@@ -257,5 +274,45 @@ mod test {
         });
 
         assert_schedule_vests_amount(&env, &curve, AMOUNT).unwrap();
+    }
+
+    #[test]
+    fn some_test() {
+        let env = Env::default();
+
+        let vesting_id = env.register_contract(&None, Vesting);
+        env.as_contract(&vesting_id, || {
+            let sender = Address::generate(&env);
+            let amount = 100;
+            let token_addr = Address::generate(&env);
+
+            soroban_sdk::testutils::arbitrary::std::dbg!();
+            let token_client: token_contract::Client<'_> =
+                token_contract::Client::new(&env, &token_addr);
+            soroban_sdk::testutils::arbitrary::std::dbg!();
+
+            create_vesting_accounts(
+                &env,
+                10,
+                vec![
+                    &env,
+                    VestingBalance {
+                        address: sender.clone(),
+                        balance: 200,
+                        distribution_info: DistributionInfo {
+                            start_timestamp: 15,
+                            end_timestamp: 60,
+                            amount: 120,
+                        },
+                    },
+                ],
+            )
+            .unwrap();
+
+            soroban_sdk::testutils::arbitrary::std::dbg!();
+            token_client.mint(&sender, &1000);
+            soroban_sdk::testutils::arbitrary::std::dbg!();
+            let result = verify_vesting(&env, &sender, amount, &token_client);
+        });
     }
 }
