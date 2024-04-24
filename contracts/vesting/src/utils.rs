@@ -275,44 +275,4 @@ mod test {
 
         assert_schedule_vests_amount(&env, &curve, AMOUNT).unwrap();
     }
-
-    #[test]
-    fn some_test() {
-        let env = Env::default();
-
-        let vesting_id = env.register_contract(&None, Vesting);
-        env.as_contract(&vesting_id, || {
-            let sender = Address::generate(&env);
-            let amount = 100;
-            let token_addr = Address::generate(&env);
-
-            soroban_sdk::testutils::arbitrary::std::dbg!();
-            let token_client: token_contract::Client<'_> =
-                token_contract::Client::new(&env, &token_addr);
-            soroban_sdk::testutils::arbitrary::std::dbg!();
-
-            create_vesting_accounts(
-                &env,
-                10,
-                vec![
-                    &env,
-                    VestingBalance {
-                        address: sender.clone(),
-                        balance: 200,
-                        distribution_info: DistributionInfo {
-                            start_timestamp: 15,
-                            end_timestamp: 60,
-                            amount: 120,
-                        },
-                    },
-                ],
-            )
-            .unwrap();
-
-            soroban_sdk::testutils::arbitrary::std::dbg!();
-            token_client.mint(&sender, &1000);
-            soroban_sdk::testutils::arbitrary::std::dbg!();
-            let result = verify_vesting(&env, &sender, amount, &token_client);
-        });
-    }
 }
