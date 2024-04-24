@@ -1,4 +1,4 @@
 mod instantiate;
 mod messages;
-mod setup;
+pub mod setup;
 mod transfer;
