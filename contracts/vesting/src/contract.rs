@@ -112,7 +112,7 @@ impl VestingTrait for Vesting {
 
         let total_supply = create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
         if let Some(mi) = minter_info {
-            let input_curve = Curve::Constant(mi.mint_cap);
+            let input_curve = Curve::Constant(mi.mint_capacity);
 
             let capacity = input_curve.value(env.ledger().timestamp()) as i128;
             if total_supply > capacity {
@@ -205,8 +205,16 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::InvalidMintAmount);
         }
 
+        // check if minter is set
+        let minter = if let Some(minter) = get_minter(&env) {
+            minter
+        } else {
+            log!(&env, "Vesting: Mint: Minter not found");
+            panic_with_error!(env, ContractError::MinterNotFound);
+        };
+
         // check if sender is minter
-        if sender != get_minter(&env).address {
+        if sender != minter.address {
             log!(&env, "Vesting: Mint: Not authorized to mint");
             panic_with_error!(env, ContractError::NotAuthorized);
         }
@@ -224,7 +232,7 @@ impl VestingTrait for Vesting {
 
         update_vesting_total_supply(&env, updated_total_supply);
 
-        let limit = get_minter(&env).get_curve().value(env.ledger().timestamp());
+        let limit = minter.get_curve().value(env.ledger().timestamp());
         if updated_total_supply >= limit as i128 {
             log!(&env, "Vesting: Mint: total supply over the capacity");
             panic_with_error!(env, ContractError::SupplyOverTheCap);
@@ -422,19 +430,28 @@ impl VestingTrait for Vesting {
     // }
 
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
-        if sender != get_minter(&env).address && sender != get_admin(&env) {
+        let current_minter = get_minter(&env);
+
+        let is_authorized = if let Some(current_minter) = current_minter.clone() {
+            sender == current_minter.address
+        } else {
+            sender == get_admin(&env)
+        };
+
+        if !is_authorized {
             log!(
-                &env,
+                env,
                 "Vesting: Update minter: Not authorized to update minter"
             );
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
+        let mint_capacity = current_minter.map_or(0, |m| m.mint_capacity);
         save_minter(
             &env,
             &MinterInfo {
                 address: new_minter.clone(),
-                mint_cap: get_minter(&env).mint_cap,
+                mint_capacity,
             },
         );
 
@@ -451,13 +468,18 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
-        save_minter(
-            &env,
-            &MinterInfo {
-                address: get_minter(&env).address,
-                mint_cap: new_capacity,
-            },
-        );
+        if let Some(minter) = get_minter(&env) {
+            save_minter(
+                &env,
+                &MinterInfo {
+                    address: minter.address,
+                    mint_capacity: new_capacity,
+                },
+            );
+        } else {
+            log!(&env, "Vesting: Update Minter Capacity: Minter not found");
+            panic_with_error!(env, ContractError::MinterNotFound);
+        };
 
         env.events().publish(
             ("Update minter capacity", "Updated minter capacity to: "),
@@ -481,7 +503,12 @@ impl VestingTrait for Vesting {
     }
 
     fn query_minter(env: Env) -> MinterInfo {
-        get_minter(&env)
+        if let Some(minter) = get_minter(&env) {
+            minter
+        } else {
+            log!(&env, "Vesting: Query Minter: Minter not found");
+            panic_with_error!(env, ContractError::MinterNotFound);
+        }
     }
 
     fn query_vesting_total_supply(env: Env) -> i128 {

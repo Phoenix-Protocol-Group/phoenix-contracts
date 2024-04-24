@@ -46,7 +46,7 @@ pub struct VestingBalance {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MinterInfo {
     pub address: Address,
-    pub mint_cap: u128,
+    pub mint_capacity: u128,
 }
 
 #[contracttype]
@@ -66,7 +66,7 @@ pub struct VestingInfo {
 
 impl MinterInfo {
     pub fn get_curve(&self) -> Curve {
-        Curve::Constant(self.mint_cap)
+        Curve::Constant(self.mint_capacity)
     }
 }
 
@@ -132,17 +132,8 @@ pub fn save_minter(env: &Env, minter: &MinterInfo) {
     env.storage().persistent().set(&DataKey::Minter, minter);
 }
 
-pub fn get_minter(env: &Env) -> MinterInfo {
-    env.storage()
-        .persistent()
-        .get(&DataKey::Minter)
-        .unwrap_or_else(|| {
-            log!(
-                &env,
-                "Vesting: Get minter: Critical error - No minter found "
-            );
-            panic_with_error!(env, ContractError::MinterNotFound);
-        })
+pub fn get_minter(env: &Env) -> Option<MinterInfo> {
+    env.storage().persistent().get(&DataKey::Minter)
 }
 
 pub fn get_vesting_total_supply(env: &Env) -> i128 {

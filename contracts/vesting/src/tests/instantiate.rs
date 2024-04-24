@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[test]
-fn instantiate_contract_succesffully() {
+fn instantiate_contract_successfully() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -58,7 +58,7 @@ fn instantiate_contract_succesffully() {
 }
 
 #[test]
-fn instantiate_contract_succesffully_with_constant_curve_minter_info() {
+fn instantiate_contract_successfully_with_constant_curve_minter_info() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -87,7 +87,7 @@ fn instantiate_contract_succesffully_with_constant_curve_minter_info() {
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        mint_cap: 511223344,
+        mint_capacity: 511223344,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
@@ -155,7 +155,7 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        mint_cap: 500,
+        mint_capacity: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
