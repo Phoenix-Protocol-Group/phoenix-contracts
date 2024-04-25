@@ -37,7 +37,7 @@ pub struct VestingTokenInfo {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingBalance {
-    pub address: Address,
+    pub rcpt_address: Address,
     pub balance: i128,
     pub distribution_info: DistributionInfo,
 }
@@ -60,7 +60,7 @@ pub struct DistributionInfo {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingInfo {
-    pub amount: i128,
+    pub sender_balance: i128,
     pub distribution_info: DistributionInfo,
 }
 

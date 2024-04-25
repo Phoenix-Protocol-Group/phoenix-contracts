@@ -26,7 +26,7 @@ fn burn_works() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -70,7 +70,7 @@ fn burn_should_panic_when_invalid_amount() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -109,7 +109,7 @@ fn burn_should_panic_when_total_supply_becomes_negative() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 500,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -145,7 +145,7 @@ fn mint_works() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -201,7 +201,7 @@ fn mint_should_panic_when_invalid_amount() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -251,7 +251,7 @@ fn mint_should_panic_when_not_authorized_to_mint() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -303,7 +303,7 @@ fn mint_should_panic_when_supply_overflow() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -353,7 +353,7 @@ fn mint_should_panic_when_mint_over_the_cap() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -402,7 +402,7 @@ fn update_minter_works_correctly() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -463,7 +463,7 @@ fn update_minter_works_correctly_when_no_minter_was_set_initially() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -512,7 +512,7 @@ fn update_minter_fails_when_not_authorized() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -566,7 +566,7 @@ fn test_should_update_minter_capacity_when_replacing_old_capacity() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -621,7 +621,7 @@ fn test_should_update_minter_capacity_when_combining_old_capacity() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -676,7 +676,7 @@ fn test_should_panic_when_updating_minter_capacity_without_auth() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,

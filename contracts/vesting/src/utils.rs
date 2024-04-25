@@ -6,36 +6,40 @@ use crate::{
     storage::{
         get_vesting, remove_vesting, save_balance, save_vesting, VestingBalance, VestingInfo,
     },
-    token_contract,
 };
 
-pub fn verify_vesting(
-    env: &Env,
-    sender: &Address,
-    amount: i128,
-    token_client: &token_contract::Client,
-) -> Result<(), ContractError> {
-    let vesting_amount = get_vesting(env, sender)?
+pub fn update_balances(env: &Env, sender: &Address, amount: i128) -> Result<(), ContractError> {
+    let vesting_info = get_vesting(env, sender)?;
+    let vested_amount_available_for_withdrawal = vesting_info
         .distribution_info
         .get_curve()
         .value(env.ledger().timestamp()) as i128;
 
-    if vesting_amount <= 0 {
+    if vested_amount_available_for_withdrawal <= 0 {
         remove_vesting(env, sender);
     }
 
-    let sender_balance = token_client.balance(sender);
+    let sender_balance = vesting_info.sender_balance;
     let sender_remainder = sender_balance
         .checked_sub(amount)
         .ok_or(ContractError::NotEnoughBalance)?;
 
-    if vesting_amount > sender_remainder {
+    if vested_amount_available_for_withdrawal > sender_remainder {
         log!(
             &env,
             "Vesting: Verity Vesting: Remaining amount must be at least equal to vested amount"
         );
         panic_with_error!(env, ContractError::CantMoveVestingTokens);
     }
+    // do save here
+    save_vesting(
+        env,
+        sender,
+        &VestingInfo {
+            sender_balance: sender_remainder,
+            distribution_info: vesting_info.distribution_info,
+        },
+    );
 
     Ok(())
 }
@@ -45,6 +49,8 @@ pub fn create_vesting_accounts(
     vesting_complexity: u32,
     vesting_accounts: Vec<VestingBalance>,
 ) -> Result<i128, ContractError> {
+    // TODO: we should be checking if the balance of all VestingBalances is not more than the total supply from TokenInitInfo
+
     validate_accounts(env, vesting_accounts.clone())?;
 
     let mut total_supply = 0;
@@ -57,21 +63,21 @@ pub fn create_vesting_accounts(
             log!(
                 &env,
                 "Vesting: Create vesting account: Invalid curve complexity for {}",
-                vb.address
+                vb.rcpt_address
             );
             panic_with_error!(env, ContractError::VestingComplexityTooHigh);
         }
 
         save_vesting(
             env,
-            &vb.address,
+            &vb.rcpt_address,
             &VestingInfo {
-                amount: vb.balance,
+                sender_balance: vb.balance,
                 distribution_info: vb.distribution_info,
             },
         );
 
-        save_balance(env, &vb.address, &vb.balance);
+        save_balance(env, &vb.rcpt_address, &vb.balance);
         total_supply += vb.balance;
     });
 
@@ -108,8 +114,8 @@ fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) -> Result<(), Con
     let mut addresses: Vec<Address> = Vec::new(env);
 
     for item in accounts.iter() {
-        if !addresses.contains(&item.address) {
-            addresses.push_back(item.address.clone());
+        if !addresses.contains(&item.rcpt_address) {
+            addresses.push_back(item.rcpt_address.clone());
         }
     }
 
@@ -142,7 +148,7 @@ mod test {
         let accounts = vec![
             &env,
             VestingBalance {
-                address: address1.clone(),
+                rcpt_address: address1.clone(),
                 balance: 100,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -151,7 +157,7 @@ mod test {
                 },
             },
             VestingBalance {
-                address: address2.clone(),
+                rcpt_address: address2.clone(),
                 balance: 200,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -160,7 +166,7 @@ mod test {
                 },
             },
             VestingBalance {
-                address: address3.clone(),
+                rcpt_address: address3.clone(),
                 balance: 300,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -177,13 +183,11 @@ mod test {
     #[should_panic(expected = "Vesting: Initialize: Duplicate addresses found")]
     fn validate_accounts_should_panic() {
         let env = Env::default();
-        let address1 = Address::generate(&env);
-        let address2 = Address::generate(&env);
 
         let accounts = vec![
             &env,
             VestingBalance {
-                address: address1.clone(),
+                rcpt_address: Address::generate(&env),
                 balance: 100,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -192,7 +196,7 @@ mod test {
                 },
             },
             VestingBalance {
-                address: address2.clone(),
+                rcpt_address: Address::generate(&env),
                 balance: 200,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -201,7 +205,7 @@ mod test {
                 },
             },
             VestingBalance {
-                address: address1.clone(),
+                rcpt_address: Address::generate(&env),
                 balance: 300,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -283,7 +287,7 @@ mod test {
         let vesting_balances = vec![
             &env,
             VestingBalance {
-                address: vester1.clone(),
+                rcpt_address: vester1.clone(),
                 balance: 200,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,

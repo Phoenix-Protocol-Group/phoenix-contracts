@@ -30,6 +30,7 @@ pub enum ContractError {
     NoTokenInfoFound = 22,
     NoVestingComplexityValueFound = 23,
     NoAddressesToAdd = 24,
+    NoEnoughtTokensToStart = 25,
 }
 
 impl From<CurveError> for ContractError {

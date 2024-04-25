@@ -5,7 +5,7 @@ use curve::Curve;
 use crate::storage::{
     get_admin, get_token_info, save_max_vesting_complexity, save_token_info, DistributionInfo,
 };
-use crate::utils::{assert_schedule_vests_amount, create_vesting_accounts, verify_vesting};
+use crate::utils::{create_vesting_accounts, update_balances};
 use crate::{
     error::ContractError,
     storage::{
@@ -100,6 +100,24 @@ impl VestingTrait for Vesting {
         minter_info: Option<MinterInfo>,
         max_vesting_complexity: u32,
     ) -> Result<(), ContractError> {
+        admin.require_auth();
+        // check if the admin has enough tokens to start the vesting contract
+        let token_client = token_contract::Client::new(&env, &vesting_token.address);
+
+        if token_client.balance(&admin) < vesting_token.total_supply {
+            log!(
+                &env,
+                "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
+            );
+            panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
+        }
+
+        token_client.transfer(
+            &admin,
+            &env.current_contract_address(),
+            &vesting_token.total_supply,
+        );
+
         save_admin(&env, &admin);
 
         if vesting_balances.is_empty() {
@@ -141,8 +159,8 @@ impl VestingTrait for Vesting {
 
     fn transfer_token(
         env: Env,
-        sender: Address,    //TODO rename to sender
-        recipient: Address, //TODO rename to recipient
+        sender: Address,
+        recipient: Address,
         amount: i128,
     ) -> Result<(), ContractError> {
         sender.require_auth();
@@ -154,7 +172,7 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        verify_vesting(&env, &sender, amount, &token_client)?;
+        update_balances(&env, &sender, amount)?;
         token_client.transfer(&env.current_contract_address(), &recipient, &amount);
 
         env.events().publish(
@@ -188,7 +206,7 @@ impl VestingTrait for Vesting {
         };
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        verify_vesting(&env, &sender, amount, &token_client)?;
+        update_balances(&env, &sender, amount)?;
         token_client.burn(&sender, &amount);
 
         env.events().publish(("Burn", "Burned from: "), sender);

@@ -1,11 +1,8 @@
-use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    vec, Address, Env, String,
-};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 use crate::{
     storage::{DistributionInfo, MinterInfo, VestingBalance, VestingTokenInfo},
-    tests::setup::instantiate_vesting_client,
+    tests::setup::{deploy_token_contract, instantiate_vesting_client},
 };
 
 #[test]
@@ -17,17 +14,19 @@ fn instantiate_contract_successfully() {
     let vester1 = Address::generate(&env);
     let vester2 = Address::generate(&env);
 
+    let token_client = deploy_token_contract(&env, &admin);
+
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
-        address: Address::generate(&env),
+        address: token_client.address.clone(),
         total_supply: 480,
     };
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1.clone(),
+            rcpt_address: vester1.clone(),
             balance: 240,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -36,7 +35,7 @@ fn instantiate_contract_successfully() {
             },
         },
         VestingBalance {
-            address: vester2,
+            rcpt_address: vester2,
             balance: 240,
             distribution_info: DistributionInfo {
                 start_timestamp: 30,
@@ -47,7 +46,7 @@ fn instantiate_contract_successfully() {
     ];
 
     let vesting_client = instantiate_vesting_client(&env);
-    env.ledger().with_mut(|li| li.timestamp = 1000);
+    token_client.mint(&admin, &480);
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     assert_eq!(vesting_client.query_token_info(), vesting_token);
@@ -64,18 +63,19 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
+    let token_client = deploy_token_contract(&env, &admin);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
-        address: Address::generate(&env),
+        address: token_client.address.clone(),
         total_supply: 240,
     };
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1,
+            rcpt_address: vester1,
             balance: 240,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -91,6 +91,9 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
     };
 
     let vesting_client = instantiate_vesting_client(&env);
+
+    token_client.mint(&admin, &240);
+
     vesting_client.initialize(
         &admin,
         &vesting_token,
@@ -109,18 +112,20 @@ fn instantiate_contract_without_any_vesting_balances_should_fail() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
+    let token_client = deploy_token_contract(&env, &admin);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
-        address: Address::generate(&env),
-        total_supply: 0,
+        address: token_client.address.clone(),
+        total_supply: 100,
     };
     let vesting_balances = vec![&env];
 
     let vesting_client = instantiate_vesting_client(&env);
-    env.ledger().with_mut(|li| li.timestamp = 1000);
+
+    token_client.mint(&admin, &100);
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 }
 
@@ -133,17 +138,19 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
 
+    let token_client = deploy_token_contract(&env, &admin);
+
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
-        address: Address::generate(&env),
+        address: token_client.address.clone(),
         total_supply: 1_000,
     };
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            address: vester1,
+            rcpt_address: vester1,
             balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -159,7 +166,8 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
     };
 
     let vesting_client = instantiate_vesting_client(&env);
-    env.ledger().with_mut(|li| li.timestamp = 1000);
+    token_client.mint(&admin, &1_000);
+
     vesting_client.initialize(
         &admin,
         &vesting_token,
