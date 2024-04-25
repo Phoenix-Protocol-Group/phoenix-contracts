@@ -5,7 +5,7 @@ use curve::Curve;
 use crate::storage::{
     get_admin, get_token_info, save_max_vesting_complexity, save_token_info, DistributionInfo,
 };
-use crate::utils::{create_vesting_accounts, verify_vesting};
+use crate::utils::{assert_schedule_vests_amount, create_vesting_accounts, verify_vesting};
 use crate::{
     error::ContractError,
     storage::{
@@ -35,8 +35,8 @@ pub trait VestingTrait {
 
     fn transfer_token(
         env: Env,
-        from: Address,
-        to: Address,
+        sender: Address,
+        recipient: Address,
         amount: i128,
     ) -> Result<(), ContractError>;
 
@@ -141,11 +141,11 @@ impl VestingTrait for Vesting {
 
     fn transfer_token(
         env: Env,
-        from: Address,
-        to: Address,
+        sender: Address,    //TODO rename to sender
+        recipient: Address, //TODO rename to recipient
         amount: i128,
     ) -> Result<(), ContractError> {
-        from.require_auth();
+        sender.require_auth();
 
         if amount <= 0 {
             log!(&env, "Vesting: Transfer token: Invalid transfer amount");
@@ -154,15 +154,15 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        verify_vesting(&env, &from, amount, &token_client)?;
-        token_client.transfer(&from, &to, &amount);
+        verify_vesting(&env, &sender, amount, &token_client)?;
+        token_client.transfer(&env.current_contract_address(), &recipient, &amount);
 
         env.events().publish(
             (
                 "Transfer token",
                 "Transfering tokens between accounts: from: {}, to:{}, amount: {}",
             ),
-            (from, to, amount),
+            (sender, recipient, amount),
         );
 
         Ok(())
