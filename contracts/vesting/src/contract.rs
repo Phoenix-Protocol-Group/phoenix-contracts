@@ -33,7 +33,7 @@ pub trait VestingTrait {
         max_vesting_complexity: u32,
     ) -> Result<(), ContractError>;
 
-    fn transfer_token(
+    fn collect_vesting(
         env: Env,
         sender: Address,
         recipient: Address,
@@ -129,6 +129,7 @@ impl VestingTrait for Vesting {
         }
 
         let total_supply = create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
+        if total_supply != vesting_token.total_supply {}
         if let Some(mi) = minter_info {
             let input_curve = Curve::Constant(mi.mint_capacity);
 
@@ -157,7 +158,7 @@ impl VestingTrait for Vesting {
         Ok(())
     }
 
-    fn transfer_token(
+    fn collect_vesting(
         env: Env,
         sender: Address,
         recipient: Address,
@@ -187,6 +188,7 @@ impl VestingTrait for Vesting {
     }
 
     fn burn(env: Env, sender: Address, amount: i128) -> Result<(), ContractError> {
+        // TODO should only the admin execute this function? Only admin or minter can mint, why not here as well?
         sender.require_auth();
 
         if amount <= 0 {

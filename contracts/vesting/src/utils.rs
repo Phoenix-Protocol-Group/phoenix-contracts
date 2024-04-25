@@ -15,6 +15,7 @@ pub fn update_balances(env: &Env, sender: &Address, amount: i128) -> Result<(), 
         .get_curve()
         .value(env.ledger().timestamp()) as i128;
 
+    soroban_sdk::testutils::arbitrary::std::dbg!(vested_amount_available_for_withdrawal);
     if vested_amount_available_for_withdrawal <= 0 {
         remove_vesting(env, sender);
     }
@@ -27,11 +28,11 @@ pub fn update_balances(env: &Env, sender: &Address, amount: i128) -> Result<(), 
     if vested_amount_available_for_withdrawal > sender_remainder {
         log!(
             &env,
-            "Vesting: Verity Vesting: Remaining amount must be at least equal to vested amount"
+            "Vesting: Update Balances: Remaining amount must be at least equal to vested amount"
         );
         panic_with_error!(env, ContractError::CantMoveVestingTokens);
     }
-    // do save here
+
     save_vesting(
         env,
         sender,
@@ -304,7 +305,7 @@ mod test {
         // we fast forward time to 1 minute after the end of the vesting period
         env.ledger().with_mut(|li| li.timestamp = 61);
         // we transfer the tokens that are fully vested and should remove the vesting info
-        vesting_client.transfer_token(&vester1, &vester2, &100);
+        vesting_client.collect_vesting(&vester1, &vester2, &100);
 
         // when we now query for the single vesting balance, it should return an error
         // because it is removed

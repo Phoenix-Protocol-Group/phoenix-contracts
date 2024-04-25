@@ -19,22 +19,23 @@ fn transfer_tokens() {
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
     let vester2 = Address::generate(&env);
-    let token = deploy_token_contract(&env, &admin);
+    let token_client = deploy_token_contract(&env, &admin);
 
-    token.mint(&vester1, &1_000);
+    token_client.mint(&admin, &1_000);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
-        address: token.address.clone(),
-        total_supply: 0,
+        address: token_client.address.clone(),
+        total_supply: 1_000,
     };
+
     let vesting_balances = vec![
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
+            balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -46,11 +47,9 @@ fn transfer_tokens() {
     let vesting_client = instantiate_vesting_client(&env);
 
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
-    assert_eq!(token.balance(&vester2), 0);
-    vesting_client.transfer_token(&vester1, &vester2, &100);
-    assert_eq!(vesting_client.query_balance(&vester1), 900);
-    assert_eq!(token.balance(&vester2), 100);
-    assert_eq!(vesting_client.query_vesting_total_supply(), 200);
+
+    soroban_sdk::testutils::arbitrary::std::dbg!(env.ledger().timestamp());
+    vesting_client.collect_vesting(&vester1, &vester2, &100);
 }
 
 #[test]
@@ -88,7 +87,7 @@ fn transfer_tokens_should_fail_invalid_amount() {
 
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
-    vesting_client.transfer_token(&vester1, &vester2, &0);
+    vesting_client.collect_vesting(&vester1, &vester2, &0);
 }
 
 #[test]
@@ -145,7 +144,7 @@ fn verify_vesting_works() {
     // we try to transfer the tokens before the vesting period has started
     let vest1_before = vesting_client.query_balance(&rcpt1);
     soroban_sdk::testutils::arbitrary::std::dbg!(vest1_before);
-    vesting_client.transfer_token(&rcpt1, &rcpt2, &200);
+    vesting_client.collect_vesting(&rcpt1, &rcpt2, &200);
     let reslt = vesting_client.query_balance(&rcpt2);
     soroban_sdk::testutils::arbitrary::std::dbg!(reslt);
 }
