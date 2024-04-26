@@ -70,6 +70,54 @@ fn transfer_tokens() {
 }
 
 #[test]
+#[should_panic] //TODO better error message
+fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
+    const START_TIMESTAMP: u64 = 15;
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let vester2 = Address::generate(&env);
+    let token_client = deploy_token_contract(&env, &admin);
+
+    token_client.mint(&admin, &1_000);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token_client.address.clone(),
+        total_supply: 1_000,
+    };
+
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            rcpt_address: vester1.clone(),
+            balance: 1_000,
+            distribution_info: DistributionInfo {
+                start_timestamp: START_TIMESTAMP,
+                end_timestamp: 60,
+                amount: 120,
+            },
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+
+    // we set the timestamp at a time earlier than the vesting period start
+    env.ledger()
+        .with_mut(|li| li.timestamp = START_TIMESTAMP - 10);
+
+    // we try to transfer the tokens before the vesting period has started
+    vesting_client.collect_vesting(&vester1, &vester2, &100);
+}
+
+#[test]
 #[should_panic(expected = "Vesting: Transfer token: Invalid transfer amount")]
 fn transfer_tokens_should_fail_invalid_amount() {
     let env = Env::default();

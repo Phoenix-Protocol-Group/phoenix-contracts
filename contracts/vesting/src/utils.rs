@@ -17,6 +17,9 @@ pub fn update_balances(env: &Env, sender: &Address, amount: i128) -> Result<(), 
         .value(env.ledger().timestamp()) as i128;
 
     soroban_sdk::testutils::arbitrary::std::dbg!(vested_amount_available_for_withdrawal);
+    // TODO
+    // if vested_amount_available_for_withdrawal is 0 then we will remove the vesting info
+    // although it was just an inpacient user that tried to withdraw before the vesting period start
     if vested_amount_available_for_withdrawal <= 0 {
         remove_vesting(env, sender);
     }
