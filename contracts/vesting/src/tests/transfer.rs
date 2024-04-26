@@ -332,6 +332,7 @@ fn user_claims_only_a_part_of_the_allowed_vested_amount_then_claims_the_remainin
     env.ledger().with_mut(|li| li.timestamp = 60);
 
     // user collects 15 more tokens
+    soroban_sdk::testutils::arbitrary::std::dbg!("POI");
     vesting_client.transfer_token(&vester1, &vester1, &15);
 
     // vester1 has 30 tokens after claiming the vested amount
@@ -344,6 +345,7 @@ fn user_claims_only_a_part_of_the_allowed_vested_amount_then_claims_the_remainin
     env.ledger().with_mut(|li| li.timestamp = 1000);
 
     // user decides it's times to become milionaire and collects the remaining 90 tokens
+    soroban_sdk::testutils::arbitrary::std::dbg!("FINAL POI");
     vesting_client.transfer_token(&vester1, &vester1, &90);
 
     // vester1 has 120 tokens after claiming the vested amount

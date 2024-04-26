@@ -17,12 +17,6 @@ pub fn verify_vesting_and_update_balances(
         .get_curve()
         .value(env.ledger().timestamp());
 
-    soroban_sdk::testutils::arbitrary::std::dbg!(vested);
-
-    if vested <= 0 {
-        remove_vesting(env, sender);
-    }
-
     let sender_balance = vesting_info.balance;
     let sender_liquid = sender_balance // this checks if we can withdraw any vesting
         .checked_sub(vested)
@@ -40,7 +34,7 @@ pub fn verify_vesting_and_update_balances(
         env,
         sender,
         &VestingInfo {
-            balance: (sender_balance - amount),
+            balance: sender_balance - amount,
             distribution_info: vesting_info.distribution_info,
         },
     );
@@ -282,53 +276,5 @@ mod test {
         });
 
         assert_schedule_vests_amount(&env, &curve, AMOUNT).unwrap();
-    }
-
-    #[test]
-    fn should_remove_vesting_from_storage_when_vesting_balance_is_zero() {
-        let env = Env::default();
-        env.mock_all_auths();
-        env.budget().reset_unlimited();
-
-        let admin = Address::generate(&env);
-        let vester1 = Address::generate(&env);
-        let token = deploy_token_contract(&env, &admin);
-
-        token.mint(&admin, &1_000);
-
-        let vesting_token = VestingTokenInfo {
-            name: String::from_str(&env, "Phoenix"),
-            symbol: String::from_str(&env, "PHO"),
-            decimals: 6,
-            address: token.address.clone(),
-            total_supply: 1_000,
-        };
-        let vesting_balances = vec![
-            &env,
-            VestingBalance {
-                rcpt_address: vester1.clone(),
-                distribution_info: DistributionInfo {
-                    start_timestamp: 15,
-                    end_timestamp: 60,
-                    amount: 120,
-                },
-            },
-        ];
-
-        let vesting_client = instantiate_vesting_client(&env);
-
-        vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
-
-        // we fast forward time to 1 minute after the end of the vesting period
-        env.ledger().with_mut(|li| li.timestamp = 61);
-        // we transfer the tokens that are fully vested and should remove the vesting info
-        vesting_client.transfer_token(&vester1, &vester1, &120);
-
-        // when we now query for the single vesting balance, it should return an error
-        // because it is removed
-        assert_eq!(
-            vesting_client.try_query_distribution_info(&vester1),
-            Err(Ok(ContractError::VestingNotFoundForAddress))
-        );
     }
 }

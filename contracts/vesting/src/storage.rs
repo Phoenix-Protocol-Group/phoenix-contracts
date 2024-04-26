@@ -95,11 +95,11 @@ pub fn get_admin(env: &Env) -> Address {
 }
 
 pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
-    env.storage().instance().set(address, vesting_info);
+    env.storage().persistent().set(address, vesting_info);
 }
 
 pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, ContractError> {
-    let vesting_info = env.storage().instance().get(address).unwrap_or_else(|| {
+    let vesting_info = env.storage().persistent().get(address).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
     });
@@ -108,8 +108,7 @@ pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, Contract
 }
 
 pub fn remove_vesting(env: &Env, address: &Address) {
-    soroban_sdk::testutils::arbitrary::std::dbg!("I delete");
-    env.storage().instance().remove(address);
+    env.storage().persistent().remove(address);
 }
 
 // TODO: uncomment when needed
@@ -143,7 +142,6 @@ pub fn update_vesting_total_supply(env: &Env, amount: u128) {
 }
 
 pub fn save_token_info(env: &Env, token_info: &VestingTokenInfo) {
-    soroban_sdk::testutils::arbitrary::std::dbg!(token_info);
     env.storage()
         .persistent()
         .set(&DataKey::VestingTokenInfo, token_info);
