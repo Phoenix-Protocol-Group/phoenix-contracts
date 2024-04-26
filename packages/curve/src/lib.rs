@@ -1031,26 +1031,4 @@ mod tests {
         let err = curve.validate().unwrap_err();
         assert_eq!(err, CurveError::MissingSteps);
     }
-
-    #[test]
-    fn check_two_saturating_linear_combine() {
-        let env = Env::default();
-        let curve1 = Curve::SaturatingLinear(SaturatingLinear {
-            min_x: 10,  // when Curve start
-            min_y: 100, // value at the start
-            max_x: 20,  // end time
-            max_y: 0,   // value at end always 0 at the time of vesting
-        });
-        let curve2 = Curve::SaturatingLinear(SaturatingLinear {
-            min_x: 20,
-            min_y: 100,
-            max_x: 40,
-            max_y: 0,
-        });
-
-        let combined = curve1.combine(&env, &curve2);
-
-        // check some values
-        soroban_sdk::testutils::arbitrary::std::dbg!(combined);
-    }
 }

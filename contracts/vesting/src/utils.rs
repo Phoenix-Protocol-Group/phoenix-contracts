@@ -28,10 +28,10 @@ pub fn verify_vesting_and_update_balances(
         .checked_sub(vested)
         .ok_or(ContractError::NotEnoughBalance)?;
 
-    if sender_liquid >= 0 {
+    if sender_liquid < amount {
         log!(
             &env,
-            "Vesting: Update Balances: Remaining amount must be at least equal to vested amount"
+            "Vesting: Verify Vesting Update Balances: Remaining amount must be at least equal to vested amount"
         );
         panic_with_error!(env, ContractError::CantMoveVestingTokens);
     }
