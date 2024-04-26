@@ -3,9 +3,7 @@ use soroban_sdk::{log, panic_with_error, Address, Env, Vec};
 
 use crate::{
     error::ContractError,
-    storage::{
-        get_vesting, remove_vesting, save_balance, save_vesting, VestingBalance, VestingInfo,
-    },
+    storage::{get_vesting, remove_vesting, save_vesting, VestingBalance, VestingInfo},
 };
 
 pub fn verify_vesting_and_update_balances(
@@ -18,6 +16,8 @@ pub fn verify_vesting_and_update_balances(
         .distribution_info
         .get_curve()
         .value(env.ledger().timestamp());
+
+    soroban_sdk::testutils::arbitrary::std::dbg!(vested);
 
     if vested <= 0 {
         remove_vesting(env, sender);
@@ -84,7 +84,6 @@ pub fn create_vesting_accounts(
             },
         );
 
-        save_balance(env, &vb.rcpt_address, &vb.distribution_info.amount);
         total_supply += vb.distribution_info.amount;
     });
 
@@ -207,10 +206,11 @@ mod test {
     fn validate_accounts_should_panic() {
         let env = Env::default();
         let admin_vested_amount = 360;
+        let duplicate_address = Address::generate(&env);
         let accounts = vec![
             &env,
             VestingBalance {
-                rcpt_address: Address::generate(&env),
+                rcpt_address: duplicate_address.clone(),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -218,7 +218,7 @@ mod test {
                 },
             },
             VestingBalance {
-                rcpt_address: Address::generate(&env),
+                rcpt_address: duplicate_address,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -292,17 +292,16 @@ mod test {
 
         let admin = Address::generate(&env);
         let vester1 = Address::generate(&env);
-        let vester2 = Address::generate(&env);
         let token = deploy_token_contract(&env, &admin);
 
-        token.mint(&vester1, &1_000);
+        token.mint(&admin, &1_000);
 
         let vesting_token = VestingTokenInfo {
             name: String::from_str(&env, "Phoenix"),
             symbol: String::from_str(&env, "PHO"),
             decimals: 6,
             address: token.address.clone(),
-            total_supply: 0,
+            total_supply: 1_000,
         };
         let vesting_balances = vec![
             &env,
@@ -323,7 +322,7 @@ mod test {
         // we fast forward time to 1 minute after the end of the vesting period
         env.ledger().with_mut(|li| li.timestamp = 61);
         // we transfer the tokens that are fully vested and should remove the vesting info
-        vesting_client.transfer_token(&vester1, &vester2, &100);
+        vesting_client.transfer_token(&vester1, &vester1, &120);
 
         // when we now query for the single vesting balance, it should return an error
         // because it is removed

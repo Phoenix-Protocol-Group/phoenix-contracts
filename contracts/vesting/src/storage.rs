@@ -1,4 +1,4 @@
-use curve::{Curve, SaturatingLinear, Step};
+use curve::{Curve, SaturatingLinear};
 use soroban_sdk::{
     contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
 };
@@ -59,7 +59,7 @@ pub struct DistributionInfo {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingInfo {
-    pub balance: u128, // rename to balance. this is the thingn that we will update during transfer msgs
+    pub balance: u128, // This is the value that we will update during transfer msgs
     pub distribution_info: DistributionInfo,
 }
 
@@ -94,10 +94,6 @@ pub fn get_admin(env: &Env) -> Address {
         })
 }
 
-pub fn save_balance(env: &Env, address: &Address, balance: &u128) {
-    env.storage().persistent().set(address, balance);
-}
-
 pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
     env.storage().instance().set(address, vesting_info);
 }
@@ -112,6 +108,7 @@ pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, Contract
 }
 
 pub fn remove_vesting(env: &Env, address: &Address) {
+    soroban_sdk::testutils::arbitrary::std::dbg!("I delete");
     env.storage().instance().remove(address);
 }
 
@@ -146,6 +143,7 @@ pub fn update_vesting_total_supply(env: &Env, amount: u128) {
 }
 
 pub fn save_token_info(env: &Env, token_info: &VestingTokenInfo) {
+    soroban_sdk::testutils::arbitrary::std::dbg!(token_info);
     env.storage()
         .persistent()
         .set(&DataKey::VestingTokenInfo, token_info);

@@ -139,7 +139,7 @@ impl VestingTrait for Vesting {
             let input_curve = Curve::Constant(mi.mint_capacity);
 
             let capacity = input_curve.value(env.ledger().timestamp());
-            soroban_sdk::testutils::arbitrary::std::dbg!(total_supply, capacity);
+
             if total_supply > capacity {
                 log!(&env, "Vesting: Initialize: total supply over the capacity");
                 panic_with_error!(env, ContractError::SupplyOverTheCap);
@@ -152,7 +152,7 @@ impl VestingTrait for Vesting {
             symbol: vesting_token.symbol,
             decimals: vesting_token.decimals,
             address: vesting_token.address,
-            total_supply,
+            total_supply: vesting_token.total_supply,
         };
 
         save_token_info(&env, &token_info);

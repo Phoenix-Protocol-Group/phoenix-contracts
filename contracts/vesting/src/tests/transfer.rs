@@ -439,3 +439,130 @@ fn transfer_tokens_should_fail_invalid_amount() {
 
     vesting_client.transfer_token(&vester1, &vester1, &0);
 }
+
+#[test]
+fn transfer_works_with_multiple_users_and_distributions() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let vester2 = Address::generate(&env);
+    let vester3 = Address::generate(&env);
+    let vester4 = Address::generate(&env);
+
+    let token_client = deploy_token_contract(&env, &admin);
+    token_client.mint(&admin, &1_000);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token_client.address.clone(),
+        total_supply: 1_000,
+    };
+
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            rcpt_address: vester1.clone(),
+            distribution_info: DistributionInfo {
+                start_timestamp: 0,
+                end_timestamp: 1_000,
+                amount: 300,
+            },
+        },
+        VestingBalance {
+            rcpt_address: vester2.clone(),
+            distribution_info: DistributionInfo {
+                start_timestamp: 0,
+                end_timestamp: 500,
+                amount: 200,
+            },
+        },
+        VestingBalance {
+            rcpt_address: vester3.clone(),
+            distribution_info: DistributionInfo {
+                start_timestamp: 125,
+                end_timestamp: 750,
+                amount: 250,
+            },
+        },
+        VestingBalance {
+            rcpt_address: vester4.clone(),
+            distribution_info: DistributionInfo {
+                start_timestamp: 250,
+                end_timestamp: 1_500,
+                amount: 250,
+            },
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+
+    // vesting period for our 4 vesters is between 0 and 1_500
+    // we will move timestamp 3 times by 500 units and on each withdrawal we will transfer the vested amount
+
+    env.ledger().with_mut(|li| li.timestamp = 500);
+
+    // vester1 can withdraw 150 tokens out of 300 tokens
+    assert_eq!(vesting_client.query_balance(&vester1), 0);
+    vesting_client.transfer_token(&vester1, &vester1, &150);
+    assert_eq!(vesting_client.query_balance(&vester1), 150);
+
+    // vester2 can withdraw all tokens
+    assert_eq!(vesting_client.query_balance(&vester2), 0);
+    vesting_client.transfer_token(&vester2, &vester2, &200);
+    assert_eq!(vesting_client.query_balance(&vester2), 200);
+
+    // vester3 can withdraw 150 tokens out of 250 tokens
+    assert_eq!(vesting_client.query_balance(&vester3), 0);
+    vesting_client.transfer_token(&vester3, &vester3, &150);
+    assert_eq!(vesting_client.query_balance(&vester3), 150);
+
+    // vester4 can withdraw 50 tokens out of 250 tokens
+    assert_eq!(vesting_client.query_balance(&vester4), 0);
+    vesting_client.transfer_token(&vester4, &vester4, &50);
+    assert_eq!(vesting_client.query_balance(&vester4), 50);
+
+    // users have withdrawn a total of 550 tokens
+    // total remaining in the contract is 450 tokens
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 450);
+
+    // we now move the timestamp to 1_000
+    env.ledger().with_mut(|li| li.timestamp = 1_000);
+
+    // vester1 can withdraw the remaining 150 tokens
+    assert_eq!(vesting_client.query_balance(&vester1), 150);
+    vesting_client.transfer_token(&vester1, &vester1, &150);
+    assert_eq!(vesting_client.query_balance(&vester1), 300);
+
+    // vester2 has nothing to withdraw
+    // vester3 can withdraw the remaining 100 tokens
+    assert_eq!(vesting_client.query_balance(&vester3), 150);
+    vesting_client.transfer_token(&vester3, &vester3, &100);
+    assert_eq!(vesting_client.query_balance(&vester3), 250);
+
+    // vester4 can withdraw 100 - maximum for the period
+    assert_eq!(vesting_client.query_balance(&vester4), 50);
+    vesting_client.transfer_token(&vester4, &vester4, &100);
+    assert_eq!(vesting_client.query_balance(&vester4), 150);
+
+    // in the 2nd round users have withdrawn 350 tokens
+    // total remaining in the contract is 100 tokens
+
+    // move the timestamp to 1_500
+    env.ledger().with_mut(|li| li.timestamp = 1_500);
+
+    // vester1 has nothing to withdraw
+    // vester2 has nothing to withdraw
+    // vester3 has nothing to withdraw
+    // vester4 can withdraw the remaining 100 tokens
+    assert_eq!(vesting_client.query_balance(&vester4), 150);
+    vesting_client.transfer_token(&vester4, &vester4, &100);
+    assert_eq!(vesting_client.query_balance(&vester4), 250);
+
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);
+}
