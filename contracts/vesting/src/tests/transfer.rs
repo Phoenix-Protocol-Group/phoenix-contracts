@@ -28,18 +28,25 @@ fn transfer_tokens() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
+        total_supply: 200,
     };
 
     let vesting_balances = vec![
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
                 amount: 120,
+            },
+        },
+        VestingBalance {
+            rcpt_address: Address::generate(&env),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                end_timestamp: 60,
+                amount: 200,
             },
         },
     ];
@@ -79,7 +86,6 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
-    let vester2 = Address::generate(&env);
     let token_client = deploy_token_contract(&env, &admin);
 
     token_client.mint(&admin, &1_000);
@@ -96,7 +102,6 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: START_TIMESTAMP,
                 end_timestamp: 60,
@@ -114,7 +119,7 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
         .with_mut(|li| li.timestamp = START_TIMESTAMP - 10);
 
     // we try to transfer the tokens before the vesting period has started
-    vesting_client.collect_vesting(&vester1, &vester2, &100);
+    vesting_client.collect_vesting(&vester1, &vester1, &100);
 }
 
 #[test]
@@ -139,7 +144,6 @@ fn transfer_tokens_should_fail_invalid_amount() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -181,7 +185,6 @@ fn verify_vesting_works() {
         &env,
         VestingBalance {
             rcpt_address: rcpt1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15, //TODO start from 0; make a 2nd test starting from 15 to validate that no user can withdraw earlier than the starting period
                 end_timestamp: 60,
@@ -190,7 +193,6 @@ fn verify_vesting_works() {
         },
         VestingBalance {
             rcpt_address: rcpt3.clone(),
-            balance: 400,
             distribution_info: DistributionInfo {
                 start_timestamp: 30,
                 end_timestamp: 120,

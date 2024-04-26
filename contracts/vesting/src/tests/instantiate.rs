@@ -27,7 +27,6 @@ fn instantiate_contract_successfully() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 240,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -36,7 +35,6 @@ fn instantiate_contract_successfully() {
         },
         VestingBalance {
             rcpt_address: vester2,
-            balance: 240,
             distribution_info: DistributionInfo {
                 start_timestamp: 30,
                 end_timestamp: 120,
@@ -76,7 +74,6 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
         &env,
         VestingBalance {
             rcpt_address: vester1,
-            balance: 240,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -151,7 +148,6 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
         &env,
         VestingBalance {
             rcpt_address: vester1,
-            balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,

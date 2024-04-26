@@ -27,7 +27,6 @@ fn burn_works() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -71,7 +70,6 @@ fn burn_should_panic_when_invalid_amount() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 1_000,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -110,7 +108,6 @@ fn burn_should_panic_when_total_supply_becomes_negative() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 500,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -146,7 +143,6 @@ fn mint_works() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -202,7 +198,6 @@ fn mint_should_panic_when_invalid_amount() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -252,7 +247,6 @@ fn mint_should_panic_when_not_authorized_to_mint() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -304,7 +298,6 @@ fn mint_should_panic_when_supply_overflow() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -354,7 +347,6 @@ fn mint_should_panic_when_mint_over_the_cap() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -403,7 +395,6 @@ fn update_minter_works_correctly() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -464,7 +455,6 @@ fn update_minter_works_correctly_when_no_minter_was_set_initially() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -513,7 +503,6 @@ fn update_minter_fails_when_not_authorized() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -567,7 +556,6 @@ fn test_should_update_minter_capacity_when_replacing_old_capacity() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -622,7 +610,6 @@ fn test_should_update_minter_capacity_when_combining_old_capacity() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -677,7 +664,6 @@ fn test_should_panic_when_updating_minter_capacity_without_auth() {
         &env,
         VestingBalance {
             rcpt_address: vester1.clone(),
-            balance: 200,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,

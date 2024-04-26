@@ -5,7 +5,7 @@ use curve::Curve;
 use crate::storage::{
     get_admin, get_token_info, save_max_vesting_complexity, save_token_info, DistributionInfo,
 };
-use crate::utils::{create_vesting_accounts, update_balances};
+use crate::utils::{create_vesting_accounts, verify_vesting_and_update_balances};
 use crate::{
     error::ContractError,
     storage::{
@@ -40,7 +40,7 @@ pub trait VestingTrait {
         amount: i128,
     ) -> Result<(), ContractError>;
 
-    fn burn(env: Env, sender: Address, amount: i128) -> Result<(), ContractError>;
+    fn burn(env: Env, sender: Address, amount: u128) -> Result<(), ContractError>;
 
     fn mint(env: Env, sender: Address, to: Address, amount: i128);
 
@@ -87,7 +87,7 @@ pub trait VestingTrait {
 
     fn query_minter(env: Env) -> MinterInfo;
 
-    fn query_vesting_total_supply(env: Env) -> i128;
+    fn query_vesting_total_supply(env: Env) -> u128;
 }
 
 #[contractimpl]
@@ -104,7 +104,7 @@ impl VestingTrait for Vesting {
         // check if the admin has enough tokens to start the vesting contract
         let token_client = token_contract::Client::new(&env, &vesting_token.address);
 
-        if token_client.balance(&admin) < vesting_token.total_supply {
+        if token_client.balance(&admin) < vesting_token.total_supply as i128 {
             log!(
                 &env,
                 "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
@@ -115,7 +115,7 @@ impl VestingTrait for Vesting {
         token_client.transfer(
             &admin,
             &env.current_contract_address(),
-            &vesting_token.total_supply,
+            &(vesting_token.total_supply as i128),
         );
 
         save_admin(&env, &admin);
@@ -133,7 +133,7 @@ impl VestingTrait for Vesting {
         if let Some(mi) = minter_info {
             let input_curve = Curve::Constant(mi.mint_capacity);
 
-            let capacity = input_curve.value(env.ledger().timestamp()) as i128;
+            let capacity = input_curve.value(env.ledger().timestamp());
             if total_supply > capacity {
                 log!(&env, "Vesting: Initialize: total supply over the capacity");
                 panic_with_error!(env, ContractError::SupplyOverTheCap);
@@ -159,6 +159,7 @@ impl VestingTrait for Vesting {
     }
 
     fn collect_vesting(
+        // TODO rename back to transfeR_token
         env: Env,
         sender: Address,
         recipient: Address,
@@ -173,7 +174,7 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        update_balances(&env, &sender, amount)?;
+        verify_vesting_and_update_balances(&env, &sender, amount as u128)?;
         token_client.transfer(&env.current_contract_address(), &recipient, &amount);
 
         env.events().publish(
@@ -187,8 +188,7 @@ impl VestingTrait for Vesting {
         Ok(())
     }
 
-    fn burn(env: Env, sender: Address, amount: i128) -> Result<(), ContractError> {
-        // TODO should only the admin execute this function? Only admin or minter can mint, why not here as well?
+    fn burn(env: Env, sender: Address, amount: u128) -> Result<(), ContractError> {
         sender.require_auth();
 
         if amount <= 0 {
@@ -208,8 +208,8 @@ impl VestingTrait for Vesting {
         };
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        update_balances(&env, &sender, amount)?;
-        token_client.burn(&sender, &amount);
+        verify_vesting_and_update_balances(&env, &sender, amount)?;
+        token_client.burn(&sender, &(amount as i128));
 
         env.events().publish(("Burn", "Burned from: "), sender);
         env.events().publish(("Burn", "Burned tokens: "), amount);
@@ -240,20 +240,12 @@ impl VestingTrait for Vesting {
         }
 
         // update supply and capacity
-        let updated_total_supply = get_vesting_total_supply(&env)
-            .checked_add(amount)
-            .unwrap_or_else(|| {
-                log!(
-                    &env,
-                    "Vesting: Mint: Critical error - total supply overflow"
-                );
-                panic_with_error!(env, ContractError::Std);
-            });
+        let updated_total_supply = get_vesting_total_supply(&env) + amount as u128;
 
         update_vesting_total_supply(&env, updated_total_supply);
 
         let limit = minter.get_curve().value(env.ledger().timestamp());
-        if updated_total_supply >= limit as i128 {
+        if updated_total_supply >= limit {
             log!(&env, "Vesting: Mint: total supply over the capacity");
             panic_with_error!(env, ContractError::SupplyOverTheCap);
         }
@@ -531,7 +523,7 @@ impl VestingTrait for Vesting {
         }
     }
 
-    fn query_vesting_total_supply(env: Env) -> i128 {
+    fn query_vesting_total_supply(env: Env) -> u128 {
         get_vesting_total_supply(&env)
     }
 }

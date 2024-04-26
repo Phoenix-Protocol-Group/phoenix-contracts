@@ -8,28 +8,29 @@ use crate::{
     },
 };
 
-pub fn update_balances(env: &Env, sender: &Address, amount: i128) -> Result<(), ContractError> {
+pub fn verify_vesting_and_update_balances(
+    env: &Env,
+    sender: &Address,
+    amount: u128,
+) -> Result<(), ContractError> {
     let vesting_info = get_vesting(env, sender)?;
     soroban_sdk::testutils::arbitrary::std::dbg!(env.ledger().timestamp());
-    let vested_amount_available_for_withdrawal = vesting_info
+    let vested = vesting_info
         .distribution_info
         .get_curve()
-        .value(env.ledger().timestamp()) as i128;
+        .value(env.ledger().timestamp());
 
-    soroban_sdk::testutils::arbitrary::std::dbg!(vested_amount_available_for_withdrawal);
-    // TODO
-    // if vested_amount_available_for_withdrawal is 0 then we will remove the vesting info
-    // although it was just an inpacient user that tried to withdraw before the vesting period start
-    if vested_amount_available_for_withdrawal <= 0 {
+    soroban_sdk::testutils::arbitrary::std::dbg!(vested);
+    if vested <= 0 {
         remove_vesting(env, sender);
     }
 
-    let sender_balance = vesting_info.sender_balance;
-    let sender_remainder = sender_balance
-        .checked_sub(amount)
+    let sender_balance = vesting_info.balance;
+    let sender_liquid = sender_balance // this checks if we can withdraw any vesting
+        .checked_sub(vested)
         .ok_or(ContractError::NotEnoughBalance)?;
 
-    if vested_amount_available_for_withdrawal > sender_remainder {
+    if sender_liquid >= 0 {
         log!(
             &env,
             "Vesting: Update Balances: Remaining amount must be at least equal to vested amount"
@@ -41,7 +42,7 @@ pub fn update_balances(env: &Env, sender: &Address, amount: i128) -> Result<(), 
         env,
         sender,
         &VestingInfo {
-            sender_balance: sender_remainder,
+            balance: (sender_balance - amount),
             distribution_info: vesting_info.distribution_info,
         },
     );
@@ -53,7 +54,7 @@ pub fn create_vesting_accounts(
     env: &Env,
     vesting_complexity: u32,
     vesting_accounts: Vec<VestingBalance>,
-) -> Result<i128, ContractError> {
+) -> Result<u128, ContractError> {
     // TODO: we should be checking if the balance of all VestingBalances is not more than the total supply from TokenInitInfo
 
     validate_accounts(env, vesting_accounts.clone())?;
@@ -61,8 +62,12 @@ pub fn create_vesting_accounts(
     let mut total_supply = 0;
 
     vesting_accounts.into_iter().for_each(|vb| {
-        assert_schedule_vests_amount(env, &vb.distribution_info.get_curve(), vb.balance)
-            .expect("Invalid curve and amount");
+        assert_schedule_vests_amount(
+            env,
+            &vb.distribution_info.get_curve(),
+            vb.distribution_info.amount,
+        )
+        .expect("Invalid curve and amount");
 
         if vesting_complexity <= vb.distribution_info.get_curve().size() {
             log!(
@@ -77,13 +82,13 @@ pub fn create_vesting_accounts(
             env,
             &vb.rcpt_address,
             &VestingInfo {
-                sender_balance: vb.balance,
-                distribution_info: vb.distribution_info,
+                balance: vb.distribution_info.amount,
+                distribution_info: vb.distribution_info.clone(),
             },
         );
 
-        save_balance(env, &vb.rcpt_address, &vb.balance);
-        total_supply += vb.balance;
+        save_balance(env, &vb.rcpt_address, &vb.distribution_info.amount);
+        total_supply += vb.distribution_info.amount;
     });
 
     Ok(total_supply)
@@ -94,7 +99,7 @@ pub fn create_vesting_accounts(
 pub fn assert_schedule_vests_amount(
     env: &Env,
     schedule: &Curve,
-    amount: i128,
+    amount: u128,
 ) -> Result<(), ContractError> {
     schedule.validate_monotonic_decreasing()?;
     let (low, high) = schedule.range();
@@ -104,7 +109,7 @@ pub fn assert_schedule_vests_amount(
             "Vesting: Transfer Vesting: Cannot transfer when non-fully vested"
         );
         panic_with_error!(&env, ContractError::NeverFullyVested)
-    } else if high as i128 > amount {
+    } else if high > amount {
         log!(
             &env,
             "Vesting: Assert Schedule Vest Amount: Vesting amount more than sent"
@@ -154,7 +159,6 @@ mod test {
             &env,
             VestingBalance {
                 rcpt_address: address1.clone(),
-                balance: 100,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -163,7 +167,6 @@ mod test {
             },
             VestingBalance {
                 rcpt_address: address2.clone(),
-                balance: 200,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -172,7 +175,6 @@ mod test {
             },
             VestingBalance {
                 rcpt_address: address3.clone(),
-                balance: 300,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -193,7 +195,6 @@ mod test {
             &env,
             VestingBalance {
                 rcpt_address: Address::generate(&env),
-                balance: 100,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -202,7 +203,6 @@ mod test {
             },
             VestingBalance {
                 rcpt_address: Address::generate(&env),
-                balance: 200,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -211,7 +211,6 @@ mod test {
             },
             VestingBalance {
                 rcpt_address: Address::generate(&env),
-                balance: 300,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -257,7 +256,7 @@ mod test {
     )]
     fn assert_schedule_vests_amount_fails_when_high_bigger_than_amount() {
         const HIGH: u128 = 2;
-        const AMOUNT: i128 = 1;
+        const AMOUNT: u128 = 1;
         let env = Env::default();
         let curve = Curve::SaturatingLinear(SaturatingLinear {
             min_x: 15,
@@ -293,7 +292,6 @@ mod test {
             &env,
             VestingBalance {
                 rcpt_address: vester1.clone(),
-                balance: 200,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,

@@ -31,14 +31,13 @@ pub struct VestingTokenInfo {
     pub symbol: String,
     pub decimals: u32,
     pub address: Address,
-    pub total_supply: i128,
+    pub total_supply: u128,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingBalance {
     pub rcpt_address: Address,
-    pub balance: i128,
     pub distribution_info: DistributionInfo,
 }
 
@@ -54,13 +53,13 @@ pub struct MinterInfo {
 pub struct DistributionInfo {
     pub start_timestamp: u64,
     pub end_timestamp: u64,
-    pub amount: u128,
+    pub amount: u128, // this is fine. this will be constant for historical data checking
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingInfo {
-    pub sender_balance: i128,
+    pub balance: u128, // rename to balance. this is the thingn that we will update during transfer msgs
     pub distribution_info: DistributionInfo,
 }
 
@@ -95,11 +94,13 @@ pub fn get_admin(env: &Env) -> Address {
         })
 }
 
-pub fn save_balance(env: &Env, address: &Address, balance: &i128) {
+pub fn save_balance(env: &Env, address: &Address, balance: &u128) {
     env.storage().persistent().set(address, balance);
 }
 
 pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
+    // TODO: check if the user already has a saved vesting schedule, if so combinen both Curve and update the balance
+    // we update both VestingInfo and DistributionInfo
     env.storage().instance().set(address, vesting_info);
 }
 
@@ -136,11 +137,11 @@ pub fn get_minter(env: &Env) -> Option<MinterInfo> {
     env.storage().persistent().get(&DataKey::Minter)
 }
 
-pub fn get_vesting_total_supply(env: &Env) -> i128 {
+pub fn get_vesting_total_supply(env: &Env) -> u128 {
     get_token_info(env).total_supply
 }
 
-pub fn update_vesting_total_supply(env: &Env, amount: i128) {
+pub fn update_vesting_total_supply(env: &Env, amount: u128) {
     let mut token_info = get_token_info(env);
     token_info.total_supply = amount;
     save_token_info(env, &token_info);
