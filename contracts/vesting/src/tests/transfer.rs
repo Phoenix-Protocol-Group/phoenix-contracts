@@ -46,10 +46,27 @@ fn transfer_tokens() {
 
     let vesting_client = instantiate_vesting_client(&env);
 
+    // admin has 1_000 vesting tokens prior to initializing the contract
+    assert_eq!(token_client.balance(&admin), 1_000);
+
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
-    soroban_sdk::testutils::arbitrary::std::dbg!(env.ledger().timestamp());
-    vesting_client.collect_vesting(&vester1, &vester2, &100);
+    // after initialization the admin has 0 vesting tokens
+    // contract has 1_000 vesting tokens
+    assert_eq!(token_client.balance(&admin), 0);
+    assert_eq!(token_client.balance(&vesting_client.address), 1_000);
+
+    // vester1 has 0 tokens before claiming the vested amount
+    assert_eq!(vesting_client.query_balance(&vester1), 0);
+
+    // user collects the vested tokens and transfers them to himself
+    vesting_client.collect_vesting(&vester1, &vester1, &100);
+
+    // vester1 has 100 tokens after claiming the vested amount
+    assert_eq!(vesting_client.query_balance(&vester1), 100);
+
+    // there must be 900 vesting tokens left in the contract
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 900);
 }
 
 #[test]

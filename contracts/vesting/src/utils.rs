@@ -10,6 +10,7 @@ use crate::{
 
 pub fn update_balances(env: &Env, sender: &Address, amount: i128) -> Result<(), ContractError> {
     let vesting_info = get_vesting(env, sender)?;
+    soroban_sdk::testutils::arbitrary::std::dbg!(env.ledger().timestamp());
     let vested_amount_available_for_withdrawal = vesting_info
         .distribution_info
         .get_curve()
