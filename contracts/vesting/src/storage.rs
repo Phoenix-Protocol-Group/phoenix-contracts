@@ -1,4 +1,4 @@
-use curve::{Curve, SaturatingLinear};
+use curve::{Curve, SaturatingLinear, Step};
 use soroban_sdk::{
     contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
 };
@@ -80,6 +80,20 @@ impl DistributionInfo {
     }
 }
 
+// trait CurveExt {
+//     fn start(&self) -> Option<u64>;
+// }
+
+// impl CurveExt for Curve {
+//     fn start(&self) -> Option<u64> {
+//         match self {
+//             Curve::Constant(_) => Some(0),
+//             Curve::SaturatingLinear(curve) => Some(curve.min_x),
+//             Curve::PiecewiseLinear(curve) => curve.steps.last().map(|Step { time, value: _ }| time),
+//         }
+//     }
+// }
+
 pub fn save_admin(env: &Env, admin: &Address) {
     env.storage().persistent().set(&DataKey::Admin, admin);
 }
@@ -101,6 +115,20 @@ pub fn save_balance(env: &Env, address: &Address, balance: &u128) {
 pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
     // TODO: check if the user already has a saved vesting schedule, if so combinen both Curve and update the balance
     // we update both VestingInfo and DistributionInfo
+    // if env.storage().instance().has(address) {
+    //     let mut old_vesting_info: VestingInfo = env.storage().instance().get(address).expect("Vesting: Save vesting info: Critical error - no vesting found, when there should have been one");
+    //     old_vesting_info.balance += vesting_info.balance;
+    //     let new_distribution_info = old_vesting_info
+    //         .distribution_info
+    //         .get_curve()
+    //         .combine(&env, &vesting_info.distribution_info.get_curve());
+
+    //     old_vesting_info.distribution_info = DistributionInfo {
+    //         start_timestamp: new_distribution_info.min_x,
+    //         end_timestamp: new_distribution_info.max_x,
+    //         amount: new_distribution_info.min_y,
+    //     };
+    // }
     env.storage().instance().set(address, vesting_info);
 }
 

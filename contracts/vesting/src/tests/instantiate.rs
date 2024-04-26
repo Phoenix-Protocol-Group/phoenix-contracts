@@ -21,7 +21,7 @@ fn instantiate_contract_successfully() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 480,
+        total_supply: 360,
     };
     let vesting_balances = vec![
         &env,
@@ -68,7 +68,7 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 240,
+        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -158,7 +158,7 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
-        mint_capacity: 500,
+        mint_capacity: 100,
     };
 
     let vesting_client = instantiate_vesting_client(&env);

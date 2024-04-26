@@ -67,7 +67,7 @@ fn transfer_tokens() {
     assert_eq!(vesting_client.query_balance(&vester1), 0);
 
     // user collects the vested tokens and transfers them to himself
-    vesting_client.collect_vesting(&vester1, &vester1, &100);
+    vesting_client.transfer_token(&vester1, &vester1, &100);
 
     // vester1 has 100 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 100);
@@ -119,7 +119,7 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
         .with_mut(|li| li.timestamp = START_TIMESTAMP - 10);
 
     // we try to transfer the tokens before the vesting period has started
-    vesting_client.collect_vesting(&vester1, &vester1, &100);
+    vesting_client.transfer_token(&vester1, &vester1, &100);
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn transfer_tokens_should_fail_invalid_amount() {
 
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
-    vesting_client.collect_vesting(&vester1, &vester2, &0);
+    vesting_client.transfer_token(&vester1, &vester2, &0);
 }
 
 #[test]
@@ -211,7 +211,7 @@ fn verify_vesting_works() {
     // we try to transfer the tokens before the vesting period has started
     let vest1_before = vesting_client.query_balance(&rcpt1);
     soroban_sdk::testutils::arbitrary::std::dbg!(vest1_before);
-    vesting_client.collect_vesting(&rcpt1, &rcpt2, &200);
+    vesting_client.transfer_token(&rcpt1, &rcpt2, &200);
     let reslt = vesting_client.query_balance(&rcpt2);
     soroban_sdk::testutils::arbitrary::std::dbg!(reslt);
 }

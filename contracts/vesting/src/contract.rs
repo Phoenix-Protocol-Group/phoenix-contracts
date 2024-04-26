@@ -33,7 +33,7 @@ pub trait VestingTrait {
         max_vesting_complexity: u32,
     ) -> Result<(), ContractError>;
 
-    fn collect_vesting(
+    fn transfer_token(
         env: Env,
         sender: Address,
         recipient: Address,
@@ -128,12 +128,18 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::MissingBalance);
         }
 
-        let total_supply = create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
-        if total_supply != vesting_token.total_supply {}
+        let total_supply = create_vesting_accounts(
+            &env,
+            max_vesting_complexity,
+            vesting_token.total_supply,
+            vesting_balances,
+        )?;
+
         if let Some(mi) = minter_info {
             let input_curve = Curve::Constant(mi.mint_capacity);
 
             let capacity = input_curve.value(env.ledger().timestamp());
+            soroban_sdk::testutils::arbitrary::std::dbg!(total_supply, capacity);
             if total_supply > capacity {
                 log!(&env, "Vesting: Initialize: total supply over the capacity");
                 panic_with_error!(env, ContractError::SupplyOverTheCap);
@@ -158,8 +164,7 @@ impl VestingTrait for Vesting {
         Ok(())
     }
 
-    fn collect_vesting(
-        // TODO rename back to transfeR_token
+    fn transfer_token(
         env: Env,
         sender: Address,
         recipient: Address,
