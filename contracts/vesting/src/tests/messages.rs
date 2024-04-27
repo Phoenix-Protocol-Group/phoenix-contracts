@@ -477,6 +477,120 @@ fn update_minter_fails_when_not_authorized() {
 }
 
 #[test]
+#[should_panic(expected = "Vesting: Mint: Minter not found")]
+fn minting_fails_because_no_minter_was_found() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+    token.mint(&admin, &120);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token.address.clone(),
+        total_supply: 120,
+    };
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            rcpt_address: vester1.clone(),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                end_timestamp: 60,
+                amount: 120,
+            },
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+
+    vesting_client.mint(&Address::generate(&env), &500);
+}
+
+#[test]
+#[should_panic(expected = "Vesting: Update Minter Capacity: Minter not found")]
+fn update_minter_fails_because_no_minter_found() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+    token.mint(&admin, &120);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token.address.clone(),
+        total_supply: 120,
+    };
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            rcpt_address: vester1.clone(),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                end_timestamp: 60,
+                amount: 120,
+            },
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+
+    vesting_client.update_minter_capacity(&admin, &500);
+}
+
+#[test]
+#[should_panic(expected = "Vesting: Query Minter: Minter not found")]
+fn query_minter_should_fail_because_no_minter_found() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+    token.mint(&admin, &120);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token.address.clone(),
+        total_supply: 120,
+    };
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            rcpt_address: vester1.clone(),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                end_timestamp: 60,
+                amount: 120,
+            },
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+
+    vesting_client.query_minter();
+}
+
+#[test]
 fn test_should_update_minter_capacity_when_replacing_old_capacity() {
     let env = Env::default();
     env.mock_all_auths();

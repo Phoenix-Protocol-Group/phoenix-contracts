@@ -172,3 +172,40 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
         &10u32,
     );
 }
+
+#[should_panic(
+    expected = "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
+)]
+#[test]
+fn instantiate_contract_should_panic_when_admin_has_no_tokens_to_fund() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+
+    let token_client = deploy_token_contract(&env, &admin);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token_client.address.clone(),
+        total_supply: 1_000,
+    };
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            rcpt_address: vester1,
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                end_timestamp: 60,
+                amount: 120,
+            },
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+}
