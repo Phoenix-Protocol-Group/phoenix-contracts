@@ -42,7 +42,7 @@ pub trait VestingTrait {
 
     fn burn(env: Env, sender: Address, amount: u128) -> Result<(), ContractError>;
 
-    fn mint(env: Env, sender: Address, to: Address, amount: i128);
+    fn mint(env: Env, sender: Address, amount: i128);
 
     // TODO: we will need these in the future, not needed for the most basic implementation right now
     // TODO: replace the tuple `owner_spender: (Address, Address)` with how it is in `send_to_contract_from`
@@ -135,8 +135,8 @@ impl VestingTrait for Vesting {
             vesting_balances,
         )?;
 
-        if let Some(mi) = minter_info {
-            let input_curve = Curve::Constant(mi.mint_capacity);
+        if let Some(minter) = minter_info {
+            let input_curve = Curve::Constant(minter.mint_capacity);
 
             let capacity = input_curve.value(env.ledger().timestamp());
 
@@ -144,7 +144,7 @@ impl VestingTrait for Vesting {
                 log!(&env, "Vesting: Initialize: total supply over the capacity");
                 panic_with_error!(env, ContractError::SupplyOverTheCap);
             }
-            save_minter(&env, &mi);
+            save_minter(&env, &minter);
         }
 
         let token_info = VestingTokenInfo {
@@ -182,6 +182,10 @@ impl VestingTrait for Vesting {
         verify_vesting_and_update_balances(&env, &sender, amount as u128)?;
         token_client.transfer(&env.current_contract_address(), &recipient, &amount);
 
+        let old_total_supply = get_vesting_total_supply(&env);
+        let new_total_supply = old_total_supply - amount as u128;
+        update_vesting_total_supply(&env, new_total_supply);
+
         env.events().publish(
             (
                 "Transfer token",
@@ -196,13 +200,8 @@ impl VestingTrait for Vesting {
     fn burn(env: Env, sender: Address, amount: u128) -> Result<(), ContractError> {
         sender.require_auth();
 
-        if amount <= 0 {
-            log!(&env, "Vesting: Burn: Invalid burn amount");
-            panic_with_error!(env, ContractError::InvalidBurnAmount);
-        }
-
         let remainder = get_vesting_total_supply(&env) - amount;
-        if remainder >= 0 {
+        if remainder > 0 {
             update_vesting_total_supply(&env, remainder);
         } else {
             log!(
@@ -222,7 +221,7 @@ impl VestingTrait for Vesting {
         Ok(())
     }
 
-    fn mint(env: Env, sender: Address, to: Address, amount: i128) {
+    fn mint(env: Env, sender: Address, amount: i128) {
         sender.require_auth();
 
         if amount <= 0 {
@@ -244,23 +243,41 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::NotAuthorized);
         }
 
+        // check if minter has enough to mint
+        let minter_remainder = get_minter(&env)
+            .map_or(0, |m| m.mint_capacity)
+            .checked_sub(amount as u128)
+            .unwrap_or_else(|| {
+                log!(&env, "Vesting: Mint: Minter does not have enough to mint");
+                panic_with_error!(env, ContractError::NotEnoughBalance);
+            });
+
         // update supply and capacity
         let updated_total_supply = get_vesting_total_supply(&env) + amount as u128;
 
         update_vesting_total_supply(&env, updated_total_supply);
 
-        let limit = minter.get_curve().value(env.ledger().timestamp());
-        if updated_total_supply >= limit {
-            log!(&env, "Vesting: Mint: total supply over the capacity");
-            panic_with_error!(env, ContractError::SupplyOverTheCap);
-        }
+        // TODO: we already check this with the minter_remainder
+        // let limit = minter.get_curve().value(env.ledger().timestamp());
+        // if updated_total_supply > limit {
+        //     log!(&env, "Vesting: Mint: total supply over the capacity");
+        //     panic_with_error!(env, ContractError::SupplyOverTheCap);
+        // }
 
         // mint to recipient
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
-        token_client.mint(&to, &amount);
+        token_client.mint(&env.current_contract_address(), &amount);
+
+        // we update the minter
+        save_minter(
+            &env,
+            &MinterInfo {
+                address: minter.address,
+                mint_capacity: minter_remainder,
+            },
+        );
 
         env.events().publish(("Mint", "sender: "), sender);
-        env.events().publish(("Mint", "Recipient: "), to);
         env.events().publish(("Mint", "Minted tokens: "), amount);
     }
 
