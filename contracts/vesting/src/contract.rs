@@ -200,19 +200,13 @@ impl VestingTrait for Vesting {
     fn burn(env: Env, sender: Address, amount: u128) -> Result<(), ContractError> {
         sender.require_auth();
 
-        let remainder = get_vesting_total_supply(&env) - amount;
-        if remainder > 0 {
-            update_vesting_total_supply(&env, remainder);
-        } else {
-            log!(
-                &env,
-                "Vesting: Burn: Critical error - total supply cannot be negative"
-            );
-            panic_with_error!(env, ContractError::Std);
-        };
+        if amount == 0 {
+            log!(&env, "Vesting: Burn: Invalid burn amount");
+            panic_with_error!(env, ContractError::InvalidBurnAmount);
+        }
+
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        verify_vesting_and_update_balances(&env, &sender, amount)?;
         token_client.burn(&sender, &(amount as i128));
 
         env.events().publish(("Burn", "Burned from: "), sender);

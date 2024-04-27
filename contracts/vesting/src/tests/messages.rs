@@ -44,11 +44,14 @@ fn burn_works() {
     env.ledger().with_mut(|li| li.timestamp = 100);
     assert_eq!(vesting_client.query_vesting_total_supply(), 1_000);
 
-    // vester can burn only what he has as vested rewards
+    // vester can burn only what he has collected vested rewards
+    // TODO: what if we skip the step of collecting the tokens and proceed straight to burning?
+    vesting_client.transfer_token(&vester1, &vester1, &120);
+    assert_eq!(token.balance(&vester1), 120);
     vesting_client.burn(&vester1, &120);
+    assert_eq!(token.balance(&vester1), 0);
 
     assert_eq!(vesting_client.query_vesting_total_supply(), 880);
-    assert_eq!(token.balance(&vester1), 0);
 }
 
 #[test]
@@ -62,14 +65,14 @@ fn burn_should_panic_when_invalid_amount() {
     let vester1 = Address::generate(&env);
     let token = deploy_token_contract(&env, &admin);
 
-    token.mint(&vester1, &1_000);
+    token.mint(&admin, &1_000);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 0,
+        total_supply: 1_000,
     };
     let vesting_balances = vec![
         &env,
@@ -87,42 +90,6 @@ fn burn_should_panic_when_invalid_amount() {
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     vesting_client.burn(&vester1, &0);
-}
-
-#[test]
-#[should_panic(expected = "Vesting: Burn: Critical error - total supply cannot be negative")]
-fn burn_should_panic_when_total_supply_becomes_negative() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
-    let token = deploy_token_contract(&env, &admin);
-
-    token.mint(&vester1, &1_300);
-
-    let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
-        decimals: 6,
-        address: token.address.clone(),
-        total_supply: 0,
-    };
-    let vesting_balances = vec![
-        &env,
-        VestingBalance {
-            rcpt_address: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
-    let vesting_client = instantiate_vesting_client(&env);
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
-    vesting_client.burn(&vester1, &600);
 }
 
 #[test]
