@@ -3,7 +3,7 @@ use soroban_sdk::{log, panic_with_error, Address, Env, Vec};
 
 use crate::{
     error::ContractError,
-    storage::{get_vesting, remove_vesting, save_vesting, VestingBalance, VestingInfo},
+    storage::{get_vesting, save_vesting, VestingBalance, VestingInfo},
 };
 
 pub fn verify_vesting_and_update_balances(
@@ -144,11 +144,10 @@ fn validate_accounts(
 #[cfg(test)]
 mod test {
     use curve::SaturatingLinear;
-    use soroban_sdk::testutils::{Address as _, Ledger};
-    use soroban_sdk::{vec, String};
+    use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::vec;
 
-    use crate::storage::{DistributionInfo, VestingTokenInfo};
-    use crate::tests::setup::{deploy_token_contract, instantiate_vesting_client};
+    use crate::storage::DistributionInfo;
 
     use super::*;
 

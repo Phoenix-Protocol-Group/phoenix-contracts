@@ -107,10 +107,6 @@ pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, Contract
     Ok(vesting_info)
 }
 
-pub fn remove_vesting(env: &Env, address: &Address) {
-    env.storage().persistent().remove(address);
-}
-
 // TODO: uncomment when needed
 // pub fn get_allowances(env: &Env, owner_spender: &(Address, Address)) -> i128 {
 //     env.storage().persistent().get(owner_spender).unwrap_or_else(|| {
