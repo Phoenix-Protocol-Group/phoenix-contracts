@@ -1,0 +1,20 @@
+[package]
+name = "phoenix-trader"
+version = { workspace = true }
+authors = ["Jakub <jakub@moonbite.space>", "Kaloyan <gangov1@gmail.com>"]
+repository = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+testutils = ["soroban-sdk/testutils"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+decimal = { workspace = true }
+
+[dev_dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
