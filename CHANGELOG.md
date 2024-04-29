@@ -13,6 +13,7 @@ and this project adheres to
 - CI: Update rust to 1.77.0 ([#275])
 - Pool: Replace belief_price swap parameter with minimum amount of tokens expected to be received ([#280])
 - Stake: Checks if curve complexity is too high during operations and also optimises the curve combine process ([#283])
+- Pool: Temporarily disable the feature that allows to provide liquidity with a single token ([#289])
 
 ## Added
 
@@ -23,6 +24,7 @@ and this project adheres to
 [#274]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/274
 [#280]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/280
 [#283]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/283
+[#289]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/289
 
 ## Bug fixes
 

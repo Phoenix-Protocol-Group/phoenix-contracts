@@ -285,59 +285,61 @@ impl LiquidityPoolTrait for LiquidityPool {
                     Decimal::bps(custom_slippage_bps.unwrap_or(100)),
                 )
             }
-            // Only token A is provided
-            (Some(a), None) if a > 0 => {
-                let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
-                    &env,
-                    &config,
-                    pool_balance_a,
-                    pool_balance_b,
-                    a,
-                    &config.token_a,
-                );
-                do_swap(
-                    env.clone(),
-                    sender.clone(),
-                    // FIXM: Disable Referral struct
-                    // None,
-                    config.clone().token_a,
-                    a_for_swap,
-                    // expected amount of ask token from swap
-                    Some(b_from_swap),
-                    None,
-                );
-                // return: rest of Token A amount, simulated result of swap of portion A
-                (a - a_for_swap, b_from_swap)
-            }
-            // Only token B is provided
-            (None, Some(b)) if b > 0 => {
-                let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
-                    &env,
-                    &config,
-                    pool_balance_a,
-                    pool_balance_b,
-                    b,
-                    &config.token_b,
-                );
-                do_swap(
-                    env.clone(),
-                    sender.clone(),
-                    // FIXM: Disable Referral struct
-                    // None,
-                    config.clone().token_b,
-                    b_for_swap,
-                    // expected amount of ask token from swap
-                    Some(a_from_swap),
-                    None,
-                );
-                // return: simulated result of swap of portion B, rest of Token B amount
-                (a_from_swap, b - b_for_swap)
-            }
+            // TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
+            // Providing liquidity with a single token is temporarily disabled
+            // // Only token A is provided
+            // (Some(a), None) if a > 0 => {
+            //     let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
+            //         &env,
+            //         &config,
+            //         pool_balance_a,
+            //         pool_balance_b,
+            //         a,
+            //         &config.token_a,
+            //     );
+            //     do_swap(
+            //         env.clone(),
+            //         sender.clone(),
+            //         // FIXM: Disable Referral struct
+            //         // None,
+            //         config.clone().token_a,
+            //         a_for_swap,
+            //         // expected amount of ask token from swap
+            //         Some(b_from_swap),
+            //         None,
+            //     );
+            //     // return: rest of Token A amount, simulated result of swap of portion A
+            //     (a - a_for_swap, b_from_swap)
+            // }
+            // // Only token B is provided
+            // (None, Some(b)) if b > 0 => {
+            //     let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
+            //         &env,
+            //         &config,
+            //         pool_balance_a,
+            //         pool_balance_b,
+            //         b,
+            //         &config.token_b,
+            //     );
+            //     do_swap(
+            //         env.clone(),
+            //         sender.clone(),
+            //         // FIXM: Disable Referral struct
+            //         // None,
+            //         config.clone().token_b,
+            //         b_for_swap,
+            //         // expected amount of ask token from swap
+            //         Some(a_from_swap),
+            //         None,
+            //     );
+            //     // return: simulated result of swap of portion B, rest of Token B amount
+            //     (a_from_swap, b - b_for_swap)
+            // }
             // None or invalid amounts are provided
             _ => {
                 log!(
                     &env,
-                        "Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!"
+                        "Pool: ProvideLiquidity: Both tokens must be provided and must be bigger then 0!"
                 );
                 panic_with_error!(
                     env,
@@ -852,6 +854,9 @@ fn do_swap(
 /// # Returns
 /// * A tuple `(final_offer_amount, final_ask_amount)`, where `final_offer_amount` is the amount of deposit tokens
 ///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.
+///
+// TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
+#[allow(dead_code)]
 fn split_deposit_based_on_pool_ratio(
     env: &Env,
     config: &Config,
