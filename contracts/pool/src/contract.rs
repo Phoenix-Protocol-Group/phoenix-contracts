@@ -854,6 +854,9 @@ fn do_swap(
 /// # Returns
 /// * A tuple `(final_offer_amount, final_ask_amount)`, where `final_offer_amount` is the amount of deposit tokens
 ///   to be swapped, and `final_ask_amount` is the amount of the other tokens that will be received in return.
+///
+// TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
+#[allow(dead_code)]
 fn split_deposit_based_on_pool_ratio(
     env: &Env,
     config: &Config,
