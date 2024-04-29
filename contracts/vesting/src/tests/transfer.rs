@@ -19,14 +19,13 @@ fn transfer_tokens_when_fully_vested() {
     let vester1 = Address::generate(&env);
     let token_client = deploy_token_contract(&env, &admin);
 
-    token_client.mint(&admin, &1_000);
+    token_client.mint(&admin, &320);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
     };
 
     let vesting_balances = vec![
@@ -51,15 +50,15 @@ fn transfer_tokens_when_fully_vested() {
 
     let vesting_client = instantiate_vesting_client(&env);
 
-    // admin has 1_000 vesting tokens prior to initializing the contract
-    assert_eq!(token_client.balance(&admin), 1_000);
+    // admin has 320 vesting tokens prior to initializing the contract
+    assert_eq!(token_client.balance(&admin), 320);
 
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     // after initialization the admin has 0 vesting tokens
-    // contract has 1_000 vesting tokens
+    // contract has 320 vesting tokens
     assert_eq!(token_client.balance(&admin), 0);
-    assert_eq!(token_client.balance(&vesting_client.address), 1_000);
+    assert_eq!(token_client.balance(&vesting_client.address), 320);
 
     // vester1 has 0 tokens before claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 0);
@@ -73,8 +72,8 @@ fn transfer_tokens_when_fully_vested() {
     // vester1 has 120 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 120);
 
-    // there must be 880 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 880);
+    // there must be 200 vesting tokens left in the contract - remaining for the 2nd vester
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 200);
 }
 
 #[test]
@@ -87,14 +86,13 @@ fn transfer_tokens_when_half_vested() {
     let vester1 = Address::generate(&env);
     let token_client = deploy_token_contract(&env, &admin);
 
-    token_client.mint(&admin, &1_000);
+    token_client.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
     };
 
     let vesting_balances = vec![
@@ -111,15 +109,15 @@ fn transfer_tokens_when_half_vested() {
 
     let vesting_client = instantiate_vesting_client(&env);
 
-    // admin has 1_000 vesting tokens prior to initializing the contract
-    assert_eq!(token_client.balance(&admin), 1_000);
+    // admin has 120 vesting tokens prior to initializing the contract
+    assert_eq!(token_client.balance(&admin), 120);
 
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     // after initialization the admin has 0 vesting tokens
-    // contract has 1_000 vesting tokens
+    // contract has 120 vesting tokens
     assert_eq!(token_client.balance(&admin), 0);
-    assert_eq!(token_client.balance(&vesting_client.address), 1_000);
+    assert_eq!(token_client.balance(&vesting_client.address), 120);
 
     // vester1 has 0 tokens before claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 0);
@@ -133,8 +131,8 @@ fn transfer_tokens_when_half_vested() {
     // vester1 has 60 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 60);
 
-    // there must be 940 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 940);
+    // there must be 60 vesting tokens left in the contract
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 60);
 }
 
 #[test]
@@ -147,14 +145,13 @@ fn test_claim_tokens_once_then_claim_again() {
     let vester1 = Address::generate(&env);
     let token_client = deploy_token_contract(&env, &admin);
 
-    token_client.mint(&admin, &1_000);
+    token_client.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
     };
 
     let vesting_balances = vec![
@@ -171,15 +168,15 @@ fn test_claim_tokens_once_then_claim_again() {
 
     let vesting_client = instantiate_vesting_client(&env);
 
-    // admin has 1_000 vesting tokens prior to initializing the contract
-    assert_eq!(token_client.balance(&admin), 1_000);
+    // admin has 120 vesting tokens prior to initializing the contract
+    assert_eq!(token_client.balance(&admin), 120);
 
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     // after initialization the admin has 0 vesting tokens
-    // contract has 1_000 vesting tokens
+    // contract has 120 vesting tokens
     assert_eq!(token_client.balance(&admin), 0);
-    assert_eq!(token_client.balance(&vesting_client.address), 1_000);
+    assert_eq!(token_client.balance(&vesting_client.address), 120);
 
     // vester1 has 0 tokens before claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 0);
@@ -193,8 +190,8 @@ fn test_claim_tokens_once_then_claim_again() {
     // vester1 has 60 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 60);
 
-    // there must be 940 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 940);
+    // there must be 60 vesting tokens left in the contract
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 60);
 
     // we move time to the end of the vesting period
     env.ledger().with_mut(|li| li.timestamp = 60);
@@ -205,8 +202,8 @@ fn test_claim_tokens_once_then_claim_again() {
     // vester1 has 120 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 120);
 
-    // there must be 880 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 880);
+    // there must be 0 vesting tokens left in the contract
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);
 }
 
 #[test]
@@ -219,14 +216,13 @@ fn test_user_can_claim_tokens_way_after_the_testing_period() {
     let vester1 = Address::generate(&env);
     let token_client = deploy_token_contract(&env, &admin);
 
-    token_client.mint(&admin, &1_000);
+    token_client.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
     };
 
     let vesting_balances = vec![
@@ -243,15 +239,15 @@ fn test_user_can_claim_tokens_way_after_the_testing_period() {
 
     let vesting_client = instantiate_vesting_client(&env);
 
-    // admin has 1_000 vesting tokens prior to initializing the contract
-    assert_eq!(token_client.balance(&admin), 1_000);
+    // admin has 120 vesting tokens prior to initializing the contract
+    assert_eq!(token_client.balance(&admin), 120);
 
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     // after initialization the admin has 0 vesting tokens
-    // contract has 1_000 vesting tokens
+    // contract has 120 vesting tokens
     assert_eq!(token_client.balance(&admin), 0);
-    assert_eq!(token_client.balance(&vesting_client.address), 1_000);
+    assert_eq!(token_client.balance(&vesting_client.address), 120);
 
     // vester1 has 0 tokens before claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 0);
@@ -265,8 +261,8 @@ fn test_user_can_claim_tokens_way_after_the_testing_period() {
     // vester1 has 120 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 120);
 
-    // there must be 880 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 880);
+    // there must be 0 vesting tokens left in the contract
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);
 }
 
 #[test]
@@ -279,14 +275,13 @@ fn user_claims_only_a_part_of_the_allowed_vested_amount_then_claims_the_remainin
     let vester1 = Address::generate(&env);
     let token_client = deploy_token_contract(&env, &admin);
 
-    token_client.mint(&admin, &1_000);
+    token_client.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
         name: String::from_str(&env, "Phoenix"),
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
     };
 
     let vesting_balances = vec![
@@ -303,15 +298,15 @@ fn user_claims_only_a_part_of_the_allowed_vested_amount_then_claims_the_remainin
 
     let vesting_client = instantiate_vesting_client(&env);
 
-    // admin has 1_000 vesting tokens prior to initializing the contract
-    assert_eq!(token_client.balance(&admin), 1_000);
+    // admin has 120 vesting tokens prior to initializing the contract
+    assert_eq!(token_client.balance(&admin), 120);
 
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     // after initialization the admin has 0 vesting tokens
-    // contract has 1_000 vesting tokens
+    // contract has 120 vesting tokens
     assert_eq!(token_client.balance(&admin), 0);
-    assert_eq!(token_client.balance(&vesting_client.address), 1_000);
+    assert_eq!(token_client.balance(&vesting_client.address), 120);
 
     // vester1 has 0 tokens before claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 0);
@@ -325,34 +320,32 @@ fn user_claims_only_a_part_of_the_allowed_vested_amount_then_claims_the_remainin
     // vester1 has 15 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 15);
 
-    // there must be 985 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 985);
+    // there must be 105 vesting tokens left in the contract
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 105);
 
     // we move the time to the end of the vesting period
     env.ledger().with_mut(|li| li.timestamp = 60);
 
     // user collects 15 more tokens
-    soroban_sdk::testutils::arbitrary::std::dbg!("POI");
     vesting_client.transfer_token(&vester1, &vester1, &15);
 
     // vester1 has 30 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 30);
 
-    // there must be 970 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 970);
+    // there must be 90 vesting tokens left in the contract
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 90);
 
     // we move time way ahead in time
     env.ledger().with_mut(|li| li.timestamp = 1000);
 
     // user decides it's times to become milionaire and collects the remaining 90 tokens
-    soroban_sdk::testutils::arbitrary::std::dbg!("FINAL POI");
     vesting_client.transfer_token(&vester1, &vester1, &90);
 
     // vester1 has 120 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 120);
 
-    // there must be 880 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 880);
+    // there must be 0 vesting tokens left in the contract
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);
 }
 
 #[test]
@@ -376,7 +369,6 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
     };
 
     let vesting_balances = vec![
@@ -421,7 +413,6 @@ fn transfer_tokens_should_fail_invalid_amount() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address,
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -461,7 +452,6 @@ fn transfer_works_with_multiple_users_and_distributions() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
     };
 
     let vesting_balances = vec![

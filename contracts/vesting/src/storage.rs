@@ -31,7 +31,6 @@ pub struct VestingTokenInfo {
     pub symbol: String,
     pub decimals: u32,
     pub address: Address,
-    pub total_supply: u128,
 }
 
 #[contracttype]
@@ -125,16 +124,6 @@ pub fn save_minter(env: &Env, minter: &MinterInfo) {
 
 pub fn get_minter(env: &Env) -> Option<MinterInfo> {
     env.storage().persistent().get(&DataKey::Minter)
-}
-
-pub fn get_vesting_total_supply(env: &Env) -> u128 {
-    get_token_info(env).total_supply
-}
-
-pub fn update_vesting_total_supply(env: &Env, amount: u128) {
-    let mut token_info = get_token_info(env);
-    token_info.total_supply = amount;
-    save_token_info(env, &token_info);
 }
 
 pub fn save_token_info(env: &Env, token_info: &VestingTokenInfo) {

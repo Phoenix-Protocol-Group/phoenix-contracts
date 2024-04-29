@@ -9,8 +9,8 @@ use crate::utils::{create_vesting_accounts, verify_vesting_and_update_balances};
 use crate::{
     error::ContractError,
     storage::{
-        get_minter, get_vesting, get_vesting_total_supply, save_admin, save_minter,
-        update_vesting_total_supply, MinterInfo, VestingBalance, VestingTokenInfo,
+        get_minter, get_vesting, save_admin, save_minter, MinterInfo, VestingBalance,
+        VestingTokenInfo,
     },
     token_contract,
 };
@@ -87,7 +87,7 @@ pub trait VestingTrait {
 
     fn query_minter(env: Env) -> MinterInfo;
 
-    fn query_vesting_total_supply(env: Env) -> u128;
+    fn query_vesting_total_supply(env: Env) -> i128;
 }
 
 #[contractimpl]
@@ -101,22 +101,6 @@ impl VestingTrait for Vesting {
         max_vesting_complexity: u32,
     ) -> Result<(), ContractError> {
         admin.require_auth();
-        // check if the admin has enough tokens to start the vesting contract
-        let token_client = token_contract::Client::new(&env, &vesting_token.address);
-
-        if token_client.balance(&admin) < vesting_token.total_supply as i128 {
-            log!(
-                &env,
-                "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
-            );
-            panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
-        }
-
-        token_client.transfer(
-            &admin,
-            &env.current_contract_address(),
-            &(vesting_token.total_supply as i128),
-        );
 
         save_admin(&env, &admin);
 
@@ -128,19 +112,32 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::MissingBalance);
         }
 
-        let total_supply = create_vesting_accounts(
-            &env,
-            max_vesting_complexity,
-            vesting_token.total_supply,
-            vesting_balances,
-        )?;
+        let total_vested_amount =
+            create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
+
+        // check if the admin has enough tokens to start the vesting contract
+        let token_client = token_contract::Client::new(&env, &vesting_token.address);
+
+        if token_client.balance(&admin) < total_vested_amount as i128 {
+            log!(
+                &env,
+                "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
+            );
+            panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
+        }
+
+        token_client.transfer(
+            &admin,
+            &env.current_contract_address(),
+            &(total_vested_amount as i128),
+        );
 
         if let Some(minter) = minter_info {
             let input_curve = Curve::Constant(minter.mint_capacity);
 
             let capacity = input_curve.value(env.ledger().timestamp());
 
-            if total_supply > capacity {
+            if total_vested_amount > capacity {
                 log!(&env, "Vesting: Initialize: total supply over the capacity");
                 panic_with_error!(env, ContractError::SupplyOverTheCap);
             }
@@ -152,7 +149,6 @@ impl VestingTrait for Vesting {
             symbol: vesting_token.symbol,
             decimals: vesting_token.decimals,
             address: vesting_token.address,
-            total_supply: vesting_token.total_supply,
         };
 
         save_token_info(&env, &token_info);
@@ -181,10 +177,6 @@ impl VestingTrait for Vesting {
 
         verify_vesting_and_update_balances(&env, &sender, amount as u128)?;
         token_client.transfer(&env.current_contract_address(), &recipient, &amount);
-
-        let old_total_supply = get_vesting_total_supply(&env);
-        let new_total_supply = old_total_supply - amount as u128;
-        update_vesting_total_supply(&env, new_total_supply);
 
         env.events().publish(
             (
@@ -247,9 +239,9 @@ impl VestingTrait for Vesting {
             });
 
         // update supply and capacity
-        let updated_total_supply = get_vesting_total_supply(&env) + amount as u128;
+        // let updated_total_supply = get_vesting_total_supply(&env) + amount as u128;
 
-        update_vesting_total_supply(&env, updated_total_supply);
+        // update_vesting_total_supply(&env, updated_total_supply);
 
         // TODO: we already check this with the minter_remainder
         // let limit = minter.get_curve().value(env.ledger().timestamp());
@@ -539,7 +531,8 @@ impl VestingTrait for Vesting {
         }
     }
 
-    fn query_vesting_total_supply(env: Env) -> u128 {
-        get_vesting_total_supply(&env)
+    fn query_vesting_total_supply(env: Env) -> i128 {
+        let token_address = get_token_info(&env).address;
+        token_contract::Client::new(&env, &token_address).balance(&env.current_contract_address())
     }
 }

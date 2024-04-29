@@ -45,12 +45,11 @@ pub fn verify_vesting_and_update_balances(
 pub fn create_vesting_accounts(
     env: &Env,
     vesting_complexity: u32,
-    vesting_token_supply: u128,
     vesting_accounts: Vec<VestingBalance>,
 ) -> Result<u128, ContractError> {
-    validate_accounts(env, vesting_token_supply, vesting_accounts.clone())?;
+    validate_accounts(env, vesting_accounts.clone())?;
 
-    let mut total_supply = 0;
+    let mut total_vested_amount = 0;
 
     vesting_accounts.into_iter().for_each(|vb| {
         assert_schedule_vests_amount(
@@ -78,10 +77,10 @@ pub fn create_vesting_accounts(
             },
         );
 
-        total_supply += vb.distribution_info.amount;
+        total_vested_amount += vb.distribution_info.amount;
     });
 
-    Ok(total_supply)
+    Ok(total_vested_amount)
 }
 
 /// Asserts the vesting schedule decreases to 0 eventually, and is never more than the
@@ -110,27 +109,13 @@ pub fn assert_schedule_vests_amount(
     }
 }
 
-fn validate_accounts(
-    env: &Env,
-    vesting_token_supply: u128,
-    accounts: Vec<VestingBalance>,
-) -> Result<(), ContractError> {
+fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) -> Result<(), ContractError> {
     let mut addresses: Vec<Address> = Vec::new(env);
-    let mut total_supply = 0;
 
     for item in accounts.iter() {
         if !addresses.contains(&item.rcpt_address) {
             addresses.push_back(item.rcpt_address.clone());
-            total_supply += item.distribution_info.amount;
         }
-    }
-
-    if total_supply > vesting_token_supply {
-        log!(
-            &env,
-            "Vesting: Initialize: Amount to be vested more than the supplied by admin"
-        );
-        panic_with_error!(env, ContractError::SupplyOverTheCap);
     }
 
     if addresses.len() != accounts.len() {
@@ -157,8 +142,6 @@ mod test {
         let address1 = Address::generate(&env);
         let address2 = Address::generate(&env);
         let address3 = Address::generate(&env);
-
-        let admin_vested_amount = 360;
 
         let accounts = vec![
             &env,
@@ -188,17 +171,13 @@ mod test {
             },
         ];
 
-        assert_eq!(
-            validate_accounts(&env, admin_vested_amount, accounts),
-            Ok(())
-        );
+        assert_eq!(validate_accounts(&env, accounts), Ok(()));
     }
 
     #[test]
     #[should_panic(expected = "Vesting: Initialize: Duplicate addresses found")]
     fn validate_accounts_should_panic() {
         let env = Env::default();
-        let admin_vested_amount = 360;
         let duplicate_address = Address::generate(&env);
         let accounts = vec![
             &env,
@@ -228,7 +207,7 @@ mod test {
             },
         ];
 
-        validate_accounts(&env, admin_vested_amount, accounts).unwrap_err();
+        validate_accounts(&env, accounts).unwrap_err();
     }
 
     #[test]

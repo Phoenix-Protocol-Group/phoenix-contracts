@@ -21,7 +21,6 @@ fn instantiate_contract_successfully() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 360,
     };
     let vesting_balances = vec![
         &env,
@@ -68,7 +67,6 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -116,7 +114,6 @@ fn instantiate_contract_without_any_vesting_balances_should_fail() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 100,
     };
     let vesting_balances = vec![&env];
 
@@ -142,7 +139,6 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
     };
     let vesting_balances = vec![
         &env,
@@ -191,7 +187,6 @@ fn instantiate_contract_should_panic_when_admin_has_no_tokens_to_fund() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token_client.address.clone(),
-        total_supply: 1_000,
     };
     let vesting_balances = vec![
         &env,

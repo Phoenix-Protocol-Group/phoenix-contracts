@@ -24,7 +24,6 @@ fn burn_works() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 1_000,
     };
     let vesting_balances = vec![
         &env,
@@ -42,16 +41,14 @@ fn burn_works() {
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     env.ledger().with_mut(|li| li.timestamp = 100);
-    assert_eq!(vesting_client.query_vesting_total_supply(), 1_000);
+    assert_eq!(vesting_client.query_vesting_total_supply(), 120);
 
-    // vester can burn only what he has collected vested rewards
-    // TODO: what if we skip the step of collecting the tokens and proceed straight to burning?
     vesting_client.transfer_token(&vester1, &vester1, &120);
+    assert_eq!(vesting_client.query_vesting_total_supply(), 0);
     assert_eq!(token.balance(&vester1), 120);
+
     vesting_client.burn(&vester1, &120);
     assert_eq!(token.balance(&vester1), 0);
-
-    assert_eq!(vesting_client.query_vesting_total_supply(), 880);
 }
 
 #[test]
@@ -72,7 +69,6 @@ fn burn_should_panic_when_invalid_amount() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 1_000,
     };
     let vesting_balances = vec![
         &env,
@@ -110,7 +106,6 @@ fn mint_works() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -182,7 +177,6 @@ fn mint_should_panic_when_invalid_amount() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -231,7 +225,6 @@ fn mint_should_panic_when_not_authorized_to_mint() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -281,7 +274,6 @@ fn mint_should_panic_when_mintet_does_not_have_enough() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -330,7 +322,6 @@ fn update_minter_works_correctly() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -391,7 +382,6 @@ fn update_minter_works_correctly_when_no_minter_was_set_initially() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -440,7 +430,6 @@ fn update_minter_fails_when_not_authorized() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -494,7 +483,6 @@ fn minting_fails_because_no_minter_was_found() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -532,7 +520,6 @@ fn update_minter_fails_because_no_minter_found() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -570,7 +557,6 @@ fn query_minter_should_fail_because_no_minter_found() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
     let vesting_balances = vec![
         &env,
@@ -608,7 +594,6 @@ fn test_should_update_minter_capacity_when_replacing_old_capacity() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
 
     let vesting_balances = vec![
@@ -667,7 +652,6 @@ fn test_should_panic_when_updating_minter_capacity_without_auth() {
         symbol: String::from_str(&env, "PHO"),
         decimals: 6,
         address: token.address.clone(),
-        total_supply: 120,
     };
 
     let vesting_balances = vec![
