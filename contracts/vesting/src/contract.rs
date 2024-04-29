@@ -238,18 +238,6 @@ impl VestingTrait for Vesting {
                 panic_with_error!(env, ContractError::NotEnoughBalance);
             });
 
-        // update supply and capacity
-        // let updated_total_supply = get_vesting_total_supply(&env) + amount as u128;
-
-        // update_vesting_total_supply(&env, updated_total_supply);
-
-        // TODO: we already check this with the minter_remainder
-        // let limit = minter.get_curve().value(env.ledger().timestamp());
-        // if updated_total_supply > limit {
-        //     log!(&env, "Vesting: Mint: total supply over the capacity");
-        //     panic_with_error!(env, ContractError::SupplyOverTheCap);
-        // }
-
         // mint to recipient
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
         token_client.mint(&env.current_contract_address(), &amount);
