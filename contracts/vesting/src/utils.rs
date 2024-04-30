@@ -111,19 +111,14 @@ pub fn assert_schedule_vests_amount(
 
 fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) -> Result<(), ContractError> {
     let mut addresses: Vec<Address> = Vec::new(env);
-
-    for item in accounts.iter() {
-        if !addresses.contains(&item.rcpt_address) {
-            addresses.push_back(item.rcpt_address.clone());
+    for account in accounts.iter() {
+        if addresses.contains(&account.rcpt_address) {
+            log!(&env, "Vesting: Initialize: Duplicate addresses found");
+            panic_with_error!(env, ContractError::DuplicateInitialBalanceAddresses);
         }
+        addresses.push_back(account.rcpt_address.clone());
     }
-
-    if addresses.len() != accounts.len() {
-        log!(&env, "Vesting: Initialize: Duplicate addresses found");
-        panic_with_error!(env, ContractError::DuplicateInitialBalanceAddresses);
-    } else {
-        Ok(())
-    }
+    Ok(())
 }
 
 #[cfg(test)]
