@@ -41,10 +41,10 @@ fn burn_works() {
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
     env.ledger().with_mut(|li| li.timestamp = 100);
-    assert_eq!(vesting_client.query_vesting_total_supply(), 120);
+    assert_eq!(vesting_client.query_vesting_contract_balance(), 120);
 
     vesting_client.transfer_token(&vester1, &vester1, &120);
-    assert_eq!(vesting_client.query_vesting_total_supply(), 0);
+    assert_eq!(vesting_client.query_vesting_contract_balance(), 0);
     assert_eq!(token.balance(&vester1), 120);
 
     vesting_client.burn(&vester1, &120);
@@ -134,7 +134,7 @@ fn mint_works() {
     );
 
     // we start with 120 tokens minted to the contract
-    assert_eq!(vesting_client.query_vesting_total_supply(), 120);
+    assert_eq!(vesting_client.query_vesting_contract_balance(), 120);
     // amdin should have none
     assert_eq!(token.balance(&admin), 0);
 
@@ -145,17 +145,17 @@ fn mint_works() {
     env.ledger().with_mut(|li| li.timestamp = 100);
     vesting_client.transfer_token(&vester1, &vester1, &120);
     assert_eq!(token.balance(&vester1), 120);
-    assert_eq!(vesting_client.query_vesting_total_supply(), 0);
+    assert_eq!(vesting_client.query_vesting_contract_balance(), 0);
 
     // minter decides to mint new 250 tokens
     vesting_client.mint(&minter, &250);
-    assert_eq!(vesting_client.query_vesting_total_supply(), 250);
+    assert_eq!(vesting_client.query_vesting_contract_balance(), 250);
     assert_eq!(vesting_client.query_minter().mint_capacity, 250);
 
     // we mint 250 more tokens
     env.ledger().with_mut(|li| li.timestamp = 200);
     vesting_client.mint(&minter, &250);
-    assert_eq!(vesting_client.query_vesting_total_supply(), 500);
+    assert_eq!(vesting_client.query_vesting_contract_balance(), 500);
     assert_eq!(vesting_client.query_minter().mint_capacity, 0);
 }
 

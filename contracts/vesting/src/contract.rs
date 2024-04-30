@@ -87,7 +87,7 @@ pub trait VestingTrait {
 
     fn query_minter(env: Env) -> MinterInfo;
 
-    fn query_vesting_total_supply(env: Env) -> i128;
+    fn query_vesting_contract_balance(env: Env) -> i128;
 }
 
 #[contractimpl]
@@ -525,7 +525,7 @@ impl VestingTrait for Vesting {
         }
     }
 
-    fn query_vesting_total_supply(env: Env) -> i128 {
+    fn query_vesting_contract_balance(env: Env) -> i128 {
         let token_address = get_token_info(&env).address;
         token_contract::Client::new(&env, &token_address).balance(&env.current_contract_address())
     }
