@@ -149,7 +149,7 @@ Queries the minter information.
 
 <hr>
 
-`query_vesting_total_supply`
+`query_vesting_contract_balance`
 
 Params:
 None
