@@ -5,4 +5,8 @@ use soroban_sdk::contracterror;
 #[repr(u32)]
 pub enum ContractError {
     AdminNotFound = 1,
+    ContractIdNotFound = 2,
+    PairNotFound = 3,
+    PhoTokenNotFound = 4,
+    MaxSpreadNotFound = 5,
 }

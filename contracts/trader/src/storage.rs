@@ -1,9 +1,16 @@
-use soroban_sdk::{log, panic_with_error, Address, ConversionError, Env, TryFromVal, Val};
+use decimal::Decimal;
+use soroban_sdk::{log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val};
+
+use crate::error::ContractError;
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
 pub enum DataKey {
     Admin,
+    ContractId,
+    Pair,
+    Token,
+    MaxSpread,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -14,10 +21,71 @@ impl TryFromVal<Env, DataKey> for Val {
     }
 }
 
-pub fn save_admin(e: &Env, address: &Address) {
-    e.storage().persistent().set(&DataKey::Admin, address)
+pub fn save_admin(env: &Env, address: &Address) {
+    env.storage().persistent().set(&DataKey::Admin, address)
 }
 
-pub fn get_admin(e: &Env) -> Address {
-    e.storage().persistent().get(&DataKey::Admin).unwrap()
+pub fn get_admin(env: &Env) -> Address {
+    env.storage()
+        .persistent()
+        .get(&DataKey::Admin)
+        .unwrap_or_else(|| {
+            log!(&env, "Admin not set");
+            panic_with_error!(&env, ContractError::AdminNotFound)
+        })
+}
+
+pub fn save_name(env: &Env, contract_id: &String) {
+    env.storage()
+        .persistent()
+        .set(&DataKey::ContractId, contract_id)
+}
+
+pub fn get_name(env: &Env) -> String {
+    env.storage()
+        .persistent()
+        .get(&DataKey::ContractId)
+        .unwrap_or_else(|| {
+            log!(&env, "Contract ID not set");
+            panic_with_error!(&env, ContractError::ContractIdNotFound)
+        })
+}
+
+pub fn save_pair(env: &Env, pair: &(Address, Address)) {
+    env.storage().persistent().set(&DataKey::Pair, pair)
+}
+
+pub fn get_pair(env: &Env) -> (Address, Address) {
+    env.storage()
+        .persistent()
+        .get(&DataKey::Pair)
+        .unwrap_or_else(|| {
+            log!(&env, "Pair not set");
+            panic_with_error!(env, ContractError::PairNotFound)
+        })
+}
+
+pub fn save_token(env: &Env, token: &Address) {
+    env.storage().persistent().set(&DataKey::Token, token)
+}
+
+pub fn get_token(env: &Env) -> Address {
+    env.storage()
+        .persistent()
+        .get(&DataKey::Token)
+        .unwrap_or_else(|| {
+            log!(&env, "Token not set");
+            panic_with_error!(env, ContractError::PhoTokenNotFound)
+        })
+}
+
+pub fn save_spread(env: &Env, decimal: &u64) {
+    env.storage().persistent().set(&DataKey::MaxSpread, decimal)
+}
+
+pub fn get_spread(env: &Env) -> Decimal {
+    match env.storage().persistent().get(&DataKey::MaxSpread) {
+        Some(bps) => Decimal::bps(bps),
+        None => Decimal::zero(),
+    }
 }
