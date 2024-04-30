@@ -40,6 +40,8 @@ pub trait VestingTrait {
         amount: i128,
     ) -> Result<(), ContractError>;
 
+    fn claim(env: Env, sender: Address) -> Result<(), ContractError>;
+
     fn burn(env: Env, sender: Address, amount: u128) -> Result<(), ContractError>;
 
     fn mint(env: Env, sender: Address, amount: i128);
@@ -88,6 +90,8 @@ pub trait VestingTrait {
     fn query_minter(env: Env) -> MinterInfo;
 
     fn query_vesting_contract_balance(env: Env) -> i128;
+
+    fn query_available_to_claim(env: Env, address: Address) -> Result<i128, ContractError>;
 }
 
 #[contractimpl]
@@ -188,6 +192,32 @@ impl VestingTrait for Vesting {
             ),
             (sender, recipient, amount),
         );
+
+        Ok(())
+    }
+
+    fn claim(env: Env, sender: Address) -> Result<(), ContractError> {
+        sender.require_auth();
+
+        let available_to_claim = Self::query_available_to_claim(env.clone(), sender.clone())?;
+
+        if available_to_claim <= 0 {
+            log!(&env, "Vesting: Claim: No tokens available to claim");
+            panic_with_error!(env, ContractError::NeverFullyVested);
+        }
+
+        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
+
+        verify_vesting_and_update_balances(&env, &sender, available_to_claim as u128)?;
+
+        token_client.transfer(
+            &env.current_contract_address(),
+            &sender,
+            &(available_to_claim as i128),
+        );
+
+        env.events()
+            .publish(("Claim", "Claimed tokens: "), available_to_claim);
 
         Ok(())
     }
@@ -528,5 +558,15 @@ impl VestingTrait for Vesting {
     fn query_vesting_contract_balance(env: Env) -> i128 {
         let token_address = get_token_info(&env).address;
         token_contract::Client::new(&env, &token_address).balance(&env.current_contract_address())
+    }
+
+    fn query_available_to_claim(env: Env, address: Address) -> Result<i128, ContractError> {
+        let vesting_info = get_vesting(&env, &address)?;
+
+        let current_timestamp = env.ledger().timestamp();
+        let curve = vesting_info.distribution_info.get_curve();
+        let amount = curve.value(current_timestamp);
+
+        Ok(amount as i128)
     }
 }
