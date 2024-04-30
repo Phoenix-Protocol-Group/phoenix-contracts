@@ -237,8 +237,11 @@ impl VestingTrait for Vesting {
             .map_or(0, |m| m.mint_capacity)
             .checked_sub(amount as u128)
             .unwrap_or_else(|| {
-                log!(&env, "Vesting: Mint: Minter does not have enough to mint");
-                panic_with_error!(env, ContractError::NotEnoughBalance);
+                log!(
+                    &env,
+                    "Vesting: Mint: Minter does not have enough capacity to mint"
+                );
+                panic_with_error!(env, ContractError::NotEnoughCapacity);
             });
 
         // mint to recipient

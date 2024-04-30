@@ -17,7 +17,7 @@ pub enum ContractError {
     TotalVestedOverCapacity = 9,
     InvalidTransferAmount = 10,
     CantMoveVestingTokens = 11,
-    NotEnoughBalance = 12,
+    NotEnoughCapacity = 12,
     NotAuthorized = 13,
     NeverFullyVested = 14,
     VestsMoreThanSent = 15,
@@ -31,6 +31,7 @@ pub enum ContractError {
     NoVestingComplexityValueFound = 23,
     NoAddressesToAdd = 24,
     NoEnoughtTokensToStart = 25,
+    NotEnoughBalance = 26,
 }
 
 impl From<CurveError> for ContractError {

@@ -256,8 +256,8 @@ fn mint_should_panic_when_not_authorized_to_mint() {
 }
 
 #[test]
-#[should_panic(expected = "Vesting: Mint: Minter does not have enough to mint")]
-fn mint_should_panic_when_mintet_does_not_have_enough() {
+#[should_panic(expected = "Vesting: Mint: Minter does not have enough capacity to mint")]
+fn mint_should_panic_when_mintet_does_not_have_enough_capacity() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
