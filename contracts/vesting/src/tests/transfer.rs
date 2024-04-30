@@ -125,6 +125,10 @@ fn transfer_tokens_when_half_vested() {
     // we move time to the middle of the vesting period
     env.ledger().with_mut(|li| li.timestamp = 30);
 
+    // user is greedy and tries to transfer more than he can
+    let result = vesting_client.try_transfer_token(&vester1, &vester1, &61);
+    assert!(result.is_err());
+
     // user collects the vested tokens and transfers them to himself
     vesting_client.transfer_token(&vester1, &vester1, &60);
 
