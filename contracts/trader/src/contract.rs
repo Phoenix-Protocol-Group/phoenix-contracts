@@ -1,7 +1,7 @@
 use decimal::Decimal;
 use soroban_sdk::{contract, contractmeta, Address, Env, String};
 
-use crate::storage::{save_admin, save_name, save_pair, save_spread, save_token};
+use crate::storage::{save_admin, save_name, save_pair, save_spread, save_token, BalanceInfo};
 
 contractmeta!(
     key = "Description",
@@ -24,6 +24,14 @@ pub trait TraderTrait {
     fn trade_token(env: Env, token_address: Address, liquidity_pool: Address, amount: Option<u64>);
 
     fn transfer(env: Env, recipient: Address, amount: u64, token_address: Option<Address>);
+
+    fn query_balances(env: Env) -> BalanceInfo;
+
+    fn query_trading_pairs(env: Env) -> (Address, Address);
+
+    fn query_admin_address(env: Env) -> Address;
+
+    fn query_token_info(env: Env) -> (Address, String, Decimal);
 }
 
 impl TraderTrait for Trader {
@@ -64,6 +72,22 @@ impl TraderTrait for Trader {
     }
 
     fn transfer(env: Env, recipient: Address, amount: u64, token_address: Option<Address>) {
+        todo!()
+    }
+
+    fn query_balances(env: Env) -> BalanceInfo {
+        todo!()
+    }
+
+    fn query_trading_pairs(env: Env) -> (Address, Address) {
+        todo!()
+    }
+
+    fn query_admin_address(env: Env) -> Address {
+        todo!()
+    }
+
+    fn query_token_info(env: Env) -> (Address, String, Decimal) {
         todo!()
     }
 }

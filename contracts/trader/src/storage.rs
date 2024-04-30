@@ -1,5 +1,7 @@
 use decimal::Decimal;
-use soroban_sdk::{log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val};
+use soroban_sdk::{
+    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
+};
 
 use crate::error::ContractError;
 
@@ -11,6 +13,14 @@ pub enum DataKey {
     Pair,
     Token,
     MaxSpread,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BalanceInfo {
+    pub pho: i128,
+    pub token0: i128,
+    pub token1: i128,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
