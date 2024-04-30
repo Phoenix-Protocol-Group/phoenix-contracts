@@ -396,7 +396,7 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
         .with_mut(|li| li.timestamp = START_TIMESTAMP - 10);
 
     // we try to transfer the tokens before the vesting period has started
-    vesting_client.transfer_token(&vester1, &vester1, &120);
+    vesting_client.transfer_token(&vester1, &vester1, &1);
 }
 
 #[test]
