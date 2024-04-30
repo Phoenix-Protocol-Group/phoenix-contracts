@@ -47,7 +47,7 @@ pub fn create_vesting_accounts(
     vesting_complexity: u32,
     vesting_accounts: Vec<VestingBalance>,
 ) -> Result<u128, ContractError> {
-    validate_accounts(env, vesting_accounts.clone())?;
+    validate_accounts(env, vesting_accounts.clone());
 
     let mut total_vested_amount = 0;
 
@@ -109,7 +109,7 @@ pub fn assert_schedule_vests_amount(
     }
 }
 
-fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) -> Result<(), ContractError> {
+fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) {
     let mut addresses: Vec<Address> = Vec::new(env);
     for account in accounts.iter() {
         if addresses.contains(&account.rcpt_address) {
@@ -118,7 +118,6 @@ fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) -> Result<(), Con
         }
         addresses.push_back(account.rcpt_address.clone());
     }
-    Ok(())
 }
 
 #[cfg(test)]
@@ -166,7 +165,8 @@ mod test {
             },
         ];
 
-        assert_eq!(validate_accounts(&env, accounts), Ok(()));
+        // not panicking should be enough to pass the test
+        validate_accounts(&env, accounts);
     }
 
     #[test]
@@ -202,7 +202,7 @@ mod test {
             },
         ];
 
-        validate_accounts(&env, accounts).unwrap_err();
+        validate_accounts(&env, accounts);
     }
 
     #[test]
