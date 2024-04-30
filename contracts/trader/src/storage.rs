@@ -19,8 +19,8 @@ pub enum DataKey {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BalanceInfo {
     pub pho: i128,
-    pub token0: i128,
-    pub token1: i128,
+    pub token_a: i128,
+    pub token_b: i128,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -75,11 +75,11 @@ pub fn get_pair(env: &Env) -> (Address, Address) {
         })
 }
 
-pub fn save_token(env: &Env, token: &Address) {
+pub fn save_pho_token(env: &Env, token: &Address) {
     env.storage().persistent().set(&DataKey::Token, token)
 }
 
-pub fn get_token(env: &Env) -> Address {
+pub fn get_pho_token(env: &Env) -> Address {
     env.storage()
         .persistent()
         .get(&DataKey::Token)
@@ -93,9 +93,13 @@ pub fn save_spread(env: &Env, decimal: &u64) {
     env.storage().persistent().set(&DataKey::MaxSpread, decimal)
 }
 
-pub fn get_spread(env: &Env) -> Decimal {
-    match env.storage().persistent().get(&DataKey::MaxSpread) {
-        Some(bps) => Decimal::bps(bps),
-        None => Decimal::zero(),
+pub fn get_spread(env: &Env) -> u64 {
+    match env
+        .storage()
+        .persistent()
+        .get::<DataKey, u64>(&DataKey::MaxSpread)
+    {
+        Some(bps) => bps as u64,
+        None => 0 as u64,
     }
 }

@@ -9,4 +9,6 @@ pub enum ContractError {
     PairNotFound = 3,
     PhoTokenNotFound = 4,
     MaxSpreadNotFound = 5,
+    Unauthorized = 6,
+    SwapTokenNotInPair = 7,
 }

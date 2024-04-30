@@ -1,7 +1,15 @@
 use decimal::Decimal;
-use soroban_sdk::{contract, contractmeta, Address, Env, String};
+use soroban_sdk::{contract, contractmeta, log, panic_with_error, token, Address, Env, String};
 
-use crate::storage::{save_admin, save_name, save_pair, save_spread, save_token, BalanceInfo};
+use crate::{
+    error::ContractError,
+    lp_contract,
+    storage::{
+        get_admin, get_name, get_pair, get_pho_token, get_spread, save_admin, save_name, save_pair,
+        save_pho_token, save_spread, BalanceInfo,
+    },
+    token_contract,
+};
 
 contractmeta!(
     key = "Description",
@@ -21,9 +29,21 @@ pub trait TraderTrait {
         max_spread_bps: Option<u64>,
     );
 
-    fn trade_token(env: Env, token_address: Address, liquidity_pool: Address, amount: Option<u64>);
+    fn trade_token(
+        env: Env,
+        sender: Address,
+        token_to_swap: Address,
+        liquidity_pool: Address,
+        amount: Option<u64>,
+    );
 
-    fn transfer(env: Env, recipient: Address, amount: u64, token_address: Option<Address>);
+    fn transfer(
+        env: Env,
+        sender: Address,
+        recipient: Address,
+        amount: i128,
+        token_address: Option<Address>,
+    );
 
     fn query_balances(env: Env) -> BalanceInfo;
 
@@ -31,7 +51,7 @@ pub trait TraderTrait {
 
     fn query_admin_address(env: Env) -> Address;
 
-    fn query_token_info(env: Env) -> (Address, String, Decimal);
+    fn query_contract_name(env: Env) -> String;
 }
 
 impl TraderTrait for Trader {
@@ -51,7 +71,7 @@ impl TraderTrait for Trader {
 
         save_pair(&env, &pair_addresses);
 
-        save_token(&env, &pho_token);
+        save_pho_token(&env, &pho_token);
 
         if let Some(spread) = max_spread {
             save_spread(&env, &spread);
@@ -67,27 +87,110 @@ impl TraderTrait for Trader {
             .publish(("Trader: Initialize", "PHO token: "), pho_token);
     }
 
-    fn trade_token(env: Env, token_address: Address, liquidity_pool: Address, amount: Option<u64>) {
-        todo!()
+    fn trade_token(
+        env: Env,
+        sender: Address,
+        token_to_swap: Address,
+        liquidity_pool: Address,
+        amount: Option<u64>,
+    ) {
+        sender.require_auth();
+
+        if sender != get_admin(&env) {
+            log!(&env, "Unauthorized");
+            panic_with_error!(env, ContractError::Unauthorized);
+        }
+
+        let (token_a, token_b) = get_pair(&env);
+        if token_to_swap != token_a && token_to_swap != token_b {
+            log!(
+                &env,
+                "Token to swap is not part of the trading pair: {}",
+                token_to_swap
+            );
+            panic_with_error!(env, ContractError::SwapTokenNotInPair);
+        }
+
+        let lp_client = lp_contract::Client::new(&env, &liquidity_pool);
+        let token_client = token_contract::Client::new(&env, &token_to_swap);
+
+        let amount = if let Some(amount) = amount {
+            amount as i128
+        } else {
+            token_client.balance(&sender)
+        };
+
+        let max_spread_bps = get_spread(&env);
+
+        let amount_swapped = lp_client.swap(
+            &env.current_contract_address(),
+            &token_to_swap,
+            &amount,
+            &None,
+            &Some(max_spread_bps as i64),
+        );
+
+        env.events()
+            .publish(("Trader: Trade Token", "user: "), &sender);
+        env.events()
+            .publish(("Trader: Trade Token", "offer asset: "), &token_to_swap);
+        env.events()
+            .publish(("Trader: Trade Token", "amount received: "), amount_swapped);
     }
 
-    fn transfer(env: Env, recipient: Address, amount: u64, token_address: Option<Address>) {
-        todo!()
+    fn transfer(
+        env: Env,
+        sender: Address,
+        recipient: Address,
+        amount: i128,
+        token_address: Option<Address>,
+    ) {
+        sender.require_auth();
+
+        if sender != get_admin(&env) {
+            log!(&env, "Unauthorized");
+            panic_with_error!(env, ContractError::Unauthorized);
+        }
+
+        // If token_address is None, use the PHO token address to send to the recipient
+        let token_address = match token_address {
+            Some(token_address) => token_address,
+            None => get_pho_token(&env),
+        };
+
+        let token_client = token_contract::Client::new(&env, &token_address);
+
+        token_client.transfer(&env.current_contract_address(), &recipient, &amount);
     }
 
     fn query_balances(env: Env) -> BalanceInfo {
-        todo!()
+        let pho_token = get_pho_token(&env);
+        let (token_a, token_b) = get_pair(&env);
+
+        let pho_token_client = token_contract::Client::new(&env, &pho_token);
+        let token_a_client = token_contract::Client::new(&env, &token_a);
+        let token_b_client = token_contract::Client::new(&env, &token_b);
+
+        let pho_balance = pho_token_client.balance(&env.current_contract_address());
+        let token_a_balance = token_a_client.balance(&env.current_contract_address());
+        let token_b_balance = token_b_client.balance(&env.current_contract_address());
+
+        BalanceInfo {
+            pho: pho_balance,
+            token_a: token_a_balance,
+            token_b: token_b_balance,
+        }
     }
 
     fn query_trading_pairs(env: Env) -> (Address, Address) {
-        todo!()
+        get_pair(&env)
     }
 
     fn query_admin_address(env: Env) -> Address {
-        todo!()
+        get_admin(&env)
     }
 
-    fn query_token_info(env: Env) -> (Address, String, Decimal) {
-        todo!()
+    fn query_contract_name(env: Env) -> String {
+        get_name(&env)
     }
 }
