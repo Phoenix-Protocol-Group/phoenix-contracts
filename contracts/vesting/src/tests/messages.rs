@@ -153,7 +153,6 @@ fn mint_works() {
     assert_eq!(vesting_client.query_minter().mint_capacity, 250);
 
     // we mint 250 more tokens
-    env.ledger().with_mut(|li| li.timestamp = 200);
     vesting_client.mint(&minter, &250);
     assert_eq!(vesting_client.query_vesting_contract_balance(), 500);
     assert_eq!(vesting_client.query_minter().mint_capacity, 0);
