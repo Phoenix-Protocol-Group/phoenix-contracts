@@ -498,12 +498,12 @@ fn minting_fails_because_no_minter_was_found() {
     let vesting_client = instantiate_vesting_client(&env);
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 
-    vesting_client.mint(&Address::generate(&env), &500);
+    vesting_client.mint(&admin, &500);
 }
 
 #[test]
 #[should_panic(expected = "Vesting: Update Minter Capacity: Minter not found")]
-fn update_minter_fails_because_no_minter_found() {
+fn update_minter_capacity_fails_because_no_minter_found() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
