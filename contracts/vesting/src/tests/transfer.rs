@@ -256,8 +256,8 @@ fn test_user_can_claim_tokens_way_after_the_testing_period() {
     // vester1 has 0 tokens before claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 0);
 
-    // we move time way ahead in time
-    env.ledger().with_mut(|li| li.timestamp = 1000);
+    // we move time ahead in time
+    env.ledger().with_mut(|li| li.timestamp = 61);
 
     // user collects everything
     vesting_client.transfer_token(&vester1, &vester1, &120);
