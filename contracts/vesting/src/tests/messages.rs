@@ -682,3 +682,44 @@ fn test_should_panic_when_updating_minter_capacity_without_auth() {
 
     vesting_client.update_minter_capacity(&Address::generate(&env), &1_000);
 }
+
+#[test]
+#[should_panic(expected = "zero balance is not sufficient to spend")]
+fn test_should_fail_when_burning_more_than_the_user_has() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+
+    let token = deploy_token_contract(&env, &admin);
+    token.mint(&admin, &120);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token.address.clone(),
+    };
+
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            rcpt_address: vester1.clone(),
+            distribution_info: DistributionInfo {
+                start_timestamp: 15,
+                end_timestamp: 60,
+                amount: 120,
+            },
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+
+    // vester1 has 0 tokens
+    assert_eq!(token.balance(&vester1), 0);
+    // vester1 tries to burn 121 tokens
+    vesting_client.burn(&vester1, &121);
+}
