@@ -558,3 +558,80 @@ fn transfer_works_with_multiple_users_and_distributions() {
 
     assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);
 }
+
+#[test]
+fn claim_works() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let token_client = deploy_token_contract(&env, &admin);
+
+    token_client.mint(&admin, &120);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token_client.address.clone(),
+    };
+
+    let vesting_balances = vec![
+        &env,
+        VestingBalance {
+            rcpt_address: vester1.clone(),
+            distribution_info: DistributionInfo {
+                start_timestamp: 0,
+                end_timestamp: 60,
+                amount: 120,
+            },
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+
+    // admin has 120 vesting tokens prior to initializing the contract
+    assert_eq!(token_client.balance(&admin), 120);
+
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+
+    // after initialization the admin has 0 vesting tokens
+    // contract has 120 vesting tokens
+    assert_eq!(token_client.balance(&admin), 0);
+    assert_eq!(token_client.balance(&vesting_client.address), 120);
+
+    // vester1 has 0 tokens before claiming the vested amount
+    assert_eq!(vesting_client.query_balance(&vester1), 0);
+    // vester1 has 0 tokens available for claiming before the vesting period starts
+    assert_eq!(vesting_client.query_available_to_claim(&vester1), 0);
+
+    // we move time to half of the vesting period
+    env.ledger().with_mut(|li| li.timestamp = 30);
+
+    // vester1 claims all available for claiming tokens
+    vesting_client.claim(&vester1);
+
+    // vester1 has 60 tokens after claiming the vested amount
+    assert_eq!(vesting_client.query_balance(&vester1), 60);
+    // vester1 has 0 tokens available for claiming after claiming the vested amount
+    assert_eq!(vesting_client.query_available_to_claim(&vester1), 0);
+
+    // there must be 60 vesting tokens left in the contract - remaining for the 2nd vester
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 60);
+
+    // we move time to the end of the vesting period
+    env.ledger().with_mut(|li| li.timestamp = 60);
+
+    // vester1 claims the remaining tokens
+    vesting_client.claim(&vester1);
+
+    // vester1 has 120 tokens after claiming the vested amount
+    assert_eq!(vesting_client.query_balance(&vester1), 120);
+    // vester1 has 0 tokens available for claiming after claiming the vested amount
+    assert_eq!(vesting_client.query_available_to_claim(&vester1), 0);
+
+    // there must be 0 vesting tokens left in the contract
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);
+}

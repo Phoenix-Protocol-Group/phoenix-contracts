@@ -213,7 +213,7 @@ impl VestingTrait for Vesting {
         token_client.transfer(
             &env.current_contract_address(),
             &sender,
-            &(available_to_claim as i128),
+            &(available_to_claim),
         );
 
         env.events()
@@ -562,11 +562,16 @@ impl VestingTrait for Vesting {
 
     fn query_available_to_claim(env: Env, address: Address) -> Result<i128, ContractError> {
         let vesting_info = get_vesting(&env, &address)?;
+        let vested = vesting_info
+            .distribution_info
+            .get_curve()
+            .value(env.ledger().timestamp());
 
-        let current_timestamp = env.ledger().timestamp();
-        let curve = vesting_info.distribution_info.get_curve();
-        let amount = curve.value(current_timestamp);
+        let sender_balance = vesting_info.balance;
+        let sender_liquid = sender_balance
+            .checked_sub(vested)
+            .ok_or(ContractError::NotEnoughBalance)?;
 
-        Ok(amount as i128)
+        Ok(sender_liquid as i128)
     }
 }
