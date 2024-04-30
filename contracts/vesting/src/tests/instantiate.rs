@@ -123,7 +123,7 @@ fn instantiate_contract_without_any_vesting_balances_should_fail() {
     vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
 }
 
-#[should_panic(expected = "Vesting: Initialize: total supply over the cap")]
+#[should_panic(expected = "Vesting: Initialize: total vested amount over the capacity")]
 #[test]
 fn instantiate_contract_should_panic_when_supply_over_the_cap() {
     let env = Env::default();

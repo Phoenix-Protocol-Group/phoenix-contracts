@@ -138,8 +138,11 @@ impl VestingTrait for Vesting {
             let capacity = input_curve.value(env.ledger().timestamp());
 
             if total_vested_amount > capacity {
-                log!(&env, "Vesting: Initialize: total supply over the capacity");
-                panic_with_error!(env, ContractError::SupplyOverTheCap);
+                log!(
+                    &env,
+                    "Vesting: Initialize: total vested amount over the capacity"
+                );
+                panic_with_error!(env, ContractError::TotalVestedOverCapacity);
             }
             save_minter(&env, &minter);
         }
