@@ -99,7 +99,7 @@ impl TraderTrait for Trader {
         sender.require_auth();
 
         if sender != get_admin(&env) {
-            log!(&env, "Unauthorized");
+            log!(&env, "Trader: Trade_token: Unauthorized trade");
             panic_with_error!(env, ContractError::Unauthorized);
         }
 
@@ -107,7 +107,7 @@ impl TraderTrait for Trader {
         if token_to_swap != token_a && token_to_swap != token_b {
             log!(
                 &env,
-                "Token to swap is not part of the trading pair: {}",
+                "Trader: Trade_token: Token to swap is not part of the trading pair: {}",
                 token_to_swap
             );
             panic_with_error!(env, ContractError::SwapTokenNotInPair);
@@ -151,7 +151,7 @@ impl TraderTrait for Trader {
         sender.require_auth();
 
         if sender != get_admin(&env) {
-            log!(&env, "Unauthorized");
+            log!(&env, "Trader: Transfer: Unauthorized transfer");
             panic_with_error!(env, ContractError::Unauthorized);
         }
 
