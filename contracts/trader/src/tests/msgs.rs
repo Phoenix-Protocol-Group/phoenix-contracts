@@ -54,7 +54,7 @@ fn trade_token() {
 
     let trader_client = deploy_trader_client(&env);
 
-    let xlm_pho_client = deploy_and_init_lp_client(
+    let xlm_pho_client: crate::lp_contract::Client<'_> = deploy_and_init_lp_client(
         &env,
         admin.clone(),
         xlm_token.address.clone(),
@@ -63,14 +63,14 @@ fn trade_token() {
         1_000_000,
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!(xlm_pho_client.query_pool_info());
-    soroban_sdk::testutils::arbitrary::std::dbg!(xlm_pho_client.query_config());
-    soroban_sdk::testutils::arbitrary::std::dbg!(
-        pho_token.balance(&xlm_pho_client.address),
-        xlm_token.balance(&xlm_pho_client.address),
-        usdc_token.balance(&xlm_pho_client.address),
-        xlm_token.balance(&admin),
-    );
+    // soroban_sdk::testutils::arbitrary::std::dbg!(xlm_pho_client.query_pool_info());
+    // soroban_sdk::testutils::arbitrary::std::dbg!(xlm_pho_client.query_config());
+    // soroban_sdk::testutils::arbitrary::std::dbg!(
+    //     pho_token.balance(&xlm_pho_client.address),
+    //     xlm_token.balance(&xlm_pho_client.address),
+    //     usdc_token.balance(&xlm_pho_client.address),
+    //     xlm_token.balance(&admin),
+    // );
 
     trader_client.initialize(
         &admin,
