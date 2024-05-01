@@ -1,0 +1,20 @@
+[package]
+name = "phoenix-vesting"
+version = { workspace = true }
+authors = ["Jakub <jakub@moonbite.space>", "Kaloyan <kaloyan@moonbite.space>"]
+repository = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+decimal = { workspace = true }
+curve = { workspace = true }
+phoenix = { workspace = true }
+soroban-sdk = { workspace = true }
+
+[dev_dependencies]
+curve = { workspace = true, features = ["testutils"] }
+soroban-sdk = { workspace = true, features = ["testutils"] }
