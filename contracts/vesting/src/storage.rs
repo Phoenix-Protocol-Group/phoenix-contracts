@@ -97,13 +97,11 @@ pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
     env.storage().persistent().set(address, vesting_info);
 }
 
-pub fn get_vesting(env: &Env, address: &Address) -> Result<VestingInfo, ContractError> {
-    let vesting_info = env.storage().persistent().get(address).unwrap_or_else(|| {
+pub fn get_vesting(env: &Env, address: &Address) -> VestingInfo {
+    env.storage().persistent().get(address).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
-    });
-
-    Ok(vesting_info)
+    })
 }
 
 // TODO: uncomment when needed

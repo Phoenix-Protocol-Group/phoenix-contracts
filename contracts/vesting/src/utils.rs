@@ -6,12 +6,8 @@ use crate::{
     storage::{get_vesting, save_vesting, VestingBalance, VestingInfo},
 };
 
-pub fn verify_vesting_and_update_balances(
-    env: &Env,
-    sender: &Address,
-    amount: u128,
-) -> Result<(), ContractError> {
-    let vesting_info = get_vesting(env, sender)?;
+pub fn verify_vesting_and_update_balances(env: &Env, sender: &Address, amount: u128) {
+    let vesting_info = get_vesting(env, sender);
     let vested = vesting_info
         .distribution_info
         .get_curve()
@@ -20,7 +16,7 @@ pub fn verify_vesting_and_update_balances(
     let sender_balance = vesting_info.balance;
     let sender_liquid = sender_balance // this checks if we can withdraw any vesting
         .checked_sub(vested)
-        .ok_or(ContractError::NotEnoughBalance)?;
+        .unwrap_or_else(|| panic_with_error!(env, ContractError::NotEnoughBalance));
 
     if sender_liquid < amount {
         log!(
@@ -38,15 +34,13 @@ pub fn verify_vesting_and_update_balances(
             distribution_info: vesting_info.distribution_info,
         },
     );
-
-    Ok(())
 }
 
 pub fn create_vesting_accounts(
     env: &Env,
     vesting_complexity: u32,
     vesting_accounts: Vec<VestingBalance>,
-) -> Result<u128, ContractError> {
+) -> u128 {
     validate_accounts(env, vesting_accounts.clone());
 
     let mut total_vested_amount = 0;
@@ -80,7 +74,7 @@ pub fn create_vesting_accounts(
         total_vested_amount += vb.distribution_info.amount;
     });
 
-    Ok(total_vested_amount)
+    total_vested_amount
 }
 
 /// Asserts the vesting schedule decreases to 0 eventually, and is never more than the

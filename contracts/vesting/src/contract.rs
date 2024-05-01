@@ -31,18 +31,13 @@ pub trait VestingTrait {
         vesting_balances: Vec<VestingBalance>,
         minter_info: Option<MinterInfo>,
         max_vesting_complexity: u32,
-    ) -> Result<(), ContractError>;
+    );
 
-    fn transfer_token(
-        env: Env,
-        sender: Address,
-        recipient: Address,
-        amount: i128,
-    ) -> Result<(), ContractError>;
+    fn transfer_token(env: Env, sender: Address, recipient: Address, amount: i128);
 
-    fn claim(env: Env, sender: Address) -> Result<(), ContractError>;
+    fn claim(env: Env, sender: Address);
 
-    fn burn(env: Env, sender: Address, amount: u128) -> Result<(), ContractError>;
+    fn burn(env: Env, sender: Address, amount: u128);
 
     fn mint(env: Env, sender: Address, amount: i128);
 
@@ -80,10 +75,7 @@ pub trait VestingTrait {
 
     fn query_balance(env: Env, address: Address) -> i128;
 
-    fn query_distribution_info(
-        env: Env,
-        address: Address,
-    ) -> Result<DistributionInfo, ContractError>;
+    fn query_distribution_info(env: Env, address: Address) -> DistributionInfo;
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
@@ -91,7 +83,7 @@ pub trait VestingTrait {
 
     fn query_vesting_contract_balance(env: Env) -> i128;
 
-    fn query_available_to_claim(env: Env, address: Address) -> Result<i128, ContractError>;
+    fn query_available_to_claim(env: Env, address: Address) -> i128;
 }
 
 #[contractimpl]
@@ -103,7 +95,7 @@ impl VestingTrait for Vesting {
         vesting_balances: Vec<VestingBalance>,
         minter_info: Option<MinterInfo>,
         max_vesting_complexity: u32,
-    ) -> Result<(), ContractError> {
+    ) {
         admin.require_auth();
 
         save_admin(&env, &admin);
@@ -117,7 +109,7 @@ impl VestingTrait for Vesting {
         }
 
         let total_vested_amount =
-            create_vesting_accounts(&env, max_vesting_complexity, vesting_balances)?;
+            create_vesting_accounts(&env, max_vesting_complexity, vesting_balances);
 
         // check if the admin has enough tokens to start the vesting contract
         let token_client = token_contract::Client::new(&env, &vesting_token.address);
@@ -163,16 +155,9 @@ impl VestingTrait for Vesting {
 
         env.events()
             .publish(("Initialize", "Vesting contract with admin: "), admin);
-
-        Ok(())
     }
 
-    fn transfer_token(
-        env: Env,
-        sender: Address,
-        recipient: Address,
-        amount: i128,
-    ) -> Result<(), ContractError> {
+    fn transfer_token(env: Env, sender: Address, recipient: Address, amount: i128) {
         sender.require_auth();
 
         if amount <= 0 {
@@ -182,7 +167,7 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        verify_vesting_and_update_balances(&env, &sender, amount as u128)?;
+        verify_vesting_and_update_balances(&env, &sender, amount as u128);
         token_client.transfer(&env.current_contract_address(), &recipient, &amount);
 
         env.events().publish(
@@ -192,14 +177,12 @@ impl VestingTrait for Vesting {
             ),
             (sender, recipient, amount),
         );
-
-        Ok(())
     }
 
-    fn claim(env: Env, sender: Address) -> Result<(), ContractError> {
+    fn claim(env: Env, sender: Address) {
         sender.require_auth();
 
-        let available_to_claim = Self::query_available_to_claim(env.clone(), sender.clone())?;
+        let available_to_claim = Self::query_available_to_claim(env.clone(), sender.clone());
 
         if available_to_claim <= 0 {
             log!(&env, "Vesting: Claim: No tokens available to claim");
@@ -208,7 +191,7 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        verify_vesting_and_update_balances(&env, &sender, available_to_claim as u128)?;
+        verify_vesting_and_update_balances(&env, &sender, available_to_claim as u128);
 
         token_client.transfer(
             &env.current_contract_address(),
@@ -218,11 +201,9 @@ impl VestingTrait for Vesting {
 
         env.events()
             .publish(("Claim", "Claimed tokens: "), available_to_claim);
-
-        Ok(())
     }
 
-    fn burn(env: Env, sender: Address, amount: u128) -> Result<(), ContractError> {
+    fn burn(env: Env, sender: Address, amount: u128) {
         sender.require_auth();
 
         if amount == 0 {
@@ -236,8 +217,6 @@ impl VestingTrait for Vesting {
 
         env.events().publish(("Burn", "Burned from: "), sender);
         env.events().publish(("Burn", "Burned tokens: "), amount);
-
-        Ok(())
     }
 
     fn mint(env: Env, sender: Address, amount: i128) {
@@ -535,11 +514,8 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
-    fn query_distribution_info(
-        env: Env,
-        address: Address,
-    ) -> Result<DistributionInfo, ContractError> {
-        Ok(get_vesting(&env, &address)?.distribution_info)
+    fn query_distribution_info(env: Env, address: Address) -> DistributionInfo {
+        get_vesting(&env, &address).distribution_info
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {
@@ -560,8 +536,8 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &token_address).balance(&env.current_contract_address())
     }
 
-    fn query_available_to_claim(env: Env, address: Address) -> Result<i128, ContractError> {
-        let vesting_info = get_vesting(&env, &address)?;
+    fn query_available_to_claim(env: Env, address: Address) -> i128 {
+        let vesting_info = get_vesting(&env, &address);
         let vested = vesting_info
             .distribution_info
             .get_curve()
@@ -570,8 +546,8 @@ impl VestingTrait for Vesting {
         let sender_balance = vesting_info.balance;
         let sender_liquid = sender_balance
             .checked_sub(vested)
-            .ok_or(ContractError::NotEnoughBalance)?;
+            .unwrap_or_else(|| panic_with_error!(env, ContractError::NotEnoughBalance));
 
-        Ok(sender_liquid as i128)
+        sender_liquid as i128
     }
 }
