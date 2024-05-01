@@ -1,4 +1,3 @@
-use decimal::Decimal;
 use soroban_sdk::{
     contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
 };
@@ -94,12 +93,8 @@ pub fn save_spread(env: &Env, decimal: &u64) {
 }
 
 pub fn get_spread(env: &Env) -> u64 {
-    match env
-        .storage()
+    env.storage()
         .persistent()
         .get::<DataKey, u64>(&DataKey::MaxSpread)
-    {
-        Some(bps) => bps as u64,
-        None => 0 as u64,
-    }
+        .unwrap_or(0)
 }

@@ -1,5 +1,5 @@
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, token, Address, Env, String,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, Env, String,
 };
 
 use crate::{
@@ -113,6 +113,7 @@ impl TraderTrait for Trader {
             panic_with_error!(env, ContractError::SwapTokenNotInPair);
         }
 
+        // TODO: this calls normal liquidity pool, we should know if it's a stable pool
         let lp_client = lp_contract::Client::new(&env, &liquidity_pool);
         let token_client = token_contract::Client::new(&env, &token_to_swap);
 
