@@ -1,6 +1,6 @@
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use crate::tests::setup::deploy_token_contract;
+use crate::{storage::BalanceInfo, tests::setup::deploy_token_contract};
 
 use super::setup::{deploy_and_init_lp_client, deploy_trader_client};
 
@@ -36,23 +36,28 @@ fn initialize() {
 }
 
 #[test]
-fn trade_token() {
+fn trade_token_and_transfer_token() {
     let env = Env::default();
 
     env.mock_all_auths_allowing_non_root_auth();
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
+    let rcpt = Address::generate(&env);
+
     let contract_name = String::from_str(&env, "XLM/USDC");
     let xlm_token = deploy_token_contract(&env, &admin);
     let usdc_token = deploy_token_contract(&env, &admin);
     let pho_token = deploy_token_contract(&env, &admin);
 
-    xlm_token.mint(&admin, &1_010_000);
-    usdc_token.mint(&admin, &1_010_000);
-    pho_token.mint(&admin, &2_010_000);
+    xlm_token.mint(&admin, &1_000_000);
+    usdc_token.mint(&admin, &1_000_000);
+    pho_token.mint(&admin, &2_000_000);
 
     let trader_client = deploy_trader_client(&env);
+
+    // we mint some tokens to the current contract
+    xlm_token.mint(&trader_client.address, &1_000);
 
     let xlm_pho_client: crate::lp_contract::Client<'_> = deploy_and_init_lp_client(
         &env,
@@ -63,15 +68,6 @@ fn trade_token() {
         1_000_000,
     );
 
-    // soroban_sdk::testutils::arbitrary::std::dbg!(xlm_pho_client.query_pool_info());
-    // soroban_sdk::testutils::arbitrary::std::dbg!(xlm_pho_client.query_config());
-    // soroban_sdk::testutils::arbitrary::std::dbg!(
-    //     pho_token.balance(&xlm_pho_client.address),
-    //     xlm_token.balance(&xlm_pho_client.address),
-    //     usdc_token.balance(&xlm_pho_client.address),
-    //     xlm_token.balance(&admin),
-    // );
-
     trader_client.initialize(
         &admin,
         &contract_name,
@@ -80,10 +76,32 @@ fn trade_token() {
         &None::<u64>,
     );
 
+    assert_eq!(
+        trader_client.query_balances(),
+        BalanceInfo {
+            pho: 0,
+            token_a: 1_000,
+            token_b: 0
+        }
+    );
+
     trader_client.trade_token(
         &admin.clone(),
         &xlm_token.address.clone(),
         &xlm_pho_client.address,
         &Some(1_000),
-    )
+    );
+
+    assert_eq!(
+        trader_client.query_balances(),
+        BalanceInfo {
+            pho: 1_000,
+            token_a: 0,
+            token_b: 0
+        }
+    );
+
+    assert_eq!(pho_token.balance(&rcpt), 0);
+    trader_client.transfer(&admin, &rcpt, &1_000, &None);
+    assert_eq!(pho_token.balance(&rcpt), 1_000);
 }

@@ -125,12 +125,6 @@ impl TraderTrait for Trader {
 
         let max_spread_bps = get_spread(&env);
 
-        soroban_sdk::testutils::arbitrary::std::dbg!(
-            lp_client.address.clone(),
-            lp_client.query_pool_info(),
-            lp_client.query_config()
-        );
-
         let amount_swapped = lp_client.swap(
             &env.current_contract_address(),
             &token_to_swap,
