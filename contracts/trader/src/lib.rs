@@ -2,6 +2,7 @@
 mod contract;
 mod error;
 mod storage;
+mod tests;
 
 pub mod token_contract {
     soroban_sdk::contractimport!(

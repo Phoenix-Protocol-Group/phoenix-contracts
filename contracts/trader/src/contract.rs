@@ -1,5 +1,6 @@
-use decimal::Decimal;
-use soroban_sdk::{contract, contractmeta, log, panic_with_error, token, Address, Env, String};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, panic_with_error, token, Address, Env, String,
+};
 
 use crate::{
     error::ContractError,
@@ -54,6 +55,7 @@ pub trait TraderTrait {
     fn query_contract_name(env: Env) -> String;
 }
 
+#[contractimpl]
 impl TraderTrait for Trader {
     fn initialize(
         env: Env,
