@@ -310,13 +310,7 @@ fn transfer_should_fail_when_unauthorized() {
         &String::from_str(&env, "Stellar"),
         &String::from_str(&env, "XLM"),
     );
-    let usdc_token = deploy_token_contract(
-        &env,
-        &admin,
-        &6,
-        &String::from_str(&env, "USD Coin"),
-        &String::from_str(&env, "USDC"),
-    );
+
     let mut pho_token = deploy_token_contract(
         &env,
         &admin,
@@ -348,26 +342,8 @@ fn transfer_should_fail_when_unauthorized() {
     trader_client.initialize(
         &admin,
         &contract_name,
-        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &(xlm_token.address.clone(), Address::generate(&env)),
         &pho_token.address,
-    );
-
-    assert_eq!(
-        trader_client.query_balances(),
-        BalanceInfo {
-            output_token: Asset {
-                symbol: String::from_str(&env, "XLM"),
-                amount: 0
-            },
-            token_a: Asset {
-                symbol: String::from_str(&env, "PHO"),
-                amount: 1_000
-            },
-            token_b: Asset {
-                symbol: String::from_str(&env, "USDC"),
-                amount: 0
-            }
-        }
     );
 
     trader_client.trade_token(
@@ -378,25 +354,5 @@ fn transfer_should_fail_when_unauthorized() {
         &None::<u64>,
     );
 
-    assert_eq!(
-        trader_client.query_balances(),
-        BalanceInfo {
-            output_token: Asset {
-                symbol: String::from_str(&env, "XLM"),
-                amount: 1_000
-            },
-            token_a: Asset {
-                symbol: String::from_str(&env, "PHO"),
-                amount: 0
-            },
-            token_b: Asset {
-                symbol: String::from_str(&env, "USDC"),
-                amount: 0
-            }
-        }
-    );
-
-    assert_eq!(pho_token.balance(&rcpt), 0);
     trader_client.transfer(&Address::generate(&env), &rcpt, &1_000, &None);
-    assert_eq!(pho_token.balance(&rcpt), 1_000);
 }
