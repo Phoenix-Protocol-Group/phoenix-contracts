@@ -7,7 +7,7 @@ use crate::{
     lp_contract,
     storage::{
         get_admin, get_name, get_output_token, get_pair, save_admin, save_name, save_output_token,
-        save_pair, BalanceInfo, OutputTokenInfo,
+        save_pair, Asset, BalanceInfo, OutputTokenInfo,
     },
     token_contract,
 };
@@ -173,13 +173,25 @@ impl TraderTrait for Trader {
         let token_b_client = token_contract::Client::new(&env, &token_b);
 
         let output_token_balance = output_token_client.balance(&env.current_contract_address());
+        let output_token_symbol = output_token_client.symbol();
         let token_a_balance = token_a_client.balance(&env.current_contract_address());
+        let token_a_symbol = token_a_client.symbol();
         let token_b_balance = token_b_client.balance(&env.current_contract_address());
+        let token_b_symbol = token_b_client.symbol();
 
         BalanceInfo {
-            output_token: output_token_balance,
-            token_a: token_a_balance,
-            token_b: token_b_balance,
+            output_token: Asset {
+                symbol: output_token_symbol,
+                amount: output_token_balance,
+            },
+            token_a: Asset {
+                symbol: token_a_symbol,
+                amount: token_a_balance,
+            },
+            token_b: Asset {
+                symbol: token_b_symbol,
+                amount: token_b_balance,
+            },
         }
     }
 

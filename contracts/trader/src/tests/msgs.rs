@@ -1,6 +1,12 @@
-use soroban_sdk::{testutils::Address as _, Address, Env, String};
+use soroban_sdk::{
+    testutils::{arbitrary::std, Address as _},
+    Address, Env, String,
+};
 
-use crate::{storage::BalanceInfo, tests::setup::deploy_token_contract};
+use crate::{
+    storage::{Asset, BalanceInfo},
+    tests::setup::deploy_token_contract,
+};
 
 use super::setup::{deploy_and_init_lp_client, deploy_trader_client};
 
@@ -12,16 +18,34 @@ fn initialize() {
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
-    let contract_name = String::from_str(&env, "LXC/USDC");
-    let token_a = deploy_token_contract(&env, &admin);
-    let token_b = deploy_token_contract(&env, &admin);
-    let pho_token = deploy_token_contract(&env, &admin);
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
 
     let trader_client = deploy_trader_client(&env);
     trader_client.initialize(
         &admin,
         &contract_name,
-        &(token_a.address.clone(), token_b.address.clone()),
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
         &pho_token.address,
     );
 
@@ -29,7 +53,7 @@ fn initialize() {
     assert_eq!(trader_client.query_contract_name(), contract_name);
     assert_eq!(
         trader_client.query_trading_pairs(),
-        (token_a.address, token_b.address)
+        (xlm_token.address, usdc_token.address)
     );
 }
 
@@ -44,9 +68,37 @@ fn trade_token_and_transfer_token() {
     let rcpt = Address::generate(&env);
 
     let contract_name = String::from_str(&env, "XLM/USDC");
-    let xlm_token = deploy_token_contract(&env, &admin);
-    let usdc_token = deploy_token_contract(&env, &admin);
-    let pho_token = deploy_token_contract(&env, &admin);
+    let mut xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let mut pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    // soroban_sdk::testutils::arbitrary::std::dbg!(
+    //     xlm_token.address.clone(),
+    //     pho_token.address.clone(),
+    //     xlm_token.address.clone() >= pho_token.address.clone()
+    // );
+
+    if xlm_token.address >= pho_token.address {
+        std::mem::swap(&mut pho_token, &mut xlm_token);
+    }
 
     xlm_token.mint(&admin, &1_000_000);
     usdc_token.mint(&admin, &1_000_000);
@@ -61,8 +113,8 @@ fn trade_token_and_transfer_token() {
         &env,
         admin.clone(),
         xlm_token.address.clone(),
-        pho_token.address.clone(),
         1_000_000,
+        pho_token.address.clone(),
         1_000_000,
     );
 
@@ -76,9 +128,18 @@ fn trade_token_and_transfer_token() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            output_token: 0,
-            token_a: 1_000,
-            token_b: 0
+            output_token: Asset {
+                symbol: String::from_str(&env, "XLM"),
+                amount: 0
+            },
+            token_a: Asset {
+                symbol: String::from_str(&env, "PHO"),
+                amount: 1_000
+            },
+            token_b: Asset {
+                symbol: String::from_str(&env, "USDC"),
+                amount: 0
+            }
         }
     );
 
@@ -93,9 +154,18 @@ fn trade_token_and_transfer_token() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            output_token: 1_000,
-            token_a: 0,
-            token_b: 0
+            output_token: Asset {
+                symbol: String::from_str(&env, "XLM"),
+                amount: 1_000
+            },
+            token_a: Asset {
+                symbol: String::from_str(&env, "PHO"),
+                amount: 0
+            },
+            token_b: Asset {
+                symbol: String::from_str(&env, "USDC"),
+                amount: 0
+            }
         }
     );
 
@@ -115,9 +185,31 @@ fn trade_token_should_fail_when_unauthorized() {
     let admin = Address::generate(&env);
 
     let contract_name = String::from_str(&env, "XLM/USDC");
-    let xlm_token = deploy_token_contract(&env, &admin);
-    let usdc_token = deploy_token_contract(&env, &admin);
-    let pho_token = deploy_token_contract(&env, &admin);
+    let mut xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let mut pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    if xlm_token.address >= pho_token.address {
+        std::mem::swap(&mut pho_token, &mut xlm_token);
+    }
 
     xlm_token.mint(&admin, &1_000_000);
     usdc_token.mint(&admin, &1_000_000);
@@ -132,8 +224,8 @@ fn trade_token_should_fail_when_unauthorized() {
         &env,
         admin.clone(),
         xlm_token.address.clone(),
-        pho_token.address.clone(),
         1_000_000,
+        pho_token.address.clone(),
         1_000_000,
     );
 
@@ -147,9 +239,18 @@ fn trade_token_should_fail_when_unauthorized() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            output_token: 0,
-            token_a: 1_000,
-            token_b: 0
+            output_token: Asset {
+                symbol: String::from_str(&env, "XLM"),
+                amount: 0
+            },
+            token_a: Asset {
+                symbol: String::from_str(&env, "PHO"),
+                amount: 1_000
+            },
+            token_b: Asset {
+                symbol: String::from_str(&env, "USDC"),
+                amount: 0
+            }
         }
     );
 
@@ -173,9 +274,31 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
     let admin = Address::generate(&env);
 
     let contract_name = String::from_str(&env, "XLM/USDC");
-    let xlm_token = deploy_token_contract(&env, &admin);
-    let usdc_token = deploy_token_contract(&env, &admin);
-    let pho_token = deploy_token_contract(&env, &admin);
+    let mut xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let mut pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    if xlm_token.address >= pho_token.address {
+        std::mem::swap(&mut pho_token, &mut xlm_token);
+    }
 
     xlm_token.mint(&admin, &1_000_000);
     usdc_token.mint(&admin, &1_000_000);
@@ -190,8 +313,8 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
         &env,
         admin.clone(),
         xlm_token.address.clone(),
-        pho_token.address.clone(),
         1_000_000,
+        pho_token.address.clone(),
         1_000_000,
     );
 
@@ -205,9 +328,18 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            output_token: 0,
-            token_a: 1_000,
-            token_b: 0
+            output_token: Asset {
+                symbol: String::from_str(&env, "XLM"),
+                amount: 0
+            },
+            token_a: Asset {
+                symbol: String::from_str(&env, "PHO"),
+                amount: 1_000
+            },
+            token_b: Asset {
+                symbol: String::from_str(&env, "USDC"),
+                amount: 0
+            }
         }
     );
 
@@ -232,9 +364,31 @@ fn transfer_should_fail_when_unauthorized() {
     let rcpt = Address::generate(&env);
 
     let contract_name = String::from_str(&env, "XLM/USDC");
-    let xlm_token = deploy_token_contract(&env, &admin);
-    let usdc_token = deploy_token_contract(&env, &admin);
-    let pho_token = deploy_token_contract(&env, &admin);
+    let mut xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let mut pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    if xlm_token.address >= pho_token.address {
+        std::mem::swap(&mut pho_token, &mut xlm_token);
+    }
 
     xlm_token.mint(&admin, &1_000_000);
     usdc_token.mint(&admin, &1_000_000);
@@ -249,8 +403,8 @@ fn transfer_should_fail_when_unauthorized() {
         &env,
         admin.clone(),
         xlm_token.address.clone(),
-        pho_token.address.clone(),
         1_000_000,
+        pho_token.address.clone(),
         1_000_000,
     );
 
@@ -264,9 +418,18 @@ fn transfer_should_fail_when_unauthorized() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            output_token: 0,
-            token_a: 1_000,
-            token_b: 0
+            output_token: Asset {
+                symbol: String::from_str(&env, "XLM"),
+                amount: 0
+            },
+            token_a: Asset {
+                symbol: String::from_str(&env, "PHO"),
+                amount: 1_000
+            },
+            token_b: Asset {
+                symbol: String::from_str(&env, "USDC"),
+                amount: 0
+            }
         }
     );
 
@@ -281,9 +444,18 @@ fn transfer_should_fail_when_unauthorized() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            output_token: 1_000,
-            token_a: 0,
-            token_b: 0
+            output_token: Asset {
+                symbol: String::from_str(&env, "XLM"),
+                amount: 1_000
+            },
+            token_a: Asset {
+                symbol: String::from_str(&env, "PHO"),
+                amount: 0
+            },
+            token_b: Asset {
+                symbol: String::from_str(&env, "USDC"),
+                amount: 0
+            }
         }
     );
 

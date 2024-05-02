@@ -1,7 +1,7 @@
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     xdr::ToXdr,
-    Address, Bytes, BytesN, Env, FromVal, String,
+    Address, Bytes, BytesN, Env, String,
 };
 
 use crate::{
@@ -42,7 +42,7 @@ pub fn deploy_token_contract<'a>(
     let token_wasm = install_token_wasm(env);
 
     let mut salt = Bytes::new(env);
-    salt.append(&name.clone().to_xdr(&env));
+    salt.append(&name.clone().to_xdr(env));
     let salt = env.crypto().sha256(&salt);
     let token_addr = env
         .deployer()

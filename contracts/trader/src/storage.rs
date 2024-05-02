@@ -15,11 +15,20 @@ pub enum DataKey {
 }
 
 #[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Asset {
+    /// Denom
+    pub symbol: String,
+    /// The total amount of those tokens in the pool
+    pub amount: i128,
+}
+
+#[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BalanceInfo {
-    pub output_token: i128,
-    pub token_a: i128,
-    pub token_b: i128,
+    pub output_token: Asset,
+    pub token_a: Asset,
+    pub token_b: Asset,
 }
 
 #[contracttype]
