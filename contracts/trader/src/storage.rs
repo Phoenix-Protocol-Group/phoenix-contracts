@@ -74,17 +74,17 @@ pub fn get_pair(env: &Env) -> (Address, Address) {
         })
 }
 
-pub fn save_pho_token(env: &Env, token: &Address) {
+pub fn save_output_token(env: &Env, token: &Address) {
     env.storage().persistent().set(&DataKey::Token, token)
 }
 
-pub fn get_pho_token(env: &Env) -> Address {
+pub fn get_output_token(env: &Env) -> Address {
     env.storage()
         .persistent()
         .get(&DataKey::Token)
         .unwrap_or_else(|| {
             log!(&env, "Token not set");
-            panic_with_error!(env, ContractError::PhoTokenNotFound)
+            panic_with_error!(env, ContractError::OutputTokenNotFound)
         })
 }
 

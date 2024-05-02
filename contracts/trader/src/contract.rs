@@ -6,8 +6,8 @@ use crate::{
     error::ContractError,
     lp_contract,
     storage::{
-        get_admin, get_name, get_pair, get_pho_token, get_spread, save_admin, save_name, save_pair,
-        save_pho_token, save_spread, BalanceInfo,
+        get_admin, get_name, get_output_token, get_pair, get_spread, save_admin, save_name,
+        save_output_token, save_pair, save_spread, BalanceInfo,
     },
     token_contract,
 };
@@ -26,7 +26,7 @@ pub trait TraderTrait {
         admin: Address,
         contract_name: String,
         pair_addresses: (Address, Address),
-        pho_token: Address,
+        output_token: Address,
         max_spread_bps: Option<u64>,
     );
 
@@ -62,7 +62,7 @@ impl TraderTrait for Trader {
         admin: Address,
         contract_name: String,
         pair_addresses: (Address, Address),
-        pho_token: Address,
+        output_token: Address,
         max_spread: Option<u64>,
     ) {
         admin.require_auth();
@@ -73,7 +73,7 @@ impl TraderTrait for Trader {
 
         save_pair(&env, &pair_addresses);
 
-        save_pho_token(&env, &pho_token);
+        save_output_token(&env, &output_token);
 
         if let Some(spread) = max_spread {
             save_spread(&env, &spread);
@@ -86,7 +86,7 @@ impl TraderTrait for Trader {
         env.events()
             .publish(("Trader: Initialize", "pairs: "), pair_addresses);
         env.events()
-            .publish(("Trader: Initialize", "PHO token: "), pho_token);
+            .publish(("Trader: Initialize", "PHO token: "), output_token);
     }
 
     fn trade_token(
@@ -158,7 +158,7 @@ impl TraderTrait for Trader {
         // If token_address is None, use the PHO token address to send to the recipient
         let token_address = match token_address {
             Some(token_address) => token_address,
-            None => get_pho_token(&env),
+            None => get_output_token(&env),
         };
 
         let token_client = token_contract::Client::new(&env, &token_address);
@@ -167,7 +167,7 @@ impl TraderTrait for Trader {
     }
 
     fn query_balances(env: Env) -> BalanceInfo {
-        let pho_token = get_pho_token(&env);
+        let pho_token = get_output_token(&env);
         let (token_a, token_b) = get_pair(&env);
 
         let pho_token_client = token_contract::Client::new(&env, &pho_token);

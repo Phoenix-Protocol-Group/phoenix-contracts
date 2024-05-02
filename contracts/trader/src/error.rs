@@ -7,7 +7,7 @@ pub enum ContractError {
     AdminNotFound = 1,
     ContractIdNotFound = 2,
     PairNotFound = 3,
-    PhoTokenNotFound = 4,
+    OutputTokenNotFound = 4,
     MaxSpreadNotFound = 5,
     Unauthorized = 6,
     SwapTokenNotInPair = 7,
