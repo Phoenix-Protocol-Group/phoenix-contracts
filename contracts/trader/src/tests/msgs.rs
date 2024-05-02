@@ -10,7 +10,6 @@ use crate::{
 
 use super::setup::{deploy_and_init_lp_client, deploy_trader_client};
 
-// make a test that initializes the contract succesffully
 #[test]
 fn initialize() {
     let env = Env::default();
@@ -90,23 +89,15 @@ fn trade_token_and_transfer_token() {
         &String::from_str(&env, "PHO"),
     );
 
-    // soroban_sdk::testutils::arbitrary::std::dbg!(
-    //     xlm_token.address.clone(),
-    //     pho_token.address.clone(),
-    //     xlm_token.address.clone() >= pho_token.address.clone()
-    // );
-
     if xlm_token.address >= pho_token.address {
         std::mem::swap(&mut pho_token, &mut xlm_token);
     }
 
     xlm_token.mint(&admin, &1_000_000);
-    usdc_token.mint(&admin, &1_000_000);
     pho_token.mint(&admin, &2_000_000);
 
     let trader_client = deploy_trader_client(&env);
 
-    // we mint some tokens to the current contract
     xlm_token.mint(&trader_client.address, &1_000);
 
     let xlm_pho_client: crate::lp_contract::Client<'_> = deploy_and_init_lp_client(
@@ -212,7 +203,6 @@ fn trade_token_should_fail_when_unauthorized() {
     }
 
     xlm_token.mint(&admin, &1_000_000);
-    usdc_token.mint(&admin, &1_000_000);
     pho_token.mint(&admin, &2_000_000);
 
     let trader_client = deploy_trader_client(&env);
@@ -301,7 +291,6 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
     }
 
     xlm_token.mint(&admin, &1_000_000);
-    usdc_token.mint(&admin, &1_000_000);
     pho_token.mint(&admin, &2_000_000);
 
     let trader_client = deploy_trader_client(&env);
@@ -391,7 +380,6 @@ fn transfer_should_fail_when_unauthorized() {
     }
 
     xlm_token.mint(&admin, &1_000_000);
-    usdc_token.mint(&admin, &1_000_000);
     pho_token.mint(&admin, &2_000_000);
 
     let trader_client = deploy_trader_client(&env);
