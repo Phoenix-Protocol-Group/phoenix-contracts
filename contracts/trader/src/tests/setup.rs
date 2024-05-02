@@ -1,6 +1,7 @@
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
-    Address, Bytes, BytesN, Env, String,
+    xdr::ToXdr,
+    Address, Bytes, BytesN, Env, FromVal, String,
 };
 
 use crate::{
@@ -8,10 +9,6 @@ use crate::{
     lp_contract::{self, LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo},
     token_contract,
 };
-
-pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
-    token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
-}
 
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(token_contract::WASM)
@@ -35,12 +32,36 @@ pub fn deploy_lp_wasm(env: &Env, admin: Address) -> Address {
         .deploy(factory_wasm)
 }
 
+pub fn deploy_token_contract<'a>(
+    env: &Env,
+    admin: &Address,
+    decimal: &u32,
+    name: &String,
+    symbol: &String,
+) -> token_contract::Client<'a> {
+    let token_wasm = install_token_wasm(env);
+
+    let mut salt = Bytes::new(env);
+    salt.append(&name.clone().to_xdr(&env));
+    let salt = env.crypto().sha256(&salt);
+    let token_addr = env
+        .deployer()
+        .with_address(admin.clone(), salt)
+        .deploy(token_wasm);
+
+    let token_client = token_contract::Client::new(env, &token_addr);
+
+    token_client.initialize(admin, decimal, name, symbol);
+
+    token_client
+}
+
 pub fn deploy_and_init_lp_client(
     env: &Env,
     admin: Address,
     token_a: Address,
-    token_b: Address,
     token_a_amount: i128,
+    token_b: Address,
     token_b_amount: i128,
 ) -> lp_contract::Client {
     let lp_addr = deploy_lp_wasm(env, admin.clone());
