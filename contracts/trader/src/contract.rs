@@ -6,8 +6,8 @@ use crate::{
     error::ContractError,
     lp_contract,
     storage::{
-        get_admin, get_name, get_output_token, get_pair, get_spread, save_admin, save_name,
-        save_output_token, save_pair, save_spread, BalanceInfo, OutputTokenInfo,
+        get_admin, get_name, get_output_token, get_pair, save_admin, save_name, save_output_token,
+        save_pair, BalanceInfo, OutputTokenInfo,
     },
     token_contract,
 };
@@ -27,7 +27,6 @@ pub trait TraderTrait {
         contract_name: String,
         pair_addresses: (Address, Address),
         output_token: Address,
-        max_spread_bps: Option<u64>,
     );
 
     fn trade_token(
@@ -36,6 +35,7 @@ pub trait TraderTrait {
         token_to_swap: Address,
         liquidity_pool: Address,
         amount: Option<u64>,
+        max_spread_bps: Option<u64>,
     );
 
     fn transfer(
@@ -65,7 +65,6 @@ impl TraderTrait for Trader {
         contract_name: String,
         pair_addresses: (Address, Address),
         output_token: Address,
-        max_spread: Option<u64>,
     ) {
         admin.require_auth();
 
@@ -76,10 +75,6 @@ impl TraderTrait for Trader {
         save_pair(&env, &pair_addresses);
 
         save_output_token(&env, &output_token);
-
-        if let Some(spread) = max_spread {
-            save_spread(&env, &spread);
-        }
 
         env.events()
             .publish(("Trader: Initialize", "admin: "), &admin);
@@ -97,6 +92,7 @@ impl TraderTrait for Trader {
         token_to_swap: Address,
         liquidity_pool: Address,
         amount: Option<u64>,
+        max_spread: Option<u64>,
     ) {
         sender.require_auth();
 
@@ -125,7 +121,7 @@ impl TraderTrait for Trader {
             token_client.balance(&sender)
         };
 
-        let max_spread_bps = get_spread(&env);
+        let max_spread_bps = max_spread.unwrap_or(0);
 
         let amount_swapped = lp_client.swap(
             &env.current_contract_address(),

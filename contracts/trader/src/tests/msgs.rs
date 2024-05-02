@@ -16,7 +16,6 @@ fn initialize() {
     let token_a = deploy_token_contract(&env, &admin);
     let token_b = deploy_token_contract(&env, &admin);
     let pho_token = deploy_token_contract(&env, &admin);
-    let max_spread_bps = &None::<u64>;
 
     let trader_client = deploy_trader_client(&env);
     trader_client.initialize(
@@ -24,7 +23,6 @@ fn initialize() {
         &contract_name,
         &(token_a.address.clone(), token_b.address.clone()),
         &pho_token.address,
-        max_spread_bps,
     );
 
     assert_eq!(trader_client.query_admin_address(), admin);
@@ -73,7 +71,6 @@ fn trade_token_and_transfer_token() {
         &contract_name,
         &(xlm_token.address.clone(), usdc_token.address.clone()),
         &pho_token.address,
-        &None::<u64>,
     );
 
     assert_eq!(
@@ -90,6 +87,7 @@ fn trade_token_and_transfer_token() {
         &xlm_token.address.clone(),
         &xlm_pho_client.address,
         &Some(1_000),
+        &None::<u64>,
     );
 
     assert_eq!(
@@ -144,7 +142,6 @@ fn trade_token_should_fail_when_unauthorized() {
         &contract_name,
         &(xlm_token.address.clone(), usdc_token.address.clone()),
         &pho_token.address,
-        &None::<u64>,
     );
 
     assert_eq!(
@@ -161,6 +158,7 @@ fn trade_token_should_fail_when_unauthorized() {
         &xlm_token.address.clone(),
         &xlm_pho_client.address,
         &Some(1_000),
+        &None::<u64>,
     );
 }
 
@@ -202,7 +200,6 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
         &contract_name,
         &(xlm_token.address.clone(), usdc_token.address.clone()),
         &pho_token.address,
-        &None::<u64>,
     );
 
     assert_eq!(
@@ -219,6 +216,7 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
         &Address::generate(&env),
         &xlm_pho_client.address,
         &Some(1_000),
+        &None::<u64>,
     );
 }
 
@@ -261,7 +259,6 @@ fn transfer_should_fail_when_unauthorized() {
         &contract_name,
         &(xlm_token.address.clone(), usdc_token.address.clone()),
         &pho_token.address,
-        &None::<u64>,
     );
 
     assert_eq!(
@@ -278,6 +275,7 @@ fn transfer_should_fail_when_unauthorized() {
         &xlm_token.address.clone(),
         &xlm_pho_client.address,
         &Some(1_000),
+        &None::<u64>,
     );
 
     assert_eq!(

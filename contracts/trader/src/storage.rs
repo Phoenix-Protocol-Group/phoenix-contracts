@@ -96,14 +96,3 @@ pub fn get_output_token(env: &Env) -> Address {
             panic_with_error!(env, ContractError::OutputTokenNotFound)
         })
 }
-
-pub fn save_spread(env: &Env, decimal: &u64) {
-    env.storage().persistent().set(&DataKey::MaxSpread, decimal)
-}
-
-pub fn get_spread(env: &Env) -> u64 {
-    env.storage()
-        .persistent()
-        .get::<DataKey, u64>(&DataKey::MaxSpread)
-        .unwrap_or(0)
-}
