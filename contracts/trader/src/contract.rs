@@ -7,7 +7,7 @@ use crate::{
     lp_contract,
     storage::{
         get_admin, get_name, get_output_token, get_pair, get_spread, save_admin, save_name,
-        save_output_token, save_pair, save_spread, BalanceInfo,
+        save_output_token, save_pair, save_spread, BalanceInfo, OutputTokenInfo,
     },
     token_contract,
 };
@@ -53,6 +53,8 @@ pub trait TraderTrait {
     fn query_admin_address(env: Env) -> Address;
 
     fn query_contract_name(env: Env) -> String;
+
+    fn query_output_token_info(env: Env) -> OutputTokenInfo;
 }
 
 #[contractimpl]
@@ -155,7 +157,7 @@ impl TraderTrait for Trader {
             panic_with_error!(env, ContractError::Unauthorized);
         }
 
-        // If token_address is None, use the PHO token address to send to the recipient
+        // If token_address is None, use the output token address to send to the recipient
         let token_address = match token_address {
             Some(token_address) => token_address,
             None => get_output_token(&env),
@@ -167,19 +169,19 @@ impl TraderTrait for Trader {
     }
 
     fn query_balances(env: Env) -> BalanceInfo {
-        let pho_token = get_output_token(&env);
+        let output_token = get_output_token(&env);
         let (token_a, token_b) = get_pair(&env);
 
-        let pho_token_client = token_contract::Client::new(&env, &pho_token);
+        let output_token_client = token_contract::Client::new(&env, &output_token);
         let token_a_client = token_contract::Client::new(&env, &token_a);
         let token_b_client = token_contract::Client::new(&env, &token_b);
 
-        let pho_balance = pho_token_client.balance(&env.current_contract_address());
+        let output_token_balance = output_token_client.balance(&env.current_contract_address());
         let token_a_balance = token_a_client.balance(&env.current_contract_address());
         let token_b_balance = token_b_client.balance(&env.current_contract_address());
 
         BalanceInfo {
-            pho: pho_balance,
+            output_token: output_token_balance,
             token_a: token_a_balance,
             token_b: token_b_balance,
         }
@@ -195,5 +197,17 @@ impl TraderTrait for Trader {
 
     fn query_contract_name(env: Env) -> String {
         get_name(&env)
+    }
+
+    fn query_output_token_info(env: Env) -> OutputTokenInfo {
+        let output_token = get_output_token(&env);
+        let output_token_client = token_contract::Client::new(&env, &output_token);
+
+        OutputTokenInfo {
+            address: output_token,
+            name: output_token_client.name(),
+            symbol: output_token_client.symbol(),
+            decimal: output_token_client.decimals(),
+        }
     }
 }

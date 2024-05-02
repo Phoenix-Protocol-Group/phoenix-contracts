@@ -79,7 +79,7 @@ fn trade_token_and_transfer_token() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            pho: 0,
+            output_token: 0,
             token_a: 1_000,
             token_b: 0
         }
@@ -95,7 +95,7 @@ fn trade_token_and_transfer_token() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            pho: 1_000,
+            output_token: 1_000,
             token_a: 0,
             token_b: 0
         }
@@ -150,7 +150,7 @@ fn trade_token_should_fail_when_unauthorized() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            pho: 0,
+            output_token: 0,
             token_a: 1_000,
             token_b: 0
         }
@@ -208,7 +208,7 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            pho: 0,
+            output_token: 0,
             token_a: 1_000,
             token_b: 0
         }
@@ -267,7 +267,7 @@ fn transfer_should_fail_when_unauthorized() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            pho: 0,
+            output_token: 0,
             token_a: 1_000,
             token_b: 0
         }
@@ -283,7 +283,7 @@ fn transfer_should_fail_when_unauthorized() {
     assert_eq!(
         trader_client.query_balances(),
         BalanceInfo {
-            pho: 1_000,
+            output_token: 1_000,
             token_a: 0,
             token_b: 0
         }

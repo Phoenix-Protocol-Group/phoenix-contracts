@@ -2,7 +2,7 @@ This is the designated trader contract, which is responsible for accumulating fe
 
 **Messages**
 
-`initialize(env: Env, admin: Address, contract_name: String, pair_addresses: (Address, Address), pho_token: Address, max_spread: Option<u64>)`
+`initialize(env: Env, admin: Address, contract_name: String, pair_addresses: (Address, Address), output_token: Address, max_spread: Option<u64>)`
 
 Initializes the contract with the given admin and configuration.
 
@@ -30,4 +30,4 @@ Returns information about the admin of this contract, including their address an
 
 `query token_info(env: Env)`
 
-Returns information about the $PHO token, including its address and balance.
+Returns information about the output token, including its address and balance.

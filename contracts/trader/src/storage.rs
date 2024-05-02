@@ -17,9 +17,18 @@ pub enum DataKey {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BalanceInfo {
-    pub pho: i128,
+    pub output_token: i128,
     pub token_a: i128,
     pub token_b: i128,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OutputTokenInfo {
+    pub address: Address,
+    pub name: String,
+    pub symbol: String,
+    pub decimal: u32,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
