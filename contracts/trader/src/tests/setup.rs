@@ -65,6 +65,7 @@ pub fn deploy_and_init_lp_client(
     token_a_amount: i128,
     token_b: Address,
     token_b_amount: i128,
+    swap_fee_bps: i64,
 ) -> lp_contract::Client {
     let lp_addr = deploy_lp_wasm(env, admin.clone(), token_a.clone(), token_b.clone());
 
@@ -89,7 +90,7 @@ pub fn deploy_and_init_lp_client(
         fee_recipient: admin.clone(),
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 5000,
-        swap_fee_bps: 0,
+        swap_fee_bps,
         max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,
