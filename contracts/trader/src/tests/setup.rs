@@ -22,9 +22,11 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-pub fn deploy_lp_wasm(env: &Env, admin: Address) -> Address {
+pub fn deploy_lp_wasm(env: &Env, admin: Address, token_a: Address, token_b: Address) -> Address {
     let factory_wasm = env.deployer().upload_contract_wasm(lp_contract::WASM);
-    let salt = Bytes::new(env);
+    let mut salt = Bytes::new(env);
+    salt.append(&token_a.to_xdr(env));
+    salt.append(&token_b.to_xdr(env));
     let salt = env.crypto().sha256(&salt);
 
     env.deployer()
@@ -64,7 +66,7 @@ pub fn deploy_and_init_lp_client(
     token_b: Address,
     token_b_amount: i128,
 ) -> lp_contract::Client {
-    let lp_addr = deploy_lp_wasm(env, admin.clone());
+    let lp_addr = deploy_lp_wasm(env, admin.clone(), token_a.clone(), token_b.clone());
 
     let lp_client = lp_contract::Client::new(env, &lp_addr);
 
