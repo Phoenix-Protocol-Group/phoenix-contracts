@@ -45,6 +45,7 @@ and this project adheres to
 [#274]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/274
 [#280]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/280
 [#283]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/283
+[#288]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/288
 [#289]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/289
 [#291]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/291
 [#293]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/293

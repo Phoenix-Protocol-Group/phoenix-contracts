@@ -31,3 +31,6 @@ Returns information about the admin of this contract, including their address an
 `query token_info(env: Env)`
 
 Returns information about the output token, including its address and balance.
+
+`query_output_token_info(env: Env)`
+Return `OutputTokenInfo` struct representing info about the output token.
