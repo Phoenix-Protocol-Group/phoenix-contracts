@@ -21,6 +21,11 @@ enum Error {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub struct Decimal256(I256);
 
+/// This implementation faced a lot of issues.
+/// 1. U/I256 doesn't have a const contructors for some reason
+/// 2. U/I256 requires an environment variable to be passed through
+/// ...which results in a worse quality of the code. We'll try to work on that.
+
 #[allow(dead_code)]
 impl Decimal256 {
     // Number of decimal places
@@ -56,16 +61,16 @@ impl Decimal256 {
     }
 
     // /// Create a 1.0 Decimal256
-    // #[inline]
-    // pub const fn one() -> Self {
-    //     Self(Self::DECIMAL_FRACTIONAL)
-    // }
+    #[inline]
+    pub fn one(env: &Env) -> Self {
+        Self(Self::decimal_fractional(env))
+    }
 
     // /// Create a 0.0 Decimal256
-    // #[inline]
-    // pub const fn zero() -> Self {
-    //     Self(I256::from_i32(&Env::default(), 0i32))
-    // }
+    #[inline]
+    pub fn zero() -> Self {
+        Self(I256::from_i32(&Env::default(), 0i32))
+    }
 
     // /// Convert x% into Decimal256
     // pub fn percent(x: i64) -> Self {
