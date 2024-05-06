@@ -47,13 +47,13 @@ impl Decimal256 {
         Self(I256::from_i128(env, -1i128 << 127))
     }
 
-    // pub fn new(value: I256) -> Self {
-    //     Decimal256(value)
-    // }
+    pub fn new(value: I256) -> Self {
+        Decimal256(value)
+    }
 
-    // pub const fn raw(value: I256) -> Self {
-    //     Self(value)
-    // }
+    pub const fn raw(value: I256) -> Self {
+        Self(value)
+    }
 
     // /// Create a 1.0 Decimal256
     // #[inline]
