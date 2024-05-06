@@ -73,19 +73,28 @@ impl Decimal256 {
     }
 
     // /// Convert x% into Decimal256
-    // pub fn percent(x: i64) -> Self {
-    //     Self(I256::from_i128(&Env::default(), (x as i128) * 10_000_000_000_000_000))
-    // }
+    pub fn percent(x: i64) -> Self {
+        Self(I256::from_i128(
+            &Env::default(),
+            (x as i128) * 10_000_000_000_000_000,
+        ))
+    }
 
     // /// Convert permille (x/1000) into Decimal256
-    // pub fn permille(x: i64) -> Self {
-    //     Self(I256::from_i128(&Env::default(), (x as i128) * 1_000_000_000_000_000))
-    // }
+    pub fn permille(x: i64) -> Self {
+        Self(I256::from_i128(
+            &Env::default(),
+            (x as i128) * 1_000_000_000_000_000,
+        ))
+    }
 
     // /// Convert basis points (x/10000) into Decimal256
-    // pub fn bps(x: i64) -> Self {
-    //     Self(I256::from_i128(&Env::default(), (x as i128) * 100_000_000_000_000))
-    // }
+    pub fn bps(x: i64) -> Self {
+        Self(I256::from_i128(
+            &Env::default(),
+            (x as i128) * 100_000_000_000_000,
+        ))
+    }
 
     // /// The number of decimal places. This is a constant value for now
     // /// but this could potentially change as the type evolves.
