@@ -20,6 +20,7 @@ and this project adheres to
 - vesting: Add vesting contract ([#267])
 - all: changes panic! to panic_with_error ([#269])
 - Audit Report from Veridise ([#291])
+- all: added entrypoint to update the contracts ([#293])
 
 [#267]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/267
 [#269]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/269
@@ -29,6 +30,7 @@ and this project adheres to
 [#283]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/283
 [#289]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/289
 [#291]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/291
+[#293]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/293
 
 ## Bug fixes
 
