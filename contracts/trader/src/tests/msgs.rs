@@ -167,7 +167,7 @@ fn simple_trade_token_and_transfer_token() {
 }
 
 #[test]
-fn extended_trade_token_and_transfer_token() {
+fn extended_trade_and_transfer_token() {
     let env = Env::default();
 
     env.mock_all_auths_allowing_non_root_auth();
