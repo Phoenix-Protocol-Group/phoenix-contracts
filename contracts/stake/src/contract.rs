@@ -179,8 +179,8 @@ impl StakingTrait for Staking {
             // we get rid of the last stake
             stakes.stakes.pop_back();
             // and add the updated one
-            stakes.total_stake += tokens;
             stakes.stakes.push_back(last_stake);
+            stakes.total_stake += tokens;
         } else {
             let stake = Stake {
                 stake: tokens,
