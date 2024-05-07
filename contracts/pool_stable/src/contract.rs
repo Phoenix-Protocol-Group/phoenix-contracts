@@ -644,7 +644,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 #[contractimpl]
 impl StableLiquidityPool {
     #[allow(dead_code)]
-    fn update(env: Env, new_wasm_hash: BytesN<32>) {
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin(&env);
         admin.require_auth();
 
