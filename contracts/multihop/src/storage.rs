@@ -1,4 +1,6 @@
-use soroban_sdk::{contracttype, Address, Env, String, Vec};
+use soroban_sdk::{contracttype, log, panic_with_error, Address, Env, String, Vec};
+
+use crate::error::ContractError;
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -53,6 +55,19 @@ pub fn get_factory(env: &Env) -> Address {
     env.storage().instance().get(&DataKey::FactoryKey).unwrap()
 }
 
+pub fn save_admin(env: &Env, admin: &Address) {
+    env.storage().instance().set(&DataKey::Admin, admin);
+}
+
+pub fn get_admin(env: &Env) -> Address {
+    env.storage()
+        .instance()
+        .get(&DataKey::Admin)
+        .unwrap_or_else(|| {
+            log!(env, "Admin not set");
+            panic_with_error!(&env, ContractError::AdminNotSet)
+        })
+}
 pub fn is_initialized(e: &Env) -> bool {
     e.storage()
         .persistent()

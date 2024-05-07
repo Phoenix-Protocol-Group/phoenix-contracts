@@ -1,13 +1,13 @@
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, Vec,
 };
 
 use crate::error::ContractError;
 // FIXM: Disable Referral struct
 // use crate::lp_contract::Referral;
 use crate::storage::{
-    get_factory, is_initialized, save_factory, set_initialized, SimulateReverseSwapResponse,
-    SimulateSwapResponse, Swap,
+    get_admin, get_factory, is_initialized, save_admin, save_factory, set_initialized,
+    SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, lp_contract, token_contract};
@@ -55,6 +55,8 @@ impl MultihopTrait for Multihop {
         }
 
         set_initialized(&env);
+
+        save_admin(&env, &admin);
 
         save_factory(&env, factory);
 
@@ -188,5 +190,16 @@ impl MultihopTrait for Multihop {
         });
 
         simulate_swap_response
+    }
+}
+
+#[contractimpl]
+impl Multihop {
+    #[allow(dead_code)]
+    fn update(env: Env, new_wasm_hash: BytesN<32>) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 }

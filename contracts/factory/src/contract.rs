@@ -362,6 +362,17 @@ impl FactoryTrait for Factory {
     }
 }
 
+#[contractimpl]
+impl Factory {
+    #[allow(dead_code)]
+    fn update(env: Env, new_wasm_hash: BytesN<32>) {
+        let admin = get_config(&env).admin;
+        admin.require_auth();
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+}
+
 fn validate_token_info(
     env: &Env,
     token_init_info: &TokenInitInfo,
