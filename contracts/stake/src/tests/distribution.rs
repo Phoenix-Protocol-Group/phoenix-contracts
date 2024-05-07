@@ -6,8 +6,12 @@ use soroban_sdk::{
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 use pretty_assertions::assert_eq;
 
-use crate::msg::{
-    AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward, WithdrawableRewardsResponse,
+use crate::{
+    msg::{
+        AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward,
+        WithdrawableRewardsResponse,
+    },
+    tests::setup::ONE_DAY,
 };
 
 #[test]
@@ -38,16 +42,16 @@ fn add_distribution_and_distribute_reward() {
 
     // bond tokens for user to enable distribution for him
     lp_token.mint(&user, &1000);
-    staking.bond(&user, &1000);
-
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
+        li.timestamp = ONE_DAY;
     });
+
+    staking.bond(&user, &1000);
 
     let reward_duration = 600;
     staking.fund_distribution(
         &admin,
-        &2_000,
+        &ONE_DAY,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
@@ -60,7 +64,7 @@ fn add_distribution_and_distribute_reward() {
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_600;
+        li.timestamp = ONE_DAY + reward_duration;
     });
     staking.distribute_rewards();
     assert_eq!(
