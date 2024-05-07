@@ -1,6 +1,7 @@
 use crate::contract::{Factory, FactoryClient};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{testutils::Address as _, vec, Address, BytesN, Env};
+pub const ONE_DAY: u64 = 86400;
 #[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
     soroban_sdk::contractimport!(
