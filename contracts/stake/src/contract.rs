@@ -176,11 +176,11 @@ impl StakingTrait for Staking {
         if now - SECONDS_IN_A_DAY < last_stake.stake_timestamp {
             last_stake.stake += tokens;
             last_stake.stake_timestamp = now;
+            stakes.total_stake += tokens;
             // we get rid of the last stake
             stakes.stakes.pop_back();
             // and add the updated one
             stakes.stakes.push_back(last_stake);
-            stakes.total_stake += tokens;
         } else {
             let stake = Stake {
                 stake: tokens,
