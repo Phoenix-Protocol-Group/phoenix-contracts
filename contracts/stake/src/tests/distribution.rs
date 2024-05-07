@@ -11,7 +11,7 @@ use crate::{
         AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward,
         WithdrawableRewardsResponse,
     },
-    tests::setup::ONE_DAY,
+    tests::setup::{ONE_DAY, ONE_WEEK},
 };
 
 #[test]
@@ -124,23 +124,20 @@ fn two_distributions() {
 
     // bond tokens for user to enable distribution for him
     lp_token.mint(&user, &1000);
+    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     staking.bond(&user, &1000);
-
-    env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
-    });
 
     let reward_duration = 600;
     staking.fund_distribution(
         &admin,
-        &2_000,
+        &ONE_DAY,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
     staking.fund_distribution(
         &admin,
-        &2_000,
+        &ONE_DAY,
         &reward_duration,
         &reward_token_2.address,
         &((reward_amount * 2) as i128),
@@ -148,7 +145,7 @@ fn two_distributions() {
 
     // distribute rewards during half time
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_300;
+        li.timestamp += 300;
     });
     staking.distribute_rewards();
     assert_eq!(
@@ -172,7 +169,7 @@ fn two_distributions() {
     assert_eq!(reward_token_2.balance(&user), reward_amount as i128);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_600;
+        li.timestamp += 600;
     });
     staking.distribute_rewards();
     // first reward token
@@ -249,6 +246,10 @@ fn four_users_with_different_stakes() {
     reward_token.mint(&admin, &(reward_amount as i128));
 
     // bond tokens for users; each user has a different amount staked
+    env.ledger().with_mut(|li| {
+        li.timestamp = ONE_WEEK;
+    });
+
     lp_token.mint(&user, &1000);
     staking.bond(&user, &1000);
     lp_token.mint(&user2, &2000);
@@ -258,21 +259,20 @@ fn four_users_with_different_stakes() {
     lp_token.mint(&user4, &4000);
     staking.bond(&user4, &4000);
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
-    });
+    let eight_days = ONE_WEEK + ONE_DAY;
+    env.ledger().with_mut(|li| li.timestamp = eight_days);
 
     let reward_duration = 600;
     staking.fund_distribution(
         &admin,
-        &2_000,
+        &eight_days,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_600;
+        li.timestamp = eight_days + 600;
     });
     staking.distribute_rewards();
 
@@ -367,23 +367,20 @@ fn two_users_one_starts_after_distribution_begins() {
 
     // first user bonds before distribution started
     lp_token.mint(&user, &1000);
+    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     staking.bond(&user, &1000);
-
-    env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
-    });
 
     let reward_duration = 600;
     staking.fund_distribution(
         &admin,
-        &2_000,
+        &ONE_DAY,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_300;
+        li.timestamp += 300;
     });
     staking.distribute_rewards();
 
@@ -406,7 +403,7 @@ fn two_users_one_starts_after_distribution_begins() {
     staking.bond(&user2, &1000);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_600;
+        li.timestamp += 300;
     });
     staking.distribute_rewards();
 
@@ -469,21 +466,19 @@ fn two_users_both_bonds_after_distribution_starts() {
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
-    });
+    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
 
     let reward_duration = 600;
     staking.fund_distribution(
         &admin,
-        &2_000,
+        &ONE_DAY,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_200;
+        li.timestamp += 200;
     });
     lp_token.mint(&user, &1000);
     staking.bond(&user, &1000);
@@ -506,7 +501,7 @@ fn two_users_both_bonds_after_distribution_starts() {
 
     // user2 starts staking after the distribution has begun
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_400;
+        li.timestamp += 200;
     });
     lp_token.mint(&user2, &1000);
     staking.bond(&user2, &1000);
@@ -538,7 +533,7 @@ fn two_users_both_bonds_after_distribution_starts() {
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_600;
+        li.timestamp += 200;
     });
     staking.distribute_rewards();
 
@@ -769,14 +764,14 @@ fn calculate_apr() {
     reward_token.mint(&admin, &(reward_amount as i128));
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 0;
+        li.timestamp = ONE_DAY;
     });
 
     // whole year of distribution
     let reward_duration = 60 * 60 * 24 * 365;
     staking.fund_distribution(
         &admin,
-        &2_000,
+        &ONE_DAY,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
@@ -798,6 +793,9 @@ fn calculate_apr() {
 
     // bond tokens for user to enable distribution for him
     lp_token.mint(&user, &1000);
+    env.ledger().with_mut(|li| {
+        li.timestamp += ONE_DAY;
+    });
     staking.bond(&user, &1000);
 
     // 100k rewards distributed for the whole year gives 100% APR
@@ -808,7 +806,7 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_str(&env, "100000")
+                    amount: String::from_str(&env, "100000.975274725274725274")
                 }
             ]
         }
@@ -819,7 +817,7 @@ fn calculate_apr() {
 
     staking.fund_distribution(
         &admin,
-        &2_000,
+        &(2 * &ONE_DAY),
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
@@ -833,7 +831,7 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_str(&env, "150000")
+                    amount: String::from_str(&env, "149727")
                 }
             ]
         }
@@ -895,19 +893,21 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     // bond tokens for user to enable distribution for him
     lp_token.mint(&user_1, &1_000);
     lp_token.mint(&user_2, &1_000);
+
+    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     staking.bond(&user_1, &1_000);
     staking.bond(&user_2, &1_000);
     let reward_duration = 10_000;
     staking.fund_distribution(
         &admin,
-        &0,
+        &ONE_DAY,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
+        li.timestamp += 2_000;
     });
 
     staking.distribute_rewards();
@@ -918,7 +918,7 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
 
     // at the 1/2 of the distribution time, user_1 unbonds
     env.ledger().with_mut(|li| {
-        li.timestamp = 5_000;
+        li.timestamp += 3_000;
     });
     staking.distribute_rewards();
     assert_eq!(
@@ -939,7 +939,7 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
             ]
         }
     );
-    staking.unbond(&user_1, &1_000, &0);
+    staking.unbond(&user_1, &1_000, &ONE_DAY);
     assert_eq!(
         staking.query_withdrawable_rewards(&user_1),
         WithdrawableRewardsResponse {
@@ -954,7 +954,7 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 10_000;
+        li.timestamp += 10_000;
     });
 
     staking.distribute_rewards();
@@ -1011,25 +1011,26 @@ fn test_bond_withdraw_unbond() {
     reward_token.mint(&admin, &(reward_amount as i128));
 
     lp_token.mint(&user, &1_000);
+    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     staking.bond(&user, &1_000);
 
     let reward_duration = 10_000;
 
     staking.fund_distribution(
         &admin,
-        &0,
+        &ONE_DAY,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 10_000;
+        li.timestamp = ONE_DAY + reward_duration;
     });
 
     staking.distribute_rewards();
 
-    staking.unbond(&user, &1_000, &0);
+    staking.unbond(&user, &1_000, &ONE_DAY);
 
     assert_eq!(
         staking.query_withdrawable_rewards(&user),

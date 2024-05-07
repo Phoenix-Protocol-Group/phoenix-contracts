@@ -171,11 +171,11 @@ impl StakingTrait for Staking {
         let mut stakes = get_stakes(&env, &sender);
         let mut last_stake = stakes.stakes.last().unwrap_or_default();
 
-        let curent_timestamp = ledger.timestamp();
+        let now = ledger.timestamp();
 
-        if curent_timestamp - SECONDS_IN_A_DAY < last_stake.stake_timestamp {
+        if now - SECONDS_IN_A_DAY < last_stake.stake_timestamp {
             last_stake.stake += tokens;
-            last_stake.stake_timestamp = curent_timestamp;
+            last_stake.stake_timestamp = now;
             // we get rid of the last stake
             stakes.stakes.pop_back();
             // and add the updated one
