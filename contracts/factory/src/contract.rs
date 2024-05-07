@@ -48,9 +48,12 @@ pub trait FactoryTrait {
         to_remove: Vec<Address>,
     );
 
-    fn update_stake_wasm_hash(env: Env, new_wasm_hash: BytesN<32>);
-
-    fn update_lp_wasm_hash(env: Env, new_wasm_hash: BytesN<32>);
+    fn update_wasm_hashes(
+        env: Env,
+        lp_wasm_hash: Option<BytesN<32>>,
+        stake_wasm_hash: Option<BytesN<32>>,
+        token_wasm_hash: Option<BytesN<32>>,
+    );
 
     fn query_pools(env: Env) -> Vec<Address>;
 
@@ -229,27 +232,22 @@ impl FactoryTrait for Factory {
         )
     }
 
-    fn update_stake_wasm_hash(env: Env, new_wasm_hash: BytesN<32>) {
+    fn update_wasm_hashes(
+        env: Env,
+        lp_wasm_hash: Option<BytesN<32>>,
+        stake_wasm_hash: Option<BytesN<32>>,
+        token_wasm_hash: Option<BytesN<32>>,
+    ) {
         let config = get_config(&env);
+
         config.admin.require_auth();
 
         save_config(
             &env,
             Config {
-                stake_wasm_hash: new_wasm_hash,
-                ..config
-            },
-        );
-    }
-
-    fn update_lp_wasm_hash(env: Env, new_wasm_hash: BytesN<32>) {
-        let config = get_config(&env);
-        config.admin.require_auth();
-
-        save_config(
-            &env,
-            Config {
-                lp_wasm_hash: new_wasm_hash,
+                lp_wasm_hash: lp_wasm_hash.unwrap_or(config.lp_wasm_hash),
+                stake_wasm_hash: stake_wasm_hash.unwrap_or(config.stake_wasm_hash),
+                token_wasm_hash: token_wasm_hash.unwrap_or(config.token_wasm_hash),
                 ..config
             },
         );
