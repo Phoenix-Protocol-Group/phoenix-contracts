@@ -5,7 +5,7 @@ use soroban_sdk::{
 };
 
 use crate::error::ContractError;
-use crate::storage::utils::{is_initialized, set_initialized};
+use crate::storage::utils::{get_admin, is_initialized, set_initialized};
 use crate::storage::StableLiquidityPoolInfo;
 use crate::{
     math::{calc_y, compute_current_amp, compute_d, AMP_PRECISION},
@@ -638,6 +638,17 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 amount: amount_b,
             },
         )
+    }
+}
+
+#[contractimpl]
+impl StableLiquidityPool {
+    #[allow(dead_code)]
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 }
 

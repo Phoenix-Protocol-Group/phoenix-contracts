@@ -1,4 +1,6 @@
-use soroban_sdk::{contract, contractimpl, contractmeta, log, panic_with_error, Address, Env, Vec};
+use soroban_sdk::{
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, Vec,
+};
 
 use curve::Curve;
 
@@ -549,5 +551,16 @@ impl VestingTrait for Vesting {
             .unwrap_or_else(|| panic_with_error!(env, ContractError::NotEnoughBalance));
 
         sender_liquid as i128
+    }
+}
+
+#[contractimpl]
+impl Vesting {
+    #[allow(dead_code)]
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 }

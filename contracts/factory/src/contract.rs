@@ -48,6 +48,13 @@ pub trait FactoryTrait {
         to_remove: Vec<Address>,
     );
 
+    fn update_wasm_hashes(
+        env: Env,
+        lp_wasm_hash: Option<BytesN<32>>,
+        stake_wasm_hash: Option<BytesN<32>>,
+        token_wasm_hash: Option<BytesN<32>>,
+    );
+
     fn query_pools(env: Env) -> Vec<Address>;
 
     fn query_pool_details(env: Env, pool_address: Address) -> LiquidityPoolInfo;
@@ -225,6 +232,27 @@ impl FactoryTrait for Factory {
         )
     }
 
+    fn update_wasm_hashes(
+        env: Env,
+        lp_wasm_hash: Option<BytesN<32>>,
+        stake_wasm_hash: Option<BytesN<32>>,
+        token_wasm_hash: Option<BytesN<32>>,
+    ) {
+        let config = get_config(&env);
+
+        config.admin.require_auth();
+
+        save_config(
+            &env,
+            Config {
+                lp_wasm_hash: lp_wasm_hash.unwrap_or(config.lp_wasm_hash),
+                stake_wasm_hash: stake_wasm_hash.unwrap_or(config.stake_wasm_hash),
+                token_wasm_hash: token_wasm_hash.unwrap_or(config.token_wasm_hash),
+                ..config
+            },
+        );
+    }
+
     fn query_pools(env: Env) -> Vec<Address> {
         get_lp_vec(&env)
     }
@@ -359,6 +387,17 @@ impl FactoryTrait for Factory {
             lp_portfolio,
             stake_portfolio,
         }
+    }
+}
+
+#[contractimpl]
+impl Factory {
+    #[allow(dead_code)]
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
+        let admin = get_config(&env).admin;
+        admin.require_auth();
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 }
 

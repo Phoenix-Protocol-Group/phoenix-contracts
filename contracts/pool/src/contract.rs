@@ -9,8 +9,8 @@ use crate::{
     error::ContractError,
     stake_contract,
     storage::{
-        get_config, save_config, utils,
-        utils::{is_initialized, set_initialized},
+        get_config, save_config,
+        utils::{self, get_admin, is_initialized, set_initialized},
         validate_fee_bps, Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
     },
@@ -688,6 +688,17 @@ impl LiquidityPoolTrait for LiquidityPool {
                 amount: amount_b,
             },
         )
+    }
+}
+
+#[contractimpl]
+impl LiquidityPool {
+    #[allow(dead_code)]
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 }
 

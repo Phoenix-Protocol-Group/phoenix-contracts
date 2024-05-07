@@ -1,6 +1,7 @@
 use decimal::Decimal;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, Env, String, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
+    Vec,
 };
 
 use crate::distribution::calc_power;
@@ -548,6 +549,17 @@ impl StakingTrait for Staking {
         let reward_token_client = token_contract::Client::new(&env, &asset);
         reward_token_client.balance(&env.current_contract_address()) as u128
             - distribution.withdrawable_total
+    }
+}
+
+#[contractimpl]
+impl Staking {
+    #[allow(dead_code)]
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 }
 
