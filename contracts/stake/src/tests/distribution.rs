@@ -1139,3 +1139,92 @@ fn panic_when_funding_distribution_with_curve_too_complex() {
         &1000,
     );
 }
+
+#[test]
+fn one_user_bond_twice_in_a_day_bond_one_more_time_after_a_week_get_rewards() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &Address::generate(&env),
+        &50u32,
+    );
+
+    staking.create_distribution_flow(&manager, &reward_token.address);
+
+    let reward_amount: u128 = 100_000;
+    reward_token.mint(&admin, &(reward_amount as i128));
+
+    // bond tokens for user to enable distribution for him
+    lp_token.mint(&user, &3000);
+    env.ledger().with_mut(|li| {
+        li.timestamp = ONE_DAY;
+    });
+
+    staking.bond(&user, &1000);
+
+    staking.fund_distribution(
+        &admin,
+        &ONE_DAY,
+        &ONE_WEEK,
+        &reward_token.address,
+        &(reward_amount as i128),
+    );
+
+    staking.distribute_rewards();
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        reward_amount
+    );
+    // user bonds twice in a day
+    env.ledger().with_mut(|li| li.timestamp += ONE_DAY / 2);
+    staking.bond(&user, &1000);
+
+    assert_eq!(staking.query_staked(&user).stakes.len(), 1);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp += ONE_DAY;
+    });
+    staking.distribute_rewards();
+    // distribuion rewards duration is 1 week, so after 1 1/2 days we should have 1.5/7 of the rewards
+    // 1.5/7 out of 100_000 is 21_428
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        78_572
+    );
+    assert_eq!(
+        staking.query_distributed_rewards(&reward_token.address),
+        21_428
+    );
+
+    env.ledger()
+        .with_mut(|li| li.timestamp = ONE_DAY + ONE_WEEK);
+
+    staking.distribute_rewards();
+
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount
+                }
+            ]
+        }
+    );
+
+    staking.withdraw_rewards(&user);
+    assert_eq!(reward_token.balance(&user), reward_amount as i128);
+}
