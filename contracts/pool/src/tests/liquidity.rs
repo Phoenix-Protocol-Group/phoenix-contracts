@@ -130,6 +130,7 @@ fn provide_liqudity() {
             stake_address: result.clone().stake_address,
         }
     );
+    assert_eq!(pool.query_total_issued_lp(), 100);
 }
 
 #[test]

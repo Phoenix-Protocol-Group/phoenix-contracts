@@ -125,6 +125,8 @@ pub trait StableLiquidityPoolTrait {
     ) -> SimulateReverseSwapResponse;
 
     fn query_share(env: Env, amount: i128) -> (Asset, Asset);
+
+    fn query_total_issued_lp(env: Env) -> i128;
 }
 
 #[contractimpl]
@@ -638,6 +640,10 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 amount: amount_b,
             },
         )
+    }
+
+    fn query_total_issued_lp(env: Env) -> i128 {
+        utils::get_total_shares(&env)
     }
 }
 
