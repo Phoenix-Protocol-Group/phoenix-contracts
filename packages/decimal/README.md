@@ -1,4 +1,4 @@
-# Dex Decimal
+# Soroban Decimal
 This code is taken from the [cosmwasm-std crate](https://github.com/CosmWasm/cosmwasm.), which is licensed under the Apache License 2.0
 The contract provides a `Decimal` struct for arithmetic operations, suitable for blockchain De-Fi operations, where precision is of highest importance. It ensures that calculations are accurate up to 18 decimal places.
 
