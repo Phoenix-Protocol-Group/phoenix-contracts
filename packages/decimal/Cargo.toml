@@ -5,6 +5,7 @@ authors = ["Jakub <jakub@moonbite.space>"]
 repository = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
+description = "A precise decimal arithmetic package for Soroban contracts"
 
 [dependencies]
 soroban-sdk = { workspace = true, features = ["alloc"]}
