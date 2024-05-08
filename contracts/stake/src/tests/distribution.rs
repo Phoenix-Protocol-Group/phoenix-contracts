@@ -1170,8 +1170,6 @@ fn one_user_bond_twice_in_a_day_bond_one_more_time_after_a_week_get_rewards() {
     env.ledger().with_mut(|li| {
         li.timestamp = ONE_DAY;
     });
-    // first bond for the day
-    staking.bond(&user, &1000);
 
     staking.fund_distribution(
         &admin,
@@ -1180,6 +1178,9 @@ fn one_user_bond_twice_in_a_day_bond_one_more_time_after_a_week_get_rewards() {
         &reward_token.address,
         &(reward_amount as i128),
     );
+
+    // first bond for the day
+    staking.bond(&user, &1000);
 
     staking.distribute_rewards();
 
@@ -1249,7 +1250,8 @@ fn one_user_bond_twice_in_a_day_bond_one_more_time_after_a_week_get_rewards() {
     );
 
     staking.withdraw_rewards(&user);
-    // TODO get back to this and check why it's not 100_000
+    // it's not actually one whole token that's left, but a fraction of that. I guess we owe this to the
+    // rewards distribution timestamp I'm working with
     assert_eq!(reward_token.balance(&user), 99999);
     assert_eq!(reward_token.balance(&staking.address), 1);
 }
