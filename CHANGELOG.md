@@ -6,6 +6,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+## Changed
+
+- decimal: Rename to `soroban-decimal` and publish in crates.io ([#299])
+
+[#299]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/299
+
 ## [1.0.0] - 2024-05-08
 
 ## Changed
