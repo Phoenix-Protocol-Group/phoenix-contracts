@@ -1,5 +1,5 @@
 [package]
-name = "decimal"
+name = "soroban-decimal"
 version = { workspace = true }
 authors = ["Jakub <jakub@moonbite.space>"]
 repository = { workspace = true }

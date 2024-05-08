@@ -14,7 +14,7 @@ use crate::{
     storage::{Asset, PoolResponse},
     token_contract,
 };
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 
 #[test]
 fn provide_liqudity() {

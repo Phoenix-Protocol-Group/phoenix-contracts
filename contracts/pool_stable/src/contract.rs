@@ -17,7 +17,7 @@ use crate::{
     },
     token_contract,
 };
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 use phoenix::{validate_bps, validate_int_parameters};
 
 // Minimum amount of initial LP shares to mint

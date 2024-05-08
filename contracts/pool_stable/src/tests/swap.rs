@@ -6,7 +6,7 @@ use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 
 #[test]
 fn simple_swap() {

@@ -280,13 +280,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "decimal"
-version = "1.0.0"
-dependencies = [
- "soroban-sdk",
-]
-
-[[package]]
 name = "der"
 version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -730,7 +723,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 name = "phoenix"
 version = "1.0.0"
 dependencies = [
- "decimal",
+ "soroban-decimal",
  "soroban-sdk",
  "test-case",
 ]
@@ -754,10 +747,10 @@ dependencies = [
 name = "phoenix-pool"
 version = "1.0.0"
 dependencies = [
- "decimal",
  "num-integer",
  "phoenix",
  "pretty_assertions",
+ "soroban-decimal",
  "soroban-sdk",
  "test-case",
 ]
@@ -766,10 +759,10 @@ dependencies = [
 name = "phoenix-pool-stable"
 version = "1.0.0"
 dependencies = [
- "decimal",
  "num-integer",
  "phoenix",
  "pretty_assertions",
+ "soroban-decimal",
  "soroban-sdk",
 ]
 
@@ -778,9 +771,9 @@ name = "phoenix-stake"
 version = "1.0.0"
 dependencies = [
  "curve",
- "decimal",
  "phoenix",
  "pretty_assertions",
+ "soroban-decimal",
  "soroban-sdk",
 ]
 
@@ -789,8 +782,8 @@ name = "phoenix-vesting"
 version = "1.0.0"
 dependencies = [
  "curve",
- "decimal",
  "phoenix",
+ "soroban-decimal",
  "soroban-sdk",
 ]
 
@@ -1049,6 +1042,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "soroban-decimal"
+version = "1.0.0"
+dependencies = [
+ "soroban-sdk",
 ]
 
 [[package]]

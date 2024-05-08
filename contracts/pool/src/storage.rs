@@ -4,7 +4,7 @@ use soroban_sdk::{
 };
 
 use crate::{error::ContractError, token_contract};
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 
 #[derive(Clone, Copy)]
 #[repr(u32)]

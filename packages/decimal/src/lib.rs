@@ -101,7 +101,7 @@ impl Decimal {
     /// ## Examples
     ///
     /// ```
-    /// use decimal::Decimal;
+    /// use soroban_decimal::Decimal;
     /// // Value with whole and fractional part
     /// let a = Decimal::percent(123);
     /// assert_eq!(a.decimal_places(), 18);
@@ -129,7 +129,7 @@ impl Decimal {
     /// ## Examples
     ///
     /// ```
-    /// use decimal::Decimal;
+    /// use soroban_decimal::Decimal;
     /// use soroban_sdk::{String, Env};
     ///
     /// let e = Env::default();
