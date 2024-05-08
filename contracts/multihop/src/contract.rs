@@ -10,7 +10,7 @@ use crate::storage::{
     SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
-use crate::{factory_contract, lp_contract, token_contract};
+use crate::{factory_contract, lp_contract, lp_stable, token_contract};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -37,6 +37,24 @@ pub trait MultihopTrait {
     fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse;
 
     fn simulate_reverse_swap(
+        env: Env,
+        operations: Vec<Swap>,
+        amount: i128,
+    ) -> SimulateReverseSwapResponse;
+
+    fn stable_swap(
+        env: Env,
+        recipient: Address,
+        // FIXM: Disable Referral struct
+        // referral: Option<Referral>,
+        operations: Vec<Swap>,
+        max_spread_bps: Option<i64>,
+        amount: i128,
+    );
+
+    fn simulate_stable_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse;
+
+    fn simulate_reverse_stable_swap(
         env: Env,
         operations: Vec<Swap>,
         amount: i128,
@@ -174,6 +192,134 @@ impl MultihopTrait for Multihop {
             let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
             let simulated_reverse_swap =
                 lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
+
+            let token_symbol = token_contract::Client::new(&env, &op.ask_asset).symbol();
+
+            simulate_swap_response
+                .commission_amounts
+                .push_back((token_symbol, simulated_reverse_swap.commission_amount));
+            simulate_swap_response.offer_amount = simulated_reverse_swap.offer_amount;
+
+            simulate_swap_response
+                .spread_amount
+                .push_back(simulated_reverse_swap.spread_amount);
+
+            next_ask_amount = simulated_reverse_swap.offer_amount;
+        });
+
+        simulate_swap_response
+    }
+
+    fn stable_swap(
+        env: Env,
+        recipient: Address,
+        operations: Vec<Swap>,
+        max_spread_bps: Option<i64>,
+        amount: i128,
+    ) {
+        if operations.is_empty() {
+            log!(&env, "Multihop: Stable Swap: operations is empty!");
+            panic_with_error!(&env, ContractError::OperationsEmpty);
+        }
+        verify_swap(&env, &operations);
+
+        recipient.require_auth();
+
+        // first offer amount is an input from the user,
+        // subsequent are the results of the previous swap
+        let mut next_offer_amount: i128 = amount;
+
+        let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
+
+        operations.iter().for_each(|op| {
+            let liquidity_pool_addr: Address = factory_client
+                .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
+
+            let lp_stable_client = lp_stable::Client::new(&env, &liquidity_pool_addr);
+            // FIXM: Disable Referral struct
+            next_offer_amount = lp_stable_client.swap(
+                &recipient,
+                &op.offer_asset,
+                &next_offer_amount,
+                &op.ask_asset_min_amount,
+                &max_spread_bps,
+            );
+        });
+    }
+
+    fn simulate_stable_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse {
+        if operations.is_empty() {
+            log!(&env, "Multihop: Simulate Stable Swap: operations empty");
+            panic_with_error!(&env, ContractError::OperationsEmpty);
+        }
+
+        verify_swap(&env, &operations);
+
+        let mut next_offer_amount: i128 = amount;
+
+        let mut simulate_swap_response = SimulateSwapResponse {
+            ask_amount: 0,
+            commission_amounts: vec![&env],
+            spread_amount: vec![&env],
+        };
+
+        let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
+
+        operations.iter().for_each(|op| {
+            let liquidity_pool_addr: Address = factory_client
+                .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
+
+            let lp_stable = lp_stable::Client::new(&env, &liquidity_pool_addr);
+            let simulated_swap = lp_stable.simulate_swap(&op.offer_asset, &next_offer_amount);
+
+            let token_symbol = token_contract::Client::new(&env, &op.offer_asset).symbol();
+
+            simulate_swap_response
+                .commission_amounts
+                .push_back((token_symbol, simulated_swap.commission_amount));
+            simulate_swap_response.ask_amount = simulated_swap.ask_amount;
+            simulate_swap_response
+                .spread_amount
+                .push_back(simulated_swap.spread_amount);
+
+            next_offer_amount = simulated_swap.ask_amount;
+        });
+
+        simulate_swap_response
+    }
+
+    fn simulate_reverse_stable_swap(
+        env: Env,
+        operations: Vec<Swap>,
+        amount: i128,
+    ) -> SimulateReverseSwapResponse {
+        if operations.is_empty() {
+            log!(
+                &env,
+                "Multihop: Simulate Reverse Stable Swap: operations empty"
+            );
+            panic_with_error!(&env, ContractError::OperationsEmpty);
+        }
+
+        verify_reverse_swap(&env, &operations);
+
+        let mut next_ask_amount: i128 = amount;
+
+        let mut simulate_swap_response = SimulateReverseSwapResponse {
+            offer_amount: 0,
+            commission_amounts: vec![&env],
+            spread_amount: vec![&env],
+        };
+
+        let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
+
+        operations.iter().for_each(|op| {
+            let liquidity_pool_addr: Address = factory_client
+                .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
+
+            let lp_stable = lp_stable::Client::new(&env, &liquidity_pool_addr);
+            let simulated_reverse_swap =
+                lp_stable.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
 
             let token_symbol = token_contract::Client::new(&env, &op.ask_asset).symbol();
 
