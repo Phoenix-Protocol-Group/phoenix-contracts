@@ -1,7 +1,6 @@
 use crate::contract::{Multihop, MultihopClient};
-use crate::factory_contract::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use crate::lp_stable;
-use crate::{factory_contract, token_contract};
+use crate::factory_contract::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
+use crate::{factory_contract, lp_contract, lp_stable, token_contract};
 
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
@@ -23,13 +22,6 @@ pub fn create_token_contract_with_metadata<'a>(
     token
 }
 
-#[allow(clippy::too_many_arguments)]
-pub mod lp_contract {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm"
-    );
-}
-
 pub fn install_lp_contract(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(lp_contract::WASM)
 }
@@ -39,10 +31,7 @@ pub fn install_stable_lp_contract(env: &Env) -> BytesN<32> {
 }
 
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
-    );
-    env.deployer().upload_contract_wasm(WASM)
+    env.deployer().upload_contract_wasm(token_contract::WASM)
 }
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
@@ -166,6 +155,66 @@ pub fn deploy_and_initialize_lp(
         &String::from_str(env, "PHO/XLM"),
         &factory_contract::PoolType::Xyk,
         &None::<u64>,
+    );
+
+    let lp_client = lp_contract::Client::new(env, &lp);
+    lp_client.provide_liquidity(
+        &admin.clone(),
+        &Some(token_a_amount),
+        &None,
+        &Some(token_b_amount),
+        &None,
+        &None::<i64>,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn deploy_and_initialize_stable_lp(
+    env: &Env,
+    factory: &factory_contract::Client,
+    admin: Address,
+    mut token_a: Address,
+    mut token_a_amount: i128,
+    mut token_b: Address,
+    mut token_b_amount: i128,
+    fees: Option<i64>,
+) {
+    // 2. create liquidity pool from factory
+
+    if token_b < token_a {
+        std::mem::swap(&mut token_a, &mut token_b);
+        std::mem::swap(&mut token_a_amount, &mut token_b_amount);
+    }
+
+    let token_init_info = TokenInitInfo {
+        token_a: token_a.clone(),
+        token_b: token_b.clone(),
+    };
+    let stake_init_info = StakeInitInfo {
+        min_bond: 10i128,
+        min_reward: 5i128,
+        manager: Address::generate(env),
+        max_complexity: 10u32,
+    };
+
+    let lp_init_info = LiquidityPoolInitInfo {
+        admin: admin.clone(),
+        fee_recipient: admin.clone(),
+        max_allowed_slippage_bps: 5000,
+        max_allowed_spread_bps: 500,
+        swap_fee_bps: fees.unwrap_or(0i64),
+        max_referral_bps: 5_000,
+        token_init_info,
+        stake_init_info,
+    };
+
+    let lp = factory.create_liquidity_pool(
+        &admin.clone(),
+        &lp_init_info,
+        &String::from_str(env, "Pool"),
+        &String::from_str(env, "PHO/XLM"),
+        &PoolType::Stable,
+        &Some(10u64),
     );
 
     let lp_client = lp_contract::Client::new(env, &lp);
