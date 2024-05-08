@@ -9,7 +9,7 @@ use test_case::test_case;
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 
 #[test]
 fn simple_swap() {

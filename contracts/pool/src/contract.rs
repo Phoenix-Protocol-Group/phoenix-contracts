@@ -16,7 +16,7 @@ use crate::{
     },
     token_contract,
 };
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 use phoenix::{
     utils::{is_approx_ratio, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,

@@ -1,4 +1,4 @@
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 use soroban_sdk::{contracttype, Address};
 
 // Validate if int value is bigger then 0

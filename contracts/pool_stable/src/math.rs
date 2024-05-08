@@ -2,7 +2,7 @@ use soroban_sdk::{log, panic_with_error, Env};
 
 use crate::{error::ContractError, storage::AmplifierParameters};
 
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 
 // TODO: Those parameters will be used for updating AMP function later
 #[allow(dead_code)]
