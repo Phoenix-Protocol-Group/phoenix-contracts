@@ -111,6 +111,8 @@ fn provide_liqudity() {
             }
         }
     );
+
+    assert_eq(pool.query_total_issued_lp(), 100);
 }
 
 #[test]
