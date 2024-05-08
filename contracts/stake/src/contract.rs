@@ -173,22 +173,20 @@ impl StakingTrait for Staking {
 
         let now = ledger.timestamp();
 
-        if now - SECONDS_IN_A_DAY < last_stake.stake_timestamp {
+        stakes.total_stake += tokens;
+        let stake = if now - SECONDS_IN_A_DAY < last_stake.stake_timestamp {
             last_stake.stake += tokens;
             last_stake.stake_timestamp = now;
-            stakes.total_stake += tokens;
             // we get rid of the last stake
             stakes.stakes.pop_back();
-            // and add the updated one
-            stakes.stakes.push_back(last_stake);
+            last_stake
         } else {
-            let stake = Stake {
+            Stake {
                 stake: tokens,
                 stake_timestamp: ledger.timestamp(),
-            };
-            stakes.total_stake += tokens;
-            stakes.stakes.push_back(stake);
-        }
+            }
+        };
+        stakes.stakes.push_back(stake);
 
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address);
