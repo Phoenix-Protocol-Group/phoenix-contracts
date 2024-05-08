@@ -1,26 +1,13 @@
 use crate::contract::{Multihop, MultihopClient};
-use crate::stable_lp_contract;
-use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use crate::factory_contract::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use crate::lp_stable;
+use crate::{factory_contract, token_contract};
 
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     Address, Bytes, BytesN, Env,
 };
 use soroban_sdk::{vec, IntoVal, String};
-
-#[allow(clippy::too_many_arguments)]
-pub mod factory {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"
-    );
-}
-
-pub mod token_contract {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
-    );
-}
-
 pub fn create_token_contract_with_metadata<'a>(
     env: &Env,
     admin: &Address,
@@ -48,8 +35,7 @@ pub fn install_lp_contract(env: &Env) -> BytesN<32> {
 }
 
 pub fn install_stable_lp_contract(env: &Env) -> BytesN<32> {
-    env.deployer()
-        .upload_contract_wasm(stable_lp_contract::WASM)
+    env.deployer().upload_contract_wasm(lp_stable::WASM)
 }
 
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
@@ -79,7 +65,7 @@ pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
 }
 
 pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
-    let factory_wasm = e.deployer().upload_contract_wasm(factory::WASM);
+    let factory_wasm = e.deployer().upload_contract_wasm(factory_contract::WASM);
     let salt = Bytes::new(e);
     let salt = e.crypto().sha256(&salt);
 
@@ -109,9 +95,9 @@ pub fn deploy_and_mint_tokens<'a>(
     token
 }
 
-pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Client {
+pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory_contract::Client {
     let factory_addr = deploy_factory_contract(env, admin.clone());
-    let factory_client = factory::Client::new(env, &factory_addr);
+    let factory_client = factory_contract::Client::new(env, &factory_addr);
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![env, admin.clone()];
 
@@ -136,7 +122,7 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Clie
 #[allow(clippy::too_many_arguments)]
 pub fn deploy_and_initialize_lp(
     env: &Env,
-    factory: &factory::Client,
+    factory: &factory_contract::Client,
     admin: Address,
     mut token_a: Address,
     mut token_a_amount: i128,
@@ -178,7 +164,7 @@ pub fn deploy_and_initialize_lp(
         &lp_init_info,
         &String::from_str(env, "Pool"),
         &String::from_str(env, "PHO/XLM"),
-        &factory::PoolType::Xyk,
+        &factory_contract::PoolType::Xyk,
         &None::<u64>,
     );
 
