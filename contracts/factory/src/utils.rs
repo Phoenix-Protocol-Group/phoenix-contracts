@@ -2,7 +2,7 @@ use soroban_sdk::{xdr::ToXdr, Address, Bytes, BytesN, Env, IntoVal, Symbol, Val,
 
 pub fn deploy_lp_contract(
     env: &Env,
-    lp_wasm_hash: BytesN<32>,
+    wasm_hash: BytesN<32>,
     token_a: &Address,
     token_b: &Address,
 ) -> Address {
@@ -11,9 +11,7 @@ pub fn deploy_lp_contract(
     salt.append(&token_b.to_xdr(env));
     let salt = env.crypto().sha256(&salt);
 
-    env.deployer()
-        .with_current_contract(salt)
-        .deploy(lp_wasm_hash)
+    env.deployer().with_current_contract(salt).deploy(wasm_hash)
 }
 
 pub fn deploy_multihop_contract(

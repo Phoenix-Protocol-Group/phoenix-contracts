@@ -111,6 +111,7 @@ impl FactoryTrait for Factory {
                 admin: admin.clone(),
                 multihop_address,
                 lp_wasm_hash,
+                stable_wasm_hash,
                 stake_wasm_hash,
                 token_wasm_hash,
                 whitelisted_accounts,
@@ -151,13 +152,17 @@ impl FactoryTrait for Factory {
         );
 
         let config = get_config(&env);
-        let lp_wasm_hash = config.lp_wasm_hash;
         let stake_wasm_hash = config.stake_wasm_hash;
         let token_wasm_hash = config.token_wasm_hash;
 
+        let hash = match pool_type {
+            PoolType::Xyk => config.lp_wasm_hash,
+            PoolType::Stable => config.stable_wasm_hash,
+        };
+
         let lp_contract_address = deploy_lp_contract(
             &env,
-            lp_wasm_hash,
+            hash,
             &lp_init_info.token_init_info.token_a,
             &lp_init_info.token_init_info.token_b,
         );
@@ -186,7 +191,10 @@ impl FactoryTrait for Factory {
             init_fn_args.push_back(amp.into_val(&env));
         }
 
+        soroban_sdk::testutils::arbitrary::std::dbg!(init_fn_args.clone());
         env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
+
+        soroban_sdk::testutils::arbitrary::std::dbg!("successfullty initiated");
 
         let mut lp_vec = get_lp_vec(&env);
 

@@ -146,7 +146,6 @@ fn factory_successfully_inits_stable_pool() {
         max_complexity: 10u32,
     };
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let lp_init_info = LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: user.clone(),
@@ -158,7 +157,7 @@ fn factory_successfully_inits_stable_pool() {
         stake_init_info,
     };
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
+    soroban_sdk::testutils::arbitrary::std::dbg!("before");
     factory.create_liquidity_pool(
         &admin,
         &lp_init_info,

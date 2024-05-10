@@ -37,6 +37,7 @@ pub struct Config {
     pub admin: Address,
     pub multihop_address: Address,
     pub lp_wasm_hash: BytesN<32>,
+    pub stable_wasm_hash: BytesN<32>,
     pub stake_wasm_hash: BytesN<32>,
     pub token_wasm_hash: BytesN<32>,
     pub whitelisted_accounts: Vec<Address>,
