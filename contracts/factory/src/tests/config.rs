@@ -460,3 +460,91 @@ fn factory_stable_pool_creation_should_fail_early_without_amp() {
         &None,
     );
 }
+
+#[test]
+fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &token_admin.clone(),
+        &7,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &token_admin.clone(),
+        &7,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+    assert_eq!(factory.get_admin(), admin);
+
+    let token_init_info = TokenInitInfo {
+        token_a: token1.address,
+        token_b: token2.address,
+    };
+    let stake_init_info = StakeInitInfo {
+        min_bond: 10i128,
+        min_reward: 5i128,
+        manager: Address::generate(&env),
+        max_complexity: 10u32,
+    };
+
+    let lp_init_info = LiquidityPoolInitInfo {
+        admin: admin.clone(),
+        fee_recipient: user.clone(),
+        max_allowed_slippage_bps: 5_000,
+        max_allowed_spread_bps: 500,
+        swap_fee_bps: 0,
+        max_referral_bps: 5_000,
+        token_init_info: token_init_info.clone(),
+        stake_init_info,
+    };
+
+    // we want to make an XYK pool, but we accidentaly set the amp
+    // pool creation should still succeed
+    factory.create_liquidity_pool(
+        &admin,
+        &lp_init_info,
+        &String::from_str(&env, "Pool Stable"),
+        &String::from_str(&env, "EUROC/USDC"),
+        &PoolType::Xyk,
+        &Some(10),
+    );
+
+    let lp_contract_addr = factory.query_pools().get(0).unwrap();
+
+    let first_lp_contract = lp_contract::Client::new(&env, &lp_contract_addr);
+    let share_token_address = first_lp_contract.query_share_token_address();
+    let stake_token_address = first_lp_contract.query_stake_contract_address();
+
+    assert_eq!(
+        first_lp_contract.query_config(),
+        lp_contract::Config {
+            fee_recipient: user,
+            max_allowed_slippage_bps: 5_000,
+            max_allowed_spread_bps: 500,
+            max_referral_bps: 5_000,
+            pool_type: lp_contract::PairType::Xyk,
+            share_token: share_token_address,
+            stake_contract: stake_token_address,
+            token_a: token_init_info.token_a,
+            token_b: token_init_info.token_b,
+            total_fee_bps: 0,
+        }
+    );
+}

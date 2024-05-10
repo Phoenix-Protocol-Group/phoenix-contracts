@@ -187,8 +187,8 @@ impl FactoryTrait for Factory {
         )
             .into_val(&env);
 
-        if let Some(amp) = amp {
-            init_fn_args.push_back(amp.into_val(&env));
+        if let PoolType::Stable = pool_type {
+            init_fn_args.push_back(amp.unwrap().into_val(&env));
         }
 
         env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
