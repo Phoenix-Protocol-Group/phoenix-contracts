@@ -171,7 +171,7 @@ fn factory_successfully_inits_stable_pool() {
         &admin,
         &lp_init_info,
         &String::from_str(&env, "Pool Stable"),
-        &String::from_str(&env, "PHO/USDC"),
+        &String::from_str(&env, "EURC/USDC"),
         &PoolType::Stable,
         &Some(10),
     );
@@ -393,4 +393,70 @@ fn test_add_vec_with_duplicates_should_be_handled_correctly() {
     assert!(config.whitelisted_accounts.contains(first_wl_addr));
     assert!(config.whitelisted_accounts.contains(second_wl_addr));
     assert!(config.whitelisted_accounts.len() == 2);
+}
+
+#[test]
+#[should_panic(expected = "Factory: Create Liquidity Pool: Amp must be set for stable pool")]
+fn factory_stable_pool_creation_should_fail_early_without_amp() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &token_admin.clone(),
+        &7,
+        &String::from_str(&env, "EURO Coin"),
+        &String::from_str(&env, "EURC"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &token_admin.clone(),
+        &7,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+    assert_eq!(factory.get_admin(), admin);
+
+    let token_init_info = TokenInitInfo {
+        token_a: token1.address,
+        token_b: token2.address,
+    };
+    let stake_init_info = StakeInitInfo {
+        min_bond: 10i128,
+        min_reward: 5i128,
+        manager: Address::generate(&env),
+        max_complexity: 10u32,
+    };
+
+    let lp_init_info = LiquidityPoolInitInfo {
+        admin: admin.clone(),
+        fee_recipient: user.clone(),
+        max_allowed_slippage_bps: 5_000,
+        max_allowed_spread_bps: 500,
+        swap_fee_bps: 0,
+        max_referral_bps: 5_000,
+        token_init_info: token_init_info.clone(),
+        stake_init_info,
+    };
+
+    // we try to make a stable pool without setting the amp
+    factory.create_liquidity_pool(
+        &admin,
+        &lp_init_info,
+        &String::from_str(&env, "Pool Stable"),
+        &String::from_str(&env, "EUROC/USDC"),
+        &PoolType::Stable,
+        &None,
+    );
 }
