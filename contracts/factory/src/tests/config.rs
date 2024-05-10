@@ -1,5 +1,5 @@
 use super::setup::{
-    deploy_factory_contract, install_lp_contract, install_multihop_wasm, install_sable_lp,
+    deploy_factory_contract, install_lp_contract, install_multihop_wasm, install_stable_lp,
     install_stake_wasm, install_token_wasm, lp_contract,
 };
 use crate::{
@@ -274,7 +274,7 @@ fn factory_fails_to_init_lp_when_no_whitelisted_accounts() {
     let whitelisted_accounts = vec![&env];
 
     let lp_wasm_hash = install_lp_contract(&env);
-    let stable_wasm_hash = install_sable_lp(&env);
+    let stable_wasm_hash = install_stable_lp(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
 

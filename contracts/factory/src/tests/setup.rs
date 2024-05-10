@@ -36,7 +36,7 @@ pub fn install_lp_contract(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(lp_contract::WASM)
 }
 
-pub fn install_sable_lp(env: &Env) -> BytesN<32> {
+pub fn install_stable_lp(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(stable_lp::WASM)
 }
 
@@ -62,7 +62,7 @@ pub fn deploy_factory_contract<'a>(
     let whitelisted_accounts = vec![env, admin.clone()];
 
     let lp_wasm_hash = install_lp_contract(env);
-    let stable_wasm_hash = install_sable_lp(env);
+    let stable_wasm_hash = install_stable_lp(env);
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
 
