@@ -79,17 +79,15 @@ pub fn deploy_factory_contract<'a>(
     factory
 }
 
-pub(crate) fn generate_lp_init_info(
-    token_a: &crate::token_contract::Client<'_>,
-    token_b: &crate::token_contract::Client<'_>,
+pub fn generate_lp_init_info(
+    token_a: Address,
+    token_b: Address,
     manager: Address,
-    admin: &Address,
+    admin: Address,
     fee_recipient: Address,
 ) -> LiquidityPoolInitInfo {
-    let token_init_info = TokenInitInfo {
-        token_a: token_a.address.clone(),
-        token_b: token_b.address.clone(),
-    };
+    let token_init_info = TokenInitInfo { token_a, token_b };
+
     let stake_init_info = StakeInitInfo {
         min_bond: 10,
         min_reward: 10,
@@ -100,10 +98,10 @@ pub(crate) fn generate_lp_init_info(
     LiquidityPoolInitInfo {
         admin: admin.clone(),
         fee_recipient: fee_recipient.clone(),
-        max_allowed_slippage_bps: 100,
-        max_allowed_spread_bps: 100,
+        max_allowed_slippage_bps: 5000,
+        max_allowed_spread_bps: 500,
         swap_fee_bps: 0,
-        max_referral_bps: 0,
+        max_referral_bps: 5000,
         token_init_info,
         stake_init_info,
     }

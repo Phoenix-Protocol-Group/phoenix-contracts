@@ -5,9 +5,8 @@ use super::setup::{
 use crate::{
     contract::{Factory, FactoryClient},
     storage::PoolType,
-    tests::setup::{install_and_deploy_token_contract, stable_lp},
+    tests::setup::{generate_lp_init_info, install_and_deploy_token_contract, stable_lp},
 };
-use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
@@ -60,27 +59,13 @@ fn factory_successfully_inits_lp() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
     assert_eq!(factory.get_admin(), admin);
 
-    let token_init_info = TokenInitInfo {
-        token_a: token1,
-        token_b: token2,
-    };
-    let stake_init_info = StakeInitInfo {
-        min_bond: 10i128,
-        min_reward: 5i128,
-        manager: Address::generate(&env),
-        max_complexity: 10u32,
-    };
-
-    let lp_init_info = LiquidityPoolInitInfo {
-        admin: admin.clone(),
-        fee_recipient: user.clone(),
-        max_allowed_slippage_bps: 5_000,
-        max_allowed_spread_bps: 500,
-        swap_fee_bps: 0,
-        max_referral_bps: 5_000,
-        token_init_info: token_init_info.clone(),
-        stake_init_info,
-    };
+    let lp_init_info = generate_lp_init_info(
+        token1.clone(),
+        token2.clone(),
+        Address::generate(&env),
+        admin.clone(),
+        user.clone(),
+    );
 
     factory.create_liquidity_pool(
         &admin,
@@ -106,8 +91,8 @@ fn factory_successfully_inits_lp() {
             pool_type: lp_contract::PairType::Xyk,
             share_token: share_token_address,
             stake_contract: stake_token_address,
-            token_a: token_init_info.token_a,
-            token_b: token_init_info.token_b,
+            token_a: token1,
+            token_b: token2,
             total_fee_bps: 0,
         }
     );
@@ -145,27 +130,13 @@ fn factory_successfully_inits_stable_pool() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
     assert_eq!(factory.get_admin(), admin);
 
-    let token_init_info = TokenInitInfo {
-        token_a: token1.address,
-        token_b: token2.address,
-    };
-    let stake_init_info = StakeInitInfo {
-        min_bond: 10i128,
-        min_reward: 5i128,
-        manager: Address::generate(&env),
-        max_complexity: 10u32,
-    };
-
-    let lp_init_info = LiquidityPoolInitInfo {
-        admin: admin.clone(),
-        fee_recipient: user.clone(),
-        max_allowed_slippage_bps: 5_000,
-        max_allowed_spread_bps: 500,
-        swap_fee_bps: 0,
-        max_referral_bps: 5_000,
-        token_init_info: token_init_info.clone(),
-        stake_init_info,
-    };
+    let lp_init_info = generate_lp_init_info(
+        token1.address.clone(),
+        token2.address.clone(),
+        Address::generate(&env),
+        admin.clone(),
+        user.clone(),
+    );
 
     factory.create_liquidity_pool(
         &admin,
@@ -191,8 +162,8 @@ fn factory_successfully_inits_stable_pool() {
             pool_type: stable_lp::PairType::Stable,
             share_token: share_token_address,
             stake_contract: stake_token_address,
-            token_a: token_init_info.token_a,
-            token_b: token_init_info.token_b,
+            token_a: token1.address,
+            token_b: token2.address,
             total_fee_bps: 0,
         }
     );
@@ -223,27 +194,13 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
     assert_eq!(factory.get_admin(), admin);
 
-    let token_init_info = TokenInitInfo {
-        token_a: token1,
-        token_b: token2,
-    };
-    let stake_init_info = StakeInitInfo {
-        min_bond: 10i128,
-        min_reward: 5i128,
-        manager: Address::generate(&env),
-        max_complexity: 10u32,
-    };
-
-    let lp_init_info = LiquidityPoolInitInfo {
-        admin,
-        fee_recipient: user.clone(),
-        max_allowed_slippage_bps: 5_000,
-        max_allowed_spread_bps: 500,
-        swap_fee_bps: 0,
-        max_referral_bps: 5_000,
-        token_init_info: token_init_info.clone(),
-        stake_init_info,
-    };
+    let lp_init_info = generate_lp_init_info(
+        token1.clone(),
+        token2.clone(),
+        Address::generate(&env),
+        admin.clone(),
+        user.clone(),
+    );
 
     let unauthorized_addr = Address::generate(&env);
 
@@ -428,27 +385,13 @@ fn factory_stable_pool_creation_should_fail_early_without_amp() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
     assert_eq!(factory.get_admin(), admin);
 
-    let token_init_info = TokenInitInfo {
-        token_a: token1.address,
-        token_b: token2.address,
-    };
-    let stake_init_info = StakeInitInfo {
-        min_bond: 10i128,
-        min_reward: 5i128,
-        manager: Address::generate(&env),
-        max_complexity: 10u32,
-    };
-
-    let lp_init_info = LiquidityPoolInitInfo {
-        admin: admin.clone(),
-        fee_recipient: user.clone(),
-        max_allowed_slippage_bps: 5_000,
-        max_allowed_spread_bps: 500,
-        swap_fee_bps: 0,
-        max_referral_bps: 5_000,
-        token_init_info: token_init_info.clone(),
-        stake_init_info,
-    };
+    let lp_init_info = generate_lp_init_info(
+        token1.address.clone(),
+        token2.address.clone(),
+        Address::generate(&env),
+        admin.clone(),
+        user.clone(),
+    );
 
     // we try to make a stable pool without setting the amp
     factory.create_liquidity_pool(
@@ -493,27 +436,13 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
     assert_eq!(factory.get_admin(), admin);
 
-    let token_init_info = TokenInitInfo {
-        token_a: token1.address,
-        token_b: token2.address,
-    };
-    let stake_init_info = StakeInitInfo {
-        min_bond: 10i128,
-        min_reward: 5i128,
-        manager: Address::generate(&env),
-        max_complexity: 10u32,
-    };
-
-    let lp_init_info = LiquidityPoolInitInfo {
-        admin: admin.clone(),
-        fee_recipient: user.clone(),
-        max_allowed_slippage_bps: 5_000,
-        max_allowed_spread_bps: 500,
-        swap_fee_bps: 0,
-        max_referral_bps: 5_000,
-        token_init_info: token_init_info.clone(),
-        stake_init_info,
-    };
+    let lp_init_info = generate_lp_init_info(
+        token1.address.clone(),
+        token2.address.clone(),
+        Address::generate(&env),
+        admin.clone(),
+        user.clone(),
+    );
 
     // we want to make an XYK pool, but we accidentaly set the amp
     // pool creation should still succeed
@@ -542,8 +471,8 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
             pool_type: lp_contract::PairType::Xyk,
             share_token: share_token_address,
             stake_contract: stake_token_address,
-            token_a: token_init_info.token_a,
-            token_b: token_init_info.token_b,
+            token_a: token1.address,
+            token_b: token2.address,
             total_fee_bps: 0,
         }
     );

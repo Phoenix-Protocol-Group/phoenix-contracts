@@ -450,10 +450,10 @@ fn test_query_user_portfolio_with_stake() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let first_lp_init_info = generate_lp_init_info(
-        &token1,
-        &token2,
+        token1.address.clone(),
+        token2.address.clone(),
         manager.clone(),
-        &admin,
+        admin.clone(),
         fee_recipient.clone(),
     );
 
@@ -546,8 +546,13 @@ fn test_query_user_portfolio_with_stake() {
         }
     );
 
-    let second_lp_init_info =
-        generate_lp_init_info(&token3, &token4, manager.clone(), &admin, fee_recipient);
+    let second_lp_init_info = generate_lp_init_info(
+        token3.address.clone(),
+        token4.address.clone(),
+        manager.clone(),
+        admin.clone(),
+        fee_recipient,
+    );
 
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -679,10 +684,10 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
 
     // first liquidity pool
     let first_lp_init_info = generate_lp_init_info(
-        &token1,
-        &token2,
+        token1.address.clone(),
+        token2.address.clone(),
         manager.clone(),
-        &admin,
+        admin.clone(),
         fee_recipient.clone(),
     );
 
@@ -706,10 +711,10 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
 
     // second liquidity pool
     let second_lp_init_info = generate_lp_init_info(
-        &token3,
-        &token4,
+        token3.address.clone(),
+        token4.address.clone(),
         manager.clone(),
-        &admin,
+        admin.clone(),
         fee_recipient.clone(),
     );
 
