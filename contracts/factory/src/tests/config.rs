@@ -120,20 +120,19 @@ fn factory_successfully_inits_stable_pool() {
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
-    let token1_admin = Address::generate(&env);
-    let token2_admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
     let user = Address::generate(&env);
 
     let mut token1 = install_and_deploy_token_contract(
         &env,
-        &token1_admin.clone(),
+        &token_admin.clone(),
         &7,
-        &String::from_str(&env, "Phoenix"),
-        &String::from_str(&env, "PHO"),
+        &String::from_str(&env, "EURO Coin"),
+        &String::from_str(&env, "EURC"),
     );
     let mut token2 = install_and_deploy_token_contract(
         &env,
-        &token2_admin.clone(),
+        &token_admin.clone(),
         &7,
         &String::from_str(&env, "USD Coin"),
         &String::from_str(&env, "USDC"),
