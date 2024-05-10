@@ -5,7 +5,7 @@ use crate::{
         save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, DataKey, LiquidityPoolInfo,
         LpPortfolio, PairTupleKey, PoolType, StakePortfolio, StakedResponse, UserPortfolio,
     },
-    utils::{deploy_lp_contract, deploy_multihop_contract},
+    utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use phoenix::validate_bps;
@@ -103,7 +103,7 @@ impl FactoryTrait for Factory {
         set_initialized(&env);
 
         let multihop_address =
-            deploy_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
+            deploy_and_initialize_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
 
         save_config(
             &env,
@@ -155,14 +155,14 @@ impl FactoryTrait for Factory {
         let stake_wasm_hash = config.stake_wasm_hash;
         let token_wasm_hash = config.token_wasm_hash;
 
-        let hash = match pool_type {
+        let pool_hash = match pool_type {
             PoolType::Xyk => config.lp_wasm_hash,
             PoolType::Stable => config.stable_wasm_hash,
         };
 
         let lp_contract_address = deploy_lp_contract(
             &env,
-            hash,
+            pool_hash,
             &lp_init_info.token_init_info.token_a,
             &lp_init_info.token_init_info.token_b,
         );
@@ -191,10 +191,7 @@ impl FactoryTrait for Factory {
             init_fn_args.push_back(amp.into_val(&env));
         }
 
-        soroban_sdk::testutils::arbitrary::std::dbg!(init_fn_args.clone());
         env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
-
-        soroban_sdk::testutils::arbitrary::std::dbg!("successfullty initiated");
 
         let mut lp_vec = get_lp_vec(&env);
 

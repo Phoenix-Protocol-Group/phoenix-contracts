@@ -1,4 +1,5 @@
 use crate::contract::{Multihop, MultihopClient};
+use crate::stable_lp_contract;
 use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
 use soroban_sdk::{
@@ -44,6 +45,11 @@ pub mod lp_contract {
 
 pub fn install_lp_contract(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(lp_contract::WASM)
+}
+
+pub fn install_stable_lp_contract(env: &Env) -> BytesN<32> {
+    env.deployer()
+        .upload_contract_wasm(stable_lp_contract::WASM)
 }
 
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
@@ -110,6 +116,7 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Clie
     let whitelisted_accounts = vec![env, admin.clone()];
 
     let lp_wasm_hash = install_lp_contract(env);
+    let stable_wasm_hash = install_stable_lp_contract(env);
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
 
@@ -117,6 +124,7 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Clie
         &admin.clone(),
         &multihop_wasm_hash,
         &lp_wasm_hash,
+        &stable_wasm_hash,
         &stake_wasm_hash,
         &token_wasm_hash,
         &whitelisted_accounts,

@@ -1,6 +1,9 @@
-use crate::contract::{Factory, FactoryClient};
+use crate::{
+    contract::{Factory, FactoryClient},
+    token_contract,
+};
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{testutils::Address as _, vec, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, vec, xdr::ToXdr, Address, Bytes, BytesN, Env, String};
 #[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
     soroban_sdk::contractimport!(
@@ -38,10 +41,7 @@ pub fn install_sable_lp(env: &Env) -> BytesN<32> {
 }
 
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
-    );
-    env.deployer().upload_contract_wasm(WASM)
+    env.deployer().upload_contract_wasm(token_contract::WASM)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -107,4 +107,28 @@ pub(crate) fn generate_lp_init_info(
         token_init_info,
         stake_init_info,
     }
+}
+
+pub fn install_and_deploy_token_contract<'a>(
+    env: &Env,
+    admin: &Address,
+    decimal: &u32,
+    name: &String,
+    symbol: &String,
+) -> token_contract::Client<'a> {
+    let token_wasm = install_token_wasm(env);
+
+    let mut salt = Bytes::new(env);
+    salt.append(&name.clone().to_xdr(env));
+    let salt = env.crypto().sha256(&salt);
+    let token_addr = env
+        .deployer()
+        .with_address(admin.clone(), salt)
+        .deploy(token_wasm);
+
+    let token_client = token_contract::Client::new(env, &token_addr);
+
+    token_client.initialize(admin, decimal, name, symbol);
+
+    token_client
 }

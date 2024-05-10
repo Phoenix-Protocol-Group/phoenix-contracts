@@ -14,7 +14,7 @@ pub fn deploy_lp_contract(
     env.deployer().with_current_contract(salt).deploy(wasm_hash)
 }
 
-pub fn deploy_multihop_contract(
+pub fn deploy_and_initialize_multihop_contract(
     env: Env,
     admin: Address,
     multihop_wasm_hash: BytesN<32>,

@@ -5,7 +5,7 @@ use super::setup::{
 use crate::{
     contract::{Factory, FactoryClient},
     storage::PoolType,
-    tests::setup::stable_lp,
+    tests::setup::{install_and_deploy_token_contract, stable_lp},
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 
@@ -116,28 +116,39 @@ fn factory_successfully_inits_lp() {
 #[test]
 fn factory_successfully_inits_stable_pool() {
     let env = Env::default();
-    let admin = Address::generate(&env);
-    let mut token1_admin = Address::generate(&env);
-    let mut token2_admin = Address::generate(&env);
-    let user = Address::generate(&env);
-
-    let mut token1 = Address::generate(&env);
-    let mut token2 = Address::generate(&env);
-
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    if token2 < token1 {
+    let admin = Address::generate(&env);
+    let token1_admin = Address::generate(&env);
+    let token2_admin = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &token1_admin.clone(),
+        &7,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &token2_admin.clone(),
+        &7,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+
+    if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
-        std::mem::swap(&mut token1_admin, &mut token2_admin);
     }
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
     assert_eq!(factory.get_admin(), admin);
 
     let token_init_info = TokenInitInfo {
-        token_a: token1,
-        token_b: token2,
+        token_a: token1.address,
+        token_b: token2.address,
     };
     let stake_init_info = StakeInitInfo {
         min_bond: 10i128,
@@ -157,7 +168,6 @@ fn factory_successfully_inits_stable_pool() {
         stake_init_info,
     };
 
-    soroban_sdk::testutils::arbitrary::std::dbg!("before");
     factory.create_liquidity_pool(
         &admin,
         &lp_init_info,
@@ -166,7 +176,7 @@ fn factory_successfully_inits_stable_pool() {
         &Some(10),
         &PoolType::Stable,
     );
-    soroban_sdk::testutils::arbitrary::std::dbg!();
+
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
     let stable_client = stable_lp::Client::new(&env, &lp_contract_addr);

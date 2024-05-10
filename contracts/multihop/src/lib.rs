@@ -15,6 +15,16 @@ pub mod lp_contract {
 }
 
 #[allow(clippy::too_many_arguments)]
+pub mod stable_lp_contract {
+    // The import will code generate:
+    // - A ContractClient type that can be used to invoke functions on the contract.
+    // - Any types in the contract that were annotated with #[contracttype].
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool_stable.wasm"
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
 pub mod factory_contract {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"
