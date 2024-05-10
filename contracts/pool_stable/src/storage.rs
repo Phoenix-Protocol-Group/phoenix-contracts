@@ -31,6 +31,7 @@ impl TryFromVal<Env, DataKey> for Val {
 #[repr(u32)]
 pub enum PairType {
     Xyk = 0,
+    Stable = 1,
 }
 
 #[contracttype]

@@ -3,9 +3,9 @@ use crate::{
     storage::{
         get_config, get_lp_vec, is_initialized, save_config, save_lp_vec,
         save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, DataKey, LiquidityPoolInfo,
-        LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
+        LpPortfolio, PairTupleKey, PoolType, StakePortfolio, StakedResponse, UserPortfolio,
     },
-    utils::{deploy_lp_contract, deploy_multihop_contract},
+    utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use phoenix::validate_bps;
@@ -27,6 +27,7 @@ pub trait FactoryTrait {
         admin: Address,
         multihop_wasm_hash: BytesN<32>,
         lp_wasm_hash: BytesN<32>,
+        stable_wasm_hash: BytesN<32>,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
@@ -39,6 +40,8 @@ pub trait FactoryTrait {
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
+        pool_type: PoolType,
+        amp: Option<u64>,
     ) -> Address;
 
     fn update_whitelisted_accounts(
@@ -78,6 +81,7 @@ impl FactoryTrait for Factory {
         admin: Address,
         multihop_wasm_hash: BytesN<32>,
         lp_wasm_hash: BytesN<32>,
+        stable_wasm_hash: BytesN<32>,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
@@ -99,7 +103,7 @@ impl FactoryTrait for Factory {
         set_initialized(&env);
 
         let multihop_address =
-            deploy_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
+            deploy_and_initialize_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
 
         save_config(
             &env,
@@ -107,6 +111,7 @@ impl FactoryTrait for Factory {
                 admin: admin.clone(),
                 multihop_address,
                 lp_wasm_hash,
+                stable_wasm_hash,
                 stake_wasm_hash,
                 token_wasm_hash,
                 whitelisted_accounts,
@@ -126,8 +131,12 @@ impl FactoryTrait for Factory {
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
+        pool_type: PoolType,
+        amp: Option<u64>,
     ) -> Address {
         sender.require_auth();
+        validate_pool_info(&pool_type, &amp);
+
         if !get_config(&env).whitelisted_accounts.contains(sender) {
             log!(
                 &env,
@@ -143,13 +152,17 @@ impl FactoryTrait for Factory {
         );
 
         let config = get_config(&env);
-        let lp_wasm_hash = config.lp_wasm_hash;
         let stake_wasm_hash = config.stake_wasm_hash;
         let token_wasm_hash = config.token_wasm_hash;
 
+        let pool_hash = match pool_type {
+            PoolType::Xyk => config.lp_wasm_hash,
+            PoolType::Stable => config.stable_wasm_hash,
+        };
+
         let lp_contract_address = deploy_lp_contract(
             &env,
-            lp_wasm_hash,
+            pool_hash,
             &lp_init_info.token_init_info.token_a,
             &lp_init_info.token_init_info.token_b,
         );
@@ -163,7 +176,7 @@ impl FactoryTrait for Factory {
 
         let factory_addr = env.current_contract_address();
         let init_fn: Symbol = Symbol::new(&env, "initialize");
-        let init_fn_args: Vec<Val> = (
+        let mut init_fn_args: Vec<Val> = (
             stake_wasm_hash,
             token_wasm_hash,
             lp_init_info.clone(),
@@ -173,6 +186,10 @@ impl FactoryTrait for Factory {
             share_token_symbol,
         )
             .into_val(&env);
+
+        if let PoolType::Stable = pool_type {
+            init_fn_args.push_back(amp.unwrap().into_val(&env));
+        }
 
         env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
 
@@ -431,6 +448,16 @@ fn validate_token_info(
     }
 }
 
+fn validate_pool_info(pool_type: &PoolType, amp: &Option<u64>) {
+    match pool_type {
+        PoolType::Xyk => (),
+        PoolType::Stable => assert!(
+            amp.is_some(),
+            "Factory: Create Liquidity Pool: Amp must be set for stable pool"
+        ),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -504,5 +531,21 @@ mod tests {
             max_complexity: 10,
         };
         validate_token_info(&env, &token_init_info, &stake_init_info);
+    }
+
+    #[test]
+    fn validate_pool_info_works() {
+        let amp = Some(10);
+        let stable = PoolType::Stable;
+        let xyk = PoolType::Xyk;
+
+        validate_pool_info(&stable, &amp);
+        validate_pool_info(&xyk, &None::<u64>);
+    }
+
+    #[test]
+    #[should_panic(expected = "Factory: Create Liquidity Pool: Amp must be set for stable pool")]
+    fn validate_pool_info_panics() {
+        validate_pool_info(&PoolType::Stable, &None::<u64>);
     }
 }

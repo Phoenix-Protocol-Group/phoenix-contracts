@@ -1,5 +1,5 @@
 ifeq (,$(BUILD_FLAGS))
-  DEPS = ../stake ../pool
+  DEPS = ../stake ../pool ../pool_stable
 endif
 
 default: all

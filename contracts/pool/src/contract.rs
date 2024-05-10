@@ -16,11 +16,11 @@ use crate::{
     },
     token_contract,
 };
-use soroban_decimal::Decimal;
 use phoenix::{
     utils::{is_approx_ratio, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
+use soroban_decimal::Decimal;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(

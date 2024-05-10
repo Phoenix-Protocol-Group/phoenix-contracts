@@ -10,7 +10,12 @@ and this project adheres to
 
 - decimal: Rename to `soroban-decimal` and publish in crates.io ([#299])
 
+## Added
+
+- Factory: Allows creation of stable pools ([#301])
+
 [#299]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/299
+[#301]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/301
 
 ## [1.0.0] - 2024-05-08
 
