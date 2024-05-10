@@ -178,8 +178,8 @@ pub fn deploy_and_initialize_lp(
         &lp_init_info,
         &String::from_str(env, "Pool"),
         &String::from_str(env, "PHO/XLM"),
-        &None::<u64>,
         &factory::PoolType::Xyk,
+        &None::<u64>,
     );
 
     let lp_client = lp_contract::Client::new(env, &lp);

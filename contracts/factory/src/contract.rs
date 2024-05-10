@@ -40,8 +40,8 @@ pub trait FactoryTrait {
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
-        amp: Option<u64>,
         pool_type: PoolType,
+        amp: Option<u64>,
     ) -> Address;
 
     fn update_whitelisted_accounts(
@@ -131,8 +131,8 @@ impl FactoryTrait for Factory {
         lp_init_info: LiquidityPoolInitInfo,
         share_token_name: String,
         share_token_symbol: String,
-        amp: Option<u64>,
         pool_type: PoolType,
+        amp: Option<u64>,
     ) -> Address {
         sender.require_auth();
         validate_pool_info(&pool_type, &amp);

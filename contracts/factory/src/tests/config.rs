@@ -87,8 +87,8 @@ fn factory_successfully_inits_lp() {
         &lp_init_info,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHO/BTC"),
-        &None::<u64>,
         &PoolType::Xyk,
+        &None::<u64>,
     );
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
@@ -173,8 +173,8 @@ fn factory_successfully_inits_stable_pool() {
         &lp_init_info,
         &String::from_str(&env, "Pool Stable"),
         &String::from_str(&env, "PHO/USDC"),
-        &Some(10),
         &PoolType::Stable,
+        &Some(10),
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
@@ -253,8 +253,8 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
         &lp_init_info,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHO/BTC"),
-        &None::<u64>,
         &PoolType::Xyk,
+        &None::<u64>,
     );
 }
 
