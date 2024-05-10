@@ -179,8 +179,6 @@ pub fn deploy_and_initialize_stable_lp(
     mut token_b_amount: i128,
     fees: Option<i64>,
 ) {
-    // 2. create liquidity pool from factory
-
     if token_b < token_a {
         std::mem::swap(&mut token_a, &mut token_b);
         std::mem::swap(&mut token_a_amount, &mut token_b_amount);
