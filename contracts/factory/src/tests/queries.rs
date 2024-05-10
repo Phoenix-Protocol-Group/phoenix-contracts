@@ -1,5 +1,5 @@
 use super::setup::{deploy_factory_contract, generate_lp_init_info};
-use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
+use crate::storage::{Asset, LpPortfolio, PoolType, Stake, StakePortfolio, UserPortfolio};
 use crate::tests::setup::{lp_contract, stake_contract};
 use crate::token_contract;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
@@ -136,18 +136,24 @@ fn test_deploy_multiple_liquidity_pools() {
         &first_lp_init_info,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHO/BTC"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
         &second_lp_init_info,
         &String::from_str(&env, "Pool #2"),
         &String::from_str(&env, "PHO/ETH"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
         &third_lp_init_info,
         &String::from_str(&env, "Pool #3"),
         &String::from_str(&env, "PHO/XLM"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -336,18 +342,24 @@ fn test_queries_by_tuple() {
         &first_lp_init_info,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHO/BTC"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
         &second_lp_init_info,
         &String::from_str(&env, "Pool #2"),
         &String::from_str(&env, "PHO/ETH"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
         &third_lp_init_info,
         &String::from_str(&env, "Pool #3"),
         &String::from_str(&env, "PHO/XLM"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -450,6 +462,8 @@ fn test_query_user_portfolio_with_stake() {
         &first_lp_init_info,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHO/BTC"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -540,6 +554,8 @@ fn test_query_user_portfolio_with_stake() {
         &second_lp_init_info,
         &String::from_str(&env, "Second Pool"),
         &String::from_str(&env, "PHO/ETH"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -675,6 +691,8 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &first_lp_init_info,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHO/BTC"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -700,6 +718,8 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &second_lp_init_info,
         &String::from_str(&env, "Second Pool"),
         &String::from_str(&env, "PHO/ETH"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -1183,6 +1203,8 @@ fn test_query_user_portfolio_without_stake() {
         &first_lp_init_info,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHO/BTC"),
+        &None::<u64>,
+        &PoolType::Xyk,
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &lp_contract_addr);

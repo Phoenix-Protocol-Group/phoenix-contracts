@@ -51,7 +51,7 @@ fn confirm_stake_contract_deployment() {
             token_b: token2.address.clone(),
             share_token: share_token_address.clone(),
             stake_contract: stake_token_address.clone(),
-            pool_type: PairType::Xyk,
+            pool_type: PairType::Stable,
             total_fee_bps: 0,
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
@@ -130,22 +130,22 @@ fn second_pool_stable_deployment_should_fail() {
     pool.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
-        &amp,
         &lp_init_info,
         &factory,
         &10u32,
         &String::from_str(&env, "LP_SHARE_TOKEN"),
         &String::from_str(&env, "PHOBTCLP"),
+        &amp,
     );
     pool.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
-        &amp,
         &lp_init_info,
         &factory,
         &10u32,
         &String::from_str(&env, "LP_SHARE_TOKEN"),
         &String::from_str(&env, "PHOBTCLP"),
+        &amp,
     );
 }
 
@@ -206,11 +206,11 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
     pool.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
-        &amp,
         &lp_init_info,
         &factory,
         &10u32,
         &String::from_str(&env, "LP_SHARE_TOKEN"),
         &String::from_str(&env, "PHOBTCLP"),
+        &amp,
     );
 }

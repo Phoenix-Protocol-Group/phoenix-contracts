@@ -9,6 +9,13 @@ pub mod lp_contract {
 }
 
 #[allow(clippy::too_many_arguments)]
+pub mod stable_lp {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool_stable.wasm"
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
 pub mod stake_contract {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
@@ -24,6 +31,10 @@ pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
 
 pub fn install_lp_contract(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(lp_contract::WASM)
+}
+
+pub fn install_sable_lp(env: &Env) -> BytesN<32> {
+    env.deployer().upload_contract_wasm(stable_lp::WASM)
 }
 
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
@@ -51,6 +62,7 @@ pub fn deploy_factory_contract<'a>(
     let whitelisted_accounts = vec![env, admin.clone()];
 
     let lp_wasm_hash = install_lp_contract(env);
+    let stable_wasm_hash = install_sable_lp(env);
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
 
@@ -58,6 +70,7 @@ pub fn deploy_factory_contract<'a>(
         &admin,
         &multihop_wasm_hash,
         &lp_wasm_hash,
+        &stable_wasm_hash,
         &stake_wasm_hash,
         &token_wasm_hash,
         &whitelisted_accounts,

@@ -8,6 +8,14 @@ pub enum DataKey {
     Initialized = 3,
 }
 
+#[contracttype]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum PoolType {
+    Xyk = 0,
+    Stable = 1,
+}
+
 #[derive(Clone)]
 #[contracttype]
 pub struct PairTupleKey {

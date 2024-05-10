@@ -17,8 +17,8 @@ use crate::{
     },
     token_contract,
 };
-use soroban_decimal::Decimal;
 use phoenix::{validate_bps, validate_int_parameters};
+use soroban_decimal::Decimal;
 
 // Minimum amount of initial LP shares to mint
 const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1000;
@@ -40,12 +40,12 @@ pub trait StableLiquidityPoolTrait {
         env: Env,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
-        amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
         share_token_name: String,
         share_token_symbol: String,
+        amp: u64,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -136,12 +136,12 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env: Env,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
-        amp: u64,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
         share_token_name: String,
         share_token_symbol: String,
+        amp: u64,
     ) {
         if is_initialized(&env) {
             log!(
@@ -223,7 +223,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             token_b: token_b.clone(),
             share_token: share_token_address,
             stake_contract: stake_contract_address,
-            pool_type: PairType::Xyk,
+            pool_type: PairType::Stable,
             total_fee_bps: validate_fee_bps(&env, swap_fee_bps),
             fee_recipient,
             max_allowed_slippage_bps,

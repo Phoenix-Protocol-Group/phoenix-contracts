@@ -73,12 +73,12 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     pool.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
-        &6u64,
         &lp_init_info,
         &factory,
         &10u32,
         &String::from_str(env, "LP_SHARE_TOKEN"),
         &String::from_str(env, "PHOBTCLP"),
+        &6u64,
     );
     pool
 }
