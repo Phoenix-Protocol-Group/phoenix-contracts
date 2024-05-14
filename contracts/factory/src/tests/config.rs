@@ -4,10 +4,10 @@ use super::setup::{
 };
 use crate::{
     contract::{Factory, FactoryClient},
-    storage::PoolType,
     tests::setup::{generate_lp_init_info, install_and_deploy_token_contract, stable_lp},
 };
 
+use phoenix::utils::PoolType;
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     vec, Address, Env, String,

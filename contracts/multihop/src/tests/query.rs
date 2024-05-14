@@ -4,6 +4,7 @@ use crate::tests::setup::{
     deploy_multihop_contract, deploy_token_contract,
 };
 
+use phoenix::utils::PoolType;
 use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 #[test]
@@ -63,7 +64,7 @@ fn simulate_swap_single_pool_no_fees() {
     ];
 
     // Offering 1k token1 should result in 2k token2
-    let result = multihop.simulate_swap(&operation, &1_000);
+    let result = multihop.simulate_swap(&operation, &1_000, &PoolType::Xyk);
 
     assert_eq!(result.ask_amount, 2_000i128);
     assert_eq!(
@@ -73,7 +74,8 @@ fn simulate_swap_single_pool_no_fees() {
     assert_eq!(result.spread_amount, vec![&env, 0i128]);
 
     // simulate reverse swap for exact results
-    let reverse_simulated_swap = multihop.simulate_reverse_swap(&operation, &2_000i128);
+    let reverse_simulated_swap =
+        multihop.simulate_reverse_swap(&operation, &2_000i128, &PoolType::Xyk);
 
     assert_eq!(reverse_simulated_swap.offer_amount, 1_000i128);
     assert_eq!(
@@ -180,6 +182,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
             },
         ],
         &50i128,
+        &PoolType::Xyk,
     );
 
     assert_eq!(simulated_swap.ask_amount, 50i128);
@@ -218,6 +221,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
             },
         ],
         &50i128,
+        &PoolType::Xyk,
     );
 
     assert_eq!(reverse_simulated_swap.offer_amount, 50i128);
@@ -286,7 +290,7 @@ fn simulate_swap_single_pool_with_fees() {
         },
     ];
 
-    let simulated_swap = multihop.simulate_swap(&operation, &300i128);
+    let simulated_swap = multihop.simulate_swap(&operation, &300i128, &PoolType::Xyk);
 
     // 1000 tokens initially
     // swap 300 from token1 to token2 with 2000 bps (20%)
@@ -299,7 +303,8 @@ fn simulate_swap_single_pool_with_fees() {
     assert_eq!(simulated_swap.spread_amount, vec![&env, 0i128]);
 
     // simulate reverse swap returns same result
-    let reverse_simulated_swap = multihop.simulate_reverse_swap(&operation, &240i128);
+    let reverse_simulated_swap =
+        multihop.simulate_reverse_swap(&operation, &240i128, &PoolType::Xyk);
 
     assert_eq!(reverse_simulated_swap.offer_amount, 300i128);
     assert_eq!(
@@ -405,6 +410,7 @@ fn simulate_swap_three_different_pools_no_fees() {
             },
         ],
         &5_000i128,
+        &PoolType::Xyk,
     );
 
     // constant product formula starts to with which amoutns such as 5k
@@ -445,6 +451,7 @@ fn simulate_swap_three_different_pools_no_fees() {
             },
         ],
         &4_956i128,
+        &PoolType::Xyk,
     );
 
     assert_eq!(reverse_simulated_swap.offer_amount, 5_000i128);
@@ -561,6 +568,7 @@ fn simulate_swap_three_different_pools_with_fees() {
             },
         ],
         &10_000i128,
+        &PoolType::Xyk,
     );
 
     // cp = offer_pool * ask_pool
@@ -623,6 +631,7 @@ fn simulate_swap_three_different_pools_with_fees() {
             },
         ],
         &203_143i128,
+        &PoolType::Xyk,
     );
 
     // one difference due to rounding
@@ -658,7 +667,7 @@ fn query_simulate_swap_panics_with_no_operations() {
 
     let swap_vec = vec![&env];
 
-    multihop.simulate_swap(&swap_vec, &50i128);
+    multihop.simulate_swap(&swap_vec, &50i128, &PoolType::Xyk);
 }
 
 #[test]
@@ -677,5 +686,5 @@ fn query_simulate_reverse_swap_panics_with_no_operations() {
 
     let swap_vec = vec![&env];
 
-    multihop.simulate_reverse_swap(&swap_vec, &50i128);
+    multihop.simulate_reverse_swap(&swap_vec, &50i128, &PoolType::Xyk);
 }

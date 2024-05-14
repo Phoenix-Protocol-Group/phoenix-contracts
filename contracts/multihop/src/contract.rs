@@ -1,9 +1,9 @@
+use phoenix::utils::PoolType;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, Vec,
 };
 
 use crate::error::ContractError;
-use crate::factory_contract::PoolType;
 // FIXM: Disable Referral struct
 // use crate::lp_contract::Referral;
 use crate::storage::{
