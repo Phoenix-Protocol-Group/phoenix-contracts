@@ -709,7 +709,7 @@ fn test_swap_with_ask_asset_min_amount() {
 }
 
 #[test]
-#[ignore = "wip"]
+#[ignore = "fails with NewtonMethodFailed "]
 fn swap_three_equal_stable_pool() {
     let env = Env::default();
 
