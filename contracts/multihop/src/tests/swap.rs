@@ -1,12 +1,12 @@
+use crate::factory_contract::PoolType;
 // FIXM: Disable Referral struct
 // use crate::lp_contract::Referral;
 use crate::storage::Swap;
 use crate::tests::setup::{
-    deploy_and_initialize_factory, deploy_and_initialize_lp, deploy_and_mint_tokens,
+    deploy_and_initialize_factory, deploy_and_initialize_pool, deploy_and_mint_tokens,
     deploy_multihop_contract, deploy_token_contract,
 };
 
-use phoenix::utils::PoolType;
 use soroban_sdk::contracterror;
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
@@ -34,7 +34,7 @@ fn swap_three_equal_pools_no_fees() {
     // 1. deploy factory
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -43,8 +43,9 @@ fn swap_three_equal_pools_no_fees() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -53,8 +54,9 @@ fn swap_three_equal_pools_no_fees() {
         token3.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -63,6 +65,7 @@ fn swap_three_equal_pools_no_fees() {
         token4.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
 
     // 4. swap with multihop
@@ -118,7 +121,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
     // 1. deploy factory
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -127,8 +130,9 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -137,8 +141,9 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
         token3.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -147,6 +152,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
         token4.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
 
     // 4. swap with multihop
@@ -215,7 +221,7 @@ fn swap_single_pool_no_fees() {
     // 1. deploy factory
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -224,6 +230,7 @@ fn swap_single_pool_no_fees() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
 
     // 4. swap with multihop
@@ -265,7 +272,7 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -274,6 +281,7 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
         token2.address.clone(),
         2_000_000,
         None,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -307,7 +315,7 @@ fn swap_single_pool_with_fees() {
     // 1. deploy factory
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -316,6 +324,7 @@ fn swap_single_pool_with_fees() {
         token2.address.clone(),
         1_000_000,
         Some(2000),
+        PoolType::Xyk,
     );
 
     // 4. swap with multihop
@@ -362,7 +371,7 @@ fn swap_three_different_pools_no_fees() {
     // 1. deploy factory
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -371,8 +380,9 @@ fn swap_three_different_pools_no_fees() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -381,8 +391,9 @@ fn swap_three_different_pools_no_fees() {
         token3.address.clone(),
         2_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -391,6 +402,7 @@ fn swap_three_different_pools_no_fees() {
         token4.address.clone(),
         3_000_000,
         None,
+        PoolType::Xyk,
     );
 
     // 4. swap with multihop
@@ -449,7 +461,7 @@ fn swap_three_different_pools_with_fees() {
     // 1. deploy factory
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -458,8 +470,9 @@ fn swap_three_different_pools_with_fees() {
         token2.address.clone(),
         1_000_000,
         Some(1_000),
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -468,8 +481,9 @@ fn swap_three_different_pools_with_fees() {
         token3.address.clone(),
         2_000_000,
         Some(1_000),
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -478,6 +492,7 @@ fn swap_three_different_pools_with_fees() {
         token4.address.clone(),
         3_000_000,
         Some(1_000),
+        PoolType::Xyk,
     );
 
     // 4. swap with multihop
@@ -569,7 +584,7 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
     let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -578,8 +593,9 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -588,8 +604,9 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
         token3.address.clone(),
         2_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -598,6 +615,7 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
         token4.address.clone(),
         3_000_000,
         None,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -650,7 +668,7 @@ fn test_swap_with_ask_asset_min_amount() {
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -659,6 +677,7 @@ fn test_swap_with_ask_asset_min_amount() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -687,4 +706,90 @@ fn test_swap_with_ask_asset_min_amount() {
     };
     let operations = vec![&env, greedy_swap];
     multihop.swap(&recipient, &operations, &None, &1_000, &PoolType::Xyk);
+}
+
+#[test]
+#[ignore = "wip"]
+fn swap_three_equal_stable_pool() {
+    let env = Env::default();
+
+    let admin = Address::generate(&env);
+
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token3 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+    let token4 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
+
+    // 1. deploy factory
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+
+    deploy_and_initialize_pool(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        1_000_000,
+        token2.address.clone(),
+        1_000_000,
+        None,
+        PoolType::Stable,
+    );
+    deploy_and_initialize_pool(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token2.address.clone(),
+        1_000_000,
+        token3.address.clone(),
+        1_000_000,
+        None,
+        PoolType::Stable,
+    );
+    deploy_and_initialize_pool(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token3.address.clone(),
+        1_000_000,
+        token4.address.clone(),
+        1_000_000,
+        None,
+        PoolType::Stable,
+    );
+
+    // 4. swap with multihop
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+    let recipient = Address::generate(&env);
+    token1.mint(&recipient, &50i128);
+    assert_eq!(token1.balance(&recipient), 50i128);
+    assert_eq!(token4.balance(&recipient), 0i128);
+
+    let swap1 = Swap {
+        offer_asset: token1.address.clone(),
+        ask_asset: token2.address.clone(),
+        ask_asset_min_amount: None::<i128>,
+    };
+    let swap2 = Swap {
+        offer_asset: token2.address.clone(),
+        ask_asset: token3.address.clone(),
+        ask_asset_min_amount: None::<i128>,
+    };
+    let swap3 = Swap {
+        offer_asset: token3.address.clone(),
+        ask_asset: token4.address.clone(),
+        ask_asset_min_amount: None::<i128>,
+    };
+
+    let operations = vec![&env, swap1, swap2, swap3];
+
+    // FIXM: Disable Referral struct
+    // multihop.swap(&recipient, &None, &operations, &None, &None, &50i128);
+    multihop.swap(&recipient, &operations, &None, &50i128, &PoolType::Stable);
+
+    // 5. check if it goes according to plan
+    assert_eq!(token1.balance(&recipient), 0i128);
+    assert_eq!(token4.balance(&recipient), 50i128);
 }

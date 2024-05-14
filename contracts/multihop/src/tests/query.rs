@@ -1,10 +1,10 @@
+use crate::factory_contract::PoolType;
 use crate::storage::Swap;
 use crate::tests::setup::{
-    create_token_contract_with_metadata, deploy_and_initialize_factory, deploy_and_initialize_lp,
+    create_token_contract_with_metadata, deploy_and_initialize_factory, deploy_and_initialize_pool,
     deploy_multihop_contract, deploy_token_contract,
 };
 
-use phoenix::utils::PoolType;
 use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 #[test]
@@ -41,7 +41,7 @@ fn simulate_swap_single_pool_no_fees() {
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     // 1:2 token ratio
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -50,6 +50,7 @@ fn simulate_swap_single_pool_no_fees() {
         token2.address.clone(),
         200_000_000,
         None,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -128,7 +129,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -137,8 +138,9 @@ fn simulate_swap_three_equal_pools_no_fees() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -147,8 +149,9 @@ fn simulate_swap_three_equal_pools_no_fees() {
         token3.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -157,6 +160,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
         token4.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -267,7 +271,7 @@ fn simulate_swap_single_pool_with_fees() {
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -276,6 +280,7 @@ fn simulate_swap_single_pool_with_fees() {
         token2.address.clone(),
         1_000_000,
         Some(2000),
+        PoolType::Xyk,
     );
 
     // 4. swap with multihop
@@ -357,7 +362,7 @@ fn simulate_swap_three_different_pools_no_fees() {
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -366,8 +371,9 @@ fn simulate_swap_three_different_pools_no_fees() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -376,8 +382,9 @@ fn simulate_swap_three_different_pools_no_fees() {
         token3.address.clone(),
         2_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -386,6 +393,7 @@ fn simulate_swap_three_different_pools_no_fees() {
         token4.address.clone(),
         3_000_000,
         None,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -515,7 +523,7 @@ fn simulate_swap_three_different_pools_with_fees() {
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     let fees = Some(1_000); // 1000bps == 10%
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -524,8 +532,9 @@ fn simulate_swap_three_different_pools_with_fees() {
         token2.address.clone(),
         2_000_000,
         fees,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -534,8 +543,9 @@ fn simulate_swap_three_different_pools_with_fees() {
         token3.address.clone(),
         3_000_000,
         fees,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -544,6 +554,7 @@ fn simulate_swap_three_different_pools_with_fees() {
         token4.address.clone(),
         5_000_000,
         fees,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);

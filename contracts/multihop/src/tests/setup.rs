@@ -109,7 +109,7 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory_contr
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn deploy_and_initialize_lp(
+pub fn deploy_and_initialize_pool(
     env: &Env,
     factory: &factory_contract::Client,
     admin: Address,
@@ -118,66 +118,7 @@ pub fn deploy_and_initialize_lp(
     mut token_b: Address,
     mut token_b_amount: i128,
     fees: Option<i64>,
-) {
-    // 2. create liquidity pool from factory
-
-    if token_b < token_a {
-        std::mem::swap(&mut token_a, &mut token_b);
-        std::mem::swap(&mut token_a_amount, &mut token_b_amount);
-    }
-
-    let token_init_info = TokenInitInfo {
-        token_a: token_a.clone(),
-        token_b: token_b.clone(),
-    };
-    let stake_init_info = StakeInitInfo {
-        min_bond: 10i128,
-        min_reward: 5i128,
-        manager: Address::generate(env),
-        max_complexity: 10u32,
-    };
-
-    let lp_init_info = LiquidityPoolInitInfo {
-        admin: admin.clone(),
-        fee_recipient: admin.clone(),
-        max_allowed_slippage_bps: 5000,
-        max_allowed_spread_bps: 500,
-        swap_fee_bps: fees.unwrap_or(0i64),
-        max_referral_bps: 5_000,
-        token_init_info,
-        stake_init_info,
-    };
-
-    let lp = factory.create_liquidity_pool(
-        &admin.clone(),
-        &lp_init_info,
-        &String::from_str(env, "Pool"),
-        &String::from_str(env, "PHO/XLM"),
-        &factory_contract::PoolType::Xyk,
-        &None::<u64>,
-    );
-
-    let lp_client = xyk_pool::Client::new(env, &lp);
-    lp_client.provide_liquidity(
-        &admin.clone(),
-        &Some(token_a_amount),
-        &None,
-        &Some(token_b_amount),
-        &None,
-        &None::<i64>,
-    );
-}
-
-#[allow(clippy::too_many_arguments)]
-pub fn deploy_and_initialize_stable_lp(
-    env: &Env,
-    factory: &factory_contract::Client,
-    admin: Address,
-    mut token_a: Address,
-    mut token_a_amount: i128,
-    mut token_b: Address,
-    mut token_b_amount: i128,
-    fees: Option<i64>,
+    pool_type: PoolType,
 ) {
     if token_b < token_a {
         std::mem::swap(&mut token_a, &mut token_b);
@@ -206,15 +147,35 @@ pub fn deploy_and_initialize_stable_lp(
         stake_init_info,
     };
 
+    let amp = match pool_type {
+        PoolType::Stable => Some(10u64),
+        PoolType::Xyk => None,
+    };
+
     let lp = factory.create_liquidity_pool(
         &admin.clone(),
         &lp_init_info,
         &String::from_str(env, "Pool"),
         &String::from_str(env, "PHO/XLM"),
-        &PoolType::Stable,
-        &Some(10u64),
+        &pool_type,
+        &amp,
     );
 
-    let lp_client = stable_pool::Client::new(env, &lp);
-    lp_client.provide_liquidity(&admin.clone(), &token_a_amount, &token_b_amount, &None);
+    match pool_type {
+        PoolType::Xyk => {
+            let lp_client = xyk_pool::Client::new(env, &lp);
+            lp_client.provide_liquidity(
+                &admin.clone(),
+                &Some(token_a_amount),
+                &None,
+                &Some(token_b_amount),
+                &None,
+                &None::<i64>,
+            );
+        }
+        PoolType::Stable => {
+            let lp_client = stable_pool::Client::new(env, &lp);
+            lp_client.provide_liquidity(&admin.clone(), &token_a_amount, &token_b_amount, &None);
+        }
+    }
 }
