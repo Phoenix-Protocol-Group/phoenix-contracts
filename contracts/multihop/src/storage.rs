@@ -35,6 +35,24 @@ pub struct Asset {
     pub amount: i128,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SimulateSwapResponse {
+    pub ask_amount: i128,
+    /// tuple of ask_asset denom and commission amount for the swap
+    pub commission_amounts: Vec<(String, i128)>,
+    pub spread_amount: Vec<i128>,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SimulateReverseSwapResponse {
+    pub offer_amount: i128,
+    /// tuple of offer_asset denom and commission amount for the swap
+    pub commission_amounts: Vec<(String, i128)>,
+    pub spread_amount: Vec<i128>,
+}
+
 /// This struct is used to return a query result with the total amount of LP tokens and assets in a specific pool.
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -77,22 +95,4 @@ pub fn is_initialized(e: &Env) -> bool {
 
 pub fn set_initialized(e: &Env) {
     e.storage().persistent().set(&DataKey::Initialized, &true);
-}
-
-#[contracttype]
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SimulateSwapResponse {
-    pub ask_amount: i128,
-    /// tuple of ask_asset denom and commission amount for the swap
-    pub commission_amounts: Vec<(String, i128)>,
-    pub spread_amount: Vec<i128>,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SimulateReverseSwapResponse {
-    pub offer_amount: i128,
-    /// tuple of offer_asset denom and commission amount for the swap
-    pub commission_amounts: Vec<(String, i128)>,
-    pub spread_amount: Vec<i128>,
 }
