@@ -785,11 +785,8 @@ fn swap_three_equal_stable_pool() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    // FIXM: Disable Referral struct
-    // multihop.swap(&recipient, &None, &operations, &None, &None, &50i128);
     multihop.swap(&recipient, &operations, &None, &50i128, &PoolType::Stable);
 
-    // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
     assert_eq!(token4.balance(&recipient), 50i128);
 }
