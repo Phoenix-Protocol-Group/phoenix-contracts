@@ -1,6 +1,6 @@
 use crate::contract::{Multihop, MultihopClient};
 use crate::factory_contract::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
-use crate::{factory_contract, lp_contract, lp_stable, token_contract};
+use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
 
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
@@ -23,11 +23,11 @@ pub fn create_token_contract_with_metadata<'a>(
 }
 
 pub fn install_lp_contract(env: &Env) -> BytesN<32> {
-    env.deployer().upload_contract_wasm(lp_contract::WASM)
+    env.deployer().upload_contract_wasm(xyk_pool::WASM)
 }
 
 pub fn install_stable_lp_contract(env: &Env) -> BytesN<32> {
-    env.deployer().upload_contract_wasm(lp_stable::WASM)
+    env.deployer().upload_contract_wasm(stable_pool::WASM)
 }
 
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
@@ -157,7 +157,7 @@ pub fn deploy_and_initialize_lp(
         &None::<u64>,
     );
 
-    let lp_client = lp_contract::Client::new(env, &lp);
+    let lp_client = xyk_pool::Client::new(env, &lp);
     lp_client.provide_liquidity(
         &admin.clone(),
         &Some(token_a_amount),
@@ -215,13 +215,6 @@ pub fn deploy_and_initialize_stable_lp(
         &Some(10u64),
     );
 
-    let lp_client = lp_contract::Client::new(env, &lp);
-    lp_client.provide_liquidity(
-        &admin.clone(),
-        &Some(token_a_amount),
-        &None,
-        &Some(token_b_amount),
-        &None,
-        &None::<i64>,
-    );
+    let lp_client = stable_pool::Client::new(env, &lp);
+    lp_client.provide_liquidity(&admin.clone(), &token_a_amount, &token_b_amount, &None);
 }
