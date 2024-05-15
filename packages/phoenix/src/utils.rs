@@ -67,6 +67,14 @@ pub struct LiquidityPoolInitInfo {
     pub stake_init_info: StakeInitInfo,
 }
 
+#[contracttype]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum PoolType {
+    Xyk = 0,
+    Stable = 1,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

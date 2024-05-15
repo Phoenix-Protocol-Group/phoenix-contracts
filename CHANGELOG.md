@@ -13,9 +13,11 @@ and this project adheres to
 ## Added
 
 - Factory: Allows creation of stable pools ([#301])
+- Multihop: Allows multihop swaps for stable pool ([#303])
 
 [#299]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/299
 [#301]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/301
+[#303]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/303
 
 ## [1.0.0] - 2024-05-08
 

@@ -3,6 +3,7 @@ use soroban_sdk::{
 };
 
 use crate::error::ContractError;
+use crate::factory_contract::PoolType;
 // FIXM: Disable Referral struct
 // use crate::lp_contract::Referral;
 use crate::storage::{
@@ -10,7 +11,7 @@ use crate::storage::{
     SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
-use crate::{factory_contract, lp_contract, token_contract};
+use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -32,14 +33,21 @@ pub trait MultihopTrait {
         operations: Vec<Swap>,
         max_spread_bps: Option<i64>,
         amount: i128,
+        pool_type: PoolType,
     );
 
-    fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse;
+    fn simulate_swap(
+        env: Env,
+        operations: Vec<Swap>,
+        amount: i128,
+        pool_type: PoolType,
+    ) -> SimulateSwapResponse;
 
     fn simulate_reverse_swap(
         env: Env,
         operations: Vec<Swap>,
         amount: i128,
+        pool_type: PoolType,
     ) -> SimulateReverseSwapResponse;
 }
 
@@ -72,6 +80,7 @@ impl MultihopTrait for Multihop {
         operations: Vec<Swap>,
         max_spread_bps: Option<i64>,
         amount: i128,
+        pool_type: PoolType,
     ) {
         if operations.is_empty() {
             log!(&env, "Multihop: Swap: operations is empty!");
@@ -91,20 +100,39 @@ impl MultihopTrait for Multihop {
             let liquidity_pool_addr: Address = factory_client
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
 
-            let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
-            // FIXM: Disable Referral struct
-            next_offer_amount = lp_client.swap(
-                &recipient,
-                // &referral,
-                &op.offer_asset,
-                &next_offer_amount,
-                &op.ask_asset_min_amount,
-                &max_spread_bps,
-            );
+            match pool_type {
+                PoolType::Xyk => {
+                    let lp_client = xyk_pool::Client::new(&env, &liquidity_pool_addr);
+                    // FIXM: Disable Referral struct
+                    next_offer_amount = lp_client.swap(
+                        &recipient,
+                        // &referral,
+                        &op.offer_asset,
+                        &next_offer_amount,
+                        &op.ask_asset_min_amount,
+                        &max_spread_bps,
+                    );
+                }
+                PoolType::Stable => {
+                    let lp_client = stable_pool::Client::new(&env, &liquidity_pool_addr);
+                    next_offer_amount = lp_client.swap(
+                        &recipient,
+                        &op.offer_asset,
+                        &next_offer_amount,
+                        &op.ask_asset_min_amount,
+                        &max_spread_bps,
+                    );
+                }
+            }
         });
     }
 
-    fn simulate_swap(env: Env, operations: Vec<Swap>, amount: i128) -> SimulateSwapResponse {
+    fn simulate_swap(
+        env: Env,
+        operations: Vec<Swap>,
+        amount: i128,
+        pool_type: PoolType,
+    ) -> SimulateSwapResponse {
         if operations.is_empty() {
             log!(&env, "Multihop: Simulate swap: operations empty");
             panic_with_error!(&env, ContractError::OperationsEmpty);
@@ -123,23 +151,46 @@ impl MultihopTrait for Multihop {
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
         operations.iter().for_each(|op| {
-            let liquidity_pool_addr: Address = factory_client
+            let pool_addres: Address = factory_client
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
 
-            let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
-            let simulated_swap = lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
+            // due to different pool libraries we cannot use shorter match statement.
+            match pool_type {
+                PoolType::Xyk => {
+                    let lp_client = xyk_pool::Client::new(&env, &pool_addres);
+                    let simulated_swap =
+                        lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
 
-            let token_symbol = token_contract::Client::new(&env, &op.offer_asset).symbol();
+                    let token_symbol = token_contract::Client::new(&env, &op.offer_asset).symbol();
 
-            simulate_swap_response
-                .commission_amounts
-                .push_back((token_symbol, simulated_swap.commission_amount));
-            simulate_swap_response.ask_amount = simulated_swap.ask_amount;
-            simulate_swap_response
-                .spread_amount
-                .push_back(simulated_swap.spread_amount);
+                    simulate_swap_response
+                        .commission_amounts
+                        .push_back((token_symbol, simulated_swap.commission_amount));
+                    simulate_swap_response.ask_amount = simulated_swap.ask_amount;
+                    simulate_swap_response
+                        .spread_amount
+                        .push_back(simulated_swap.spread_amount);
 
-            next_offer_amount = simulated_swap.ask_amount;
+                    next_offer_amount = simulated_swap.ask_amount;
+                }
+                PoolType::Stable => {
+                    let lp_client = stable_pool::Client::new(&env, &pool_addres);
+                    let simulated_swap =
+                        lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
+
+                    let token_symbol = token_contract::Client::new(&env, &op.offer_asset).symbol();
+
+                    simulate_swap_response
+                        .commission_amounts
+                        .push_back((token_symbol, simulated_swap.commission_amount));
+                    simulate_swap_response.ask_amount = simulated_swap.ask_amount;
+                    simulate_swap_response
+                        .spread_amount
+                        .push_back(simulated_swap.spread_amount);
+
+                    next_offer_amount = simulated_swap.ask_amount;
+                }
+            }
         });
 
         simulate_swap_response
@@ -149,6 +200,7 @@ impl MultihopTrait for Multihop {
         env: Env,
         operations: Vec<Swap>,
         amount: i128,
+        pool_type: PoolType,
     ) -> SimulateReverseSwapResponse {
         if operations.is_empty() {
             log!(&env, "Multihop: Simulate reverse swap: operations empty");
@@ -168,25 +220,46 @@ impl MultihopTrait for Multihop {
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
         operations.iter().for_each(|op| {
-            let liquidity_pool_addr: Address = factory_client
+            let pool_address: Address = factory_client
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
 
-            let lp_client = lp_contract::Client::new(&env, &liquidity_pool_addr);
-            let simulated_reverse_swap =
-                lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
+            // due to different pool libraries we cannot use shorter match statement.
+            match pool_type {
+                PoolType::Xyk => {
+                    let lp_client = xyk_pool::Client::new(&env, &pool_address);
+                    let simulated_reverse_swap =
+                        lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
 
-            let token_symbol = token_contract::Client::new(&env, &op.ask_asset).symbol();
+                    let token_symbol = token_contract::Client::new(&env, &op.ask_asset).symbol();
 
-            simulate_swap_response
-                .commission_amounts
-                .push_back((token_symbol, simulated_reverse_swap.commission_amount));
-            simulate_swap_response.offer_amount = simulated_reverse_swap.offer_amount;
+                    simulate_swap_response
+                        .commission_amounts
+                        .push_back((token_symbol, simulated_reverse_swap.commission_amount));
+                    simulate_swap_response.offer_amount = simulated_reverse_swap.offer_amount;
+                    simulate_swap_response
+                        .spread_amount
+                        .push_back(simulated_reverse_swap.spread_amount);
 
-            simulate_swap_response
-                .spread_amount
-                .push_back(simulated_reverse_swap.spread_amount);
+                    next_ask_amount = simulated_reverse_swap.offer_amount;
+                }
+                PoolType::Stable => {
+                    let lp_client = stable_pool::Client::new(&env, &pool_address);
+                    let simulated_reverse_swap =
+                        lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
 
-            next_ask_amount = simulated_reverse_swap.offer_amount;
+                    let token_symbol = token_contract::Client::new(&env, &op.ask_asset).symbol();
+
+                    simulate_swap_response
+                        .commission_amounts
+                        .push_back((token_symbol, simulated_reverse_swap.commission_amount));
+                    simulate_swap_response.offer_amount = simulated_reverse_swap.offer_amount;
+                    simulate_swap_response
+                        .spread_amount
+                        .push_back(simulated_reverse_swap.spread_amount);
+
+                    next_ask_amount = simulated_reverse_swap.offer_amount;
+                }
+            }
         });
 
         simulate_swap_response

@@ -1,6 +1,7 @@
+use crate::factory_contract::PoolType;
 use crate::storage::Swap;
 use crate::tests::setup::{
-    create_token_contract_with_metadata, deploy_and_initialize_factory, deploy_and_initialize_lp,
+    create_token_contract_with_metadata, deploy_and_initialize_factory, deploy_and_initialize_pool,
     deploy_multihop_contract, deploy_token_contract,
 };
 
@@ -40,7 +41,7 @@ fn simulate_swap_single_pool_no_fees() {
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     // 1:2 token ratio
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -49,6 +50,7 @@ fn simulate_swap_single_pool_no_fees() {
         token2.address.clone(),
         200_000_000,
         None,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -63,7 +65,7 @@ fn simulate_swap_single_pool_no_fees() {
     ];
 
     // Offering 1k token1 should result in 2k token2
-    let result = multihop.simulate_swap(&operation, &1_000);
+    let result = multihop.simulate_swap(&operation, &1_000, &PoolType::Xyk);
 
     assert_eq!(result.ask_amount, 2_000i128);
     assert_eq!(
@@ -73,7 +75,8 @@ fn simulate_swap_single_pool_no_fees() {
     assert_eq!(result.spread_amount, vec![&env, 0i128]);
 
     // simulate reverse swap for exact results
-    let reverse_simulated_swap = multihop.simulate_reverse_swap(&operation, &2_000i128);
+    let reverse_simulated_swap =
+        multihop.simulate_reverse_swap(&operation, &2_000i128, &PoolType::Xyk);
 
     assert_eq!(reverse_simulated_swap.offer_amount, 1_000i128);
     assert_eq!(
@@ -126,7 +129,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -135,8 +138,9 @@ fn simulate_swap_three_equal_pools_no_fees() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -145,8 +149,9 @@ fn simulate_swap_three_equal_pools_no_fees() {
         token3.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -155,6 +160,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
         token4.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -180,6 +186,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
             },
         ],
         &50i128,
+        &PoolType::Xyk,
     );
 
     assert_eq!(simulated_swap.ask_amount, 50i128);
@@ -218,6 +225,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
             },
         ],
         &50i128,
+        &PoolType::Xyk,
     );
 
     assert_eq!(reverse_simulated_swap.offer_amount, 50i128);
@@ -263,7 +271,7 @@ fn simulate_swap_single_pool_with_fees() {
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -272,6 +280,7 @@ fn simulate_swap_single_pool_with_fees() {
         token2.address.clone(),
         1_000_000,
         Some(2000),
+        PoolType::Xyk,
     );
 
     // 4. swap with multihop
@@ -286,7 +295,7 @@ fn simulate_swap_single_pool_with_fees() {
         },
     ];
 
-    let simulated_swap = multihop.simulate_swap(&operation, &300i128);
+    let simulated_swap = multihop.simulate_swap(&operation, &300i128, &PoolType::Xyk);
 
     // 1000 tokens initially
     // swap 300 from token1 to token2 with 2000 bps (20%)
@@ -299,7 +308,8 @@ fn simulate_swap_single_pool_with_fees() {
     assert_eq!(simulated_swap.spread_amount, vec![&env, 0i128]);
 
     // simulate reverse swap returns same result
-    let reverse_simulated_swap = multihop.simulate_reverse_swap(&operation, &240i128);
+    let reverse_simulated_swap =
+        multihop.simulate_reverse_swap(&operation, &240i128, &PoolType::Xyk);
 
     assert_eq!(reverse_simulated_swap.offer_amount, 300i128);
     assert_eq!(
@@ -352,7 +362,7 @@ fn simulate_swap_three_different_pools_no_fees() {
 
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -361,8 +371,9 @@ fn simulate_swap_three_different_pools_no_fees() {
         token2.address.clone(),
         1_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -371,8 +382,9 @@ fn simulate_swap_three_different_pools_no_fees() {
         token3.address.clone(),
         2_000_000,
         None,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -381,6 +393,7 @@ fn simulate_swap_three_different_pools_no_fees() {
         token4.address.clone(),
         3_000_000,
         None,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -405,6 +418,7 @@ fn simulate_swap_three_different_pools_no_fees() {
             },
         ],
         &5_000i128,
+        &PoolType::Xyk,
     );
 
     // constant product formula starts to with which amoutns such as 5k
@@ -445,6 +459,7 @@ fn simulate_swap_three_different_pools_no_fees() {
             },
         ],
         &4_956i128,
+        &PoolType::Xyk,
     );
 
     assert_eq!(reverse_simulated_swap.offer_amount, 5_000i128);
@@ -508,7 +523,7 @@ fn simulate_swap_three_different_pools_with_fees() {
     let factory_client = deploy_and_initialize_factory(&env, admin.clone());
 
     let fees = Some(1_000); // 1000bps == 10%
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -517,8 +532,9 @@ fn simulate_swap_three_different_pools_with_fees() {
         token2.address.clone(),
         2_000_000,
         fees,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -527,8 +543,9 @@ fn simulate_swap_three_different_pools_with_fees() {
         token3.address.clone(),
         3_000_000,
         fees,
+        PoolType::Xyk,
     );
-    deploy_and_initialize_lp(
+    deploy_and_initialize_pool(
         &env,
         &factory_client,
         admin.clone(),
@@ -537,6 +554,7 @@ fn simulate_swap_three_different_pools_with_fees() {
         token4.address.clone(),
         5_000_000,
         fees,
+        PoolType::Xyk,
     );
 
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
@@ -561,6 +579,7 @@ fn simulate_swap_three_different_pools_with_fees() {
             },
         ],
         &10_000i128,
+        &PoolType::Xyk,
     );
 
     // cp = offer_pool * ask_pool
@@ -623,6 +642,7 @@ fn simulate_swap_three_different_pools_with_fees() {
             },
         ],
         &203_143i128,
+        &PoolType::Xyk,
     );
 
     // one difference due to rounding
@@ -658,7 +678,7 @@ fn query_simulate_swap_panics_with_no_operations() {
 
     let swap_vec = vec![&env];
 
-    multihop.simulate_swap(&swap_vec, &50i128);
+    multihop.simulate_swap(&swap_vec, &50i128, &PoolType::Xyk);
 }
 
 #[test]
@@ -677,5 +697,5 @@ fn query_simulate_reverse_swap_panics_with_no_operations() {
 
     let swap_vec = vec![&env];
 
-    multihop.simulate_reverse_swap(&swap_vec, &50i128);
+    multihop.simulate_reverse_swap(&swap_vec, &50i128, &PoolType::Xyk);
 }

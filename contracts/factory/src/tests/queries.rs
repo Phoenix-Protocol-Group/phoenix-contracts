@@ -1,8 +1,8 @@
 use super::setup::{deploy_factory_contract, generate_lp_init_info};
-use crate::storage::{Asset, LpPortfolio, PoolType, Stake, StakePortfolio, UserPortfolio};
+use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
 use crate::tests::setup::{lp_contract, stake_contract, ONE_DAY};
 use crate::token_contract;
-use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use phoenix::utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::testutils::Ledger;
 use soroban_sdk::vec;
 use soroban_sdk::{

@@ -1,26 +1,12 @@
 use crate::contract::{Multihop, MultihopClient};
-use crate::stable_lp_contract;
-use crate::tests::setup::factory::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use crate::factory_contract::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
+use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
 
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     Address, Bytes, BytesN, Env,
 };
 use soroban_sdk::{vec, IntoVal, String};
-
-#[allow(clippy::too_many_arguments)]
-pub mod factory {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"
-    );
-}
-
-pub mod token_contract {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
-    );
-}
-
 pub fn create_token_contract_with_metadata<'a>(
     env: &Env,
     admin: &Address,
@@ -36,27 +22,16 @@ pub fn create_token_contract_with_metadata<'a>(
     token
 }
 
-#[allow(clippy::too_many_arguments)]
-pub mod lp_contract {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm"
-    );
-}
-
 pub fn install_lp_contract(env: &Env) -> BytesN<32> {
-    env.deployer().upload_contract_wasm(lp_contract::WASM)
+    env.deployer().upload_contract_wasm(xyk_pool::WASM)
 }
 
 pub fn install_stable_lp_contract(env: &Env) -> BytesN<32> {
-    env.deployer()
-        .upload_contract_wasm(stable_lp_contract::WASM)
+    env.deployer().upload_contract_wasm(stable_pool::WASM)
 }
 
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
-    );
-    env.deployer().upload_contract_wasm(WASM)
+    env.deployer().upload_contract_wasm(token_contract::WASM)
 }
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
@@ -79,7 +54,7 @@ pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
 }
 
 pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
-    let factory_wasm = e.deployer().upload_contract_wasm(factory::WASM);
+    let factory_wasm = e.deployer().upload_contract_wasm(factory_contract::WASM);
     let salt = Bytes::new(e);
     let salt = e.crypto().sha256(&salt);
 
@@ -109,9 +84,9 @@ pub fn deploy_and_mint_tokens<'a>(
     token
 }
 
-pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Client {
+pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory_contract::Client {
     let factory_addr = deploy_factory_contract(env, admin.clone());
-    let factory_client = factory::Client::new(env, &factory_addr);
+    let factory_client = factory_contract::Client::new(env, &factory_addr);
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![env, admin.clone()];
 
@@ -134,18 +109,17 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory::Clie
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn deploy_and_initialize_lp(
+pub fn deploy_and_initialize_pool(
     env: &Env,
-    factory: &factory::Client,
+    factory: &factory_contract::Client,
     admin: Address,
     mut token_a: Address,
     mut token_a_amount: i128,
     mut token_b: Address,
     mut token_b_amount: i128,
     fees: Option<i64>,
+    pool_type: PoolType,
 ) {
-    // 2. create liquidity pool from factory
-
     if token_b < token_a {
         std::mem::swap(&mut token_a, &mut token_b);
         std::mem::swap(&mut token_a_amount, &mut token_b_amount);
@@ -173,22 +147,35 @@ pub fn deploy_and_initialize_lp(
         stake_init_info,
     };
 
+    let amp = match pool_type {
+        PoolType::Stable => Some(10u64),
+        PoolType::Xyk => None,
+    };
+
     let lp = factory.create_liquidity_pool(
         &admin.clone(),
         &lp_init_info,
         &String::from_str(env, "Pool"),
         &String::from_str(env, "PHO/XLM"),
-        &factory::PoolType::Xyk,
-        &None::<u64>,
+        &pool_type,
+        &amp,
     );
 
-    let lp_client = lp_contract::Client::new(env, &lp);
-    lp_client.provide_liquidity(
-        &admin.clone(),
-        &Some(token_a_amount),
-        &None,
-        &Some(token_b_amount),
-        &None,
-        &None::<i64>,
-    );
+    match pool_type {
+        PoolType::Xyk => {
+            let lp_client = xyk_pool::Client::new(env, &lp);
+            lp_client.provide_liquidity(
+                &admin.clone(),
+                &Some(token_a_amount),
+                &None,
+                &Some(token_b_amount),
+                &None,
+                &None::<i64>,
+            );
+        }
+        PoolType::Stable => {
+            let lp_client = stable_pool::Client::new(env, &lp);
+            lp_client.provide_liquidity(&admin.clone(), &token_a_amount, &token_b_amount, &None);
+        }
+    }
 }

@@ -3,11 +3,11 @@ use crate::{
     storage::{
         get_config, get_lp_vec, is_initialized, save_config, save_lp_vec,
         save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, DataKey, LiquidityPoolInfo,
-        LpPortfolio, PairTupleKey, PoolType, StakePortfolio, StakedResponse, UserPortfolio,
+        LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
 };
-use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use phoenix::utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
 use phoenix::validate_bps;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,

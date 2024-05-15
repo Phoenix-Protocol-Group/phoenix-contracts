@@ -5,7 +5,7 @@ use crate::{error::ContractError, storage::Swap};
 pub fn verify_swap(env: &Env, operations: &Vec<Swap>) {
     for (current, next) in operations.iter().zip(operations.iter().skip(1)) {
         if current.ask_asset != next.offer_asset {
-            log!(&env, "Multihop: Swap: Provided bad swap order");
+            log!(&env, "Multihop: Verify Swap: Provided bad swap order");
             panic_with_error!(&env, ContractError::IncorrectAssetSwap);
         }
     }
@@ -14,7 +14,10 @@ pub fn verify_swap(env: &Env, operations: &Vec<Swap>) {
 pub fn verify_reverse_swap(env: &Env, operations: &Vec<Swap>) {
     for (current, next) in operations.iter().zip(operations.iter().skip(1)) {
         if current.offer_asset != next.ask_asset {
-            log!(&env, "Multihop: Reverse swap: Provided bad swap order");
+            log!(
+                &env,
+                "Multihop: Verify Reverse Swap: Provided bad swap order"
+            );
             panic_with_error!(&env, ContractError::IncorrectAssetSwap);
         }
     }
@@ -88,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Multihop: Swap: Provided bad swap order")]
+    #[should_panic(expected = "Multihop: Verify Swap: Provided bad swap order")]
     fn verify_operations_should_fail_when_bad_order_provided() {
         let env = Env::default();
 
@@ -114,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Multihop: Reverse swap: Provided bad swap order")]
+    #[should_panic(expected = "Multihop: Verify Reverse Swap: Provided bad swap order")]
     fn verify_operations_reverse_swap_should_fail_when_bad_order_provided() {
         let env = Env::default();
 
