@@ -779,6 +779,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "phoenix-trader"
+version = "1.0.0"
+dependencies = [
+ "soroban-decimal",
+ "soroban-sdk",
+ "test-case",
+]
+
+[[package]]
 name = "phoenix-vesting"
 version = "1.0.0"
 dependencies = [
