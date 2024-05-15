@@ -13,8 +13,10 @@ and this project adheres to
 ## Added
 
 - Factory: Allows creation of stable pools ([#301])
+- Trader: Adds nominated trader contract to the DEX ([#288])
 - Multihop: Allows multihop swaps for stable pool ([#303])
 
+[#288]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/288
 [#299]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/299
 [#301]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/301
 [#303]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/303
