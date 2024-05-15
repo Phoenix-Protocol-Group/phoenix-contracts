@@ -8,6 +8,14 @@ pub enum DataKey {
     Initialized = 3,
 }
 
+#[contracttype]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum PoolType {
+    Xyk = 0,
+    Stable = 1,
+}
+
 #[derive(Clone)]
 #[contracttype]
 pub struct PairTupleKey {
@@ -29,6 +37,7 @@ pub struct Config {
     pub admin: Address,
     pub multihop_address: Address,
     pub lp_wasm_hash: BytesN<32>,
+    pub stable_wasm_hash: BytesN<32>,
     pub stake_wasm_hash: BytesN<32>,
     pub token_wasm_hash: BytesN<32>,
     pub whitelisted_accounts: Vec<Address>,

@@ -4,7 +4,7 @@ use soroban_sdk::{
 };
 
 use crate::{error::ContractError, token_contract};
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -31,6 +31,7 @@ impl TryFromVal<Env, DataKey> for Val {
 #[repr(u32)]
 pub enum PairType {
     Xyk = 0,
+    Stable = 1,
 }
 
 #[contracttype]

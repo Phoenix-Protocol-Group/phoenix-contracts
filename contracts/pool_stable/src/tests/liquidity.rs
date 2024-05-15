@@ -14,7 +14,7 @@ use crate::{
     storage::{Asset, PoolResponse},
     token_contract,
 };
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 
 #[test]
 fn provide_liqudity() {
@@ -111,6 +111,8 @@ fn provide_liqudity() {
             }
         }
     );
+
+    assert_eq(pool.query_total_issued_lp(), 100);
 }
 
 #[test]

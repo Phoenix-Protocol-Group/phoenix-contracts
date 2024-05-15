@@ -3,14 +3,14 @@ members = ["contracts/*", "packages/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.9.0"
+version = "1.0.0"
 edition = "2021"
-license = "GPL 3.0"
+license = "GPL-3.0"
 repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
 
 [workspace.dependencies]
 curve = { path = "./packages/curve" }
-decimal = { path = "./packages/decimal" }
+soroban-decimal = { path = "./packages/decimal" }
 phoenix = { path = "./packages/phoenix" }
 num-integer = { version = "0.1.45", default-features = false, features = [
     "i128",

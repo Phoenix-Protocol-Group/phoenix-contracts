@@ -10,7 +10,7 @@ license = { workspace = true }
 crate-type = ["cdylib"]
 
 [dependencies]
-decimal = { workspace = true }
+soroban-decimal = { workspace = true }
 curve = { workspace = true }
 phoenix = { workspace = true }
 soroban-sdk = { workspace = true }

@@ -13,7 +13,7 @@ crate-type = ["cdylib"]
 testutils = ["soroban-sdk/testutils"]
 
 [dependencies]
-decimal = { workspace = true }
+soroban-decimal = { workspace = true }
 phoenix = { workspace = true }
 num-integer = { workspace = true }
 soroban-sdk = { workspace = true }

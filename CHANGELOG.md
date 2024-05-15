@@ -8,6 +8,19 @@ and this project adheres to
 
 ## Changed
 
+- decimal: Rename to `soroban-decimal` and publish in crates.io ([#299])
+
+## Added
+
+- Factory: Allows creation of stable pools ([#301])
+
+[#299]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/299
+[#301]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/301
+
+## [1.0.0] - 2024-05-08
+
+## Changed
+
 - Token: Update the contract to latest version from soroban-examples ([#274])
 - Update soroban-sdk-rs to 20.5.0 ([#275])
 - CI: Update rust to 1.77.0 ([#275])
@@ -22,6 +35,7 @@ and this project adheres to
 - all: changes panic! to panic_with_error ([#269])
 - Audit Report from Veridise ([#291])
 - all: added entrypoint to update the contracts ([#293])
+- Pool and Pool Stable: adds query for totally issued tokens ([#298])
 
 [#267]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/267
 [#269]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/269
@@ -33,9 +47,9 @@ and this project adheres to
 [#291]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/291
 [#293]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/293
 [#295]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/295
+[#298]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/298
 
 ## Bug fixes
-
 
 ## [0.9.0] - 2024-03-12
 
@@ -283,7 +297,8 @@ and this project adheres to
 [#19]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/19
 [#24]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/24
 
-[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.9.0...HEAD
+[unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.6.0...v0.7.0

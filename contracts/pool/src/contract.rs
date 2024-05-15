@@ -16,11 +16,11 @@ use crate::{
     },
     token_contract,
 };
-use decimal::Decimal;
 use phoenix::{
     utils::{is_approx_ratio, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
+use soroban_decimal::Decimal;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -128,6 +128,8 @@ pub trait LiquidityPoolTrait {
     ) -> SimulateReverseSwapResponse;
 
     fn query_share(env: Env, amount: i128) -> (Asset, Asset);
+
+    fn query_total_issued_lp(env: Env) -> i128;
 }
 
 #[contractimpl]
@@ -688,6 +690,10 @@ impl LiquidityPoolTrait for LiquidityPool {
                 amount: amount_b,
             },
         )
+    }
+
+    fn query_total_issued_lp(env: Env) -> i128 {
+        utils::get_total_shares(&env)
     }
 }
 

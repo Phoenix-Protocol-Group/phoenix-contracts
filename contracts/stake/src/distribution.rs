@@ -1,7 +1,7 @@
 use soroban_sdk::{contracttype, Address, Env};
 
 use curve::Curve;
-use decimal::Decimal;
+use soroban_decimal::Decimal;
 
 use crate::{
     storage::{get_stakes, Config},
