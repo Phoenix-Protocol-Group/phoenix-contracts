@@ -154,6 +154,7 @@ impl MultihopTrait for Multihop {
             let pool_addres: Address = factory_client
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
 
+            // due to different pool libraries we cannot use shorter match statement.
             match pool_type {
                 PoolType::Xyk => {
                     let lp_client = xyk_pool::Client::new(&env, &pool_addres);
@@ -222,6 +223,7 @@ impl MultihopTrait for Multihop {
             let pool_address: Address = factory_client
                 .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
 
+            // due to different pool libraries we cannot use shorter match statement.
             match pool_type {
                 PoolType::Xyk => {
                     let lp_client = xyk_pool::Client::new(&env, &pool_address);
