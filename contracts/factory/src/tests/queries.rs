@@ -1,8 +1,9 @@
 use super::setup::{deploy_factory_contract, generate_lp_init_info};
 use crate::storage::{Asset, LpPortfolio, PoolType, Stake, StakePortfolio, UserPortfolio};
-use crate::tests::setup::{lp_contract, stake_contract};
+use crate::tests::setup::{lp_contract, stake_contract, ONE_DAY};
 use crate::token_contract;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use soroban_sdk::testutils::Ledger;
 use soroban_sdk::vec;
 use soroban_sdk::{
     contracttype,
@@ -508,6 +509,7 @@ fn test_query_user_portfolio_with_stake() {
         }
     );
 
+    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     first_stake_client.bond(&user_1, &173i128);
 
     // first user portfolio after staking
@@ -538,7 +540,7 @@ fn test_query_user_portfolio_with_stake() {
                         &env,
                         Stake {
                             stake: 173i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 }
@@ -632,7 +634,7 @@ fn test_query_user_portfolio_with_stake() {
                         &env,
                         Stake {
                             stake: 223i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 }
@@ -780,6 +782,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
+    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     first_stake_client.bond(&user_1, &1_000i128);
 
     // first user portfolio in first pool after staking
@@ -810,7 +813,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                         &env,
                         Stake {
                             stake: 1_000i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 }
@@ -873,7 +876,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                         &env,
                         Stake {
                             stake: 1_000i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 }
@@ -941,7 +944,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                         &env,
                         Stake {
                             stake: 1_000i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 }
@@ -992,7 +995,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                         &env,
                         Stake {
                             stake: 1_000i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 },
@@ -1002,7 +1005,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                         &env,
                         Stake {
                             stake: 2_000i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 }
@@ -1050,7 +1053,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                         &env,
                         Stake {
                             stake: 1_000i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 },
@@ -1101,7 +1104,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                         &env,
                         Stake {
                             stake: 1_000i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 },
@@ -1111,7 +1114,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                         &env,
                         Stake {
                             stake: 3_000i128,
-                            stake_timestamp: 0
+                            stake_timestamp: ONE_DAY
                         }
                     ]
                 }

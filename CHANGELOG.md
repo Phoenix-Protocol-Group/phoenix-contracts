@@ -27,6 +27,7 @@ and this project adheres to
 - Pool: Replace belief_price swap parameter with minimum amount of tokens expected to be received ([#280])
 - Stake: Checks if curve complexity is too high during operations and also optimises the curve combine process ([#283])
 - Pool: Temporarily disable the feature that allows to provide liquidity with a single token ([#289])
+- Stake: Optimize the process of adding stake if done within 12 hour period between stakes ([#295])
 
 ## Added
 
@@ -45,6 +46,7 @@ and this project adheres to
 [#289]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/289
 [#291]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/291
 [#293]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/293
+[#295]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/295
 [#298]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/298
 
 ## Bug fixes

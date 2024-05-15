@@ -10,6 +10,7 @@ use crate::{
     contract::{Staking, StakingClient},
     msg::ConfigResponse,
     storage::{Config, Stake},
+    tests::setup::{ONE_DAY, ONE_WEEK},
 };
 
 const DEFAULT_COMPLEXITY: u32 = 7;
@@ -129,6 +130,10 @@ fn bond_simple() {
         &DEFAULT_COMPLEXITY,
     );
 
+    env.ledger().with_mut(|li| {
+        li.timestamp = ONE_WEEK;
+    });
+
     lp_token.mint(&user, &10_000);
 
     staking.bond(&user, &10_000);
@@ -140,7 +145,7 @@ fn bond_simple() {
             &env,
             Stake {
                 stake: 10_000,
-                stake_timestamp: 0,
+                stake_timestamp: ONE_WEEK,
             }
         ]
     );
@@ -148,6 +153,55 @@ fn bond_simple() {
 
     assert_eq!(lp_token.balance(&user), 0);
     assert_eq!(lp_token.balance(&staking.address), 10_000);
+}
+
+#[test]
+fn bond_simple_within_one_day() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &Address::generate(&env),
+        &Address::generate(&env),
+        &DEFAULT_COMPLEXITY,
+    );
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = ONE_WEEK;
+    });
+
+    lp_token.mint(&user, &15_000);
+
+    staking.bond(&user, &10_000);
+
+    // user bonds for the 2nd time within the same day
+    env.ledger().with_mut(|li| {
+        li.timestamp += 3_600; // user bonds again an hour later
+    });
+    staking.bond(&user, &5_000);
+
+    let bonds = staking.query_staked(&user).stakes;
+    assert_eq!(
+        bonds,
+        vec![
+            &env,
+            Stake {
+                stake: 15_000,
+                stake_timestamp: ONE_WEEK + 3_600,
+            }
+        ]
+    );
+    assert_eq!(staking.query_total_staked(), 15_000);
+
+    assert_eq!(lp_token.balance(&user), 0);
+    assert_eq!(lp_token.balance(&staking.address), 15_000);
 }
 
 #[test]
@@ -175,16 +229,16 @@ fn unbond_simple() {
     lp_token.mint(&user2, &10_000);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2000;
+        li.timestamp += ONE_DAY;
     });
     staking.bond(&user, &10_000);
     env.ledger().with_mut(|li| {
-        li.timestamp = 4000;
+        li.timestamp += ONE_DAY;
     });
     staking.bond(&user, &10_000);
     staking.bond(&user2, &10_000);
     env.ledger().with_mut(|li| {
-        li.timestamp = 4000;
+        li.timestamp += ONE_DAY;
     });
     staking.bond(&user, &15_000);
 
@@ -192,8 +246,7 @@ fn unbond_simple() {
     assert_eq!(lp_token.balance(&user), 0);
     assert_eq!(lp_token.balance(&staking.address), 45_000);
 
-    let stake_timestamp = 4000;
-    staking.unbond(&user, &10_000, &stake_timestamp);
+    staking.unbond(&user, &10_000, &(ONE_DAY + ONE_DAY));
 
     let bonds = staking.query_staked(&user).stakes;
     assert_eq!(
@@ -202,11 +255,11 @@ fn unbond_simple() {
             &env,
             Stake {
                 stake: 10_000,
-                stake_timestamp: 2_000,
+                stake_timestamp: ONE_DAY,
             },
             Stake {
                 stake: 15_000,
-                stake_timestamp: 4_000,
+                stake_timestamp: 3 * ONE_DAY,
             }
         ]
     );
@@ -265,11 +318,11 @@ fn unbond_wrong_user_stake_not_found() {
     lp_token.mint(&user2, &10_000);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 2_000;
+        li.timestamp = ONE_DAY;
     });
     staking.bond(&user, &10_000);
     env.ledger().with_mut(|li| {
-        li.timestamp = 4_000;
+        li.timestamp += ONE_DAY;
     });
     staking.bond(&user, &10_000);
     staking.bond(&user2, &10_000);
@@ -278,7 +331,8 @@ fn unbond_wrong_user_stake_not_found() {
     assert_eq!(lp_token.balance(&user2), 0);
     assert_eq!(lp_token.balance(&staking.address), 30_000);
 
-    staking.unbond(&user2, &10_000, &2_000);
+    let non_existing_timestamp = ONE_DAY / 2;
+    staking.unbond(&user2, &10_000, &non_existing_timestamp);
 }
 
 #[test]
@@ -306,14 +360,24 @@ fn pay_rewards_during_unbond() {
     lp_token.mint(&user, &10_000);
     reward_token.mint(&admin, &10_000);
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
-    staking.fund_distribution(&admin, &0u64, &10_000u64, &reward_token.address, &10_000);
+    env.ledger().with_mut(|li| {
+        li.timestamp = ONE_WEEK;
+    });
 
-    staking.bond(&user, &STAKED_AMOUNT);
+    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.fund_distribution(
+        &admin,
+        &ONE_WEEK,
+        &10_000u64,
+        &reward_token.address,
+        &10_000,
+    );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = 5_000;
+        li.timestamp = ONE_WEEK + 5_000;
     });
+    staking.bond(&user, &STAKED_AMOUNT);
+
     staking.distribute_rewards();
 
     // user has bonded for 5_000 time, initial rewards are 10_000
@@ -332,9 +396,8 @@ fn pay_rewards_during_unbond() {
             .sum::<u128>(),
         5_000
     );
-
     assert_eq!(reward_token.balance(&user), 0);
-    staking.unbond(&user, &STAKED_AMOUNT, &0);
+    staking.unbond(&user, &STAKED_AMOUNT, &(ONE_WEEK + 5_000));
     assert_eq!(reward_token.balance(&user), 5_000);
 }
 

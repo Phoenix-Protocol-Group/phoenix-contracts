@@ -11,6 +11,8 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 
 const MIN_BOND: i128 = 1000;
 const MIN_REWARD: i128 = 1000;
+pub const ONE_WEEK: u64 = 604800;
+pub const ONE_DAY: u64 = 86400;
 
 pub fn deploy_staking_contract<'a>(
     env: &Env,

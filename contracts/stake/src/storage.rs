@@ -14,6 +14,7 @@ pub struct Config {
     pub max_complexity: u32,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
+pub const SECONDS_IN_A_DAY: u64 = 86_400;
 
 pub fn get_config(env: &Env) -> Config {
     env.storage()
@@ -27,7 +28,7 @@ pub fn save_config(env: &Env, config: Config) {
 }
 
 #[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Default)]
 pub struct Stake {
     /// The amount of staked tokens
     pub stake: i128,
