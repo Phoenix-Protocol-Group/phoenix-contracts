@@ -174,7 +174,8 @@ impl StakingTrait for Staking {
         let now = ledger.timestamp();
 
         stakes.total_stake += tokens;
-        let stake = if now - SECONDS_IN_A_DAY < last_stake.stake_timestamp {
+        // if user bonds again within 12 hours, merge his stakes
+        let stake = if now - (SECONDS_IN_A_DAY / 2) < last_stake.stake_timestamp {
             last_stake.stake += tokens;
             last_stake.stake_timestamp = now;
             // we get rid of the last stake

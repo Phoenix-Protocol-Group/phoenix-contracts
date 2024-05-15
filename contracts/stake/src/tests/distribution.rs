@@ -1190,8 +1190,9 @@ fn one_user_bond_twice_in_a_day_bond_one_more_time_after_a_week_get_rewards() {
         reward_amount
     );
 
-    // user bonds for the second time in a day (12 hours later)
-    env.ledger().with_mut(|li| li.timestamp += ONE_DAY / 2);
+    // user bonds for the second time in a day (12 hours later minus one second)
+    env.ledger()
+        .with_mut(|li| li.timestamp += (ONE_DAY / 2) - 1);
     staking.bond(&user, &1000);
 
     assert_eq!(staking.query_staked(&user).stakes.len(), 1);

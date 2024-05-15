@@ -183,7 +183,7 @@ fn bond_simple_within_one_day() {
 
     // user bonds for the 2nd time within the same day
     env.ledger().with_mut(|li| {
-        li.timestamp = ONE_WEEK + 2_000;
+        li.timestamp += 3_600; // user bonds again an hour later
     });
     staking.bond(&user, &5_000);
 
@@ -194,7 +194,7 @@ fn bond_simple_within_one_day() {
             &env,
             Stake {
                 stake: 15_000,
-                stake_timestamp: ONE_WEEK + 2_000,
+                stake_timestamp: ONE_WEEK + 3_600,
             }
         ]
     );

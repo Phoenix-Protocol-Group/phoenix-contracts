@@ -14,7 +14,7 @@ and this project adheres to
 - Pool: Replace belief_price swap parameter with minimum amount of tokens expected to be received ([#280])
 - Stake: Checks if curve complexity is too high during operations and also optimises the curve combine process ([#283])
 - Pool: Temporarily disable the feature that allows to provide liquidity with a single token ([#289])
-- Stake: Optimize the process of adding stake if done within 24 hour period between stakes ([#295])
+- Stake: Optimize the process of adding stake if done within 12 hour period between stakes ([#295])
 
 ## Added
 
