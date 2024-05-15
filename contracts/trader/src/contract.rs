@@ -35,7 +35,7 @@ pub trait TraderTrait {
         token_to_swap: Address,
         liquidity_pool: Address,
         amount: Option<u64>,
-        max_spread_bps: Option<u64>,
+        max_spread_bps: Option<i64>,
     );
 
     fn transfer(
@@ -92,13 +92,24 @@ impl TraderTrait for Trader {
         token_to_swap: Address,
         liquidity_pool: Address,
         amount: Option<u64>,
-        max_spread: Option<u64>,
+        max_spread_bps: Option<i64>,
     ) {
         sender.require_auth();
 
         if sender != get_admin(&env) {
             log!(&env, "Trader: Trade_token: Unauthorized trade");
             panic_with_error!(env, ContractError::Unauthorized);
+        }
+
+        if max_spread_bps.is_some()
+            && (max_spread_bps.unwrap() < 0 || max_spread_bps.unwrap() > 10000)
+        {
+            log!(
+                &env,
+                "Trader: Trade token: Invalid max spread bps: {}",
+                max_spread_bps.unwrap()
+            );
+            panic_with_error!(env, ContractError::InvalidMaxSpreadBps);
         }
 
         let (token_a, token_b) = get_pair(&env);
@@ -121,14 +132,12 @@ impl TraderTrait for Trader {
             token_client.balance(&sender)
         };
 
-        let max_spread_bps = max_spread.unwrap_or(0);
-
         let amount_swapped = lp_client.swap(
             &env.current_contract_address(),
             &token_to_swap,
             &amount,
             &None,
-            &Some(max_spread_bps as i64),
+            &max_spread_bps,
         );
 
         env.events()

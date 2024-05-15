@@ -18,3 +18,4 @@ decimal = { workspace = true }
 
 [dev_dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+test-case = "3.3.1"

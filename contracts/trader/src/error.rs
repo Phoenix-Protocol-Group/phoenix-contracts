@@ -11,4 +11,5 @@ pub enum ContractError {
     MaxSpreadNotFound = 5,
     Unauthorized = 6,
     SwapTokenNotInPair = 7,
+    InvalidMaxSpreadBps = 8,
 }

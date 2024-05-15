@@ -7,6 +7,7 @@ use crate::{
     storage::{Asset, BalanceInfo},
     tests::setup::deploy_token_contract,
 };
+use test_case::test_case;
 
 use super::setup::{deploy_and_init_lp_client, deploy_trader_client};
 
@@ -140,7 +141,7 @@ fn simple_trade_token_and_transfer_token() {
         &xlm_token.address.clone(),
         &xlm_pho_client.address,
         &Some(1_000),
-        &None::<u64>,
+        &None::<i64>,
     );
 
     assert_eq!(
@@ -272,7 +273,7 @@ fn extended_trade_and_transfer_token() {
         &xlm_token.address.clone(),
         &xlm_pho_client.address,
         &Some(1_000),
-        &None::<u64>,
+        &None::<i64>,
     );
 
     assert_eq!(
@@ -301,7 +302,7 @@ fn extended_trade_and_transfer_token() {
         &xlm_token.address.clone(),
         &xlm_pho_client.address,
         &Some(1_000),
-        &None::<u64>,
+        &None::<i64>,
     );
 
     assert_eq!(
@@ -331,7 +332,7 @@ fn extended_trade_and_transfer_token() {
         &usdc_token.address.clone(),
         &usdc_pho_client.address,
         &Some(1_500),
-        &None::<u64>,
+        &None::<i64>,
     );
 
     // 1899 + 450 = 2_349
@@ -361,7 +362,7 @@ fn extended_trade_and_transfer_token() {
         &usdc_token.address.clone(),
         &usdc_pho_client.address,
         &Some(1_500),
-        &None::<u64>,
+        &None::<i64>,
     );
 
     // 2_349 + 450 = 2_799
@@ -449,7 +450,7 @@ fn trade_token_should_fail_when_unauthorized() {
         &xlm_token.address.clone(),
         &xlm_pho_client.address,
         &Some(1_000),
-        &None::<u64>,
+        &None::<i64>,
     );
 }
 
@@ -513,7 +514,7 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
         &Address::generate(&env),
         &xlm_pho_client.address,
         &Some(1_000),
-        &None::<u64>,
+        &None::<i64>,
     );
 }
 
@@ -578,8 +579,73 @@ fn transfer_should_fail_when_unauthorized() {
         &xlm_token.address.clone(),
         &xlm_pho_client.address,
         &Some(1_000),
-        &None::<u64>,
+        &None::<i64>,
     );
 
     trader_client.transfer(&Address::generate(&env), &rcpt, &1_000, &None);
+}
+
+#[test_case(-1 ; "when negative")]
+#[test_case(10001; "when bigger than 100 percent")]
+#[should_panic(expected = "Error(Contract, #8)")]
+fn transfer_should_fail_with_invalid_spread_bps(max_spread_bps: i64) {
+    let env = Env::default();
+
+    env.mock_all_auths_allowing_non_root_auth();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let mut xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+
+    let mut pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    if xlm_token.address >= pho_token.address {
+        std::mem::swap(&mut pho_token, &mut xlm_token);
+    }
+
+    xlm_token.mint(&admin, &1_000_000);
+    pho_token.mint(&admin, &2_000_000);
+
+    let trader_client = deploy_trader_client(&env);
+
+    xlm_token.mint(&trader_client.address, &1_000);
+
+    let xlm_pho_client: crate::lp_contract::Client<'_> = deploy_and_init_lp_client(
+        &env,
+        admin.clone(),
+        xlm_token.address.clone(),
+        1_000_000,
+        pho_token.address.clone(),
+        1_000_000,
+        0,
+    );
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), Address::generate(&env)),
+        &pho_token.address,
+    );
+
+    trader_client.trade_token(
+        &admin.clone(),
+        &xlm_token.address.clone(),
+        &xlm_pho_client.address,
+        &Some(1_000),
+        &Some(max_spread_bps),
+    );
 }
