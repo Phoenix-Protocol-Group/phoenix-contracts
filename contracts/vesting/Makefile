@@ -3,7 +3,7 @@ default: all
 all: lint build test
 
 test: build
-	cargo test
+	cargo test --all-features
 
 build:
 	$(MAKE) -C ../token build || break;
@@ -15,7 +15,7 @@ fmt:
 	cargo fmt --all
 
 clippy: build
-	cargo clippy --all-targets -- -D warnings
+	cargo clippy --all-targets --all-features -- -D warnings
 
 clean:
 	cargo clean

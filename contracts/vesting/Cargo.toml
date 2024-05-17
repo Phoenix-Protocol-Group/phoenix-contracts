@@ -10,6 +10,7 @@ license = { workspace = true }
 # Enables minter feature on the vesting contract
 # if enabled, a specified address can mint/burn tokens
 minter = []
+default = []
 
 [lib]
 crate-type = ["cdylib"]
