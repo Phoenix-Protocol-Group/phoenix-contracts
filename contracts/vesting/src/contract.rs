@@ -7,13 +7,12 @@ use curve::Curve;
 use crate::storage::{
     get_admin, get_token_info, save_max_vesting_complexity, save_token_info, DistributionInfo,
 };
+#[cfg(feature = "minter")]
+use crate::storage::{get_minter, save_minter, MinterInfo};
 use crate::utils::{create_vesting_accounts, verify_vesting_and_update_balances};
 use crate::{
     error::ContractError,
-    storage::{
-        get_minter, get_vesting, save_admin, save_minter, MinterInfo, VestingBalance,
-        VestingTokenInfo,
-    },
+    storage::{get_vesting, save_admin, VestingBalance, VestingTokenInfo},
     token_contract,
 };
 
@@ -31,18 +30,31 @@ pub trait VestingTrait {
         admin: Address,
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
-        minter_info: Option<MinterInfo>,
         max_vesting_complexity: u32,
+    );
+
+    #[cfg(feature = "minter")]
+    fn initialize_with_minter(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        vesting_balances: Vec<VestingBalance>,
+        max_vesting_complexity: u32,
+        minter_info: MinterInfo,
     );
 
     fn claim(env: Env, sender: Address);
 
+    #[cfg(feature = "minter")]
     fn burn(env: Env, sender: Address, amount: u128);
 
+    #[cfg(feature = "minter")]
     fn mint(env: Env, sender: Address, amount: i128);
 
+    #[cfg(feature = "minter")]
     fn update_minter(env: Env, sender: Address, new_minter: Address);
 
+    #[cfg(feature = "minter")]
     fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128);
 
     fn update(env: Env, new_wash_hash: BytesN<32>);
@@ -53,6 +65,7 @@ pub trait VestingTrait {
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
+    #[cfg(feature = "minter")]
     fn query_minter(env: Env) -> MinterInfo;
 
     fn query_vesting_contract_balance(env: Env) -> i128;
@@ -67,8 +80,62 @@ impl VestingTrait for Vesting {
         admin: Address,
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
-        minter_info: Option<MinterInfo>,
         max_vesting_complexity: u32,
+    ) {
+        admin.require_auth();
+
+        save_admin(&env, &admin);
+
+        if vesting_balances.is_empty() {
+            log!(
+                &env,
+                "Vesting: Initialize: At least one vesting schedule must be provided."
+            );
+            panic_with_error!(env, ContractError::MissingBalance);
+        }
+
+        let total_vested_amount =
+            create_vesting_accounts(&env, max_vesting_complexity, vesting_balances);
+
+        // check if the admin has enough tokens to start the vesting contract
+        let token_client = token_contract::Client::new(&env, &vesting_token.address);
+
+        if token_client.balance(&admin) < total_vested_amount as i128 {
+            log!(
+                &env,
+                "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
+            );
+            panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
+        }
+
+        token_client.transfer(
+            &admin,
+            &env.current_contract_address(),
+            &(total_vested_amount as i128),
+        );
+
+        let token_info = VestingTokenInfo {
+            name: vesting_token.name,
+            symbol: vesting_token.symbol,
+            decimals: vesting_token.decimals,
+            address: vesting_token.address,
+        };
+
+        save_token_info(&env, &token_info);
+        save_max_vesting_complexity(&env, &max_vesting_complexity);
+
+        env.events()
+            .publish(("Initialize", "Vesting contract with admin: "), admin);
+    }
+
+    #[cfg(feature = "minter")]
+    fn initialize_with_minter(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        vesting_balances: Vec<VestingBalance>,
+        max_vesting_complexity: u32,
+        minter_info: Option<MinterInfo>,
     ) {
         admin.require_auth();
 
@@ -155,6 +222,7 @@ impl VestingTrait for Vesting {
             .publish(("Claim", "Claimed tokens: "), available_to_claim);
     }
 
+    #[cfg(feature = "minter")]
     fn burn(env: Env, sender: Address, amount: u128) {
         sender.require_auth();
 
@@ -171,6 +239,7 @@ impl VestingTrait for Vesting {
         env.events().publish(("Burn", "Burned tokens: "), amount);
     }
 
+    #[cfg(feature = "minter")]
     fn mint(env: Env, sender: Address, amount: i128) {
         sender.require_auth();
 
@@ -222,6 +291,7 @@ impl VestingTrait for Vesting {
         env.events().publish(("Mint", "Minted tokens: "), amount);
     }
 
+    #[cfg(feature = "minter")]
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
         let current_minter = get_minter(&env);
 
@@ -252,6 +322,7 @@ impl VestingTrait for Vesting {
             .publish(("Update minter", "Updated minter to: "), new_minter);
     }
 
+    #[cfg(feature = "minter")]
     fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128) {
         if sender != get_admin(&env) {
             log!(
@@ -292,6 +363,7 @@ impl VestingTrait for Vesting {
         get_token_info(&env)
     }
 
+    #[cfg(feature = "minter")]
     fn query_minter(env: Env) -> MinterInfo {
         if let Some(minter) = get_minter(&env) {
             minter

@@ -35,16 +35,16 @@ pub struct VestingTokenInfo {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VestingBalance {
-    pub rcpt_address: Address,
+pub struct VestingInfo {
+    pub balance: u128, // This is the value that we will update during claim msgs
     pub distribution_info: DistributionInfo,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MinterInfo {
-    pub address: Address,
-    pub mint_capacity: u128,
+pub struct VestingBalance {
+    pub recipient: Address,
+    pub distribution_info: DistributionInfo,
 }
 
 #[contracttype]
@@ -55,13 +55,15 @@ pub struct DistributionInfo {
     pub amount: u128, // this is fine. this will be constant for historical data checking
 }
 
+#[cfg(feature = "minter")]
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VestingInfo {
-    pub balance: u128, // This is the value that we will update during transfer msgs
-    pub distribution_info: DistributionInfo,
+pub struct MinterInfo {
+    pub address: Address,
+    pub mint_capacity: u128,
 }
 
+#[cfg(feature = "minter")]
 impl MinterInfo {
     pub fn get_curve(&self) -> Curve {
         Curve::Constant(self.mint_capacity)
@@ -104,22 +106,12 @@ pub fn get_vesting(env: &Env, address: &Address) -> VestingInfo {
     })
 }
 
-// TODO: uncomment when needed
-// pub fn get_allowances(env: &Env, owner_spender: &(Address, Address)) -> i128 {
-//     env.storage().persistent().get(owner_spender).unwrap_or_else(|| {
-//             log!(&env, "Vesting: Get allowance: Critical error - No allowance found for the given address pair");
-//             panic_with_error!(env, ContractError::AllowanceNotFoundForGivenPair);
-//         })
-// }
-
-// pub fn save_allowances(env: &Env, owner_spender: &(Address, Address), amount: i128) {
-//     env.storage().persistent().set(owner_spender, &amount);
-// }
-
+#[cfg(feature = "minter")]
 pub fn save_minter(env: &Env, minter: &MinterInfo) {
     env.storage().persistent().set(&DataKey::Minter, minter);
 }
 
+#[cfg(feature = "minter")]
 pub fn get_minter(env: &Env) -> Option<MinterInfo> {
     env.storage().persistent().get(&DataKey::Minter)
 }

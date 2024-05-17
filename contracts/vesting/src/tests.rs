@@ -1,4 +1,5 @@
 mod claim;
 mod instantiate;
-mod messages;
-pub mod setup;
+#[cfg(feature = "minter")]
+mod minter;
+mod setup;

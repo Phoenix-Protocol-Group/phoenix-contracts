@@ -57,14 +57,14 @@ pub fn create_vesting_accounts(
             log!(
                 &env,
                 "Vesting: Create vesting account: Invalid curve complexity for {}",
-                vb.rcpt_address
+                vb.recipient
             );
             panic_with_error!(env, ContractError::VestingComplexityTooHigh);
         }
 
         save_vesting(
             env,
-            &vb.rcpt_address,
+            &vb.recipient,
             &VestingInfo {
                 balance: vb.distribution_info.amount,
                 distribution_info: vb.distribution_info.clone(),
@@ -106,11 +106,11 @@ pub fn assert_schedule_vests_amount(
 fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) {
     let mut addresses: Vec<Address> = Vec::new(env);
     for account in accounts.iter() {
-        if addresses.contains(&account.rcpt_address) {
+        if addresses.contains(&account.recipient) {
             log!(&env, "Vesting: Initialize: Duplicate addresses found");
             panic_with_error!(env, ContractError::DuplicateInitialBalanceAddresses);
         }
-        addresses.push_back(account.rcpt_address.clone());
+        addresses.push_back(account.recipient.clone());
     }
 }
 
@@ -134,7 +134,7 @@ mod test {
         let accounts = vec![
             &env,
             VestingBalance {
-                rcpt_address: address1.clone(),
+                recipient: address1.clone(),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -142,7 +142,7 @@ mod test {
                 },
             },
             VestingBalance {
-                rcpt_address: address2.clone(),
+                recipient: address2.clone(),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -150,7 +150,7 @@ mod test {
                 },
             },
             VestingBalance {
-                rcpt_address: address3.clone(),
+                recipient: address3.clone(),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -171,7 +171,7 @@ mod test {
         let accounts = vec![
             &env,
             VestingBalance {
-                rcpt_address: duplicate_address.clone(),
+                recipient: duplicate_address.clone(),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -179,7 +179,7 @@ mod test {
                 },
             },
             VestingBalance {
-                rcpt_address: duplicate_address,
+                recipient: duplicate_address,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
@@ -187,7 +187,7 @@ mod test {
                 },
             },
             VestingBalance {
-                rcpt_address: Address::generate(&env),
+                recipient: Address::generate(&env),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
                     end_timestamp: 60,
