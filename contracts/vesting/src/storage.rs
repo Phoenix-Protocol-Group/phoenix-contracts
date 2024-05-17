@@ -42,7 +42,7 @@ pub struct VestingInfo {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VestingBalance {
+pub struct VestingSchedule {
     pub recipient: Address,
     pub distribution_info: DistributionInfo,
 }
@@ -108,23 +108,23 @@ pub fn get_vesting(env: &Env, address: &Address) -> VestingInfo {
 
 #[cfg(feature = "minter")]
 pub fn save_minter(env: &Env, minter: &MinterInfo) {
-    env.storage().persistent().set(&DataKey::Minter, minter);
+    env.storage().instance().set(&DataKey::Minter, minter);
 }
 
 #[cfg(feature = "minter")]
 pub fn get_minter(env: &Env) -> Option<MinterInfo> {
-    env.storage().persistent().get(&DataKey::Minter)
+    env.storage().instance().get(&DataKey::Minter)
 }
 
 pub fn save_token_info(env: &Env, token_info: &VestingTokenInfo) {
     env.storage()
-        .persistent()
+        .instance()
         .set(&DataKey::VestingTokenInfo, token_info);
 }
 
 pub fn get_token_info(env: &Env) -> VestingTokenInfo {
     env.storage()
-        .persistent()
+        .instance()
         .get(&DataKey::VestingTokenInfo)
         .unwrap_or_else(|| {
             log!(
@@ -139,4 +139,11 @@ pub fn save_max_vesting_complexity(env: &Env, max_vesting_complexity: &u32) {
     env.storage()
         .persistent()
         .set(&DataKey::MaxVestingComplexity, max_vesting_complexity);
+}
+
+pub fn get_max_vesting_complexity(env: &Env) -> u32 {
+    env.storage()
+        .instance()
+        .get(&DataKey::MaxVestingComplexity)
+        .unwrap()
 }

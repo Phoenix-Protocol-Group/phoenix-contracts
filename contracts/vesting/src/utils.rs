@@ -3,7 +3,9 @@ use soroban_sdk::{log, panic_with_error, Address, Env, Vec};
 
 use crate::{
     error::ContractError,
-    storage::{get_vesting, save_vesting, VestingBalance, VestingInfo},
+    storage::{
+        get_max_vesting_complexity, get_vesting, save_vesting, VestingInfo, VestingSchedule,
+    },
 };
 
 pub fn verify_vesting_and_update_balances(env: &Env, sender: &Address, amount: u128) {
@@ -36,12 +38,9 @@ pub fn verify_vesting_and_update_balances(env: &Env, sender: &Address, amount: u
     );
 }
 
-pub fn create_vesting_accounts(
-    env: &Env,
-    vesting_complexity: u32,
-    vesting_accounts: Vec<VestingBalance>,
-) -> u128 {
+pub fn create_vesting_accounts(env: &Env, vesting_accounts: Vec<VestingSchedule>) -> u128 {
     validate_accounts(env, vesting_accounts.clone());
+    let max_vesting_complexity = get_max_vesting_complexity(env);
 
     let mut total_vested_amount = 0;
 
@@ -53,7 +52,7 @@ pub fn create_vesting_accounts(
         )
         .expect("Invalid curve and amount");
 
-        if vesting_complexity <= vb.distribution_info.get_curve().size() {
+        if max_vesting_complexity <= vb.distribution_info.get_curve().size() {
             log!(
                 &env,
                 "Vesting: Create vesting account: Invalid curve complexity for {}",
@@ -103,7 +102,7 @@ pub fn assert_schedule_vests_amount(
     }
 }
 
-fn validate_accounts(env: &Env, accounts: Vec<VestingBalance>) {
+fn validate_accounts(env: &Env, accounts: Vec<VestingSchedule>) {
     let mut addresses: Vec<Address> = Vec::new(env);
     for account in accounts.iter() {
         if addresses.contains(&account.recipient) {
@@ -133,7 +132,7 @@ mod test {
 
         let accounts = vec![
             &env,
-            VestingBalance {
+            VestingSchedule {
                 recipient: address1.clone(),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -141,7 +140,7 @@ mod test {
                     amount: 120,
                 },
             },
-            VestingBalance {
+            VestingSchedule {
                 recipient: address2.clone(),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -149,7 +148,7 @@ mod test {
                     amount: 120,
                 },
             },
-            VestingBalance {
+            VestingSchedule {
                 recipient: address3.clone(),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -170,7 +169,7 @@ mod test {
         let duplicate_address = Address::generate(&env);
         let accounts = vec![
             &env,
-            VestingBalance {
+            VestingSchedule {
                 recipient: duplicate_address.clone(),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -178,7 +177,7 @@ mod test {
                     amount: 120,
                 },
             },
-            VestingBalance {
+            VestingSchedule {
                 recipient: duplicate_address,
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,
@@ -186,7 +185,7 @@ mod test {
                     amount: 120,
                 },
             },
-            VestingBalance {
+            VestingSchedule {
                 recipient: Address::generate(&env),
                 distribution_info: DistributionInfo {
                     start_timestamp: 15,

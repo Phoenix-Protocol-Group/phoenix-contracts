@@ -2,8 +2,6 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, Vec,
 };
 
-use curve::Curve;
-
 use crate::storage::{
     get_admin, get_token_info, save_max_vesting_complexity, save_token_info, DistributionInfo,
 };
@@ -12,7 +10,7 @@ use crate::storage::{get_minter, save_minter, MinterInfo};
 use crate::utils::{create_vesting_accounts, verify_vesting_and_update_balances};
 use crate::{
     error::ContractError,
-    storage::{get_vesting, save_admin, VestingBalance, VestingTokenInfo},
+    storage::{get_vesting, save_admin, VestingSchedule, VestingTokenInfo},
     token_contract,
 };
 
@@ -29,21 +27,33 @@ pub trait VestingTrait {
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
-        vesting_balances: Vec<VestingBalance>,
         max_vesting_complexity: u32,
     );
+
+    fn create_vesting_schedules(env: Env, vesting_accounts: Vec<VestingSchedule>);
+
+    fn claim(env: Env, sender: Address);
+
+    fn update(env: Env, new_wash_hash: BytesN<32>);
+
+    fn query_balance(env: Env, address: Address) -> i128;
+
+    fn query_distribution_info(env: Env, address: Address) -> DistributionInfo;
+
+    fn query_token_info(env: Env) -> VestingTokenInfo;
+
+    fn query_vesting_contract_balance(env: Env) -> i128;
+
+    fn query_available_to_claim(env: Env, address: Address) -> i128;
 
     #[cfg(feature = "minter")]
     fn initialize_with_minter(
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
-        vesting_balances: Vec<VestingBalance>,
         max_vesting_complexity: u32,
         minter_info: MinterInfo,
     );
-
-    fn claim(env: Env, sender: Address);
 
     #[cfg(feature = "minter")]
     fn burn(env: Env, sender: Address, amount: u128);
@@ -57,20 +67,8 @@ pub trait VestingTrait {
     #[cfg(feature = "minter")]
     fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128);
 
-    fn update(env: Env, new_wash_hash: BytesN<32>);
-
-    fn query_balance(env: Env, address: Address) -> i128;
-
-    fn query_distribution_info(env: Env, address: Address) -> DistributionInfo;
-
-    fn query_token_info(env: Env) -> VestingTokenInfo;
-
     #[cfg(feature = "minter")]
     fn query_minter(env: Env) -> MinterInfo;
-
-    fn query_vesting_contract_balance(env: Env) -> i128;
-
-    fn query_available_to_claim(env: Env, address: Address) -> i128;
 }
 
 #[contractimpl]
@@ -79,40 +77,9 @@ impl VestingTrait for Vesting {
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
-        vesting_balances: Vec<VestingBalance>,
         max_vesting_complexity: u32,
     ) {
-        admin.require_auth();
-
         save_admin(&env, &admin);
-
-        if vesting_balances.is_empty() {
-            log!(
-                &env,
-                "Vesting: Initialize: At least one vesting schedule must be provided."
-            );
-            panic_with_error!(env, ContractError::MissingBalance);
-        }
-
-        let total_vested_amount =
-            create_vesting_accounts(&env, max_vesting_complexity, vesting_balances);
-
-        // check if the admin has enough tokens to start the vesting contract
-        let token_client = token_contract::Client::new(&env, &vesting_token.address);
-
-        if token_client.balance(&admin) < total_vested_amount as i128 {
-            log!(
-                &env,
-                "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
-            );
-            panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
-        }
-
-        token_client.transfer(
-            &admin,
-            &env.current_contract_address(),
-            &(total_vested_amount as i128),
-        );
 
         let token_info = VestingTokenInfo {
             name: vesting_token.name,
@@ -133,53 +100,11 @@ impl VestingTrait for Vesting {
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
-        vesting_balances: Vec<VestingBalance>,
         max_vesting_complexity: u32,
         minter_info: MinterInfo,
     ) {
-        admin.require_auth();
-
         save_admin(&env, &admin);
 
-        if vesting_balances.is_empty() {
-            log!(
-                &env,
-                "Vesting: Initialize: At least one vesting schedule must be provided."
-            );
-            panic_with_error!(env, ContractError::MissingBalance);
-        }
-
-        let total_vested_amount =
-            create_vesting_accounts(&env, max_vesting_complexity, vesting_balances);
-
-        // check if the admin has enough tokens to start the vesting contract
-        let token_client = token_contract::Client::new(&env, &vesting_token.address);
-
-        if token_client.balance(&admin) < total_vested_amount as i128 {
-            log!(
-                &env,
-                "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
-            );
-            panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
-        }
-
-        token_client.transfer(
-            &admin,
-            &env.current_contract_address(),
-            &(total_vested_amount as i128),
-        );
-
-        let input_curve = Curve::Constant(minter_info.mint_capacity);
-
-        let capacity = input_curve.value(env.ledger().timestamp());
-
-        if total_vested_amount > capacity {
-            log!(
-                &env,
-                "Vesting: Initialize: total vested amount over the capacity"
-            );
-            panic_with_error!(env, ContractError::TotalVestedOverCapacity);
-        }
         save_minter(&env, &minter_info);
 
         let token_info = VestingTokenInfo {
@@ -194,6 +119,39 @@ impl VestingTrait for Vesting {
 
         env.events()
             .publish(("Initialize", "Vesting contract with admin: "), admin);
+    }
+
+    fn create_vesting_schedules(env: Env, vesting_schedules: Vec<VestingSchedule>) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        if vesting_schedules.is_empty() {
+            log!(
+                &env,
+                "Vesting: Initialize: At least one vesting schedule must be provided."
+            );
+            panic_with_error!(env, ContractError::MissingBalance);
+        }
+
+        let total_vested_amount = create_vesting_accounts(&env, vesting_schedules);
+        let vesting_token = get_token_info(&env);
+
+        // check if the admin has enough tokens to start the vesting contract
+        let token_client = token_contract::Client::new(&env, &vesting_token.address);
+
+        if token_client.balance(&admin) < total_vested_amount as i128 {
+            log!(
+                &env,
+                "Vesting: Initialize: Admin does not have enough tokens to start the vesting schedule"
+            );
+            panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
+        }
+
+        token_client.transfer(
+            &admin,
+            &env.current_contract_address(),
+            &(total_vested_amount as i128),
+        );
     }
 
     fn claim(env: Env, sender: Address) {
