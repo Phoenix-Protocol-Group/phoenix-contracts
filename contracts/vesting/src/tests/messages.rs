@@ -20,8 +20,8 @@ fn burn_works() {
     token.mint(&admin, &1_000);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -43,7 +43,7 @@ fn burn_works() {
     env.ledger().with_mut(|li| li.timestamp = 100);
     assert_eq!(vesting_client.query_vesting_contract_balance(), 120);
 
-    vesting_client.transfer_token(&vester1, &vester1, &120);
+    vesting_client.claim(&vester1);
     assert_eq!(vesting_client.query_vesting_contract_balance(), 0);
     assert_eq!(token.balance(&vester1), 120);
 
@@ -65,8 +65,8 @@ fn burn_should_panic_when_invalid_amount() {
     token.mint(&admin, &1_000);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -102,8 +102,8 @@ fn mint_works() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -143,7 +143,7 @@ fn mint_works() {
 
     // user withdraws 120 tokens
     env.ledger().with_mut(|li| li.timestamp = 100);
-    vesting_client.transfer_token(&vester1, &vester1, &120);
+    vesting_client.claim(&vester1);
     assert_eq!(token.balance(&vester1), 120);
     assert_eq!(vesting_client.query_vesting_contract_balance(), 0);
 
@@ -172,8 +172,8 @@ fn mint_should_panic_when_invalid_amount() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -220,8 +220,8 @@ fn mint_should_panic_when_not_authorized_to_mint() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -269,8 +269,8 @@ fn mint_should_panic_when_mintet_does_not_have_enough_capacity() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -317,8 +317,8 @@ fn update_minter_works_correctly() {
     let token = deploy_token_contract(&env, &admin);
     token.mint(&admin, &120);
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -377,8 +377,8 @@ fn update_minter_works_correctly_when_no_minter_was_set_initially() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -425,8 +425,8 @@ fn update_minter_fails_when_not_authorized() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -478,8 +478,8 @@ fn minting_fails_because_no_minter_was_found() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -515,8 +515,8 @@ fn update_minter_capacity_fails_because_no_minter_found() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -552,8 +552,8 @@ fn query_minter_should_fail_because_no_minter_found() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -589,8 +589,8 @@ fn test_should_update_minter_capacity_when_replacing_old_capacity() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -647,8 +647,8 @@ fn test_should_panic_when_updating_minter_capacity_without_auth() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };
@@ -696,8 +696,8 @@ fn test_should_fail_when_burning_more_than_the_user_has() {
     token.mint(&admin, &120);
 
     let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
+        name: String::from_str(&env, "Token"),
+        symbol: String::from_str(&env, "TOK"),
         decimals: 6,
         address: token.address.clone(),
     };

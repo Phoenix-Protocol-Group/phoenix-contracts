@@ -10,7 +10,7 @@ use soroban_sdk::{
 use super::setup::deploy_token_contract;
 
 #[test]
-fn transfer_tokens_when_fully_vested() {
+fn claim_tokens_when_fully_vested() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -67,7 +67,7 @@ fn transfer_tokens_when_fully_vested() {
     env.ledger().with_mut(|li| li.timestamp = 60);
 
     // user collects the vested tokens and transfers them to himself
-    vesting_client.transfer_token(&vester1, &vester1, &120);
+    vesting_client.claim(&vester1);
 
     // vester1 has 120 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 120);
@@ -125,12 +125,8 @@ fn transfer_tokens_when_half_vested() {
     // we move time to the middle of the vesting period
     env.ledger().with_mut(|li| li.timestamp = 30);
 
-    // user is greedy and tries to transfer more than he can
-    let result = vesting_client.try_transfer_token(&vester1, &vester1, &61);
-    assert!(result.is_err());
-
     // user collects the vested tokens and transfers them to himself
-    vesting_client.transfer_token(&vester1, &vester1, &60);
+    vesting_client.claim(&vester1);
 
     // vester1 has 60 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 60);
@@ -189,7 +185,7 @@ fn test_claim_tokens_once_then_claim_again() {
     env.ledger().with_mut(|li| li.timestamp = 30);
 
     // user collects 1/2 of the vested tokens and transfers them to himself
-    vesting_client.transfer_token(&vester1, &vester1, &60);
+    vesting_client.claim(&vester1);
 
     // vester1 has 60 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 60);
@@ -201,7 +197,7 @@ fn test_claim_tokens_once_then_claim_again() {
     env.ledger().with_mut(|li| li.timestamp = 60);
 
     // user collects the remaining vested tokens and transfers them to himself
-    vesting_client.transfer_token(&vester1, &vester1, &60);
+    vesting_client.claim(&vester1);
 
     // vester1 has 120 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 120);
@@ -260,7 +256,7 @@ fn test_user_can_claim_tokens_way_after_the_testing_period() {
     env.ledger().with_mut(|li| li.timestamp = 61);
 
     // user collects everything
-    vesting_client.transfer_token(&vester1, &vester1, &120);
+    vesting_client.claim(&vester1);
 
     // vester1 has 120 tokens after claiming the vested amount
     assert_eq!(vesting_client.query_balance(&vester1), 120);
@@ -270,92 +266,7 @@ fn test_user_can_claim_tokens_way_after_the_testing_period() {
 }
 
 #[test]
-fn user_claims_only_a_part_of_the_allowed_vested_amount_then_claims_the_remaining_afterwards() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
-    let token_client = deploy_token_contract(&env, &admin);
-
-    token_client.mint(&admin, &120);
-
-    let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
-        decimals: 6,
-        address: token_client.address.clone(),
-    };
-
-    let vesting_balances = vec![
-        &env,
-        VestingBalance {
-            rcpt_address: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 0,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
-
-    let vesting_client = instantiate_vesting_client(&env);
-
-    // admin has 120 vesting tokens prior to initializing the contract
-    assert_eq!(token_client.balance(&admin), 120);
-
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
-
-    // after initialization the admin has 0 vesting tokens
-    // contract has 120 vesting tokens
-    assert_eq!(token_client.balance(&admin), 0);
-    assert_eq!(token_client.balance(&vesting_client.address), 120);
-
-    // vester1 has 0 tokens before claiming the vested amount
-    assert_eq!(vesting_client.query_balance(&vester1), 0);
-
-    // we move time to the middle of the vesting period
-    env.ledger().with_mut(|li| li.timestamp = 30);
-
-    // user can collect 30 tokens, but he only collects 15
-    vesting_client.transfer_token(&vester1, &vester1, &15);
-
-    // vester1 has 15 tokens after claiming the vested amount
-    assert_eq!(vesting_client.query_balance(&vester1), 15);
-
-    // there must be 105 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 105);
-
-    // we move the time to the end of the vesting period
-    env.ledger().with_mut(|li| li.timestamp = 60);
-
-    // user collects 15 more tokens
-    vesting_client.transfer_token(&vester1, &vester1, &15);
-
-    // vester1 has 30 tokens after claiming the vested amount
-    assert_eq!(vesting_client.query_balance(&vester1), 30);
-
-    // there must be 90 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 90);
-
-    // we move time way ahead in time
-    env.ledger().with_mut(|li| li.timestamp = 1000);
-
-    // user decides it's times to become milionaire and collects the remaining 90 tokens
-    vesting_client.transfer_token(&vester1, &vester1, &90);
-
-    // vester1 has 120 tokens after claiming the vested amount
-    assert_eq!(vesting_client.query_balance(&vester1), 120);
-
-    // there must be 0 vesting tokens left in the contract
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);
-}
-
-#[test]
-#[should_panic(
-    expected = "Vesting: Verify Vesting Update Balances: Remaining amount must be at least equal to vested amount"
-)]
+#[should_panic(expected = "Vesting: Claim: No tokens available to claim")]
 fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
     const START_TIMESTAMP: u64 = 15;
     let env = Env::default();
@@ -395,46 +306,8 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
     env.ledger()
         .with_mut(|li| li.timestamp = START_TIMESTAMP - 10);
 
-    // we try to transfer the tokens before the vesting period has started
-    vesting_client.transfer_token(&vester1, &vester1, &1);
-}
-
-#[test]
-#[should_panic(expected = "Vesting: Transfer token: Invalid transfer amount")]
-fn transfer_tokens_should_fail_invalid_amount() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
-
-    let token_client = deploy_token_contract(&env, &admin);
-    token_client.mint(&admin, &120);
-
-    let vesting_token = VestingTokenInfo {
-        name: String::from_str(&env, "Phoenix"),
-        symbol: String::from_str(&env, "PHO"),
-        decimals: 6,
-        address: token_client.address,
-    };
-    let vesting_balances = vec![
-        &env,
-        VestingBalance {
-            rcpt_address: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
-
-    let vesting_client = instantiate_vesting_client(&env);
-
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
-
-    vesting_client.transfer_token(&vester1, &vester1, &0);
+    // we try to claim the tokens before the vesting period has started
+    vesting_client.claim(&vester1);
 }
 
 #[test]
@@ -505,22 +378,22 @@ fn transfer_works_with_multiple_users_and_distributions() {
 
     // vester1 can withdraw 150 tokens out of 300 tokens
     assert_eq!(vesting_client.query_balance(&vester1), 0);
-    vesting_client.transfer_token(&vester1, &vester1, &150);
+    vesting_client.claim(&vester1);
     assert_eq!(vesting_client.query_balance(&vester1), 150);
 
     // vester2 can withdraw all tokens
     assert_eq!(vesting_client.query_balance(&vester2), 0);
-    vesting_client.transfer_token(&vester2, &vester2, &200);
+    vesting_client.claim(&vester2);
     assert_eq!(vesting_client.query_balance(&vester2), 200);
 
     // vester3 can withdraw 150 tokens out of 250 tokens
     assert_eq!(vesting_client.query_balance(&vester3), 0);
-    vesting_client.transfer_token(&vester3, &vester3, &150);
+    vesting_client.claim(&vester3);
     assert_eq!(vesting_client.query_balance(&vester3), 150);
 
     // vester4 can withdraw 50 tokens out of 250 tokens
     assert_eq!(vesting_client.query_balance(&vester4), 0);
-    vesting_client.transfer_token(&vester4, &vester4, &50);
+    vesting_client.claim(&vester4);
     assert_eq!(vesting_client.query_balance(&vester4), 50);
 
     // users have withdrawn a total of 550 tokens
@@ -532,18 +405,18 @@ fn transfer_works_with_multiple_users_and_distributions() {
 
     // vester1 can withdraw the remaining 150 tokens
     assert_eq!(vesting_client.query_balance(&vester1), 150);
-    vesting_client.transfer_token(&vester1, &vester1, &150);
+    vesting_client.claim(&vester1);
     assert_eq!(vesting_client.query_balance(&vester1), 300);
 
     // vester2 has nothing to withdraw
     // vester3 can withdraw the remaining 100 tokens
     assert_eq!(vesting_client.query_balance(&vester3), 150);
-    vesting_client.transfer_token(&vester3, &vester3, &100);
+    vesting_client.claim(&vester3);
     assert_eq!(vesting_client.query_balance(&vester3), 250);
 
     // vester4 can withdraw 100 - maximum for the period
     assert_eq!(vesting_client.query_balance(&vester4), 50);
-    vesting_client.transfer_token(&vester4, &vester4, &100);
+    vesting_client.claim(&vester4);
     assert_eq!(vesting_client.query_balance(&vester4), 150);
 
     // in the 2nd round users have withdrawn 350 tokens
@@ -557,7 +430,7 @@ fn transfer_works_with_multiple_users_and_distributions() {
     // vester3 has nothing to withdraw
     // vester4 can withdraw the remaining 100 tokens
     assert_eq!(vesting_client.query_balance(&vester4), 150);
-    vesting_client.transfer_token(&vester4, &vester4, &100);
+    vesting_client.claim(&vester4);
     assert_eq!(vesting_client.query_balance(&vester4), 250);
 
     assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);

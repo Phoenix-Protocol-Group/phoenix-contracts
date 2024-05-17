@@ -35,8 +35,6 @@ pub trait VestingTrait {
         max_vesting_complexity: u32,
     );
 
-    fn transfer_token(env: Env, sender: Address, recipient: Address, amount: i128);
-
     fn claim(env: Env, sender: Address);
 
     fn burn(env: Env, sender: Address, amount: u128);
@@ -46,6 +44,8 @@ pub trait VestingTrait {
     fn update_minter(env: Env, sender: Address, new_minter: Address);
 
     fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128);
+
+    fn update(env: Env, new_wash_hash: BytesN<32>);
 
     fn query_balance(env: Env, address: Address) -> i128;
 
@@ -129,28 +129,6 @@ impl VestingTrait for Vesting {
 
         env.events()
             .publish(("Initialize", "Vesting contract with admin: "), admin);
-    }
-
-    fn transfer_token(env: Env, sender: Address, recipient: Address, amount: i128) {
-        sender.require_auth();
-
-        if amount <= 0 {
-            log!(&env, "Vesting: Transfer token: Invalid transfer amount");
-            panic_with_error!(env, ContractError::InvalidTransferAmount);
-        }
-
-        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
-
-        verify_vesting_and_update_balances(&env, &sender, amount as u128);
-        token_client.transfer(&env.current_contract_address(), &recipient, &amount);
-
-        env.events().publish(
-            (
-                "Transfer token",
-                "Transfering tokens between accounts: from: {}, to:{}, amount: {}",
-            ),
-            (sender, recipient, amount),
-        );
     }
 
     fn claim(env: Env, sender: Address) {
@@ -343,7 +321,7 @@ impl VestingTrait for Vesting {
         sender_liquid as i128
     }
 
-    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
+    fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin(&env);
         admin.require_auth();
 
