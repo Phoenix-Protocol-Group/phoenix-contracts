@@ -31,7 +31,7 @@ fn claim_tokens_when_fully_vested() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            rcpt_address: vester1.clone(),
+            recipient: vester1.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 0,
                 end_timestamp: 60,
@@ -39,7 +39,7 @@ fn claim_tokens_when_fully_vested() {
             },
         },
         VestingBalance {
-            rcpt_address: Address::generate(&env),
+            recipient: Address::generate(&env),
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
                 end_timestamp: 60,
@@ -53,7 +53,7 @@ fn claim_tokens_when_fully_vested() {
     // admin has 320 vesting tokens prior to initializing the contract
     assert_eq!(token_client.balance(&admin), 320);
 
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
 
     // after initialization the admin has 0 vesting tokens
     // contract has 320 vesting tokens
@@ -98,7 +98,7 @@ fn transfer_tokens_when_half_vested() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            rcpt_address: vester1.clone(),
+            recipient: vester1.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 0,
                 end_timestamp: 60,
@@ -112,7 +112,7 @@ fn transfer_tokens_when_half_vested() {
     // admin has 120 vesting tokens prior to initializing the contract
     assert_eq!(token_client.balance(&admin), 120);
 
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
 
     // after initialization the admin has 0 vesting tokens
     // contract has 120 vesting tokens
@@ -157,7 +157,7 @@ fn test_claim_tokens_once_then_claim_again() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            rcpt_address: vester1.clone(),
+            recipient: vester1.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 0,
                 end_timestamp: 60,
@@ -171,7 +171,7 @@ fn test_claim_tokens_once_then_claim_again() {
     // admin has 120 vesting tokens prior to initializing the contract
     assert_eq!(token_client.balance(&admin), 120);
 
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
 
     // after initialization the admin has 0 vesting tokens
     // contract has 120 vesting tokens
@@ -228,7 +228,7 @@ fn test_user_can_claim_tokens_way_after_the_testing_period() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            rcpt_address: vester1.clone(),
+            recipient: vester1.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 0,
                 end_timestamp: 60,
@@ -242,7 +242,7 @@ fn test_user_can_claim_tokens_way_after_the_testing_period() {
     // admin has 120 vesting tokens prior to initializing the contract
     assert_eq!(token_client.balance(&admin), 120);
 
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
 
     // after initialization the admin has 0 vesting tokens
     // contract has 120 vesting tokens
@@ -289,7 +289,7 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            rcpt_address: vester1.clone(),
+            recipient: vester1.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: START_TIMESTAMP,
                 end_timestamp: 60,
@@ -300,7 +300,7 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
 
     let vesting_client = instantiate_vesting_client(&env);
 
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
 
     // we set the timestamp at a time earlier than the vesting period start
     env.ledger()
@@ -334,7 +334,7 @@ fn transfer_works_with_multiple_users_and_distributions() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            rcpt_address: vester1.clone(),
+            recipient: vester1.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 0,
                 end_timestamp: 1_000,
@@ -342,7 +342,7 @@ fn transfer_works_with_multiple_users_and_distributions() {
             },
         },
         VestingBalance {
-            rcpt_address: vester2.clone(),
+            recipient: vester2.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 0,
                 end_timestamp: 500,
@@ -350,7 +350,7 @@ fn transfer_works_with_multiple_users_and_distributions() {
             },
         },
         VestingBalance {
-            rcpt_address: vester3.clone(),
+            recipient: vester3.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 125,
                 end_timestamp: 750,
@@ -358,7 +358,7 @@ fn transfer_works_with_multiple_users_and_distributions() {
             },
         },
         VestingBalance {
-            rcpt_address: vester4.clone(),
+            recipient: vester4.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 250,
                 end_timestamp: 1_500,
@@ -369,7 +369,7 @@ fn transfer_works_with_multiple_users_and_distributions() {
 
     let vesting_client = instantiate_vesting_client(&env);
 
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
 
     // vesting period for our 4 vesters is between 0 and 1_500
     // we will move timestamp 3 times by 500 units and on each withdrawal we will transfer the vested amount
@@ -458,7 +458,7 @@ fn claim_works() {
     let vesting_balances = vec![
         &env,
         VestingBalance {
-            rcpt_address: vester1.clone(),
+            recipient: vester1.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 0,
                 end_timestamp: 60,
@@ -472,7 +472,7 @@ fn claim_works() {
     // admin has 120 vesting tokens prior to initializing the contract
     assert_eq!(token_client.balance(&admin), 120);
 
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &None, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
 
     // after initialization the admin has 0 vesting tokens
     // contract has 120 vesting tokens

@@ -135,7 +135,7 @@ impl VestingTrait for Vesting {
         vesting_token: VestingTokenInfo,
         vesting_balances: Vec<VestingBalance>,
         max_vesting_complexity: u32,
-        minter_info: Option<MinterInfo>,
+        minter_info: MinterInfo,
     ) {
         admin.require_auth();
 
@@ -169,20 +169,18 @@ impl VestingTrait for Vesting {
             &(total_vested_amount as i128),
         );
 
-        if let Some(minter) = minter_info {
-            let input_curve = Curve::Constant(minter.mint_capacity);
+        let input_curve = Curve::Constant(minter_info.mint_capacity);
 
-            let capacity = input_curve.value(env.ledger().timestamp());
+        let capacity = input_curve.value(env.ledger().timestamp());
 
-            if total_vested_amount > capacity {
-                log!(
-                    &env,
-                    "Vesting: Initialize: total vested amount over the capacity"
-                );
-                panic_with_error!(env, ContractError::TotalVestedOverCapacity);
-            }
-            save_minter(&env, &minter);
+        if total_vested_amount > capacity {
+            log!(
+                &env,
+                "Vesting: Initialize: total vested amount over the capacity"
+            );
+            panic_with_error!(env, ContractError::TotalVestedOverCapacity);
         }
+        save_minter(&env, &minter_info);
 
         let token_info = VestingTokenInfo {
             name: vesting_token.name,
