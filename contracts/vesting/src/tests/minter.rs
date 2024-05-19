@@ -13,7 +13,6 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
     let token_client = deploy_token_contract(&env, &admin);
 
     let vesting_token = VestingTokenInfo {
@@ -22,17 +21,6 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
         decimals: 6,
         address: token_client.address.clone(),
     };
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1,
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
@@ -44,7 +32,6 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
     token_client.mint(&admin, &240);
 
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
-    vesting_client.create_vesting_schedules(&vesting_schedules);
 
     assert_eq!(vesting_client.query_token_info(), vesting_token);
 }
@@ -56,7 +43,6 @@ fn mint_panics_when_over_the_cap() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
 
     let token_client = deploy_token_contract(&env, &admin);
 
@@ -136,7 +122,6 @@ fn burn_should_panic_when_invalid_amount() {
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
     let token = deploy_token_contract(&env, &admin);
 
     token.mint(&admin, &1_000);
@@ -147,17 +132,6 @@ fn burn_should_panic_when_invalid_amount() {
         decimals: 6,
         address: token.address.clone(),
     };
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
 
     let vesting_client = instantiate_vesting_client(&env);
     let minter_info = MinterInfo {
@@ -165,9 +139,7 @@ fn burn_should_panic_when_invalid_amount() {
         mint_capacity: 10_000,
     };
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
-    vesting_client.create_vesting_schedules(&vesting_schedules);
-
-    vesting_client.burn(&vester1, &0);
+    vesting_client.burn(&Address::generate(&env), &0);
 }
 
 #[test]
@@ -243,7 +215,6 @@ fn mint_should_panic_when_invalid_amount() {
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
 
     let token = deploy_token_contract(&env, &admin);
     token.mint(&admin, &120);
@@ -254,28 +225,16 @@ fn mint_should_panic_when_invalid_amount() {
         decimals: 6,
         address: token.address.clone(),
     };
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
 
     let minter_info = MinterInfo {
-        address: vester1.clone(),
+        address: admin.clone(),
         mint_capacity: 500,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
-    vesting_client.create_vesting_schedules(&vesting_schedules);
 
-    vesting_client.mint(&vester1, &0);
+    vesting_client.mint(&Address::generate(&env), &0);
 }
 
 #[test]
@@ -297,17 +256,6 @@ fn mint_should_panic_when_not_authorized_to_mint() {
         decimals: 6,
         address: token.address.clone(),
     };
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
@@ -316,7 +264,6 @@ fn mint_should_panic_when_not_authorized_to_mint() {
 
     let vesting_client = instantiate_vesting_client(&env);
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
-    vesting_client.create_vesting_schedules(&vesting_schedules);
 
     vesting_client.mint(&vester1, &100);
 }
@@ -330,7 +277,6 @@ fn mint_should_panic_when_mintet_does_not_have_enough_capacity() {
 
     let admin = Address::generate(&env);
     let minter = Address::generate(&env);
-    let vester1 = Address::generate(&env);
 
     let token = deploy_token_contract(&env, &admin);
     token.mint(&admin, &120);
@@ -341,17 +287,6 @@ fn mint_should_panic_when_mintet_does_not_have_enough_capacity() {
         decimals: 6,
         address: token.address.clone(),
     };
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
 
     let minter_info = MinterInfo {
         address: minter.clone(),
@@ -360,7 +295,6 @@ fn mint_should_panic_when_mintet_does_not_have_enough_capacity() {
 
     let vesting_client = instantiate_vesting_client(&env);
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
-    vesting_client.create_vesting_schedules(&vesting_schedules);
 
     vesting_client.mint(&minter, &1_500);
 }
@@ -372,7 +306,6 @@ fn update_minter_works_correctly() {
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
     let minter = Address::generate(&env);
     let new_minter = Address::generate(&env);
 
@@ -384,17 +317,6 @@ fn update_minter_works_correctly() {
         decimals: 6,
         address: token.address.clone(),
     };
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
 
     let minter_info = MinterInfo {
         address: minter.clone(),
@@ -403,7 +325,6 @@ fn update_minter_works_correctly() {
 
     let vesting_client = instantiate_vesting_client(&env);
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info.clone());
-    vesting_client.create_vesting_schedules(&vesting_schedules);
 
     assert_eq!(vesting_client.query_minter(), minter_info);
 
@@ -428,7 +349,6 @@ fn update_minter_fails_when_not_authorized() {
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
     let new_minter = Address::generate(&env);
 
     let token = deploy_token_contract(&env, &admin);
@@ -440,17 +360,6 @@ fn update_minter_fails_when_not_authorized() {
         decimals: 6,
         address: token.address.clone(),
     };
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
 
     let minter_info = MinterInfo {
         address: Address::generate(&env),
@@ -459,7 +368,6 @@ fn update_minter_fails_when_not_authorized() {
 
     let vesting_client = instantiate_vesting_client(&env);
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info.clone());
-    vesting_client.create_vesting_schedules(&vesting_schedules);
 
     let new_minter_info = MinterInfo {
         address: new_minter.clone(),
@@ -476,7 +384,6 @@ fn update_minter_capacity_when_replacing_old_capacity() {
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
     let minter = Address::generate(&env);
 
     let token = deploy_token_contract(&env, &admin);
@@ -489,18 +396,6 @@ fn update_minter_capacity_when_replacing_old_capacity() {
         address: token.address.clone(),
     };
 
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
-
     let minter_info = MinterInfo {
         address: minter.clone(),
         mint_capacity: 50_000,
@@ -508,7 +403,6 @@ fn update_minter_capacity_when_replacing_old_capacity() {
 
     let vesting_client = instantiate_vesting_client(&env);
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info.clone());
-    vesting_client.create_vesting_schedules(&vesting_schedules);
 
     let new_minter_capacity = 1_000;
     vesting_client.update_minter_capacity(&admin, &new_minter_capacity);
@@ -529,7 +423,6 @@ fn updating_minter_capacity_without_auth() {
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
     let minter = Address::generate(&env);
 
     let token = deploy_token_contract(&env, &admin);
@@ -542,18 +435,6 @@ fn updating_minter_capacity_without_auth() {
         address: token.address.clone(),
     };
 
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
-
     let minter_info = MinterInfo {
         address: minter,
         mint_capacity: 50_000,
@@ -561,7 +442,6 @@ fn updating_minter_capacity_without_auth() {
 
     let vesting_client = instantiate_vesting_client(&env);
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info.clone());
-    vesting_client.create_vesting_schedules(&vesting_schedules);
 
     vesting_client.update_minter_capacity(&Address::generate(&env), &1_000);
 }
@@ -574,7 +454,6 @@ fn burning_more_than_balance() {
     env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
-    let vester1 = Address::generate(&env);
 
     let token = deploy_token_contract(&env, &admin);
     token.mint(&admin, &120);
@@ -586,28 +465,13 @@ fn burning_more_than_balance() {
         address: token.address.clone(),
     };
 
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
-
     let vesting_client = instantiate_vesting_client(&env);
     let minter_info = MinterInfo {
         address: Address::generate(&env),
         mint_capacity: 1_000,
     };
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
-    vesting_client.create_vesting_schedules(&vesting_schedules);
 
-    // vester1 has 0 tokens
-    assert_eq!(token.balance(&vester1), 0);
     // vester1 tries to burn 121 tokens
-    vesting_client.burn(&vester1, &121);
+    vesting_client.burn(&Address::generate(&env), &121);
 }
