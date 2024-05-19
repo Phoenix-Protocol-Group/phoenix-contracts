@@ -1,7 +1,7 @@
 use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 use crate::{
-    storage::{DistributionInfo, VestingBalance, VestingTokenInfo},
+    storage::{DistributionInfo, VestingSchedule, VestingTokenInfo},
     tests::setup::{deploy_token_contract, instantiate_vesting_client},
 };
 
@@ -22,9 +22,9 @@ fn instantiate_contract_successfully() {
         decimals: 6,
         address: token_client.address.clone(),
     };
-    let vesting_balances = vec![
+    let vesting_schedules = vec![
         &env,
-        VestingBalance {
+        VestingSchedule {
             recipient: vester1.clone(),
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -32,7 +32,7 @@ fn instantiate_contract_successfully() {
                 amount: 120,
             },
         },
-        VestingBalance {
+        VestingSchedule {
             recipient: vester2,
             distribution_info: DistributionInfo {
                 start_timestamp: 30,
@@ -44,12 +44,13 @@ fn instantiate_contract_successfully() {
 
     let vesting_client = instantiate_vesting_client(&env);
     token_client.mint(&admin, &480);
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
+    vesting_client.create_vesting_schedules(&vesting_schedules);
 
     assert_eq!(vesting_client.query_token_info(), vesting_token);
     assert_eq!(
         vesting_client.query_distribution_info(&vester1),
-        vesting_balances.get(0).unwrap().distribution_info
+        vesting_schedules.get(0).unwrap().distribution_info
     );
 }
 
@@ -68,12 +69,13 @@ fn instantiate_contract_without_any_vesting_balances_should_fail() {
         decimals: 6,
         address: token_client.address.clone(),
     };
-    let vesting_balances = vec![&env];
+    let vesting_schedules = vec![&env];
 
     let vesting_client = instantiate_vesting_client(&env);
 
     token_client.mint(&admin, &100);
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
+    vesting_client.create_vesting_schedules(&vesting_schedules);
 }
 
 #[should_panic(
@@ -95,9 +97,9 @@ fn instantiate_contract_should_panic_when_admin_has_no_tokens_to_fund() {
         decimals: 6,
         address: token_client.address.clone(),
     };
-    let vesting_balances = vec![
+    let vesting_schedules = vec![
         &env,
-        VestingBalance {
+        VestingSchedule {
             recipient: vester1,
             distribution_info: DistributionInfo {
                 start_timestamp: 15,
@@ -109,5 +111,6 @@ fn instantiate_contract_should_panic_when_admin_has_no_tokens_to_fund() {
 
     let vesting_client = instantiate_vesting_client(&env);
 
-    vesting_client.initialize(&admin, &vesting_token, &vesting_balances, &10u32);
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
+    vesting_client.create_vesting_schedules(&vesting_schedules);
 }
