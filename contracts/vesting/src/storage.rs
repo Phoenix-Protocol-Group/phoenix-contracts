@@ -1,6 +1,6 @@
 use curve::{Curve, SaturatingLinear};
 use soroban_sdk::{
-    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
+    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val, Vec
 };
 
 use crate::error::ContractError;
@@ -37,19 +37,27 @@ pub struct VestingTokenInfo {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingInfo {
     pub balance: u128, // This is the value that we will update during claim msgs
-    pub distribution_info: DistributionInfo,
+    pub schedule: VestingSchedule,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Step {
+    time: u64,
+    value: u128,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingSchedule {
     pub recipient: Address,
-    pub distribution_info: DistributionInfo,
+    pub piecewise_linear: Option<Vec<Step>>,
+    pub saturating_linear: Option<PiecewiseLinear>,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DistributionInfo {
+pub struct PiecewiseLinear {
     pub start_timestamp: u64,
     pub end_timestamp: u64,
     pub amount: u128, // this is fine. this will be constant for historical data checking
