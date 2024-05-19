@@ -137,7 +137,7 @@ pub fn get_token_info(env: &Env) -> VestingTokenInfo {
 
 pub fn save_max_vesting_complexity(env: &Env, max_vesting_complexity: &u32) {
     env.storage()
-        .persistent()
+        .instance()
         .set(&DataKey::MaxVestingComplexity, max_vesting_complexity);
 }
 
