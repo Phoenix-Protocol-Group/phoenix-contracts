@@ -131,7 +131,7 @@ impl VestingTrait for Vesting {
         if vesting_schedules.is_empty() {
             log!(
                 &env,
-                "Vesting: Initialize: At least one vesting schedule must be provided."
+                "Vesting: Create vesting account: At least one vesting schedule must be provided."
             );
             panic_with_error!(env, ContractError::MissingBalance);
         }
@@ -177,7 +177,7 @@ impl VestingTrait for Vesting {
         if token_client.balance(&admin) < total_vested_amount as i128 {
             log!(
                 &env,
-                "Vesting: Initialize: Admin does not have enough tokens to start the vesting schedule"
+                "Vesting: Create vesting account: Admin does not have enough tokens to start the vesting schedule"
             );
             panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
         }

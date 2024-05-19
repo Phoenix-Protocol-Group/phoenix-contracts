@@ -54,7 +54,9 @@ fn instantiate_contract_successfully() {
     );
 }
 
-#[should_panic(expected = "Vesting: Initialize: At least one vesting schedule must be provided.")]
+#[should_panic(
+    expected = "Vesting: Create vesting account: At least one vesting schedule must be provided."
+)]
 #[test]
 fn instantiate_contract_without_any_vesting_balances_should_fail() {
     let env = Env::default();
@@ -79,10 +81,10 @@ fn instantiate_contract_without_any_vesting_balances_should_fail() {
 }
 
 #[should_panic(
-    expected = "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
+    expected = "Vesting: Create vesting account: Admin does not have enough tokens to start the vesting schedule"
 )]
 #[test]
-fn instantiate_contract_should_panic_when_admin_has_no_tokens_to_fund() {
+fn create_schedule_panics_when_admin_has_no_tokens_to_fund() {
     let env = Env::default();
     env.mock_all_auths();
 

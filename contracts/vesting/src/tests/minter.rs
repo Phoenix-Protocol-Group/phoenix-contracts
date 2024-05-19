@@ -49,9 +49,9 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
     assert_eq!(vesting_client.query_token_info(), vesting_token);
 }
 
-#[should_panic(expected = "Vesting: Initialize: total vested amount over the capacity")]
+#[should_panic(expected = "Vesting: Mint: Minter does not have enough capacity to mint")]
 #[test]
-fn instantiate_contract_should_panic_when_supply_over_the_cap() {
+fn mint_panics_when_over_the_cap() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -66,28 +66,17 @@ fn instantiate_contract_should_panic_when_supply_over_the_cap() {
         decimals: 6,
         address: token_client.address.clone(),
     };
-    let vesting_schedules = vec![
-        &env,
-        VestingSchedule {
-            recipient: vester1,
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
-        },
-    ];
 
+    let minter = Address::generate(&env);
     let minter_info = MinterInfo {
-        address: Address::generate(&env),
+        address: minter.clone(),
         mint_capacity: 100,
     };
 
     let vesting_client = instantiate_vesting_client(&env);
-    token_client.mint(&admin, &1_000);
 
     vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
-    vesting_client.create_vesting_schedules(&vesting_schedules);
+    vesting_client.mint(&minter, &110i128);
 }
 
 #[test]
