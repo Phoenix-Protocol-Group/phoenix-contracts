@@ -1,84 +1,22 @@
 use curve::Curve;
 use soroban_sdk::{log, panic_with_error, Address, Env, Vec};
 
-use crate::{
-    error::ContractError,
-    storage::{
-        get_max_vesting_complexity, get_vesting, save_vesting, VestingInfo, VestingSchedule,
-    },
-};
+use crate::{error::ContractError, storage::VestingSchedule};
 
-pub fn verify_vesting_and_update_balances(env: &Env, sender: &Address, amount: u128) {
-    let vesting_info = get_vesting(env, sender);
-    let vested = vesting_info
-        .distribution_info
-        .get_curve()
-        .value(env.ledger().timestamp());
-
-    let sender_balance = vesting_info.balance;
-    let sender_liquid = sender_balance // this checks if we can withdraw any vesting
-        .checked_sub(vested)
-        .unwrap_or_else(|| panic_with_error!(env, ContractError::NotEnoughBalance));
-
-    if sender_liquid < amount {
-        log!(
-            &env,
-            "Vesting: Verify Vesting Update Balances: Remaining amount must be at least equal to vested amount"
-        );
-        panic_with_error!(env, ContractError::CantMoveVestingTokens);
-    }
-
-    save_vesting(
-        env,
-        sender,
-        &VestingInfo {
-            balance: sender_balance - amount,
-            distribution_info: vesting_info.distribution_info,
-        },
-    );
-}
-
-pub fn create_vesting_accounts(env: &Env, vesting_accounts: Vec<VestingSchedule>) -> u128 {
-    validate_accounts(env, vesting_accounts.clone());
-    let max_vesting_complexity = get_max_vesting_complexity(env);
-
-    let mut total_vested_amount = 0;
-
-    vesting_accounts.into_iter().for_each(|vb| {
-        assert_schedule_vests_amount(
-            env,
-            &vb.distribution_info.get_curve(),
-            vb.distribution_info.amount,
-        )
-        .expect("Invalid curve and amount");
-
-        if max_vesting_complexity <= vb.distribution_info.get_curve().size() {
-            log!(
-                &env,
-                "Vesting: Create vesting account: Invalid curve complexity for {}",
-                vb.recipient
-            );
-            panic_with_error!(env, ContractError::VestingComplexityTooHigh);
+pub fn check_duplications(env: &Env, accounts: Vec<VestingSchedule>) {
+    let mut addresses: Vec<Address> = Vec::new(env);
+    for account in accounts.iter() {
+        if addresses.contains(&account.recipient) {
+            log!(&env, "Vesting: Initialize: Duplicate addresses found");
+            panic_with_error!(env, ContractError::DuplicateInitialBalanceAddresses);
         }
-
-        save_vesting(
-            env,
-            &vb.recipient,
-            &VestingInfo {
-                balance: vb.distribution_info.amount,
-                distribution_info: vb.distribution_info.clone(),
-            },
-        );
-
-        total_vested_amount += vb.distribution_info.amount;
-    });
-
-    total_vested_amount
+        addresses.push_back(account.recipient.clone());
+    }
 }
 
 /// Asserts the vesting schedule decreases to 0 eventually, and is never more than the
 /// amount being sent. If it doesn't match these conditions, returns an error.
-pub fn assert_schedule_vests_amount(
+pub fn validate_vesting_schedule(
     env: &Env,
     schedule: &Curve,
     amount: u128,
@@ -102,17 +40,6 @@ pub fn assert_schedule_vests_amount(
     }
 }
 
-fn validate_accounts(env: &Env, accounts: Vec<VestingSchedule>) {
-    let mut addresses: Vec<Address> = Vec::new(env);
-    for account in accounts.iter() {
-        if addresses.contains(&account.recipient) {
-            log!(&env, "Vesting: Initialize: Duplicate addresses found");
-            panic_with_error!(env, ContractError::DuplicateInitialBalanceAddresses);
-        }
-        addresses.push_back(account.recipient.clone());
-    }
-}
-
 #[cfg(test)]
 mod test {
     use curve::SaturatingLinear;
@@ -124,7 +51,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn validate_accounts_works() {
+    fn check_duplications_works() {
         let env = Env::default();
         let address1 = Address::generate(&env);
         let address2 = Address::generate(&env);
@@ -159,12 +86,12 @@ mod test {
         ];
 
         // not panicking should be enough to pass the test
-        validate_accounts(&env, accounts);
+        check_duplications(&env, accounts);
     }
 
     #[test]
     #[should_panic(expected = "Vesting: Initialize: Duplicate addresses found")]
-    fn validate_accounts_should_panic() {
+    fn check_duplications_should_panic() {
         let env = Env::default();
         let duplicate_address = Address::generate(&env);
         let accounts = vec![
@@ -195,11 +122,11 @@ mod test {
             },
         ];
 
-        validate_accounts(&env, accounts);
+        check_duplications(&env, accounts);
     }
 
     #[test]
-    fn assert_schedule_vests_amount_works() {
+    fn validate_vesting_schedule_works() {
         let env = Env::default();
         let curve = Curve::SaturatingLinear(SaturatingLinear {
             min_x: 15,
@@ -208,12 +135,12 @@ mod test {
             max_y: 0,
         });
 
-        assert_eq!(assert_schedule_vests_amount(&env, &curve, 121), Ok(()));
+        assert_eq!(validate_vesting_schedule(&env, &curve, 121), Ok(()));
     }
 
     #[test]
     #[should_panic(expected = "Vesting: Transfer Vesting: Cannot transfer when non-fully vested")]
-    fn assert_schedule_vests_amount_fails_when_low_not_zero() {
+    fn validate_vesting_schedule_fails_when_low_not_zero() {
         const MIN_NOT_ZERO: u128 = 1;
         let env = Env::default();
         let curve = Curve::SaturatingLinear(SaturatingLinear {
@@ -223,14 +150,14 @@ mod test {
             max_y: MIN_NOT_ZERO,
         });
 
-        assert_schedule_vests_amount(&env, &curve, 1_000).unwrap();
+        validate_vesting_schedule(&env, &curve, 1_000).unwrap();
     }
 
     #[test]
     #[should_panic(
         expected = "Vesting: Assert Schedule Vest Amount: Vesting amount more than sent"
     )]
-    fn assert_schedule_vests_amount_fails_when_high_bigger_than_amount() {
+    fn validate_vesting_schedule_fails_when_high_bigger_than_amount() {
         const HIGH: u128 = 2;
         const AMOUNT: u128 = 1;
         let env = Env::default();
@@ -241,6 +168,6 @@ mod test {
             max_y: 0,
         });
 
-        assert_schedule_vests_amount(&env, &curve, AMOUNT).unwrap();
+        validate_vesting_schedule(&env, &curve, AMOUNT).unwrap();
     }
 }

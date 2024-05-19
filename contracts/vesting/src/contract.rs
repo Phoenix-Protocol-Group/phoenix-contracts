@@ -7,11 +7,14 @@ use crate::storage::{
 };
 #[cfg(feature = "minter")]
 use crate::storage::{get_minter, save_minter, MinterInfo};
-use crate::utils::{create_vesting_accounts, verify_vesting_and_update_balances};
 use crate::{
     error::ContractError,
-    storage::{get_vesting, save_admin, VestingSchedule, VestingTokenInfo},
+    storage::{
+        get_max_vesting_complexity, get_vesting, save_admin, save_vesting, VestingInfo,
+        VestingSchedule, VestingTokenInfo,
+    },
     token_contract,
+    utils::{check_duplications, validate_vesting_schedule},
 };
 
 // Metadata that is added on to the WASM custom section
@@ -133,10 +136,42 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::MissingBalance);
         }
 
-        let total_vested_amount = create_vesting_accounts(&env, vesting_schedules);
-        let vesting_token = get_token_info(&env);
+        check_duplications(&env, vesting_schedules.clone());
+        let max_vesting_complexity = get_max_vesting_complexity(&env);
+
+        let mut total_vested_amount = 0;
+
+        vesting_schedules.into_iter().for_each(|vb| {
+            validate_vesting_schedule(
+                &env,
+                &vb.distribution_info.get_curve(),
+                vb.distribution_info.amount,
+            )
+            .expect("Invalid curve and amount");
+
+            if max_vesting_complexity <= vb.distribution_info.get_curve().size() {
+                log!(
+                    &env,
+                    "Vesting: Create vesting account: Invalid curve complexity for {}",
+                    vb.recipient
+                );
+                panic_with_error!(env, ContractError::VestingComplexityTooHigh);
+            }
+
+            save_vesting(
+                &env,
+                &vb.recipient,
+                &VestingInfo {
+                    balance: vb.distribution_info.amount,
+                    distribution_info: vb.distribution_info.clone(),
+                },
+            );
+
+            total_vested_amount += vb.distribution_info.amount;
+        });
 
         // check if the admin has enough tokens to start the vesting contract
+        let vesting_token = get_token_info(&env);
         let token_client = token_contract::Client::new(&env, &vesting_token.address);
 
         if token_client.balance(&admin) < total_vested_amount as i128 {
@@ -166,7 +201,33 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        verify_vesting_and_update_balances(&env, &sender, available_to_claim as u128);
+        let vesting_info = get_vesting(&env, &sender);
+        let vested = vesting_info
+            .distribution_info
+            .get_curve()
+            .value(env.ledger().timestamp());
+
+        let sender_balance = vesting_info.balance;
+        let sender_liquid = sender_balance // this checks if we can withdraw any vesting
+            .checked_sub(vested)
+            .unwrap_or_else(|| panic_with_error!(env, ContractError::NotEnoughBalance));
+
+        if sender_liquid < available_to_claim as u128 {
+            log!(
+            &env,
+            "Vesting: Verify Vesting Update Balances: Remaining amount must be at least equal to vested amount"
+        );
+            panic_with_error!(env, ContractError::CantMoveVestingTokens);
+        }
+
+        save_vesting(
+            &env,
+            &sender,
+            &VestingInfo {
+                balance: sender_balance - available_to_claim as u128,
+                distribution_info: vesting_info.distribution_info,
+            },
+        );
 
         token_client.transfer(
             &env.current_contract_address(),
