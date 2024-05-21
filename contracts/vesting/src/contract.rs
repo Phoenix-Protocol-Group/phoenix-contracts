@@ -7,9 +7,9 @@ use crate::storage::{get_minter, save_minter, MinterInfo};
 use crate::{
     error::ContractError,
     storage::{
-        get_admin, get_max_vesting_complexity, get_token_info, get_vesting, save_admin,
-        save_max_vesting_complexity, save_token_info, save_vesting, VestingInfo, VestingSchedule,
-        VestingTokenInfo,
+        get_admin, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
+        save_admin, save_max_vesting_complexity, save_token_info, save_vesting, VestingInfo,
+        VestingSchedule, VestingTokenInfo,
     },
     token_contract,
     utils::{check_duplications, validate_vesting_schedule},
@@ -33,19 +33,21 @@ pub trait VestingTrait {
 
     fn create_vesting_schedules(env: Env, vesting_accounts: Vec<VestingSchedule>);
 
-    fn claim(env: Env, sender: Address);
+    fn claim(env: Env, sender: Address, index: u64);
 
     fn update(env: Env, new_wash_hash: BytesN<32>);
 
     fn query_balance(env: Env, address: Address) -> i128;
 
-    fn query_vesting_info(env: Env, address: Address) -> VestingInfo;
+    fn query_vesting_info(env: Env, address: Address, index: u64) -> VestingInfo;
+
+    fn query_all_vesting_info(env: Env, address: Address) -> Vec<VestingInfo>;
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
     fn query_vesting_contract_balance(env: Env) -> i128;
 
-    fn query_available_to_claim(env: Env, address: Address) -> i128;
+    fn query_available_to_claim(env: Env, address: Address, index: u64) -> i128;
 
     #[cfg(feature = "minter")]
     fn initialize_with_minter(
@@ -184,10 +186,10 @@ impl VestingTrait for Vesting {
         );
     }
 
-    fn claim(env: Env, sender: Address) {
+    fn claim(env: Env, sender: Address, index: u64) {
         sender.require_auth();
 
-        let available_to_claim = Self::query_available_to_claim(env.clone(), sender.clone());
+        let available_to_claim = Self::query_available_to_claim(env.clone(), sender.clone(), index);
 
         if available_to_claim <= 0 {
             log!(&env, "Vesting: Claim: No tokens available to claim");
@@ -196,7 +198,7 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        let vesting_info = get_vesting(&env, &sender);
+        let vesting_info = get_vesting(&env, &sender, index);
         let vested = vesting_info.schedule.value(env.ledger().timestamp());
 
         let sender_balance = vesting_info.balance;
@@ -364,8 +366,12 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
-    fn query_vesting_info(env: Env, address: Address) -> VestingInfo {
-        get_vesting(&env, &address)
+    fn query_vesting_info(env: Env, address: Address, index: u64) -> VestingInfo {
+        get_vesting(&env, &address, index)
+    }
+
+    fn query_all_vesting_info(env: Env, address: Address) -> Vec<VestingInfo> {
+        get_all_vestings(&env, &address)
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {
@@ -387,8 +393,8 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &token_address).balance(&env.current_contract_address())
     }
 
-    fn query_available_to_claim(env: Env, address: Address) -> i128 {
-        let vesting_info = get_vesting(&env, &address);
+    fn query_available_to_claim(env: Env, address: Address, index: u64) -> i128 {
+        let vesting_info = get_vesting(&env, &address, index);
         let vested = vesting_info.schedule.value(env.ledger().timestamp());
 
         let sender_balance = vesting_info.balance;

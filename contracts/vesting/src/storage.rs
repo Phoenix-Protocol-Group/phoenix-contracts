@@ -1,6 +1,7 @@
 use curve::Curve;
 use soroban_sdk::{
-    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
+    contracttype, log, panic_with_error, vec, Address, ConversionError, Env, String, TryFromVal,
+    Val, Vec,
 };
 
 use crate::error::ContractError;
@@ -80,15 +81,62 @@ pub fn get_admin(env: &Env) -> Address {
         })
 }
 
-pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
-    env.storage().persistent().set(address, vesting_info);
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingInfoKey {
+    pub recipient: Address,
+    pub index: u64,
 }
 
-pub fn get_vesting(env: &Env, address: &Address) -> VestingInfo {
-    env.storage().persistent().get(address).unwrap_or_else(|| {
+pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
+    let mut index = 0u64;
+    let mut vesting_key = VestingInfoKey {
+        recipient: address.clone(),
+        index,
+    };
+
+    // Find the next available index
+    while env.storage().persistent().has(&vesting_key) {
+        index += 1;
+        vesting_key = VestingInfoKey {
+            recipient: address.clone(),
+            index,
+        };
+    }
+
+    env.storage().persistent().set(&vesting_key, vesting_info);
+}
+
+pub fn get_vesting(env: &Env, recipient: &Address, index: u64) -> VestingInfo {
+    let vesting_key = VestingInfoKey {
+        recipient: recipient.clone(),
+        index,
+    };
+    env.storage().persistent().get(&vesting_key).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
     })
+}
+
+pub fn get_all_vestings(env: &Env, address: &Address) -> Vec<VestingInfo> {
+    let mut vestings = vec![&env];
+    let mut index = 0u64;
+
+    loop {
+        let vesting_key = VestingInfoKey {
+            recipient: address.clone(),
+            index,
+        };
+
+        if let Some(vesting_info) = env.storage().persistent().get(&vesting_key) {
+            vestings.push_back(vesting_info);
+            index += 1;
+        } else {
+            break;
+        }
+    }
+
+    vestings
 }
 
 #[cfg(feature = "minter")]
