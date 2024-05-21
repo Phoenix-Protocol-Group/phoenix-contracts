@@ -1,5 +1,5 @@
 use crate::{
-    storage::{VestingSchedule, VestingTokenInfo},
+    storage::{VestingInfo, VestingSchedule, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,
 };
 use curve::{Curve, PiecewiseLinear, SaturatingLinear, Step};
@@ -652,6 +652,43 @@ fn claim_tokens_from_two_distributions() {
     ];
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
+    assert_eq!(
+        vesting_client.query_all_vesting_info(&vester1),
+        vec![
+            &env,
+            VestingInfo {
+                recipient: vester1.clone(),
+                balance: 750, // balance is deducted because it was already once claimed
+                schedule: Curve::SaturatingLinear(SaturatingLinear {
+                    min_x: 0,
+                    min_y: 1_500,
+                    max_x: 100,
+                    max_y: 0,
+                })
+            },
+            VestingInfo {
+                recipient: vester1.clone(),
+                balance: 500,
+                schedule: Curve::PiecewiseLinear(PiecewiseLinear {
+                    steps: vec![
+                        &env,
+                        Step {
+                            time: 50,
+                            value: 500,
+                        },
+                        Step {
+                            time: 100,
+                            value: 250,
+                        },
+                        Step {
+                            time: 150,
+                            value: 0,
+                        },
+                    ],
+                })
+            }
+        ]
+    );
     // we move time to the half of the vesting period
     env.ledger().with_mut(|li| li.timestamp = 100);
 
