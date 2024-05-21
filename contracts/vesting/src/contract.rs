@@ -8,8 +8,8 @@ use crate::{
     error::ContractError,
     storage::{
         get_admin, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
-        save_admin, save_max_vesting_complexity, save_token_info, save_vesting, VestingInfo,
-        VestingSchedule, VestingTokenInfo,
+        save_admin, save_max_vesting_complexity, save_token_info, save_vesting, update_vesting,
+        VestingInfo, VestingSchedule, VestingTokenInfo,
     },
     token_contract,
     utils::{check_duplications, validate_vesting_schedule},
@@ -214,11 +214,12 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::CantMoveVestingTokens);
         }
 
-        save_vesting(
+        update_vesting(
             &env,
             &sender,
+            index,
             &VestingInfo {
-                balance: sender_balance - available_to_claim as u128,
+                balance: (sender_balance - available_to_claim as u128),
                 ..vesting_info
             },
         );
@@ -395,14 +396,8 @@ impl VestingTrait for Vesting {
 
     fn query_available_to_claim(env: Env, address: Address, index: u64) -> i128 {
         let vesting_info = get_vesting(&env, &address, index);
-        let vested = vesting_info.schedule.value(env.ledger().timestamp());
 
-        let sender_balance = vesting_info.balance;
-        let sender_liquid = sender_balance
-            .checked_sub(vested)
-            .unwrap_or_else(|| panic_with_error!(env, ContractError::NotEnoughBalance));
-
-        sender_liquid as i128
+        (vesting_info.balance - vesting_info.schedule.value(env.ledger().timestamp())) as i128
     }
 
     fn update(env: Env, new_wasm_hash: BytesN<32>) {

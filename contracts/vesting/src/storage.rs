@@ -107,6 +107,14 @@ pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
     env.storage().persistent().set(&vesting_key, vesting_info);
 }
 
+pub fn update_vesting(env: &Env, address: &Address, index: u64, vesting_info: &VestingInfo) {
+    let vesting_key = VestingInfoKey {
+        recipient: address.clone(),
+        index,
+    };
+    env.storage().persistent().set(&vesting_key, vesting_info);
+}
+
 pub fn get_vesting(env: &Env, recipient: &Address, index: u64) -> VestingInfo {
     let vesting_key = VestingInfoKey {
         recipient: recipient.clone(),
