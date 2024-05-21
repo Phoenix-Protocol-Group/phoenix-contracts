@@ -33,18 +33,22 @@ pub struct VestingTokenInfo {
     pub address: Address,
 }
 
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VestingInfo {
-    pub balance: u128, // This is the value that we will update during claim msgs
-    pub schedule: VestingSchedule,
-}
-
+// This structure is used as an argument during the vesting account creation
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingSchedule {
     pub recipient: Address,
     pub curve: Curve,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingInfo {
+    // the total amount of tokens left to be distributed
+    // it's updated during each claim
+    pub balance: u128,
+    pub recipient: Address,
+    pub schedule: Curve,
 }
 
 #[cfg(feature = "minter")]

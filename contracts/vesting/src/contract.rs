@@ -39,7 +39,7 @@ pub trait VestingTrait {
 
     fn query_balance(env: Env, address: Address) -> i128;
 
-    fn query_vesting_info(env: Env, address: Address) -> VestingSchedule;
+    fn query_vesting_info(env: Env, address: Address) -> VestingInfo;
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
@@ -154,10 +154,11 @@ impl VestingTrait for Vesting {
 
             save_vesting(
                 &env,
-                &vesting_schedule.recipient,
+                &vesting_schedule.recipient.clone(),
                 &VestingInfo {
                     balance: vested_amount,
-                    schedule: vesting_schedule.clone(),
+                    recipient: vesting_schedule.recipient,
+                    schedule: vesting_schedule.curve.clone(),
                 },
             );
 
@@ -196,7 +197,7 @@ impl VestingTrait for Vesting {
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
         let vesting_info = get_vesting(&env, &sender);
-        let vested = vesting_info.schedule.curve.value(env.ledger().timestamp());
+        let vested = vesting_info.schedule.value(env.ledger().timestamp());
 
         let sender_balance = vesting_info.balance;
         let sender_liquid = sender_balance // this checks if we can withdraw any vesting
@@ -216,7 +217,7 @@ impl VestingTrait for Vesting {
             &sender,
             &VestingInfo {
                 balance: sender_balance - available_to_claim as u128,
-                schedule: vesting_info.schedule,
+                ..vesting_info
             },
         );
 
@@ -363,8 +364,8 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
-    fn query_vesting_info(env: Env, address: Address) -> VestingSchedule {
-        get_vesting(&env, &address).schedule
+    fn query_vesting_info(env: Env, address: Address) -> VestingInfo {
+        get_vesting(&env, &address)
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {
@@ -388,7 +389,7 @@ impl VestingTrait for Vesting {
 
     fn query_available_to_claim(env: Env, address: Address) -> i128 {
         let vesting_info = get_vesting(&env, &address);
-        let vested = vesting_info.schedule.curve.value(env.ledger().timestamp());
+        let vested = vesting_info.schedule.value(env.ledger().timestamp());
 
         let sender_balance = vesting_info.balance;
         let sender_liquid = sender_balance
