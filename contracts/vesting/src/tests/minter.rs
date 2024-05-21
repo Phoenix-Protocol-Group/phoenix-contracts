@@ -3,7 +3,8 @@ use soroban_sdk::{
     vec, Address, Env, String,
 };
 
-use crate::storage::{DistributionInfo, MinterInfo, VestingSchedule, VestingTokenInfo};
+use crate::storage::{MinterInfo, VestingSchedule, VestingTokenInfo};
+use curve::{Curve, SaturatingLinear};
 
 use super::setup::{deploy_token_contract, instantiate_vesting_client};
 
@@ -87,11 +88,12 @@ fn burn_works() {
         &env,
         VestingSchedule {
             recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 15,
+                min_y: 120,
+                max_x: 60,
+                max_y: 0,
+            }),
         },
     ];
 
@@ -106,7 +108,7 @@ fn burn_works() {
     env.ledger().with_mut(|li| li.timestamp = 100);
     assert_eq!(vesting_client.query_vesting_contract_balance(), 120);
 
-    vesting_client.claim(&vester1);
+    vesting_client.claim(&vester1, &0);
     assert_eq!(vesting_client.query_vesting_contract_balance(), 0);
     assert_eq!(token.balance(&vester1), 120);
 
@@ -165,11 +167,12 @@ fn mint_works() {
         &env,
         VestingSchedule {
             recipient: vester1.clone(),
-            distribution_info: DistributionInfo {
-                start_timestamp: 15,
-                end_timestamp: 60,
-                amount: 120,
-            },
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 15,
+                min_y: 120,
+                max_x: 60,
+                max_y: 0,
+            }),
         },
     ];
 
@@ -192,7 +195,7 @@ fn mint_works() {
 
     // user withdraws 120 tokens
     env.ledger().with_mut(|li| li.timestamp = 100);
-    vesting_client.claim(&vester1);
+    vesting_client.claim(&vester1, &0);
     assert_eq!(token.balance(&vester1), 120);
     assert_eq!(vesting_client.query_vesting_contract_balance(), 0);
 
