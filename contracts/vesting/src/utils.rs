@@ -57,11 +57,9 @@ pub fn validate_vesting_schedule(env: &Env, schedule: &Curve) -> Result<u128, Co
 
 #[cfg(test)]
 mod test {
-    use curve::SaturatingLinear;
+    use curve::{PiecewiseLinear, SaturatingLinear, Step};
     use soroban_sdk::testutils::Address as _;
     use soroban_sdk::vec;
-
-    use crate::storage::DistributionInfo;
 
     use super::*;
 
@@ -76,27 +74,15 @@ mod test {
             &env,
             VestingSchedule {
                 recipient: address1.clone(),
-                distribution_info: DistributionInfo {
-                    start_timestamp: 15,
-                    end_timestamp: 60,
-                    amount: 120,
-                },
+                curve: Curve::Constant(1),
             },
             VestingSchedule {
                 recipient: address2.clone(),
-                distribution_info: DistributionInfo {
-                    start_timestamp: 15,
-                    end_timestamp: 60,
-                    amount: 120,
-                },
+                curve: Curve::Constant(1),
             },
             VestingSchedule {
                 recipient: address3.clone(),
-                distribution_info: DistributionInfo {
-                    start_timestamp: 15,
-                    end_timestamp: 60,
-                    amount: 120,
-                },
+                curve: Curve::Constant(1),
             },
         ];
 
@@ -113,27 +99,15 @@ mod test {
             &env,
             VestingSchedule {
                 recipient: duplicate_address.clone(),
-                distribution_info: DistributionInfo {
-                    start_timestamp: 15,
-                    end_timestamp: 60,
-                    amount: 120,
-                },
-            },
-            VestingSchedule {
-                recipient: duplicate_address,
-                distribution_info: DistributionInfo {
-                    start_timestamp: 15,
-                    end_timestamp: 60,
-                    amount: 120,
-                },
+                curve: Curve::Constant(1),
             },
             VestingSchedule {
                 recipient: Address::generate(&env),
-                distribution_info: DistributionInfo {
-                    start_timestamp: 15,
-                    end_timestamp: 60,
-                    amount: 120,
-                },
+                curve: Curve::Constant(1),
+            },
+            VestingSchedule {
+                recipient: duplicate_address,
+                curve: Curve::Constant(1),
             },
         ];
 
@@ -141,7 +115,7 @@ mod test {
     }
 
     #[test]
-    fn validate_vesting_schedule_works() {
+    fn validate_saturating_linear_vesting() {
         let env = Env::default();
         let curve = Curve::SaturatingLinear(SaturatingLinear {
             min_x: 15,
@@ -150,39 +124,61 @@ mod test {
             max_y: 0,
         });
 
-        assert_eq!(validate_vesting_schedule(&env, &curve, 121), Ok(()));
+        assert_eq!(validate_vesting_schedule(&env, &curve), Ok(120));
+    }
+
+    #[test]
+    fn validate_piecewise_linear_vesting() {
+        let env = Env::default();
+        let curve = Curve::PiecewiseLinear(PiecewiseLinear {
+            steps: vec![
+                &env,
+                Step {
+                    time: 60,
+                    value: 120,
+                },
+                Step {
+                    time: 120,
+                    value: 0,
+                },
+            ],
+        });
+
+        assert_eq!(validate_vesting_schedule(&env, &curve), Ok(120));
     }
 
     #[test]
     #[should_panic(expected = "Vesting: Transfer Vesting: Cannot transfer when non-fully vested")]
-    fn validate_vesting_schedule_fails_when_low_not_zero() {
-        const MIN_NOT_ZERO: u128 = 1;
+    fn saturating_linear_schedule_fails_when_not_fully_vested() {
         let env = Env::default();
         let curve = Curve::SaturatingLinear(SaturatingLinear {
             min_x: 15,
             min_y: 120,
             max_x: 60,
-            max_y: MIN_NOT_ZERO,
+            max_y: 1, // leave 1 token at the end
         });
 
-        validate_vesting_schedule(&env, &curve, 1_000).unwrap();
+        validate_vesting_schedule(&env, &curve).unwrap();
     }
 
     #[test]
-    #[should_panic(
-        expected = "Vesting: Assert Schedule Vest Amount: Vesting amount more than sent"
-    )]
-    fn validate_vesting_schedule_fails_when_high_bigger_than_amount() {
-        const HIGH: u128 = 2;
-        const AMOUNT: u128 = 1;
+    #[should_panic(expected = "Vesting: Transfer Vesting: Cannot transfer when non-fully vested")]
+    fn piecewise_linear_schedule_fails_when_not_fully_vested() {
         let env = Env::default();
-        let curve = Curve::SaturatingLinear(SaturatingLinear {
-            min_x: 15,
-            min_y: HIGH,
-            max_x: 60,
-            max_y: 0,
+        let curve = Curve::PiecewiseLinear(PiecewiseLinear {
+            steps: vec![
+                &env,
+                Step {
+                    time: 60,
+                    value: 120,
+                },
+                Step {
+                    time: 120,
+                    value: 10,
+                },
+            ],
         });
 
-        validate_vesting_schedule(&env, &curve, AMOUNT).unwrap();
+        validate_vesting_schedule(&env, &curve).unwrap();
     }
 }

@@ -284,8 +284,8 @@ fn interpolate((min_x, min_y): (u64, u128), (max_x, max_y): (u64, u128), x: u64)
 #[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Step {
-    time: u64,
-    value: u128,
+    pub time: u64,
+    pub value: u128,
 }
 
 #[contracttype]
