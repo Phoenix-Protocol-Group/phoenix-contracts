@@ -2,7 +2,7 @@ use crate::{
     storage::{VestingSchedule, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,
 };
-use curve::{Curve, SaturatingLinear};
+use curve::{Curve, PiecewiseLinear, SaturatingLinear, Step};
 
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
@@ -321,6 +321,53 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
 }
 
 #[test]
+#[should_panic(expected = "Vesting: Claim: No tokens available to claim")]
+fn claim_after_all_tokens_have_been_claimed() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let token_client = deploy_token_contract(&env, &admin);
+
+    token_client.mint(&admin, &1_000);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token_client.address.clone(),
+    };
+
+    let vesting_schedules = vec![
+        &env,
+        VestingSchedule {
+            recipient: vester1.clone(),
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 0,
+                min_y: 1_000,
+                max_x: 60,
+                max_y: 0,
+            }),
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
+    vesting_client.create_vesting_schedules(&vesting_schedules);
+
+    env.ledger().with_mut(|li| li.timestamp = 61);
+
+    // we claim tokens once
+    vesting_client.claim(&vester1, &0);
+    assert_eq!(vesting_client.query_balance(&vester1), 1_000);
+    // and second one fails
+    vesting_client.claim(&vester1, &0);
+}
+
+#[test]
 fn transfer_works_with_multiple_users_and_distributions() {
     let env = Env::default();
     env.mock_all_auths();
@@ -528,4 +575,96 @@ fn claim_works() {
 
     // there must be 0 vesting tokens left in the contract
     assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);
+}
+
+#[test]
+fn claim_tokens_from_two_distributions() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let token_client = deploy_token_contract(&env, &admin);
+
+    token_client.mint(&admin, &2_000);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: token_client.address.clone(),
+    };
+
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
+
+    let vesting_schedules = vec![
+        &env,
+        VestingSchedule {
+            recipient: vester1.clone(),
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                min_x: 0,
+                min_y: 1_500,
+                max_x: 100,
+                max_y: 0,
+            }),
+        },
+    ];
+    vesting_client.create_vesting_schedules(&vesting_schedules);
+    assert_eq!(token_client.balance(&vesting_client.address), 1_500);
+
+    // vester1 has 0 tokens before claiming the vested amount
+    assert_eq!(vesting_client.query_balance(&vester1), 0);
+
+    // we move time to the half of the vesting period
+    env.ledger().with_mut(|li| li.timestamp = 50);
+
+    // user collects the vested tokens and transfers them to himself
+    vesting_client.claim(&vester1, &0);
+
+    assert_eq!(vesting_client.query_balance(&vester1), 750);
+    assert_eq!(token_client.balance(&vesting_client.address), 750);
+
+    // create a vesting schedule which starts in the middle of the previous one
+    let vesting_schedules = vec![
+        &env,
+        VestingSchedule {
+            recipient: vester1.clone(),
+            curve: Curve::PiecewiseLinear(PiecewiseLinear {
+                steps: vec![
+                    &env,
+                    Step {
+                        time: 50,
+                        value: 500,
+                    },
+                    Step {
+                        time: 100,
+                        value: 250,
+                    },
+                    Step {
+                        time: 150,
+                        value: 0,
+                    },
+                ],
+            }),
+        },
+    ];
+    vesting_client.create_vesting_schedules(&vesting_schedules);
+
+    // we move time to the half of the vesting period
+    env.ledger().with_mut(|li| li.timestamp = 100);
+
+    vesting_client.claim(&vester1, &0);
+    assert_eq!(vesting_client.query_balance(&vester1), 1_500);
+    assert_eq!(token_client.balance(&vesting_client.address), 500);
+
+    vesting_client.claim(&vester1, &1);
+    assert_eq!(vesting_client.query_balance(&vester1), 1_750);
+    assert_eq!(token_client.balance(&vesting_client.address), 250);
+
+    env.ledger().with_mut(|li| li.timestamp = 150);
+    vesting_client.claim(&vester1, &1);
+    assert_eq!(vesting_client.query_balance(&vester1), 2_000);
+    assert_eq!(token_client.balance(&vesting_client.address), 0);
 }
