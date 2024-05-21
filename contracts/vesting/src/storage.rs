@@ -1,6 +1,7 @@
-use curve::{Curve, SaturatingLinear};
+use curve::{Curve, PiecewiseLinear, SaturatingLinear, Step};
 use soroban_sdk::{
-    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val, Vec
+    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
+    Vec,
 };
 
 use crate::error::ContractError;
@@ -40,24 +41,23 @@ pub struct VestingInfo {
     pub schedule: VestingSchedule,
 }
 
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Step {
-    time: u64,
-    value: u128,
-}
+// #[contracttype]
+// #[derive(Clone, Debug, Eq, PartialEq)]
+// pub struct Step {
+//     time: u64,
+//     value: u128,
+// }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VestingSchedule {
     pub recipient: Address,
     pub piecewise_linear: Option<Vec<Step>>,
-    pub saturating_linear: Option<PiecewiseLinear>,
+    pub saturating_linear: Option<SaturatingLinearHelper>,
 }
 
-#[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PiecewiseLinear {
+pub struct SaturatingLinearHelper {
     pub start_timestamp: u64,
     pub end_timestamp: u64,
     pub amount: u128, // this is fine. this will be constant for historical data checking
@@ -78,14 +78,38 @@ impl MinterInfo {
     }
 }
 
-impl DistributionInfo {
-    pub fn get_curve(&self) -> Curve {
-        Curve::SaturatingLinear(SaturatingLinear {
-            min_x: self.start_timestamp,
-            min_y: self.amount,
-            max_x: self.end_timestamp,
-            max_y: 0u128,
-        })
+impl VestingSchedule {
+    pub fn get_curve(&self, env: &Env) -> Curve {
+        match (self.piecewise_linear, self.saturating_linear) {
+            (Some(_), Some(_)) => {
+                log!(
+                    env,
+                    "VestingSchedule: Critical error: both of the vesting types present"
+                );
+                panic_with_error!(env, ContractError::VestingBothPresent)
+            }
+            (None, None) => {
+                log!(
+                    env,
+                    "VestingSchedule: Critical error: none of the vesting types present"
+                );
+                panic_with_error!(env, ContractError::VestingBothPresent)
+            }
+            (Some(pl_steps), None) => Curve::PiecewiseLinear(PiecewiseLinear { steps: pl_steps }),
+            (None, Some(sl)) => Curve::SaturatingLinear(SaturatingLinear {
+                min_x: sl.start_timestamp,
+                min_y: sl.amount,
+                max_x: sl.end_timestamp,
+                max_y: 0u128,
+            }),
+        }
+
+        // Curve::SaturatingLinear(SaturatingLinear {
+        //     min_x: self.start_timestamp,
+        //     min_y: self.amount,
+        //     max_x: self.end_timestamp,
+        //     max_y: 0u128,
+        // })
     }
 }
 

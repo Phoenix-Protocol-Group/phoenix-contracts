@@ -2,16 +2,14 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, Vec,
 };
 
-use crate::storage::{
-    get_admin, get_token_info, save_max_vesting_complexity, save_token_info, DistributionInfo,
-};
 #[cfg(feature = "minter")]
 use crate::storage::{get_minter, save_minter, MinterInfo};
 use crate::{
     error::ContractError,
     storage::{
-        get_max_vesting_complexity, get_vesting, save_admin, save_vesting, VestingInfo,
-        VestingSchedule, VestingTokenInfo,
+        get_admin, get_max_vesting_complexity, get_token_info, get_vesting, save_admin,
+        save_max_vesting_complexity, save_token_info, save_vesting, VestingInfo, VestingSchedule,
+        VestingTokenInfo,
     },
     token_contract,
     utils::{check_duplications, validate_vesting_schedule},
@@ -41,7 +39,7 @@ pub trait VestingTrait {
 
     fn query_balance(env: Env, address: Address) -> i128;
 
-    fn query_distribution_info(env: Env, address: Address) -> DistributionInfo;
+    fn query_vesting_info(env: Env, address: Address) -> VestingSchedule;
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
@@ -141,33 +139,33 @@ impl VestingTrait for Vesting {
 
         let mut total_vested_amount = 0;
 
-        vesting_schedules.into_iter().for_each(|vb| {
+        vesting_schedules.into_iter().for_each(|vesting_schedule| {
             validate_vesting_schedule(
                 &env,
-                &vb.distribution_info.get_curve(),
-                vb.distribution_info.amount,
+                &vesting_schedule.distribution_info.get_curve(),
+                vesting_schedule.distribution_info.amount,
             )
             .expect("Invalid curve and amount");
 
-            if max_vesting_complexity <= vb.distribution_info.get_curve().size() {
+            if max_vesting_complexity <= vesting_schedule.distribution_info.get_curve().size() {
                 log!(
                     &env,
                     "Vesting: Create vesting account: Invalid curve complexity for {}",
-                    vb.recipient
+                    vesting_schedule.recipient
                 );
                 panic_with_error!(env, ContractError::VestingComplexityTooHigh);
             }
 
             save_vesting(
                 &env,
-                &vb.recipient,
+                &vesting_schedule.recipient,
                 &VestingInfo {
-                    balance: vb.distribution_info.amount,
-                    distribution_info: vb.distribution_info.clone(),
+                    balance: vesting_schedule.distribution_info.amount,
+                    distribution_info: vesting_schedule.distribution_info.clone(),
                 },
             );
 
-            total_vested_amount += vb.distribution_info.amount;
+            total_vested_amount += vesting_schedule.distribution_info.amount;
         });
 
         // check if the admin has enough tokens to start the vesting contract
@@ -203,8 +201,8 @@ impl VestingTrait for Vesting {
 
         let vesting_info = get_vesting(&env, &sender);
         let vested = vesting_info
-            .distribution_info
-            .get_curve()
+            .schedule
+            .get_curve(&env)
             .value(env.ledger().timestamp());
 
         let sender_balance = vesting_info.balance;
@@ -225,7 +223,7 @@ impl VestingTrait for Vesting {
             &sender,
             &VestingInfo {
                 balance: sender_balance - available_to_claim as u128,
-                distribution_info: vesting_info.distribution_info,
+                schedule: vesting_info.schedule,
             },
         );
 
@@ -372,8 +370,8 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
-    fn query_distribution_info(env: Env, address: Address) -> DistributionInfo {
-        get_vesting(&env, &address).distribution_info
+    fn query_vesting_info(env: Env, address: Address) -> VestingSchedule {
+        get_vesting(&env, &address).schedule
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {

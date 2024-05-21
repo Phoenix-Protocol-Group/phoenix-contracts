@@ -32,6 +32,9 @@ pub enum ContractError {
     NoAddressesToAdd = 24,
     NoEnoughtTokensToStart = 25,
     NotEnoughBalance = 26,
+
+    VestingBothPresent = 27,
+    VestingNonePresent = 28,
 }
 
 impl From<CurveError> for ContractError {
