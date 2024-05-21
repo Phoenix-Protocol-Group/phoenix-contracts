@@ -284,8 +284,8 @@ fn interpolate((min_x, min_y): (u64, u128), (max_x, max_y): (u64, u128), x: u64)
 #[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Step {
-    time: u64,
-    value: u128,
+    pub time: u64,
+    pub value: u128,
 }
 
 #[contracttype]
@@ -471,6 +471,14 @@ impl PiecewiseLinear {
 
     fn end(&self) -> Option<u64> {
         self.steps.last().map(|Step { time, value: _ }| time)
+    }
+
+    pub fn end_value(&self) -> Option<u128> {
+        self.steps.last().map(|Step { time: _, value }| value)
+    }
+
+    pub fn first_value(&self) -> Option<u128> {
+        self.steps.first().map(|Step { time: _, value }| value)
     }
 }
 

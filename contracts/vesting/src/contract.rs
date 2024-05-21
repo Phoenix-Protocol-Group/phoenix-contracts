@@ -2,19 +2,17 @@ use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, Vec,
 };
 
-use curve::Curve;
-
-use crate::storage::{
-    get_admin, get_token_info, save_max_vesting_complexity, save_token_info, DistributionInfo,
-};
-use crate::utils::{create_vesting_accounts, verify_vesting_and_update_balances};
+#[cfg(feature = "minter")]
+use crate::storage::{get_minter, save_minter, MinterInfo};
 use crate::{
     error::ContractError,
     storage::{
-        get_minter, get_vesting, save_admin, save_minter, MinterInfo, VestingBalance,
-        VestingTokenInfo,
+        get_admin, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
+        save_admin, save_max_vesting_complexity, save_token_info, save_vesting, update_vesting,
+        VestingInfo, VestingSchedule, VestingTokenInfo,
     },
     token_contract,
+    utils::{check_duplications, validate_vesting_schedule},
 };
 
 // Metadata that is added on to the WASM custom section
@@ -30,62 +28,50 @@ pub trait VestingTrait {
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
-        vesting_balances: Vec<VestingBalance>,
-        minter_info: Option<MinterInfo>,
         max_vesting_complexity: u32,
     );
 
-    fn transfer_token(env: Env, sender: Address, recipient: Address, amount: i128);
+    fn create_vesting_schedules(env: Env, vesting_accounts: Vec<VestingSchedule>);
 
-    fn claim(env: Env, sender: Address);
+    fn claim(env: Env, sender: Address, index: u64);
 
-    fn burn(env: Env, sender: Address, amount: u128);
-
-    fn mint(env: Env, sender: Address, amount: i128);
-
-    // TODO: we will need these in the future, not needed for the most basic implementation right now
-    // TODO: replace the tuple `owner_spender: (Address, Address)` with how it is in `send_to_contract_from`
-    // fn increase_allowance(env: Env, owner_spender: (Address, Address), amount: i128);
-
-    // fn decrease_allowance(env: Env, owner_spender: (Address, Address), amount: i128);
-
-    // fn transfer_from(
-    //     env: Env,
-    //     owner_spender: (Address, Address),
-    //     to: Address,
-    //     amount: i128,
-    // ) -> Result<(), ContractError>;
-
-    // fn burn_from(
-    //     env: Env,
-    //     sender: Address,
-    //     owner: Address,
-    //     amount: i128,
-    // ) -> Result<(), ContractError>;
-
-    // fn send_to_contract_from(
-    //     env: Env,
-    //     sender: Address,
-    //     owner: Address,
-    //     contract: Address,
-    //     amount: i128,
-    // ) -> Result<(), ContractError>;
-
-    fn update_minter(env: Env, sender: Address, new_minter: Address);
-
-    fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128);
+    fn update(env: Env, new_wash_hash: BytesN<32>);
 
     fn query_balance(env: Env, address: Address) -> i128;
 
-    fn query_distribution_info(env: Env, address: Address) -> DistributionInfo;
+    fn query_vesting_info(env: Env, address: Address, index: u64) -> VestingInfo;
+
+    fn query_all_vesting_info(env: Env, address: Address) -> Vec<VestingInfo>;
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
-    fn query_minter(env: Env) -> MinterInfo;
-
     fn query_vesting_contract_balance(env: Env) -> i128;
 
-    fn query_available_to_claim(env: Env, address: Address) -> i128;
+    fn query_available_to_claim(env: Env, address: Address, index: u64) -> i128;
+
+    #[cfg(feature = "minter")]
+    fn initialize_with_minter(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        max_vesting_complexity: u32,
+        minter_info: MinterInfo,
+    );
+
+    #[cfg(feature = "minter")]
+    fn burn(env: Env, sender: Address, amount: u128);
+
+    #[cfg(feature = "minter")]
+    fn mint(env: Env, sender: Address, amount: i128);
+
+    #[cfg(feature = "minter")]
+    fn update_minter(env: Env, sender: Address, new_minter: Address);
+
+    #[cfg(feature = "minter")]
+    fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128);
+
+    #[cfg(feature = "minter")]
+    fn query_minter(env: Env) -> MinterInfo;
 }
 
 #[contractimpl]
@@ -94,56 +80,9 @@ impl VestingTrait for Vesting {
         env: Env,
         admin: Address,
         vesting_token: VestingTokenInfo,
-        vesting_balances: Vec<VestingBalance>,
-        minter_info: Option<MinterInfo>,
         max_vesting_complexity: u32,
     ) {
-        admin.require_auth();
-
         save_admin(&env, &admin);
-
-        if vesting_balances.is_empty() {
-            log!(
-                &env,
-                "Vesting: Initialize: At least one vesting schedule must be provided."
-            );
-            panic_with_error!(env, ContractError::MissingBalance);
-        }
-
-        let total_vested_amount =
-            create_vesting_accounts(&env, max_vesting_complexity, vesting_balances);
-
-        // check if the admin has enough tokens to start the vesting contract
-        let token_client = token_contract::Client::new(&env, &vesting_token.address);
-
-        if token_client.balance(&admin) < total_vested_amount as i128 {
-            log!(
-                &env,
-                "Vesting: Initialize: Admin does not have enough tokens to start the vesting contract"
-            );
-            panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
-        }
-
-        token_client.transfer(
-            &admin,
-            &env.current_contract_address(),
-            &(total_vested_amount as i128),
-        );
-
-        if let Some(minter) = minter_info {
-            let input_curve = Curve::Constant(minter.mint_capacity);
-
-            let capacity = input_curve.value(env.ledger().timestamp());
-
-            if total_vested_amount > capacity {
-                log!(
-                    &env,
-                    "Vesting: Initialize: total vested amount over the capacity"
-                );
-                panic_with_error!(env, ContractError::TotalVestedOverCapacity);
-            }
-            save_minter(&env, &minter);
-        }
 
         let token_info = VestingTokenInfo {
             name: vesting_token.name,
@@ -159,32 +98,98 @@ impl VestingTrait for Vesting {
             .publish(("Initialize", "Vesting contract with admin: "), admin);
     }
 
-    fn transfer_token(env: Env, sender: Address, recipient: Address, amount: i128) {
-        sender.require_auth();
+    #[cfg(feature = "minter")]
+    fn initialize_with_minter(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        max_vesting_complexity: u32,
+        minter_info: MinterInfo,
+    ) {
+        save_admin(&env, &admin);
 
-        if amount <= 0 {
-            log!(&env, "Vesting: Transfer token: Invalid transfer amount");
-            panic_with_error!(env, ContractError::InvalidTransferAmount);
+        save_minter(&env, &minter_info);
+
+        let token_info = VestingTokenInfo {
+            name: vesting_token.name,
+            symbol: vesting_token.symbol,
+            decimals: vesting_token.decimals,
+            address: vesting_token.address,
+        };
+
+        save_token_info(&env, &token_info);
+        save_max_vesting_complexity(&env, &max_vesting_complexity);
+
+        env.events()
+            .publish(("Initialize", "Vesting contract with admin: "), admin);
+    }
+
+    fn create_vesting_schedules(env: Env, vesting_schedules: Vec<VestingSchedule>) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        if vesting_schedules.is_empty() {
+            log!(
+                &env,
+                "Vesting: Create vesting account: At least one vesting schedule must be provided."
+            );
+            panic_with_error!(env, ContractError::MissingBalance);
         }
 
-        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
+        check_duplications(&env, vesting_schedules.clone());
+        let max_vesting_complexity = get_max_vesting_complexity(&env);
 
-        verify_vesting_and_update_balances(&env, &sender, amount as u128);
-        token_client.transfer(&env.current_contract_address(), &recipient, &amount);
+        let mut total_vested_amount = 0;
 
-        env.events().publish(
-            (
-                "Transfer token",
-                "Transfering tokens between accounts: from: {}, to:{}, amount: {}",
-            ),
-            (sender, recipient, amount),
+        vesting_schedules.into_iter().for_each(|vesting_schedule| {
+            let vested_amount = validate_vesting_schedule(&env, &vesting_schedule.curve)
+                .expect("Invalid curve and amount");
+
+            if max_vesting_complexity <= vesting_schedule.curve.size() {
+                log!(
+                    &env,
+                    "Vesting: Create vesting account: Invalid curve complexity for {}",
+                    vesting_schedule.recipient
+                );
+                panic_with_error!(env, ContractError::VestingComplexityTooHigh);
+            }
+
+            save_vesting(
+                &env,
+                &vesting_schedule.recipient.clone(),
+                &VestingInfo {
+                    balance: vested_amount,
+                    recipient: vesting_schedule.recipient,
+                    schedule: vesting_schedule.curve.clone(),
+                },
+            );
+
+            total_vested_amount += vested_amount;
+        });
+
+        // check if the admin has enough tokens to start the vesting contract
+        let vesting_token = get_token_info(&env);
+        let token_client = token_contract::Client::new(&env, &vesting_token.address);
+
+        if token_client.balance(&admin) < total_vested_amount as i128 {
+            log!(
+                &env,
+                "Vesting: Create vesting account: Admin does not have enough tokens to start the vesting schedule"
+            );
+            panic_with_error!(env, ContractError::NoEnoughtTokensToStart);
+        }
+
+        token_client.transfer(
+            &admin,
+            &env.current_contract_address(),
+            &(total_vested_amount as i128),
         );
     }
 
-    fn claim(env: Env, sender: Address) {
+    fn claim(env: Env, sender: Address, index: u64) {
         sender.require_auth();
 
-        let available_to_claim = Self::query_available_to_claim(env.clone(), sender.clone());
+        let available_to_claim = Self::query_available_to_claim(env.clone(), sender.clone(), index);
 
         if available_to_claim <= 0 {
             log!(&env, "Vesting: Claim: No tokens available to claim");
@@ -193,7 +198,31 @@ impl VestingTrait for Vesting {
 
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
-        verify_vesting_and_update_balances(&env, &sender, available_to_claim as u128);
+        let vesting_info = get_vesting(&env, &sender, index);
+        let vested = vesting_info.schedule.value(env.ledger().timestamp());
+
+        let sender_balance = vesting_info.balance;
+        let sender_liquid = sender_balance // this checks if we can withdraw any vesting
+            .checked_sub(vested)
+            .unwrap_or_else(|| panic_with_error!(env, ContractError::NotEnoughBalance));
+
+        if sender_liquid < available_to_claim as u128 {
+            log!(
+            &env,
+            "Vesting: Verify Vesting Update Balances: Remaining amount must be at least equal to vested amount"
+        );
+            panic_with_error!(env, ContractError::CantMoveVestingTokens);
+        }
+
+        update_vesting(
+            &env,
+            &sender,
+            index,
+            &VestingInfo {
+                balance: (sender_balance - available_to_claim as u128),
+                ..vesting_info
+            },
+        );
 
         token_client.transfer(
             &env.current_contract_address(),
@@ -205,6 +234,7 @@ impl VestingTrait for Vesting {
             .publish(("Claim", "Claimed tokens: "), available_to_claim);
     }
 
+    #[cfg(feature = "minter")]
     fn burn(env: Env, sender: Address, amount: u128) {
         sender.require_auth();
 
@@ -221,6 +251,7 @@ impl VestingTrait for Vesting {
         env.events().publish(("Burn", "Burned tokens: "), amount);
     }
 
+    #[cfg(feature = "minter")]
     fn mint(env: Env, sender: Address, amount: i128) {
         sender.require_auth();
 
@@ -272,188 +303,7 @@ impl VestingTrait for Vesting {
         env.events().publish(("Mint", "Minted tokens: "), amount);
     }
 
-    // TODO: we will need these in the future, not needed for the most basic implementation right now
-    // fn increase_allowance(env: Env, owner_spender: (Address, Address), amount: i128) {
-    //     owner_spender.0.require_auth();
-
-    //     if amount <= 0 {
-    //         log!(&env, "Vesting: Increase allowance: Invalid amount");
-    //         panic_with_error!(env, ContractError::InvalidAllowanceAmount);
-    //     }
-
-    //     let allowance = get_allowances(&env, &owner_spender)
-    //         .checked_add(amount)
-    //         .unwrap_or_else(|| {
-    //             log!(
-    //                 &env,
-    //                 "Vesting: Increase allowance: Critical error - allowance cannot be negative"
-    //             );
-    //             panic_with_error!(env, ContractError::Std);
-    //         });
-
-    //     save_allowances(&env, &owner_spender, allowance);
-
-    //     env.events().publish(
-    //         (
-    //             "Increase allowance",
-    //             "Increased allowance between accounts: from: {}, to: {}, increase: {}",
-    //         ),
-    //         (owner_spender.0, owner_spender.1, amount),
-    //     );
-    // }
-
-    // fn decrease_allowance(env: Env, owner_spender: (Address, Address), amount: i128) {
-    //     owner_spender.0.require_auth();
-
-    //     if amount <= 0 {
-    //         log!(&env, "Vesting: Decrease allowance: Invalid amount");
-    //         panic_with_error!(env, ContractError::InvalidAllowanceAmount);
-    //     }
-
-    //     let allowance = get_allowances(&env, &owner_spender)
-    //         .checked_sub(amount)
-    //         .unwrap_or_else(|| {
-    //             log!(
-    //                 &env,
-    //                 "Vesting: Decrease allowance: Critical error - allowance cannot be negative"
-    //             );
-    //             panic_with_error!(env, ContractError::Std);
-    //         });
-
-    //     save_allowances(&env, &owner_spender, allowance);
-
-    //     env.events().publish(
-    //         (
-    //             "Decrease allowance",
-    //             "Decreased allowance between accounts: from: {}, to: {}, decrease: {}",
-    //         ),
-    //         (owner_spender.0, owner_spender.1, amount),
-    //     );
-    // }
-
-    // fn transfer_from(
-    //     env: Env,
-    //     owner_spender: (Address, Address),
-    //     to: Address,
-    //     amount: i128,
-    // ) -> Result<(), ContractError> {
-    //     let owner = owner_spender.0.clone();
-    //     let spender = owner_spender.1.clone();
-    //     spender.require_auth();
-
-    //     if amount <= 0 {
-    //         log!(&env, "Vesting: Transfer from: Invalid transfer amount");
-    //         panic_with_error!(env, ContractError::InvalidTransferAmount);
-    //     }
-
-    //     // todo deduct_allowances
-    //     let allowance = get_allowances(&env, &owner_spender);
-    //     if allowance < amount {
-    //         log!(&env, "Vesting: Transfer from: Not enough allowance");
-    //         panic_with_error!(env, ContractError::NotEnoughBalance);
-    //     }
-    //     let new_allowance = allowance.checked_sub(amount).unwrap_or_else(|| {
-    //         log!(
-    //             &env,
-    //             "Vesting: Transfer from: Critical error - allowance cannot be negative"
-    //         );
-    //         panic_with_error!(env, ContractError::Std);
-    //     });
-
-    //     verify_vesting_and_transfer_tokens(&env, &owner, &to, amount)?;
-
-    //     save_allowances(&env, &owner_spender, new_allowance);
-
-    //     env.events().publish(
-    //         (
-    //             "Transfer from",
-    //             "Transfering tokens between accounts: from: {}, to: {}, amount: {}",
-    //         ),
-    //         (owner, to, amount),
-    //     );
-
-    //     Ok(())
-    // }
-
-    // fn burn_from(
-    //     env: Env,
-    //     sender: Address,
-    //     owner: Address,
-    //     amount: i128,
-    // ) -> Result<(), ContractError> {
-    //     sender.require_auth();
-
-    //     if amount <= 0 {
-    //         log!(&env, "Vesting: Burn from: Invalid burn amount");
-    //         panic_with_error!(env, ContractError::InvalidBurnAmount);
-    //     }
-
-    //     let allowance = get_allowances(&env, &(owner.clone(), sender.clone()));
-    //     if allowance < amount {
-    //         log!(&env, "Vesting: Burn from: Not enough allowance");
-    //         panic_with_error!(env, ContractError::NotEnoughBalance);
-    //     }
-
-    //     let new_allowance = allowance.checked_sub(amount).unwrap_or_else(|| {
-    //         log!(
-    //             &env,
-    //             "Vesting: Burn from: Critical error - allowance cannot be negative"
-    //         );
-    //         panic_with_error!(env, ContractError::Std);
-    //     });
-
-    //     let total_supply = get_vesting_total_supply(&env)
-    //         .checked_sub(amount)
-    //         .unwrap_or_else(|| {
-    //             log!(
-    //                 &env,
-    //                 "Vesting: Burn from: Critical error - total supply cannot be negative"
-    //             );
-    //             panic_with_error!(env, ContractError::Std);
-    //         });
-
-    //     update_vesting_total_supply(&env, total_supply);
-
-    //     let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
-    //     token_client.burn(&owner, &amount);
-
-    //     save_allowances(&env, &(owner, sender), new_allowance);
-
-    //     env.events()
-    //         .publish(("Burn from", "Burned tokens: "), amount);
-
-    //     Ok(())
-    // }
-
-    // fn send_to_contract_from(
-    //     env: Env,
-    //     sender: Address,
-    //     owner: Address,
-    //     contract: Address,
-    //     amount: i128,
-    // ) -> Result<(), ContractError> {
-    //     sender.require_auth();
-    //     if amount <= 0 {
-    //         log!(&env, "Vesting: Send to contract from: Invalid amount");
-    //         panic_with_error!(env, ContractError::InvalidTransferAmount);
-    //     }
-    //     //used to verify that the sender is authorized by the owner
-    //     let _ = get_allowances(&env, &(owner.clone(), sender.clone()));
-
-    //     let token_client = token_contract::Client::new(&env, &get_config(&env).token_info.address);
-    //     token_client.transfer(&owner, &contract, &amount);
-
-    //     env.events().publish(
-    //         (
-    //             "Send to contract from",
-    //             "Sent tokens to contract from account: from: {}, to: {}, amount: {}",
-    //         ),
-    //         (owner, contract, amount),
-    //     );
-
-    //     Ok(())
-    // }
-
+    #[cfg(feature = "minter")]
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
         let current_minter = get_minter(&env);
 
@@ -484,6 +334,7 @@ impl VestingTrait for Vesting {
             .publish(("Update minter", "Updated minter to: "), new_minter);
     }
 
+    #[cfg(feature = "minter")]
     fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128) {
         if sender != get_admin(&env) {
             log!(
@@ -516,14 +367,19 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
-    fn query_distribution_info(env: Env, address: Address) -> DistributionInfo {
-        get_vesting(&env, &address).distribution_info
+    fn query_vesting_info(env: Env, address: Address, index: u64) -> VestingInfo {
+        get_vesting(&env, &address, index)
+    }
+
+    fn query_all_vesting_info(env: Env, address: Address) -> Vec<VestingInfo> {
+        get_all_vestings(&env, &address)
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {
         get_token_info(&env)
     }
 
+    #[cfg(feature = "minter")]
     fn query_minter(env: Env) -> MinterInfo {
         if let Some(minter) = get_minter(&env) {
             minter
@@ -538,26 +394,13 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &token_address).balance(&env.current_contract_address())
     }
 
-    fn query_available_to_claim(env: Env, address: Address) -> i128 {
-        let vesting_info = get_vesting(&env, &address);
-        let vested = vesting_info
-            .distribution_info
-            .get_curve()
-            .value(env.ledger().timestamp());
+    fn query_available_to_claim(env: Env, address: Address, index: u64) -> i128 {
+        let vesting_info = get_vesting(&env, &address, index);
 
-        let sender_balance = vesting_info.balance;
-        let sender_liquid = sender_balance
-            .checked_sub(vested)
-            .unwrap_or_else(|| panic_with_error!(env, ContractError::NotEnoughBalance));
-
-        sender_liquid as i128
+        (vesting_info.balance - vesting_info.schedule.value(env.ledger().timestamp())) as i128
     }
-}
 
-#[contractimpl]
-impl Vesting {
-    #[allow(dead_code)]
-    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
+    fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin(&env);
         admin.require_auth();
 

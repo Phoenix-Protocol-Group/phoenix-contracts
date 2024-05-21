@@ -1,6 +1,7 @@
-use curve::{Curve, SaturatingLinear};
+use curve::Curve;
 use soroban_sdk::{
-    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
+    contracttype, log, panic_with_error, vec, Address, ConversionError, Env, String, TryFromVal,
+    Val, Vec,
 };
 
 use crate::error::ContractError;
@@ -33,13 +34,25 @@ pub struct VestingTokenInfo {
     pub address: Address,
 }
 
+// This structure is used as an argument during the vesting account creation
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VestingBalance {
-    pub rcpt_address: Address,
-    pub distribution_info: DistributionInfo,
+pub struct VestingSchedule {
+    pub recipient: Address,
+    pub curve: Curve,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingInfo {
+    // the total amount of tokens left to be distributed
+    // it's updated during each claim
+    pub balance: u128,
+    pub recipient: Address,
+    pub schedule: Curve,
+}
+
+#[cfg(feature = "minter")]
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MinterInfo {
@@ -47,35 +60,10 @@ pub struct MinterInfo {
     pub mint_capacity: u128,
 }
 
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DistributionInfo {
-    pub start_timestamp: u64,
-    pub end_timestamp: u64,
-    pub amount: u128, // this is fine. this will be constant for historical data checking
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VestingInfo {
-    pub balance: u128, // This is the value that we will update during transfer msgs
-    pub distribution_info: DistributionInfo,
-}
-
+#[cfg(feature = "minter")]
 impl MinterInfo {
     pub fn get_curve(&self) -> Curve {
         Curve::Constant(self.mint_capacity)
-    }
-}
-
-impl DistributionInfo {
-    pub fn get_curve(&self) -> Curve {
-        Curve::SaturatingLinear(SaturatingLinear {
-            min_x: self.start_timestamp,
-            min_y: self.amount,
-            max_x: self.end_timestamp,
-            max_y: 0u128,
-        })
     }
 }
 
@@ -93,46 +81,91 @@ pub fn get_admin(env: &Env) -> Address {
         })
 }
 
-pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
-    env.storage().persistent().set(address, vesting_info);
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingInfoKey {
+    pub recipient: Address,
+    pub index: u64,
 }
 
-pub fn get_vesting(env: &Env, address: &Address) -> VestingInfo {
-    env.storage().persistent().get(address).unwrap_or_else(|| {
+pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
+    let mut index = 0u64;
+    let mut vesting_key = VestingInfoKey {
+        recipient: address.clone(),
+        index,
+    };
+
+    // Find the next available index
+    while env.storage().persistent().has(&vesting_key) {
+        index += 1;
+        vesting_key = VestingInfoKey {
+            recipient: address.clone(),
+            index,
+        };
+    }
+
+    env.storage().persistent().set(&vesting_key, vesting_info);
+}
+
+pub fn update_vesting(env: &Env, address: &Address, index: u64, vesting_info: &VestingInfo) {
+    let vesting_key = VestingInfoKey {
+        recipient: address.clone(),
+        index,
+    };
+    env.storage().persistent().set(&vesting_key, vesting_info);
+}
+
+pub fn get_vesting(env: &Env, recipient: &Address, index: u64) -> VestingInfo {
+    let vesting_key = VestingInfoKey {
+        recipient: recipient.clone(),
+        index,
+    };
+    env.storage().persistent().get(&vesting_key).unwrap_or_else(|| {
         log!(&env, "Vesting: Get vesting schedule: Critical error - No vesting schedule found for the given address");
         panic_with_error!(env, ContractError::VestingNotFoundForAddress);
     })
 }
 
-// TODO: uncomment when needed
-// pub fn get_allowances(env: &Env, owner_spender: &(Address, Address)) -> i128 {
-//     env.storage().persistent().get(owner_spender).unwrap_or_else(|| {
-//             log!(&env, "Vesting: Get allowance: Critical error - No allowance found for the given address pair");
-//             panic_with_error!(env, ContractError::AllowanceNotFoundForGivenPair);
-//         })
-// }
+pub fn get_all_vestings(env: &Env, address: &Address) -> Vec<VestingInfo> {
+    let mut vestings = vec![&env];
+    let mut index = 0u64;
 
-// pub fn save_allowances(env: &Env, owner_spender: &(Address, Address), amount: i128) {
-//     env.storage().persistent().set(owner_spender, &amount);
-// }
+    loop {
+        let vesting_key = VestingInfoKey {
+            recipient: address.clone(),
+            index,
+        };
 
-pub fn save_minter(env: &Env, minter: &MinterInfo) {
-    env.storage().persistent().set(&DataKey::Minter, minter);
+        if let Some(vesting_info) = env.storage().persistent().get(&vesting_key) {
+            vestings.push_back(vesting_info);
+            index += 1;
+        } else {
+            break;
+        }
+    }
+
+    vestings
 }
 
+#[cfg(feature = "minter")]
+pub fn save_minter(env: &Env, minter: &MinterInfo) {
+    env.storage().instance().set(&DataKey::Minter, minter);
+}
+
+#[cfg(feature = "minter")]
 pub fn get_minter(env: &Env) -> Option<MinterInfo> {
-    env.storage().persistent().get(&DataKey::Minter)
+    env.storage().instance().get(&DataKey::Minter)
 }
 
 pub fn save_token_info(env: &Env, token_info: &VestingTokenInfo) {
     env.storage()
-        .persistent()
+        .instance()
         .set(&DataKey::VestingTokenInfo, token_info);
 }
 
 pub fn get_token_info(env: &Env) -> VestingTokenInfo {
     env.storage()
-        .persistent()
+        .instance()
         .get(&DataKey::VestingTokenInfo)
         .unwrap_or_else(|| {
             log!(
@@ -145,6 +178,13 @@ pub fn get_token_info(env: &Env) -> VestingTokenInfo {
 
 pub fn save_max_vesting_complexity(env: &Env, max_vesting_complexity: &u32) {
     env.storage()
-        .persistent()
+        .instance()
         .set(&DataKey::MaxVestingComplexity, max_vesting_complexity);
+}
+
+pub fn get_max_vesting_complexity(env: &Env) -> u32 {
+    env.storage()
+        .instance()
+        .get(&DataKey::MaxVestingComplexity)
+        .unwrap()
 }
