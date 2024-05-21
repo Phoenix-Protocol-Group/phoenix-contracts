@@ -472,6 +472,14 @@ impl PiecewiseLinear {
     fn end(&self) -> Option<u64> {
         self.steps.last().map(|Step { time, value: _ }| time)
     }
+
+    pub fn end_value(&self) -> Option<u128> {
+        self.steps.last().map(|Step { time: _, value }| value)
+    }
+
+    pub fn first_value(&self) -> Option<u128> {
+        self.steps.first().map(|Step { time: _, value }| value)
+    }
 }
 
 pub fn from_saturating_linear(env: &Env, sl: &SaturatingLinear) -> PiecewiseLinear {

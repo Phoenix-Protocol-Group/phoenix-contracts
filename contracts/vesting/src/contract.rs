@@ -140,14 +140,10 @@ impl VestingTrait for Vesting {
         let mut total_vested_amount = 0;
 
         vesting_schedules.into_iter().for_each(|vesting_schedule| {
-            validate_vesting_schedule(
-                &env,
-                &vesting_schedule.distribution_info.get_curve(),
-                vesting_schedule.distribution_info.amount,
-            )
-            .expect("Invalid curve and amount");
+            let vested_amount = validate_vesting_schedule(&env, &vesting_schedule.curve)
+                .expect("Invalid curve and amount");
 
-            if max_vesting_complexity <= vesting_schedule.distribution_info.get_curve().size() {
+            if max_vesting_complexity <= vesting_schedule.curve.size() {
                 log!(
                     &env,
                     "Vesting: Create vesting account: Invalid curve complexity for {}",
@@ -160,12 +156,12 @@ impl VestingTrait for Vesting {
                 &env,
                 &vesting_schedule.recipient,
                 &VestingInfo {
-                    balance: vesting_schedule.distribution_info.amount,
-                    distribution_info: vesting_schedule.distribution_info.clone(),
+                    balance: vested_amount,
+                    schedule: vesting_schedule.clone(),
                 },
             );
 
-            total_vested_amount += vesting_schedule.distribution_info.amount;
+            total_vested_amount += vested_amount;
         });
 
         // check if the admin has enough tokens to start the vesting contract
@@ -200,10 +196,7 @@ impl VestingTrait for Vesting {
         let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
 
         let vesting_info = get_vesting(&env, &sender);
-        let vested = vesting_info
-            .schedule
-            .get_curve(&env)
-            .value(env.ledger().timestamp());
+        let vested = vesting_info.schedule.curve.value(env.ledger().timestamp());
 
         let sender_balance = vesting_info.balance;
         let sender_liquid = sender_balance // this checks if we can withdraw any vesting
@@ -395,10 +388,7 @@ impl VestingTrait for Vesting {
 
     fn query_available_to_claim(env: Env, address: Address) -> i128 {
         let vesting_info = get_vesting(&env, &address);
-        let vested = vesting_info
-            .distribution_info
-            .get_curve()
-            .value(env.ledger().timestamp());
+        let vested = vesting_info.schedule.curve.value(env.ledger().timestamp());
 
         let sender_balance = vesting_info.balance;
         let sender_liquid = sender_balance

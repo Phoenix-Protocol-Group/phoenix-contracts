@@ -35,6 +35,9 @@ pub enum ContractError {
 
     VestingBothPresent = 27,
     VestingNonePresent = 28,
+
+    CurveConstant = 29,
+    CurveSLNotDecreasing = 30,
 }
 
 impl From<CurveError> for ContractError {

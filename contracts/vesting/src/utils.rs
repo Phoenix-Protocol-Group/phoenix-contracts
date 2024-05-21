@@ -14,29 +14,44 @@ pub fn check_duplications(env: &Env, accounts: Vec<VestingSchedule>) {
     }
 }
 
-/// Asserts the vesting schedule decreases to 0 eventually, and is never more than the
-/// amount being sent. If it doesn't match these conditions, returns an error.
-pub fn validate_vesting_schedule(
-    env: &Env,
-    schedule: &Curve,
-    amount: u128,
-) -> Result<(), ContractError> {
+/// Asserts the vesting schedule decreases to 0 eventually
+/// returns the total vested amount
+pub fn validate_vesting_schedule(env: &Env, schedule: &Curve) -> Result<u128, ContractError> {
     schedule.validate_monotonic_decreasing()?;
-    let (low, high) = schedule.range();
-    if low != 0 {
-        log!(
-            &env,
-            "Vesting: Transfer Vesting: Cannot transfer when non-fully vested"
-        );
-        panic_with_error!(&env, ContractError::NeverFullyVested)
-    } else if high > amount {
-        log!(
-            &env,
-            "Vesting: Assert Schedule Vest Amount: Vesting amount more than sent"
-        );
-        panic_with_error!(&env, ContractError::VestsMoreThanSent)
-    } else {
-        Ok(())
+    match schedule {
+        Curve::Constant(_) => {
+            log!(
+                &env,
+                "Vesting: Constant curve is not valid for a vesting schedule"
+            );
+            panic_with_error!(&env, ContractError::CurveConstant)
+        }
+        Curve::SaturatingLinear(sl) => {
+            // Check range
+            let (low, high) = (sl.max_y, sl.min_y);
+            if low != 0 {
+                log!(
+                    &env,
+                    "Vesting: Transfer Vesting: Cannot transfer when non-fully vested"
+                );
+                panic_with_error!(&env, ContractError::NeverFullyVested)
+            } else {
+                Ok(high) // return the total amount to be transferred
+            }
+        }
+        Curve::PiecewiseLinear(pl) => {
+            // Check the last step value
+            if pl.end_value().unwrap() != 0 {
+                log!(
+                    &env,
+                    "Vesting: Transfer Vesting: Cannot transfer when non-fully vested"
+                );
+                panic_with_error!(&env, ContractError::NeverFullyVested)
+            }
+
+            // Return the amount to be distributed (value of the first step)
+            Ok(pl.first_value().unwrap())
+        }
     }
 }
 
