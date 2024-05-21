@@ -135,7 +135,7 @@ mod test {
                 &env,
                 Step {
                     time: 60,
-                    value: 120,
+                    value: 150,
                 },
                 Step {
                     time: 120,
@@ -144,7 +144,7 @@ mod test {
             ],
         });
 
-        assert_eq!(validate_vesting_schedule(&env, &curve), Ok(120));
+        assert_eq!(validate_vesting_schedule(&env, &curve), Ok(150));
     }
 
     #[test]

@@ -1,5 +1,5 @@
 // mod claim;
-// mod instantiate;
+mod instantiate;
 // #[cfg(feature = "minter")]
 // mod minter;
 mod setup;
