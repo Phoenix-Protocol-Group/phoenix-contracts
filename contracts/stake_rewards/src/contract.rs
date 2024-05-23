@@ -103,7 +103,7 @@ impl StakingTrait for Staking {
         if is_initialized(&env) {
             log!(
                 &env,
-                "Stake: Initialize: initializing contract twice is not allowed"
+                "Stake rewards: Initialize: initializing contract twice is not allowed"
             );
             panic_with_error!(&env, ContractError::AlreadyInitialized);
         }
@@ -119,6 +119,26 @@ impl StakingTrait for Staking {
             reward_token,
         };
         save_config(&env, config);
+
+        let distribution = Distribution {
+            shares_per_point: 1u128,
+            shares_leftover: 0u64,
+            distributed_total: 0u128,
+            withdrawable_total: 0u128,
+            max_bonus_bps: 0u64,
+            bonus_per_day_bps: 0u64,
+        };
+
+        // add distribution to the vector of distributions
+        add_distribution(&env, &reward_token);
+        save_distribution(&env, &reward_token, &distribution);
+        // Create the default reward distribution curve which is just a flat 0 const
+        save_reward_curve(&env, asset, &Curve::Constant(0));
+
+        env.events().publish(
+            ("create_distribution_flow", "asset"),
+            &reward_token_client.address,
+        );
 
         utils::save_admin(&env, &admin);
         utils::init_total_staked(&env);
@@ -169,12 +189,19 @@ impl StakingTrait for Staking {
             Self::withdraw_rewards(env.clone(), sender.clone());
         }
 
-        let mut distribution = get_distribution(&env, &distribution_address);
-        let stakes = get_stakes(&env, &sender).total_stake;
-        let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+        let mut distribution = get_distribution(&env, &config.reward_token);
+
+        let stake_client = stake_contract::Client::new(&env, &config.lp_token);
+        let stakes = stake_client.query_staked(&sender);
+
+        // TODO FIXME: This is wrong, because the last stake would be removed already
+        // maybe call calculate_unbond first?
+        let mut last_stake = stakes.stakes.last().unwrap_or_default();
+
+        let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
         let new_power = calc_power(
             &config,
-            stakes - stake_amount,
+            stakes.total_stake - last_stake.stake,
             Decimal::one(),
             TOKEN_PER_POWER,
         );
@@ -187,17 +214,7 @@ impl StakingTrait for Staking {
             new_power,
         );
 
-        let mut stakes = get_stakes(&env, &sender);
-        remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
-        stakes.total_stake -= stake_amount;
-
-        let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
-        lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
-
-        save_stakes(&env, &sender, &stakes);
-        utils::decrease_total_staked(&env, &stake_amount);
-
-        env.events().publish(("unbond", "user"), &sender);
+        env.events().publish(("calculate_unbond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
         env.events().publish(("bond", "amount"), stake_amount);
     }
