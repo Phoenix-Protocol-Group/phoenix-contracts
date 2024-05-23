@@ -281,40 +281,38 @@ impl StakingTrait for Staking {
         env.events().publish(("withdraw_rewards", "user"), &sender);
         let config = get_config(&env);
 
-        for distribution_address in get_distributions(&env) {
-            // get distribution data for the given reward
-            let mut distribution = get_distribution(&env, &distribution_address);
-            // get withdraw adjustment for the given distribution
-            let mut withdraw_adjustment =
-                get_withdraw_adjustment(&env, &sender, &distribution_address);
-            // calculate current reward amount given the distribution and subtracting withdraw
-            // adjustments
-            let reward_amount =
-                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment, &config);
+        // get distribution data for the given reward
+        let mut distribution = get_distribution(&env, &config.reward_token);
+        // get withdraw adjustment for the given distribution
+        let mut withdraw_adjustment =
+            get_withdraw_adjustment(&env, &sender, &distribution_address);
+        // calculate current reward amount given the distribution and subtracting withdraw
+        // adjustments
+        let reward_amount =
+            withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment, &config);
 
-            if reward_amount == 0 {
-                continue;
-            }
-            withdraw_adjustment.withdrawn_rewards += reward_amount;
-            distribution.withdrawable_total -= reward_amount;
-
-            save_distribution(&env, &distribution_address, &distribution);
-            save_withdraw_adjustment(&env, &sender, &distribution_address, &withdraw_adjustment);
-
-            let reward_token_client = token_contract::Client::new(&env, &distribution_address);
-            reward_token_client.transfer(
-                &env.current_contract_address(),
-                &sender,
-                &(reward_amount as i128),
-            );
-
-            env.events().publish(
-                ("withdraw_rewards", "reward_token"),
-                &reward_token_client.address,
-            );
-            env.events()
-                .publish(("withdraw_rewards", "reward_amount"), reward_amount);
+        if reward_amount == 0 {
+            continue;
         }
+        withdraw_adjustment.withdrawn_rewards += reward_amount;
+        distribution.withdrawable_total -= reward_amount;
+
+        save_distribution(&env, &distribution_address, &distribution);
+        save_withdraw_adjustment(&env, &sender, &distribution_address, &withdraw_adjustment);
+
+        let reward_token_client = token_contract::Client::new(&env, &distribution_address);
+        reward_token_client.transfer(
+            &env.current_contract_address(),
+            &sender,
+            &(reward_amount as i128),
+        );
+
+        env.events().publish(
+            ("withdraw_rewards", "reward_token"),
+            &reward_token_client.address,
+        );
+        env.events()
+            .publish(("withdraw_rewards", "reward_amount"), reward_amount);
     }
 
     fn fund_distribution(
