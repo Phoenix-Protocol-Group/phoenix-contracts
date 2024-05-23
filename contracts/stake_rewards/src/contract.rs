@@ -220,61 +220,61 @@ impl StakingTrait for Staking {
     }
 
     fn distribute_rewards(env: Env) {
-        let total_staked_amount = get_total_staked_counter(&env);
+        let config = get_config(&env);
+
+        let stake_client = stake_contract::Client::new(&env, &config.lp_token);
+        let total_staked_amount = stake_client.query_total_staked(&sender);
         let total_rewards_power = calc_power(
-            &get_config(&env),
+            &config,
             total_staked_amount,
             Decimal::one(),
             TOKEN_PER_POWER,
         ) as u128;
 
         if total_rewards_power == 0 {
-            log!(&env, "Stake: No rewards to distribute!");
+            log!(&env, "Stake rewards: No rewards to distribute!");
             return;
         }
-        for distribution_address in get_distributions(&env) {
-            let mut distribution = get_distribution(&env, &distribution_address);
-            let withdrawable = distribution.withdrawable_total;
+        let mut distribution = get_distribution(&env, &config.reward_token);
+        let withdrawable = distribution.withdrawable_total;
 
-            let reward_token_client = token_contract::Client::new(&env, &distribution_address);
-            // Undistributed rewards are simply all tokens left on the contract
-            let undistributed_rewards =
-                reward_token_client.balance(&env.current_contract_address()) as u128;
+        let reward_token_client = token_contract::Client::new(&env, &distribution_address);
+        // Undistributed rewards are simply all tokens left on the contract
+        let undistributed_rewards =
+            reward_token_client.balance(&env.current_contract_address()) as u128;
 
-            let curve = get_reward_curve(&env, &distribution_address).expect("Stake: Distribute reward: Not reward curve exists, probably distribution haven't been created");
+        let curve = get_reward_curve(&env, &config.reward_token).expect("Stake: Distribute reward: Not reward curve exists, probably distribution haven't been created");
 
-            // Calculate how much we have received since the last time Distributed was called,
-            // including only the reward config amount that is eligible for distribution.
-            // This is the amount we will distribute to all mem
-            let amount =
-                undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
+        // Calculate how much we have received since the last time Distributed was called,
+        // including only the reward config amount that is eligible for distribution.
+        // This is the amount we will distribute to all mem
+        let amount = undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
 
-            if amount == 0 {
-                continue;
-            }
-
-            let leftover: u128 = distribution.shares_leftover.into();
-            let points = (amount << SHARES_SHIFT) + leftover;
-            let points_per_share = points / total_rewards_power;
-            distribution.shares_leftover = (points % total_rewards_power) as u64;
-
-            // Everything goes back to 128-bits/16-bytes
-            // Full amount is added here to total withdrawable, as it should not be considered on its own
-            // on future distributions - even if because of calculation offsets it is not fully
-            // distributed, the error is handled by leftover.
-            distribution.shares_per_point += points_per_share;
-            distribution.distributed_total += amount;
-            distribution.withdrawable_total += amount;
-
-            save_distribution(&env, &distribution_address, &distribution);
-
-            env.events().publish(
-                ("distribute_rewards", "asset"),
-                &reward_token_client.address,
-            );
-            env.events()
-                .publish(("distribute_rewards", "amount"), amount);
+        if amount == 0 {
+            continue;
         }
+
+        let leftover: u128 = distribution.shares_leftover.into();
+        let points = (amount << SHARES_SHIFT) + leftover;
+        let points_per_share = points / total_rewards_power;
+        distribution.shares_leftover = (points % total_rewards_power) as u64;
+
+        // Everything goes back to 128-bits/16-bytes
+        // Full amount is added here to total withdrawable, as it should not be considered on its own
+        // on future distributions - even if because of calculation offsets it is not fully
+        // distributed, the error is handled by leftover.
+        distribution.shares_per_point += points_per_share;
+        distribution.distributed_total += amount;
+        distribution.withdrawable_total += amount;
+
+        save_distribution(&env, &config.reward_token, &distribution);
+
+        env.events().publish(
+            ("distribute_rewards", "asset"),
+            &reward_token_client.address,
+        );
+        env.events()
+            .publish(("distribute_rewards", "amount"), amount);
     }
 
     fn withdraw_rewards(env: Env, sender: Address) {
