@@ -18,6 +18,7 @@ use crate::{
         AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
         WithdrawableReward, WithdrawableRewardsResponse,
     },
+    stake_contract,
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
@@ -26,7 +27,7 @@ use crate::{
         },
         Config, Stake,
     },
-    token_contract, stake_contract
+    token_contract,
 };
 use curve::Curve;
 
@@ -115,7 +116,7 @@ impl StakingTrait for Staking {
         let config = Config {
             staking_contract,
             owner,
-            reward_token
+            reward_token,
         };
         save_config(&env, config);
 
@@ -123,25 +124,26 @@ impl StakingTrait for Staking {
         utils::init_total_staked(&env);
     }
 
-    fn calculate_bond(env: Env, sender: Address/*, tokens: i128, total_stake: i128*/) {
+    fn calculate_bond(env: Env, sender: Address) {
         sender.require_auth();
 
         let ledger = env.ledger();
         let config = get_config(&env);
 
-
         let stake_client = stake_contract::Client::new(&env, &config.lp_token);
-        lp_token_client.transfer(&sender, &env.current_contract_address(), &tokens);
-
-        // let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
-        // lp_token_client.transfer(&sender, &env.current_contract_address(), &tokens);
+        let stakes = stake_client.query_staked(&sender);
 
         let now = ledger.timestamp();
 
-        let mut distribution = get_distribution(&env, &distribution_address);
+        let mut distribution = get_distribution(&env, &config.reward_token);
 
-        let old_power = calc_power(&config, total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-        let new_power = calc_power(&config, total_stake + tokens, Decimal::one(), TOKEN_PER_POWER);
+        let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+        let new_power = calc_power(
+            &config,
+            stakes.total_stake + tokens,
+            Decimal::one(),
+            TOKEN_PER_POWER,
+        );
         update_rewards(
             &env,
             &sender,
@@ -151,12 +153,7 @@ impl StakingTrait for Staking {
             new_power,
         );
 
-        save_total_stake(&env, &sender, &total_stake);
-        utils::increase_total_staked(&env, &tokens);
-
-        env.events().publish(("bond", "user"), &sender);
-        env.events().publish(("bond", "token"), &config.lp_token);
-        env.events().publish(("bond", "amount"), tokens);
+        env.events().publish(("calculate_bond", "user"), &sender);
     }
 
     fn calculate_unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
