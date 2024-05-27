@@ -724,7 +724,6 @@ fn first_mainnet_simulation() {
     };
     token_client.mint(&admin, &100_000_000);
 
-
     let vesting_schedules = vec![
         &env,
         VestingSchedule {
@@ -761,7 +760,6 @@ fn first_mainnet_simulation() {
     // user collects 1/3 of the vested tokens and transfers them to himself
     vesting_client.claim(&vester1, &0);
 
-
     assert_eq!(
         vesting_client.query_vesting_info(&vester1, &0),
         VestingInfo {
@@ -779,7 +777,10 @@ fn first_mainnet_simulation() {
 
     assert_eq!(vesting_client.query_balance(&vester1), 33_333_333);
     assert_eq!(token_client.balance(&vesting_client.address), 66_666_667);
-    assert_eq!(vesting_client.query_balance(&vesting_client.address), 66_666_667);
+    assert_eq!(
+        vesting_client.query_balance(&vesting_client.address),
+        66_666_667
+    );
 
     // we move time to the end of the vesting period
     env.ledger().with_mut(|li| li.timestamp = 1716820801);
