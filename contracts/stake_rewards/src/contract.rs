@@ -5,7 +5,6 @@ use soroban_sdk::{
 };
 
 use crate::distribution::calc_power;
-use crate::storage::SECONDS_IN_A_DAY;
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
@@ -38,9 +37,9 @@ contractmeta!(
 );
 
 #[contract]
-pub struct Staking;
+pub struct StakingRewards;
 
-pub trait StakingTrait {
+pub trait StakingRewardsTrait {
     // Sets the token contract addresses for this pool
     #[allow(clippy::too_many_arguments)]
     fn initialize(
@@ -91,7 +90,7 @@ pub trait StakingTrait {
 }
 
 #[contractimpl]
-impl StakingTrait for Staking {
+impl StakingRewardsTrait for StakingRewards {
     #[allow(clippy::too_many_arguments)]
     fn initialize(
         env: Env,
@@ -111,7 +110,7 @@ impl StakingTrait for Staking {
         set_initialized(&env);
 
         env.events()
-            .publish(("initialize", "Staking rewards distribution contract"), &());
+            .publish(("initialize", "StakingRewards rewards distribution contract"), &());
 
         let config = Config {
             staking_contract,
@@ -490,7 +489,7 @@ impl StakingTrait for Staking {
 }
 
 #[contractimpl]
-impl Staking {
+impl StakingRewards {
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin(&env);
