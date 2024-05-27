@@ -705,3 +705,89 @@ fn claim_tokens_from_two_distributions() {
     assert_eq!(vesting_client.query_balance(&vester1), 2_000);
     assert_eq!(token_client.balance(&vesting_client.address), 0);
 }
+
+#[test]
+fn first_mainnet_simulation() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let vester1 = Address::generate(&env);
+    let token_client = deploy_token_contract(&env, &admin);
+
+    let vesting_token = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 7,
+        address: token_client.address.clone(),
+    };
+    token_client.mint(&admin, &100_000_000);
+
+
+    let vesting_schedules = vec![
+        &env,
+        VestingSchedule {
+            recipient: vester1.clone(),
+            curve: Curve::SaturatingLinear(SaturatingLinear {
+                // 1h schedule between 13:40 and 14:40
+                min_x: 1716817200,
+                min_y: 100000000,
+                max_x: 1716820800,
+                max_y: 0,
+            }),
+        },
+    ];
+
+    let vesting_client = instantiate_vesting_client(&env);
+
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
+
+    // we move time to the beginning of the vesting schedule (100s before)
+    env.ledger().with_mut(|li| li.timestamp = 1716817100);
+    vesting_client.create_vesting_schedules(&vesting_schedules);
+
+    // after initialization the admin has 0 vesting tokens
+    // contract has 120 vesting tokens
+    assert_eq!(token_client.balance(&admin), 0);
+    assert_eq!(token_client.balance(&vesting_client.address), 100_000_000);
+
+    // vester1 has 0 tokens before claiming the vested amount
+    assert_eq!(vesting_client.query_balance(&vester1), 0);
+
+    // we move time 20 minutes into the future, 1/3 of the schedule
+    env.ledger().with_mut(|li| li.timestamp = 1716818400);
+
+    // user collects 1/3 of the vested tokens and transfers them to himself
+    vesting_client.claim(&vester1, &0);
+
+
+    assert_eq!(
+        vesting_client.query_vesting_info(&vester1, &0),
+        VestingInfo {
+            recipient: vester1.clone(),
+            balance: 66_666_667,
+            schedule: Curve::SaturatingLinear(SaturatingLinear {
+                // 1h schedule between 13:40 and 14:40
+                min_x: 1716817200,
+                min_y: 100000000,
+                max_x: 1716820800,
+                max_y: 0,
+            }),
+        },
+    );
+
+    assert_eq!(vesting_client.query_balance(&vester1), 33_333_333);
+    assert_eq!(token_client.balance(&vesting_client.address), 66_666_667);
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 66_666_667);
+
+    // we move time to the end of the vesting period
+    env.ledger().with_mut(|li| li.timestamp = 1716820801);
+
+    // user collects the remaining vested tokens and transfers them to himself
+    vesting_client.claim(&vester1, &0);
+
+    assert_eq!(vesting_client.query_balance(&vester1), 100_000_000);
+
+    assert_eq!(vesting_client.query_balance(&vesting_client.address), 0);
+}
