@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -29,19 +29,15 @@ pub fn save_config(env: &Env, config: Config) {
 }
 
 pub mod utils {
-    use crate::error::ContractError;
-
     use super::*;
 
-    use soroban_sdk::{log, panic_with_error, ConversionError, TryFromVal, Val};
+    use soroban_sdk::{ConversionError, TryFromVal, Val};
 
     #[derive(Clone, Copy)]
     #[repr(u32)]
     pub enum DataKey {
-        Admin = 0,
-        TotalStaked = 1,
-        Distributions = 2,
-        Initialized = 3,
+        Initialized = 0,
+        Admin = 1,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -69,25 +65,5 @@ pub mod utils {
 
     pub fn get_admin(e: &Env) -> Address {
         e.storage().persistent().get(&DataKey::Admin).unwrap()
-    }
-
-    // Keep track of all distributions to be able to iterate over them
-    pub fn add_distribution(e: &Env, asset: &Address) {
-        let mut distributions = get_distributions(e);
-        if distributions.contains(asset) {
-            log!(&e, "Stake: Add distribution: Distribution already added");
-            panic_with_error!(&e, ContractError::DistributionExists);
-        }
-        distributions.push_back(asset.clone());
-        e.storage()
-            .persistent()
-            .set(&DataKey::Distributions, &distributions);
-    }
-
-    pub fn get_distributions(e: &Env) -> Vec<Address> {
-        e.storage()
-            .persistent()
-            .get(&DataKey::Distributions)
-            .unwrap_or_else(|| soroban_sdk::vec![e])
     }
 }

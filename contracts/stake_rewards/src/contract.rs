@@ -1,6 +1,6 @@
 use soroban_decimal::Decimal;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
 };
 
 use crate::distribution::calc_power;
@@ -12,16 +12,11 @@ use crate::{
         withdrawable_rewards, Distribution, SHARES_SHIFT,
     },
     error::ContractError,
-    msg::{
-        AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, WithdrawableReward,
-        WithdrawableRewardsResponse,
-    },
+    msg::{AnnualizedRewardResponse, ConfigResponse, WithdrawableRewardResponse},
     stake_contract,
     storage::{
         get_config, save_config,
-        utils::{
-            self, add_distribution, get_admin, get_distributions, is_initialized, set_initialized,
-        },
+        utils::{self, get_admin, is_initialized, set_initialized},
         Config,
     },
     token_contract,
@@ -72,13 +67,13 @@ pub trait StakingRewardsTrait {
 
     fn query_admin(env: Env) -> Address;
 
-    fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
+    fn query_annualized_reward(env: Env) -> AnnualizedRewardResponse;
 
-    fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
+    fn query_withdrawable_reward(env: Env, address: Address) -> WithdrawableRewardResponse;
 
-    fn query_distributed_rewards(env: Env, asset: Address) -> u128;
+    fn query_distributed_reward(env: Env, asset: Address) -> u128;
 
-    fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
+    fn query_undistributed_reward(env: Env, asset: Address) -> u128;
 }
 
 #[contractimpl]
@@ -126,8 +121,6 @@ impl StakingRewardsTrait for StakingRewards {
             bonus_per_day_bps: 0u64,
         };
 
-        // add distribution to the vector of distributions
-        add_distribution(&env, &reward_token);
         save_distribution(&env, &reward_token, &distribution);
         // Create the default reward distribution curve which is just a flat 0 const
         save_reward_curve(&env, reward_token.clone(), &Curve::Constant(0));
@@ -174,10 +167,10 @@ impl StakingRewardsTrait for StakingRewards {
         let config = get_config(&env);
 
         // check for rewards and withdraw them
-        let found_rewards: WithdrawableRewardsResponse =
-            Self::query_withdrawable_rewards(env.clone(), sender.clone());
+        let found_rewards: WithdrawableRewardResponse =
+            Self::query_withdrawable_reward(env.clone(), sender.clone());
 
-        if !found_rewards.rewards.is_empty() {
+        if found_rewards.reward_amount != 0 {
             Self::withdraw_rewards(env.clone(), sender.clone());
         }
 
@@ -400,68 +393,58 @@ impl StakingRewardsTrait for StakingRewards {
         get_admin(&env)
     }
 
-    fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
+    fn query_annualized_reward(env: Env) -> AnnualizedRewardResponse {
         let now = env.ledger().timestamp();
-        let mut aprs = vec![&env];
         let config = get_config(&env);
         let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
         let total_stake_amount = stake_client.query_total_staked();
 
-        for distribution_address in get_distributions(&env) {
-            let total_stake_power =
-                calc_power(&config, total_stake_amount, Decimal::one(), TOKEN_PER_POWER);
-            if total_stake_power == 0 {
-                aprs.push_back(AnnualizedReward {
-                    asset: distribution_address.clone(),
-                    amount: String::from_str(&env, "0"),
-                });
-                continue;
-            }
-
-            // get distribution data for the given reward
-            let distribution = get_distribution(&env, &distribution_address);
-            let curve = get_reward_curve(&env, &distribution_address);
-            let annualized_payout = calculate_annualized_payout(curve, now);
-            let apr = annualized_payout
-                / (total_stake_power as u128 * distribution.shares_per_point) as i128;
-
-            aprs.push_back(AnnualizedReward {
-                asset: distribution_address.clone(),
-                amount: apr.to_string(&env),
-            });
+        let total_stake_power =
+            calc_power(&config, total_stake_amount, Decimal::one(), TOKEN_PER_POWER);
+        if total_stake_power == 0 {
+            return AnnualizedRewardResponse {
+                asset: config.reward_token.clone(),
+                amount: String::from_str(&env, "0"),
+            };
         }
 
-        AnnualizedRewardsResponse { rewards: aprs }
+        // get distribution data for the given reward
+        let distribution = get_distribution(&env, &config.reward_token);
+        let curve = get_reward_curve(&env, &config.reward_token);
+        let annualized_payout = calculate_annualized_payout(curve, now);
+        let apr =
+            annualized_payout / (total_stake_power as u128 * distribution.shares_per_point) as i128;
+
+        AnnualizedRewardResponse {
+            asset: config.reward_token.clone(),
+            amount: apr.to_string(&env),
+        }
     }
 
-    fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
+    fn query_withdrawable_reward(env: Env, user: Address) -> WithdrawableRewardResponse {
         let config = get_config(&env);
         // iterate over all distributions and calculate withdrawable rewards
-        let mut rewards = vec![&env];
-        for distribution_address in get_distributions(&env) {
-            // get distribution data for the given reward
-            let distribution = get_distribution(&env, &distribution_address);
-            // get withdraw adjustment for the given distribution
-            let withdraw_adjustment = get_withdraw_adjustment(&env, &user, &distribution_address);
-            // calculate current reward amount given the distribution and subtracting withdraw
-            // adjustments
-            let reward_amount =
-                withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
-            rewards.push_back(WithdrawableReward {
-                reward_address: distribution_address,
-                reward_amount,
-            });
-        }
+        // get distribution data for the given reward
+        let distribution = get_distribution(&env, &config.reward_token);
+        // get withdraw adjustment for the given distribution
+        let withdraw_adjustment = get_withdraw_adjustment(&env, &user, &config.reward_token);
+        // calculate current reward amount given the distribution and subtracting withdraw
+        // adjustments
+        let reward_amount =
+            withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
 
-        WithdrawableRewardsResponse { rewards }
+        WithdrawableRewardResponse {
+            reward_address: config.reward_token,
+            reward_amount,
+        }
     }
 
-    fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
+    fn query_distributed_reward(env: Env, asset: Address) -> u128 {
         let distribution = get_distribution(&env, &asset);
         distribution.distributed_total
     }
 
-    fn query_undistributed_rewards(env: Env, asset: Address) -> u128 {
+    fn query_undistributed_reward(env: Env, asset: Address) -> u128 {
         let distribution = get_distribution(&env, &asset);
         let reward_token_client = token_contract::Client::new(&env, &asset);
         reward_token_client.balance(&env.current_contract_address()) as u128

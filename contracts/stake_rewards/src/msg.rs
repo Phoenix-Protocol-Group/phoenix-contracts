@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, String, Vec};
+use soroban_sdk::{contracttype, Address, String};
 
 use crate::storage::Config;
 
@@ -10,26 +10,14 @@ pub struct ConfigResponse {
 
 #[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct AnnualizedReward {
+pub struct AnnualizedRewardResponse {
     pub asset: Address,
     pub amount: String,
 }
 
 #[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct AnnualizedRewardsResponse {
-    pub rewards: Vec<AnnualizedReward>,
-}
-#[contracttype]
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct WithdrawableReward {
+pub struct WithdrawableRewardResponse {
     pub reward_address: Address,
     pub reward_amount: u128,
-}
-
-#[contracttype]
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct WithdrawableRewardsResponse {
-    /// Amount of rewards assigned for withdrawal from the given address.
-    pub rewards: Vec<WithdrawableReward>,
 }
