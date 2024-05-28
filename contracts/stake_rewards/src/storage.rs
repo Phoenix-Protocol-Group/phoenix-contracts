@@ -3,18 +3,15 @@ use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
-    pub lp_token: Address,
-    pub min_bond: i128,
-    pub min_reward: i128,
-    // Address of a user, allowed to create distribution flows
-    pub manager: Address,
-    // Address of the factory contract that initialized this pool and stake contract
-    pub owner: Address,
-    // Maximum complexity for the reward distribution curve
+    // Address of the staking contract that this reward distribution contract is
+    // connected to. It can not be changed
+    pub staking_contract: Address,
+    // Token that is being distributed through this contract
+    pub reward_token: Address,
+    // Maximum complexity of the reward distribution curve; the bigger, the more resources it uses
     pub max_complexity: u32,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
-pub const SECONDS_IN_A_DAY: u64 = 86_400;
 
 pub fn get_config(env: &Env) -> Config {
     env.storage()

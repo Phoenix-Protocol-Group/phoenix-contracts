@@ -47,12 +47,12 @@ pub trait StakingRewardsTrait {
         admin: Address,
         staking_contract: Address,
         reward_token: Address,
-        owner: Address,
+        max_complexity: u32,
     );
 
-    fn bond(env: Env, sender: Address, tokens: i128);
+    fn calculate_bond(env: Env, sender: Address);
 
-    fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
+    fn calculate_unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
 
     fn distribute_rewards(env: Env);
 
@@ -94,7 +94,7 @@ impl StakingRewardsTrait for StakingRewards {
         admin: Address,
         staking_contract: Address,
         reward_token: Address,
-        owner: Address,
+        max_complexity: u32,
     ) {
         if is_initialized(&env) {
             log!(
@@ -108,13 +108,13 @@ impl StakingRewardsTrait for StakingRewards {
 
         env.events().publish(
             ("initialize", "StakingRewards rewards distribution contract"),
-            &(),
+            (),
         );
 
         let config = Config {
             staking_contract,
-            owner,
             reward_token,
+            max_complexity,
         };
         save_config(&env, config);
 
@@ -131,12 +131,10 @@ impl StakingRewardsTrait for StakingRewards {
         add_distribution(&env, &reward_token);
         save_distribution(&env, &reward_token, &distribution);
         // Create the default reward distribution curve which is just a flat 0 const
-        save_reward_curve(&env, asset, &Curve::Constant(0));
+        save_reward_curve(&env, reward_token, &Curve::Constant(0));
 
-        env.events().publish(
-            ("create_distribution_flow", "asset"),
-            &reward_token_client.address,
-        );
+        env.events()
+            .publish(("create_distribution_flow", "asset"), &reward_token);
 
         utils::save_admin(&env, &admin);
         utils::init_total_staked(&env);
@@ -148,17 +146,18 @@ impl StakingRewardsTrait for StakingRewards {
         let ledger = env.ledger();
         let config = get_config(&env);
 
-        let stake_client = stake_contract::Client::new(&env, &config.lp_token);
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
         let stakes = stake_client.query_staked(&sender);
 
         let now = ledger.timestamp();
 
         let mut distribution = get_distribution(&env, &config.reward_token);
+        let mut last_stake = stakes.stakes.last().unwrap_or_default();
 
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
         let new_power = calc_power(
             &config,
-            stakes.total_stake + tokens,
+            stakes.total_stake + last_stake,
             Decimal::one(),
             TOKEN_PER_POWER,
         );
@@ -189,7 +188,7 @@ impl StakingRewardsTrait for StakingRewards {
 
         let mut distribution = get_distribution(&env, &config.reward_token);
 
-        let stake_client = stake_contract::Client::new(&env, &config.lp_token);
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
         let stakes = stake_client.query_staked(&sender);
 
         // TODO FIXME: This is wrong, because the last stake would be removed already
@@ -206,7 +205,7 @@ impl StakingRewardsTrait for StakingRewards {
         update_rewards(
             &env,
             &sender,
-            &distribution_address,
+            &config.reward_token,
             &mut distribution,
             old_power,
             new_power,
@@ -220,8 +219,8 @@ impl StakingRewardsTrait for StakingRewards {
     fn distribute_rewards(env: Env) {
         let config = get_config(&env);
 
-        let stake_client = stake_contract::Client::new(&env, &config.lp_token);
-        let total_staked_amount = stake_client.query_total_staked(&sender);
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+        let total_staked_amount = stake_client.query_total_staked();
         let total_rewards_power = calc_power(
             &config,
             total_staked_amount,
@@ -236,7 +235,7 @@ impl StakingRewardsTrait for StakingRewards {
         let mut distribution = get_distribution(&env, &config.reward_token);
         let withdrawable = distribution.withdrawable_total;
 
-        let reward_token_client = token_contract::Client::new(&env, &distribution_address);
+        let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         // Undistributed rewards are simply all tokens left on the contract
         let undistributed_rewards =
             reward_token_client.balance(&env.current_contract_address()) as u128;
@@ -249,7 +248,7 @@ impl StakingRewardsTrait for StakingRewards {
         let amount = undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
 
         if amount == 0 {
-            continue;
+            return;
         }
 
         let leftover: u128 = distribution.shares_leftover.into();
@@ -282,22 +281,22 @@ impl StakingRewardsTrait for StakingRewards {
         // get distribution data for the given reward
         let mut distribution = get_distribution(&env, &config.reward_token);
         // get withdraw adjustment for the given distribution
-        let mut withdraw_adjustment = get_withdraw_adjustment(&env, &sender, &distribution_address);
+        let mut withdraw_adjustment = get_withdraw_adjustment(&env, &sender, &config.reward_token);
         // calculate current reward amount given the distribution and subtracting withdraw
         // adjustments
         let reward_amount =
             withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment, &config);
 
         if reward_amount == 0 {
-            continue;
+            return;
         }
         withdraw_adjustment.withdrawn_rewards += reward_amount;
         distribution.withdrawable_total -= reward_amount;
 
-        save_distribution(&env, &distribution_address, &distribution);
-        save_withdraw_adjustment(&env, &sender, &distribution_address, &withdraw_adjustment);
+        save_distribution(&env, &config.reward_token, &distribution);
+        save_withdraw_adjustment(&env, &sender, &config.reward_token, &withdraw_adjustment);
 
-        let reward_token_client = token_contract::Client::new(&env, &distribution_address);
+        let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         reward_token_client.transfer(
             &env.current_contract_address(),
             &sender,
