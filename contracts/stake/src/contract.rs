@@ -175,34 +175,34 @@ impl StakingTrait for Staking {
 
         stakes.total_stake += tokens;
         // if user bonds again within 12 hours, merge his stakes
-        let stake = if now - (SECONDS_IN_A_DAY / 2) < last_stake.stake_timestamp {
-            last_stake.stake += tokens;
-            last_stake.stake_timestamp = now;
-            // we get rid of the last stake
-            stakes.stakes.pop_back();
-            last_stake
-        } else {
-            Stake {
-                stake: tokens,
-                stake_timestamp: ledger.timestamp(),
-            }
+        // let stake = if now - (SECONDS_IN_A_DAY / 2) < last_stake.stake_timestamp {
+        //     last_stake.stake += tokens;
+        //     last_stake.stake_timestamp = now;
+        //     // we get rid of the last stake
+        //     stakes.stakes.pop_back();
+        //     last_stake
+        // } else {
+        let stake = Stake {
+            stake: tokens,
+            stake_timestamp: ledger.timestamp(),
         };
+        // };
         stakes.stakes.push_back(stake);
 
-        for distribution_address in get_distributions(&env) {
-            let mut distribution = get_distribution(&env, &distribution_address);
-            let stakes: i128 = get_stakes(&env, &sender).total_stake;
-            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-            let new_power = calc_power(&config, stakes + tokens, Decimal::one(), TOKEN_PER_POWER);
-            update_rewards(
-                &env,
-                &sender,
-                &distribution_address,
-                &mut distribution,
-                old_power,
-                new_power,
-            );
-        }
+        // for distribution_address in get_distributions(&env) {
+        //     let mut distribution = get_distribution(&env, &distribution_address);
+        //     let stakes: i128 = get_stakes(&env, &sender).total_stake;
+        //     let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+        //     let new_power = calc_power(&config, stakes + tokens, Decimal::one(), TOKEN_PER_POWER);
+        //     update_rewards(
+        //         &env,
+        //         &sender,
+        //         &distribution_address,
+        //         &mut distribution,
+        //         old_power,
+        //         new_power,
+        //     );
+        // }
 
         save_stakes(&env, &sender, &stakes);
         utils::increase_total_staked(&env, &tokens);

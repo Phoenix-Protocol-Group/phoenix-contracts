@@ -27,6 +27,28 @@ fn initialize_staking_contract() {
     assert_eq!(staking.query_admin(), admin);
 }
 
+#[test]
+fn calculate_bond_one_user() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let (staking, staking_rewards) =
+        deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
+
+    let user1 = Address::generate(&env);
+    lp_token.mint(&user1, &10_000);
+    assert_eq!(lp_token.balance(&user1), 10_000);
+    assert_eq!(lp_token.balance(&staking.address), 0);
+    assert_eq!(staking.query_config().config.lp_token, lp_token.address);
+    staking.bond(&user1, &10_000);
+
+    staking_rewards.calculate_bond(&user1);
+}
+
 // #[test]
 // #[should_panic(expected = "Stake: Initialize: initializing contract twice is not allowed")]
 // fn test_deploying_stake_twice_should_fail() {
