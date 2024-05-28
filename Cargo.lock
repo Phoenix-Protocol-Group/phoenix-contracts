@@ -784,7 +784,6 @@ version = "1.0.0"
 dependencies = [
  "curve",
  "phoenix",
- "pretty_assertions",
  "soroban-decimal",
  "soroban-sdk",
 ]

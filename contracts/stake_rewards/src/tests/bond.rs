@@ -23,8 +23,8 @@ fn initialize_staking_contract() {
     let (staking, staking_rewards) =
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
 
-    let response = staking_rewards.query_admin();
-    assert_eq!(response, admin);
+    assert_eq!(staking_rewards.query_admin(), admin);
+    assert_eq!(staking.query_admin(), admin);
 }
 
 // #[test]
