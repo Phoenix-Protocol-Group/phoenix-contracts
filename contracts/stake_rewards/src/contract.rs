@@ -152,7 +152,7 @@ impl StakingRewardsTrait for StakingRewards {
         let now = ledger.timestamp();
 
         let mut distribution = get_distribution(&env, &config.reward_token);
-        let mut last_stake = stakes.stakes.last().unwrap_or_default();
+        let mut last_stake = stakes.stakes.last().unwrap();
 
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
         let new_power = calc_power(
