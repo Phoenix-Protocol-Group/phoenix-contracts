@@ -45,12 +45,9 @@ pub trait StakingRewardsTrait {
     fn initialize(
         env: Env,
         admin: Address,
-        lp_token: Address,
-        min_bond: i128,
-        min_reward: i128,
-        manager: Address,
+        staking_contract: Address,
+        reward_token: Address,
         owner: Address,
-        max_complexity: u32,
     );
 
     fn bond(env: Env, sender: Address, tokens: i128);
@@ -109,8 +106,10 @@ impl StakingRewardsTrait for StakingRewards {
 
         set_initialized(&env);
 
-        env.events()
-            .publish(("initialize", "StakingRewards rewards distribution contract"), &());
+        env.events().publish(
+            ("initialize", "StakingRewards rewards distribution contract"),
+            &(),
+        );
 
         let config = Config {
             staking_contract,
@@ -283,8 +282,7 @@ impl StakingRewardsTrait for StakingRewards {
         // get distribution data for the given reward
         let mut distribution = get_distribution(&env, &config.reward_token);
         // get withdraw adjustment for the given distribution
-        let mut withdraw_adjustment =
-            get_withdraw_adjustment(&env, &sender, &distribution_address);
+        let mut withdraw_adjustment = get_withdraw_adjustment(&env, &sender, &distribution_address);
         // calculate current reward amount given the distribution and subtracting withdraw
         // adjustments
         let reward_amount =
