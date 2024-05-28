@@ -3,10 +3,7 @@ use soroban_sdk::{contracttype, Address, Env};
 use curve::Curve;
 use soroban_decimal::Decimal;
 
-use crate::{
-    storage::{get_stakes, Config},
-    TOKEN_PER_POWER,
-};
+use crate::{stake_contract, storage::Config, TOKEN_PER_POWER};
 
 /// How much points is the worth of single token in rewards distribution.
 /// The scaling is performed to have better precision of fixed point division.
@@ -168,7 +165,8 @@ pub fn withdrawable_rewards(
 ) -> u128 {
     let ppw = distribution.shares_per_point;
 
-    let stakes: i128 = get_stakes(env, owner).total_stake;
+    let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+    let stakes: i128 = stake_client.query_staked(owner).total_stake;
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
     let points = calc_power(config, stakes as i128, Decimal::one(), TOKEN_PER_POWER);

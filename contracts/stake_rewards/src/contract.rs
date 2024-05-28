@@ -1,7 +1,6 @@
 use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
-    Vec,
 };
 
 use crate::distribution::calc_power;
@@ -14,17 +13,16 @@ use crate::{
     },
     error::ContractError,
     msg::{
-        AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
-        WithdrawableReward, WithdrawableRewardsResponse,
+        AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, WithdrawableReward,
+        WithdrawableRewardsResponse,
     },
     stake_contract,
     storage::{
-        get_config, get_stakes, save_config, save_stakes,
+        get_config, save_config,
         utils::{
-            self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
-            is_initialized, set_initialized,
+            self, add_distribution, get_admin, get_distributions, is_initialized, set_initialized,
         },
-        Config, Stake,
+        Config,
     },
     token_contract,
 };
@@ -73,10 +71,6 @@ pub trait StakingRewardsTrait {
     fn query_config(env: Env) -> ConfigResponse;
 
     fn query_admin(env: Env) -> Address;
-
-    fn query_staked(env: Env, address: Address) -> StakedResponse;
-
-    fn query_total_staked(env: Env) -> i128;
 
     fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
 
@@ -142,7 +136,6 @@ impl StakingRewardsTrait for StakingRewards {
             .publish(("create_distribution_flow", "asset"), &reward_token);
 
         utils::save_admin(&env, &admin);
-        utils::init_total_staked(&env);
     }
 
     fn calculate_bond(env: Env, sender: Address) {
@@ -407,21 +400,12 @@ impl StakingRewardsTrait for StakingRewards {
         get_admin(&env)
     }
 
-    fn query_staked(env: Env, address: Address) -> StakedResponse {
-        StakedResponse {
-            stakes: get_stakes(&env, &address).stakes,
-        }
-    }
-
-    fn query_total_staked(env: Env) -> i128 {
-        get_total_staked_counter(&env)
-    }
-
     fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
         let now = env.ledger().timestamp();
         let mut aprs = vec![&env];
         let config = get_config(&env);
-        let total_stake_amount = get_total_staked_counter(&env);
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+        let total_stake_amount = stake_client.query_total_staked();
 
         for distribution_address in get_distributions(&env) {
             let total_stake_power =
@@ -493,22 +477,6 @@ impl StakingRewards {
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
-    }
-}
-
-// Function to remove a stake from the vector
-fn remove_stake(env: &Env, stakes: &mut Vec<Stake>, stake: i128, stake_timestamp: u64) {
-    // Find the index of the stake that matches the given stake and stake_timestamp
-    if let Some(index) = stakes
-        .iter()
-        .position(|s| s.stake == stake && s.stake_timestamp == stake_timestamp)
-    {
-        // Remove the stake at the found index
-        stakes.remove(index as u32);
-    } else {
-        // Stake not found, return an error
-        log!(&env, "Stake: Remove stake: Stake not found");
-        panic_with_error!(&env, ContractError::StakeNotFound);
     }
 }
 
