@@ -10,6 +10,10 @@ pub struct Config {
     pub reward_token: Address,
     // Maximum complexity of the reward distribution curve; the bigger, the more resources it uses
     pub max_complexity: u32,
+    // Minimum reward amount to be distributed
+    pub min_reward: i128,
+    // Security precaution - if bond is too small, don't count it towards the bonding power
+    pub min_bond: i128,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 

@@ -48,11 +48,13 @@ pub trait StakingRewardsTrait {
         staking_contract: Address,
         reward_token: Address,
         max_complexity: u32,
+        min_reward: i128,
+        min_bond: i128,
     );
 
     fn calculate_bond(env: Env, sender: Address);
 
-    fn calculate_unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
+    fn calculate_unbond(env: Env, sender: Address);
 
     fn distribute_rewards(env: Env);
 
@@ -63,7 +65,6 @@ pub trait StakingRewardsTrait {
         sender: Address,
         start_time: u64,
         distribution_duration: u64,
-        token_address: Address,
         token_amount: i128,
     );
 
@@ -95,6 +96,8 @@ impl StakingRewardsTrait for StakingRewards {
         staking_contract: Address,
         reward_token: Address,
         max_complexity: u32,
+        min_reward: i128,
+        min_bond: i128,
     ) {
         if is_initialized(&env) {
             log!(
@@ -113,8 +116,10 @@ impl StakingRewardsTrait for StakingRewards {
 
         let config = Config {
             staking_contract,
-            reward_token,
+            reward_token: reward_token.clone(),
             max_complexity,
+            min_reward,
+            min_bond,
         };
         save_config(&env, config);
 
@@ -131,7 +136,7 @@ impl StakingRewardsTrait for StakingRewards {
         add_distribution(&env, &reward_token);
         save_distribution(&env, &reward_token, &distribution);
         // Create the default reward distribution curve which is just a flat 0 const
-        save_reward_curve(&env, reward_token, &Curve::Constant(0));
+        save_reward_curve(&env, reward_token.clone(), &Curve::Constant(0));
 
         env.events()
             .publish(("create_distribution_flow", "asset"), &reward_token);
@@ -143,21 +148,18 @@ impl StakingRewardsTrait for StakingRewards {
     fn calculate_bond(env: Env, sender: Address) {
         sender.require_auth();
 
-        let ledger = env.ledger();
         let config = get_config(&env);
 
         let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
         let stakes = stake_client.query_staked(&sender);
 
-        let now = ledger.timestamp();
-
         let mut distribution = get_distribution(&env, &config.reward_token);
-        let mut last_stake = stakes.stakes.last().unwrap();
+        let last_stake = stakes.stakes.last().unwrap();
 
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
         let new_power = calc_power(
             &config,
-            stakes.total_stake + last_stake,
+            stakes.total_stake + last_stake.stake,
             Decimal::one(),
             TOKEN_PER_POWER,
         );
@@ -173,7 +175,7 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("calculate_bond", "user"), &sender);
     }
 
-    fn calculate_unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
+    fn calculate_unbond(env: Env, sender: Address) {
         sender.require_auth();
 
         let config = get_config(&env);
@@ -193,7 +195,7 @@ impl StakingRewardsTrait for StakingRewards {
 
         // TODO FIXME: This is wrong, because the last stake would be removed already
         // maybe call calculate_unbond first?
-        let mut last_stake = stakes.stakes.last().unwrap_or_default();
+        let last_stake = stakes.stakes.last().unwrap();
 
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
         let new_power = calc_power(
@@ -212,8 +214,6 @@ impl StakingRewardsTrait for StakingRewards {
         );
 
         env.events().publish(("calculate_unbond", "user"), &sender);
-        env.events().publish(("bond", "token"), &config.lp_token);
-        env.events().publish(("bond", "amount"), stake_amount);
     }
 
     fn distribute_rewards(env: Env) {
@@ -316,15 +316,16 @@ impl StakingRewardsTrait for StakingRewards {
         sender: Address,
         start_time: u64,
         distribution_duration: u64,
-        token_address: Address,
         token_amount: i128,
     ) {
         sender.require_auth();
 
+        let config = get_config(&env);
+
         // Load previous reward curve; it must exist if the distribution exists
         // In case of first time funding, it will be a constant 0 curve
-        let previous_reward_curve = get_reward_curve(&env, &token_address).expect("Stake: Fund distribution: Not reward curve exists, probably distribution haven't been created");
-        let max_complexity = get_config(&env).max_complexity;
+        let previous_reward_curve = get_reward_curve(&env, &config.reward_token).expect("Stake rewards: Fund distribution: Not reward curve exists, probably distribution haven't been created");
+        let max_complexity = config.max_complexity;
 
         let current_time = env.ledger().timestamp();
         if start_time < current_time {
@@ -335,7 +336,6 @@ impl StakingRewardsTrait for StakingRewards {
             panic_with_error!(&env, ContractError::InvalidTime);
         }
 
-        let config = get_config(&env);
         if config.min_reward > token_amount {
             log!(
                 &env,
@@ -345,7 +345,7 @@ impl StakingRewardsTrait for StakingRewards {
         }
 
         // transfer tokens to fund distribution
-        let reward_token_client = token_contract::Client::new(&env, &token_address);
+        let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         reward_token_client.transfer(&sender, &env.current_contract_address(), &token_amount);
 
         let end_time = current_time + distribution_duration;
@@ -383,10 +383,10 @@ impl StakingRewardsTrait for StakingRewards {
             }
         }
 
-        save_reward_curve(&env, token_address.clone(), &new_reward_curve);
+        save_reward_curve(&env, config.reward_token.clone(), &new_reward_curve);
 
         env.events()
-            .publish(("fund_reward_distribution", "asset"), &token_address);
+            .publish(("fund_reward_distribution", "asset"), &config.reward_token);
         env.events()
             .publish(("fund_reward_distribution", "amount"), token_amount);
         env.events()
