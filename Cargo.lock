@@ -779,6 +779,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "phoenix-stake-rewards"
+version = "1.0.0"
+dependencies = [
+ "curve",
+ "phoenix",
+ "soroban-decimal",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "phoenix-trader"
 version = "1.0.0"
 dependencies = [

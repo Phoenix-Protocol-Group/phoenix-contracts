@@ -487,8 +487,10 @@ impl StakingTrait for Staking {
     }
 
     fn query_staked(env: Env, address: Address) -> StakedResponse {
+        let stakes = get_stakes(&env, &address);
         StakedResponse {
-            stakes: get_stakes(&env, &address).stakes,
+            stakes: stakes.stakes,
+            total_stake: stakes.total_stake,
         }
     }
 
