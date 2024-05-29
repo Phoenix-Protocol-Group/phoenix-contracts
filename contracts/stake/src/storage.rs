@@ -130,10 +130,7 @@ pub mod utils {
     }
 
     pub fn get_total_staked_counter(env: &Env) -> i128 {
-        env.storage()
-            .instance()
-            .get(&DataKey::TotalStaked)
-            .unwrap()
+        env.storage().instance().get(&DataKey::TotalStaked).unwrap()
     }
 
     // Keep track of all distributions to be able to iterate over them

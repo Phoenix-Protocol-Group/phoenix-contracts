@@ -175,18 +175,18 @@ impl StakingTrait for Staking {
 
         stakes.total_stake += tokens;
         // if user bonds again within 12 hours, merge his stakes
-        // let stake = if now - (SECONDS_IN_A_DAY / 2) < last_stake.stake_timestamp {
-        //     last_stake.stake += tokens;
-        //     last_stake.stake_timestamp = now;
-        //     // we get rid of the last stake
-        //     stakes.stakes.pop_back();
-        //     last_stake
-        // } else {
-        let stake = Stake {
-            stake: tokens,
-            stake_timestamp: ledger.timestamp(),
+        let stake = if now - (SECONDS_IN_A_DAY / 2) < last_stake.stake_timestamp {
+            last_stake.stake += tokens;
+            last_stake.stake_timestamp = now;
+            // we get rid of the last stake
+            stakes.stakes.pop_back();
+            last_stake
+        } else {
+            Stake {
+                stake: tokens,
+                stake_timestamp: ledger.timestamp(),
+            }
         };
-        // };
         stakes.stakes.push_back(stake);
 
         // for distribution_address in get_distributions(&env) {
