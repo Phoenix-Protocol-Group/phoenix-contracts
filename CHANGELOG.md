@@ -9,17 +9,21 @@ and this project adheres to
 ## Changed
 
 - decimal: Rename to `soroban-decimal` and publish in crates.io ([#299])
+- curve: try to optimize piecewise linear implementation ([#307])
 
 ## Added
 
 - Factory: Allows creation of stable pools ([#301])
 - Trader: Adds nominated trader contract to the DEX ([#288])
 - Multihop: Allows multihop swaps for stable pool ([#303])
+- Stake rewards: Create a new contract and prepare first testcases ([#306])
 
 [#288]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/288
 [#299]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/299
 [#301]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/301
 [#303]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/303
+[#306]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/306
+[#307]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/307
 
 ## [1.0.0] - 2024-05-08
 
