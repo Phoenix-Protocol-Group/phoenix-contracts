@@ -94,7 +94,7 @@ pub mod utils {
 
     pub fn is_initialized(e: &Env) -> bool {
         e.storage()
-            .persistent()
+            .instance()
             .get(&DataKey::Initialized)
             .unwrap_or(false)
     }
