@@ -298,21 +298,19 @@ pub struct PiecewiseLinear {
 impl PiecewiseLinear {
     /// provides y = f(x) evaluation
     pub fn value(&self, x: u64) -> u128 {
-        let mut iter = self.steps.iter();
+        if self.steps.is_empty() {
+            panic!("Steps are empty");
+        }
 
-        let mut prev: Option<Step> = None;
-        let mut next = match iter.next() {
-            Some(val) => val,
-            _ => panic!("Steps are empty or error in reading steps"),
-        };
+        let first = self.steps.get(0).unwrap();
+        let last = self.steps.get(self.steps.len() - 1).unwrap();
 
-        for step_result in iter {
-            if x >= next.time {
-                prev = Some(next);
-                next = step_result;
-            } else {
-                break;
-            }
+        if x <= first.time {
+            return first.value;
+        }
+
+        if x >= last.time {
+            return last.value;
         }
 
         // at this time:
@@ -320,17 +318,16 @@ impl PiecewiseLinear {
         // x may equal prev.0 (use this value)
         // x may be greater than next (if higher than last item)
         // OR x may be between prev and next (interpolate)
-        if let Some(last) = prev {
-            if x == last.time {
-                last.value
-            } else if x >= next.time {
-                next.value
-            } else {
-                interpolate((last.time, last.value), (next.time, next.value), x)
+        let mut prev = self.steps.get(0).unwrap();
+        for i in 1..self.steps.len() {
+            let next = self.steps.get(i).unwrap();
+            if x < next.time {
+                return interpolate((prev.time, prev.value), (next.time, next.value), x);
             }
-        } else {
-            next.value
+            prev = next;
         }
+
+        prev.value
     }
 
     /// general sanity checks on input values to ensure this is valid.
@@ -373,100 +370,83 @@ impl PiecewiseLinear {
     // Gives monotonic info. Requires there be at least one item in steps
     fn classify_curve(&self) -> Shape {
         let mut iter = self.steps.iter();
-        let Step {
-            time: _,
-            value: first,
-        } = iter.next().unwrap();
-        let (_, shape) = iter.fold((first, Shape::Constant), |(last, shape), step_result| {
-            let Step { time: _, value: y } = step_result;
-            let shape = match (shape, y.cmp(&last)) {
-                (Shape::NotMonotonic, _) => Shape::NotMonotonic,
-                (Shape::MonotonicDecreasing, Ordering::Greater) => Shape::NotMonotonic,
-                (Shape::MonotonicDecreasing, _) => Shape::MonotonicDecreasing,
-                (Shape::MonotonicIncreasing, Ordering::Less) => Shape::NotMonotonic,
-                (Shape::MonotonicIncreasing, _) => Shape::MonotonicIncreasing,
-                (Shape::Constant, Ordering::Greater) => Shape::MonotonicIncreasing,
-                (Shape::Constant, Ordering::Less) => Shape::MonotonicDecreasing,
-                (Shape::Constant, Ordering::Equal) => Shape::Constant,
-            };
-            (y, shape)
-        });
-        shape
+        let first_value = iter.next().unwrap().value;
+
+        iter.fold(
+            (first_value, Shape::Constant),
+            |(last_value, shape), step| {
+                let new_shape = match (shape, step.value.cmp(&last_value)) {
+                    (Shape::NotMonotonic, _) => Shape::NotMonotonic,
+                    (Shape::MonotonicDecreasing, Ordering::Greater) => Shape::NotMonotonic,
+                    (Shape::MonotonicDecreasing, _) => Shape::MonotonicDecreasing,
+                    (Shape::MonotonicIncreasing, Ordering::Less) => Shape::NotMonotonic,
+                    (Shape::MonotonicIncreasing, _) => Shape::MonotonicIncreasing,
+                    (Shape::Constant, Ordering::Greater) => Shape::MonotonicIncreasing,
+                    (Shape::Constant, Ordering::Less) => Shape::MonotonicDecreasing,
+                    (Shape::Constant, Ordering::Equal) => Shape::Constant,
+                };
+                (step.value, new_shape)
+            },
+        )
+        .1
     }
 
     /// return (min, max) that can ever be returned from value. These could potentially be 0 and u64::MAX
     pub fn range(&self) -> (u128, u128) {
-        let low = self
+        let (min, max) = self
             .steps
             .iter()
-            .map(|step_result| {
-                let Step { time: _, value: y } = step_result;
-                y
-            })
-            .min()
-            .unwrap();
-        let high = self
-            .steps
-            .iter()
-            .map(|step_result| {
-                let Step { time: _, value: y } = step_result;
-                y
-            })
-            .max()
-            .unwrap();
-        (low, high)
+            .map(|step| step.value)
+            .fold((u128::MAX, u128::MIN), |(min, max), value| {
+                (min.min(value), max.max(value))
+            });
+        (min, max)
     }
 
     /// adds two piecewise linear curves and returns the result
     pub fn combine(&self, env: &Env, other: &PiecewiseLinear) -> PiecewiseLinear {
-        // collect x-coordinates for combined curve
-        let mut x = soroban_sdk::Vec::new(env);
-        for step_result in self.steps.iter().chain(other.steps.iter()) {
-            let Step {
-                time: x_val,
-                value: _,
-            } = step_result;
-            x.push_back(x_val);
+        let mut times = soroban_sdk::Vec::new(env);
+        for step in self.steps.iter().chain(other.steps.iter()) {
+            times.push_back(step.time);
         }
 
-        // sort and deduplicate the vector
-        // Using bubble sort for now... we should use a more efficient sorting algorithm
-        let len = x.len();
+        // Sort the times using a simple bubble sort
+        let len = times.len();
         for i in 0..len {
-            for j in 0..len - i - 1 {
-                let val_j = x.get(j).unwrap();
-                let val_next = x.get(j + 1).unwrap();
-                if val_j > val_next {
-                    // use a temporary variable for swapping
-                    let tmp = x.get(j).unwrap();
-                    x.set(j, x.get(j + 1).unwrap());
-                    x.set(j + 1, tmp);
+            for j in 0..len - 1 - i {
+                let a = times.get(j).unwrap();
+                let b = times.get(j + 1).unwrap();
+                if a > b {
+                    times.set(j, b);
+                    times.set(j + 1, a);
                 }
             }
         }
 
-        // deduplication
-        let mut i = 0;
-        while i < x.len() - 1 {
-            let val_i = x.get_unchecked(i);
-            let val_next = x.get_unchecked(i + 1);
-            if val_i == val_next {
-                x.remove(i);
-            } else {
-                i += 1;
+        // Deduplicate the sorted times
+        let mut deduped_times = soroban_sdk::Vec::new(env);
+        let mut last_time = None;
+        for i in 0..times.len() {
+            let current_time = times.get(i).unwrap();
+            if Some(current_time) != last_time {
+                deduped_times.push_back(current_time);
+                last_time = Some(current_time);
             }
         }
 
-        // map to full coordinates
-        let mut steps = soroban_sdk::Vec::new(env);
-        for x_val in x {
-            steps.push_back(Step {
-                time: x_val,
-                value: self.value(x_val) + other.value(x_val),
+        // Create steps for the combined piecewise linear curve
+        let mut combined_steps = soroban_sdk::Vec::new(env);
+        for i in 0..deduped_times.len() {
+            let t = deduped_times.get(i).unwrap();
+            combined_steps.push_back(Step {
+                time: t,
+                value: self.value(t) + other.value(t),
             });
         }
 
-        PiecewiseLinear { steps }
+        PiecewiseLinear {
+            steps: combined_steps,
+        }
     }
 
     fn end(&self) -> Option<u64> {
@@ -1025,7 +1005,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Steps are empty or error in reading steps")]
+    #[should_panic(expected = "Steps are empty")]
     fn test_piecewise_value() {
         let env = Env::default();
         let curve = Curve::PiecewiseLinear(PiecewiseLinear { steps: vec![&env] });
