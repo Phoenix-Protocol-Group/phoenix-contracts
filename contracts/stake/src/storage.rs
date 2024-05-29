@@ -100,38 +100,38 @@ pub mod utils {
     }
 
     pub fn set_initialized(e: &Env) {
-        e.storage().persistent().set(&DataKey::Initialized, &true);
+        e.storage().instance().set(&DataKey::Initialized, &true);
     }
 
     pub fn save_admin(e: &Env, address: &Address) {
-        e.storage().persistent().set(&DataKey::Admin, address)
+        e.storage().instance().set(&DataKey::Admin, address)
     }
 
     pub fn get_admin(e: &Env) -> Address {
-        e.storage().persistent().get(&DataKey::Admin).unwrap()
+        e.storage().instance().get(&DataKey::Admin).unwrap()
     }
 
     pub fn init_total_staked(e: &Env) {
-        e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
+        e.storage().instance().set(&DataKey::TotalStaked, &0i128);
     }
 
     pub fn increase_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
         e.storage()
-            .persistent()
+            .instance()
             .set(&DataKey::TotalStaked, &(count + amount));
     }
 
     pub fn decrease_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
         e.storage()
-            .persistent()
+            .instance()
             .set(&DataKey::TotalStaked, &(count - amount));
     }
 
     pub fn get_total_staked_counter(env: &Env) -> i128 {
         env.storage()
-            .persistent()
+            .instance()
             .get(&DataKey::TotalStaked)
             .unwrap()
     }

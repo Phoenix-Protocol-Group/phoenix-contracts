@@ -31,6 +31,7 @@ fn initialize_staking_contract() {
 fn calculate_bond_one_user() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
@@ -38,6 +39,16 @@ fn calculate_bond_one_user() {
 
     let (staking, staking_rewards) =
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
+    assert_eq!(staking.query_total_staked(), 0);
+
+    let start_timestamp = 100;
+    env.ledger().with_mut(|li| {
+        li.timestamp = start_timestamp;
+    });
+
+    reward_token.mint(&admin, &1_000_000);
+    let reward_duration = 600;
+    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
 
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &10_000);
@@ -47,6 +58,42 @@ fn calculate_bond_one_user() {
     staking.bond(&user1, &10_000);
 
     staking_rewards.calculate_bond(&user1);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = start_timestamp + 300; // move to a middle of distribution
+    });
+
+    staking_rewards.distribute_rewards();
+
+    assert_eq!(
+        staking_rewards.query_undistributed_reward(&reward_token.address),
+        500_000 // half of the reward are undistributed
+    );
+    assert_eq!(
+        staking_rewards.query_distributed_reward(&reward_token.address),
+        500_000
+    );
+
+    staking_rewards.withdraw_rewards(&user1);
+    assert_eq!(reward_token.balance(&user1), 500_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = start_timestamp + reward_duration; // move to the end of the distribution
+    });
+
+    staking_rewards.distribute_rewards();
+
+    assert_eq!(
+        staking_rewards.query_undistributed_reward(&reward_token.address),
+        0
+    );
+    assert_eq!(
+        staking_rewards.query_distributed_reward(&reward_token.address),
+        1_000_000
+    );
+
+    staking_rewards.withdraw_rewards(&user1);
+    assert_eq!(reward_token.balance(&user1), 1_000_000);
 }
 
 // #[test]
