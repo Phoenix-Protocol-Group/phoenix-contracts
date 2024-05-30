@@ -32,6 +32,7 @@ contractmeta!(
 #[contract]
 pub struct StableLiquidityPool;
 
+#[allow(dead_code)]
 pub trait StableLiquidityPoolTrait {
     // Sets the token contract addresses for this pool
     // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token

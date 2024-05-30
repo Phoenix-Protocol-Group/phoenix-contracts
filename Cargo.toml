@@ -15,9 +15,9 @@ phoenix = { path = "./packages/phoenix" }
 num-integer = { version = "0.1.45", default-features = false, features = [
     "i128",
 ] }
-soroban-sdk = "20.4.0"
-soroban-token-sdk = "20.4.0"
-test-case = "3.1"
+soroban-sdk = "20.5.0"
+soroban-token-sdk = "20.5.0"
+test-case = "3.3"
 pretty_assertions = "1.4.0"
 
 [profile.release]

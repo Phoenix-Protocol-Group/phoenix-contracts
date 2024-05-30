@@ -20,6 +20,7 @@ contractmeta!(key = "Description", val = "Phoenix Protocol Factory");
 #[contract]
 pub struct Factory;
 
+#[allow(dead_code)]
 pub trait FactoryTrait {
     #[allow(clippy::too_many_arguments)]
     fn initialize(

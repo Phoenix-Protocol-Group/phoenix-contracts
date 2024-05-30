@@ -165,11 +165,11 @@ pub fn withdrawable_rewards(
 ) -> u128 {
     let ppw = distribution.shares_per_point;
 
-    let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+    let stake_client = stake_contract::Client::new(env, &config.staking_contract);
     let stakes: i128 = stake_client.query_staked(owner).total_stake;
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
-    let points = calc_power(config, stakes as i128, Decimal::one(), TOKEN_PER_POWER);
+    let points = calc_power(config, stakes, Decimal::one(), TOKEN_PER_POWER);
     let points = (ppw * points as u128) as i128;
 
     let correction = adjustment.shares_correction;

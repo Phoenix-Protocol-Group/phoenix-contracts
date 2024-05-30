@@ -39,6 +39,7 @@ contractmeta!(
 #[contract]
 pub struct Staking;
 
+#[allow(dead_code)]
 pub trait StakingTrait {
     // Sets the token contract addresses for this pool
     #[allow(clippy::too_many_arguments)]

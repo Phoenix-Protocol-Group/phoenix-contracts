@@ -1,15 +1,9 @@
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
-    vec, Address, Env,
+    Address, Env,
 };
 
 use super::setup::{deploy_staking_rewards_contract, deploy_token_contract};
-
-use crate::{
-    contract::{StakingRewards, StakingRewardsClient},
-    msg::ConfigResponse,
-    storage::Config,
-};
 
 #[test]
 fn initialize_staking_contract() {

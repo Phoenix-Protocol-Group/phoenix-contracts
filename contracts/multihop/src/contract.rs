@@ -22,6 +22,7 @@ contractmeta!(
 #[contract]
 pub struct Multihop;
 
+#[allow(dead_code)]
 pub trait MultihopTrait {
     fn initialize(env: Env, admin: Address, factory: Address);
 
