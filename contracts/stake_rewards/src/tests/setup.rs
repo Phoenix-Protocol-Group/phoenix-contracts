@@ -1,4 +1,4 @@
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{Address, Env};
 
 use crate::{
     contract::{StakingRewards, StakingRewardsClient},
@@ -25,7 +25,7 @@ pub fn deploy_staking_rewards_contract<'a>(
 ) -> (stake_contract::Client<'a>, StakingRewardsClient<'a>) {
     let staking = deploy_stake_contract(env);
     staking.initialize(
-        &admin,
+        admin,
         lp_token,
         &MIN_BOND,
         &MIN_REWARD,
@@ -38,7 +38,7 @@ pub fn deploy_staking_rewards_contract<'a>(
         StakingRewardsClient::new(env, &env.register_contract(None, StakingRewards {}));
 
     staking_rewards.initialize(
-        &admin,
+        admin,
         &staking.address,
         reward_token,
         &MAX_COMPLEXITY,

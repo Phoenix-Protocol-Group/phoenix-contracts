@@ -7,6 +7,7 @@ mod storage;
 
 pub const TOKEN_PER_POWER: i32 = 1_000;
 
+#[allow(clippy::too_many_arguments)]
 pub mod stake_contract {
     // The import will code generate:
     // - A ContractClient type that can be used to invoke functions on the contract.
@@ -16,6 +17,7 @@ pub mod stake_contract {
     );
 }
 
+#[allow(clippy::too_many_arguments)]
 pub mod token_contract {
     // The import will code generate:
     // - A ContractClient type that can be used to invoke functions on the contract.
