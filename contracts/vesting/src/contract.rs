@@ -23,6 +23,7 @@ contractmeta!(
 #[contract]
 pub struct Vesting;
 
+#[allow(dead_code)]
 pub trait VestingTrait {
     fn initialize(
         env: Env,

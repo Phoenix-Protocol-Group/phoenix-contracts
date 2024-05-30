@@ -20,6 +20,7 @@ contractmeta!(
 #[contract]
 pub struct Trader;
 
+#[allow(dead_code)]
 pub trait TraderTrait {
     fn initialize(
         env: Env,
