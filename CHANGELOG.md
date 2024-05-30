@@ -10,6 +10,7 @@ and this project adheres to
 
 - decimal: Rename to `soroban-decimal` and publish in crates.io ([#299])
 - curve: try to optimize piecewise linear implementation ([#307])
+- Update soroban-sdk-rs to version 20.5.0 ([#308])
 
 ## Added
 
@@ -24,6 +25,7 @@ and this project adheres to
 [#303]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/303
 [#306]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/306
 [#307]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/307
+[#308]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/308
 
 ## [1.0.0] - 2024-05-08
 
