@@ -170,24 +170,24 @@ impl StakingTrait for Staking {
         lp_token_client.transfer(&sender, &env.current_contract_address(), &tokens);
 
         let mut stakes = get_stakes(&env, &sender);
-        let mut last_stake = stakes.stakes.last().unwrap_or_default();
+        // let mut last_stake = stakes.stakes.last().unwrap_or_default();
 
-        let now = ledger.timestamp();
+        // let now = ledger.timestamp();
 
         stakes.total_stake += tokens;
         // if user bonds again within 12 hours, merge his stakes
-        let stake = if now - (SECONDS_IN_A_DAY / 2) < last_stake.stake_timestamp {
-            last_stake.stake += tokens;
-            last_stake.stake_timestamp = now;
-            // we get rid of the last stake
-            stakes.stakes.pop_back();
-            last_stake
-        } else {
-            Stake {
-                stake: tokens,
-                stake_timestamp: ledger.timestamp(),
-            }
+        // let stake = if now - (SECONDS_IN_A_DAY / 2) < last_stake.stake_timestamp {
+        //     last_stake.stake += tokens;
+        //     last_stake.stake_timestamp = now;
+        //     // we get rid of the last stake
+        //     stakes.stakes.pop_back();
+        //     last_stake
+        // } else {
+        let stake = Stake {
+            stake: tokens,
+            stake_timestamp: ledger.timestamp(),
         };
+        // };
         stakes.stakes.push_back(stake);
 
         for distribution_address in get_distributions(&env) {
