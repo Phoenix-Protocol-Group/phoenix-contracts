@@ -438,3 +438,33 @@ fn calculate_unbond_multiple_users() {
         1_000_000
     );
 }
+
+#[should_panic(expected = "Stake: Initialize: initializing contract twice is not allowed")]
+fn test_deploying_stake_twice_should_fail() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let first = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &DEFAULT_COMPLEXITY,
+    );
+
+    first.initialize(
+        &admin,
+        &lp_token.address,
+        &100i128,
+        &50i128,
+        &manager,
+        &owner,
+        &DEFAULT_COMPLEXITY,
+    );
+}
