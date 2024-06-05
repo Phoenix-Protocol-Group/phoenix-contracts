@@ -318,7 +318,7 @@ impl StakingRewardsTrait for StakingRewards {
         if start_time < current_time {
             log!(
                 &env,
-                "Stake: Fund distribution: Fund distribution start time is too early"
+                "Stake rewards: Fund distribution: Fund distribution start time is too early"
             );
             panic_with_error!(&env, ContractError::InvalidTime);
         }
@@ -326,7 +326,7 @@ impl StakingRewardsTrait for StakingRewards {
         if config.min_reward > token_amount {
             log!(
                 &env,
-                "Stake: Fund distribution: minimum reward amount not reached",
+                "Stake rewards: Fund distribution: minimum reward amount not reached",
             );
             panic_with_error!(&env, ContractError::MinRewardNotEnough);
         }
