@@ -6,7 +6,7 @@ use soroban_sdk::{
 use super::setup::{deploy_staking_rewards_contract, deploy_token_contract};
 
 #[test]
-fn initialize_staking_contract() {
+fn initialize_staking_rewards_contract() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -90,223 +90,78 @@ fn calculate_bond_one_user() {
     assert_eq!(reward_token.balance(&user1), 1_000_000);
 }
 
-// #[test]
-// #[should_panic(expected = "Stake: Initialize: initializing contract twice is not allowed")]
-// fn test_deploying_stake_twice_should_fail() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let admin = Address::generate(&env);
-//     let lp_token = deploy_token_contract(&env, &admin);
-//     let manager = Address::generate(&env);
-//     let owner = Address::generate(&env);
-//
-//     let first = deploy_staking_contract(
-//         &env,
-//         admin.clone(),
-//         &lp_token.address,
-//         &manager,
-//         &owner,
-//         &DEFAULT_COMPLEXITY,
-//     );
-//
-//     first.initialize(
-//         &admin,
-//         &lp_token.address,
-//         &100i128,
-//         &50i128,
-//         &manager,
-//         &owner,
-//         &DEFAULT_COMPLEXITY,
-//     );
-// }
-//
-// #[test]
-// #[should_panic = "Stake: Bond: Trying to stake less than minimum required"]
-// fn bond_too_few() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let admin = Address::generate(&env);
-//     let user = Address::generate(&env);
-//     let lp_token = deploy_token_contract(&env, &admin);
-//     let manager = Address::generate(&env);
-//     let owner = Address::generate(&env);
-//
-//     let staking = deploy_staking_contract(
-//         &env,
-//         admin.clone(),
-//         &lp_token.address,
-//         &manager,
-//         &owner,
-//         &DEFAULT_COMPLEXITY,
-//     );
-//
-//     lp_token.mint(&user, &999);
-//
-//     staking.bond(&user, &999);
-// }
-//
-// #[test]
-// fn bond_simple() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let admin = Address::generate(&env);
-//     let user = Address::generate(&env);
-//     let lp_token = deploy_token_contract(&env, &admin);
-//     let manager = Address::generate(&env);
-//     let owner = Address::generate(&env);
-//
-//     let staking = deploy_staking_contract(
-//         &env,
-//         admin.clone(),
-//         &lp_token.address,
-//         &manager,
-//         &owner,
-//         &DEFAULT_COMPLEXITY,
-//     );
-//
-//     env.ledger().with_mut(|li| {
-//         li.timestamp = ONE_WEEK;
-//     });
-//
-//     lp_token.mint(&user, &10_000);
-//
-//     staking.bond(&user, &10_000);
-//
-//     let bonds = staking.query_staked(&user).stakes;
-//     assert_eq!(
-//         bonds,
-//         vec![
-//             &env,
-//             Stake {
-//                 stake: 10_000,
-//                 stake_timestamp: ONE_WEEK,
-//             }
-//         ]
-//     );
-//     assert_eq!(staking.query_total_staked(), 10_000);
-//
-//     assert_eq!(lp_token.balance(&user), 0);
-//     assert_eq!(lp_token.balance(&staking.address), 10_000);
-// }
-//
-// #[test]
-// fn bond_simple_within_one_day() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let admin = Address::generate(&env);
-//     let user = Address::generate(&env);
-//     let lp_token = deploy_token_contract(&env, &admin);
-//
-//     let staking = deploy_staking_contract(
-//         &env,
-//         admin.clone(),
-//         &lp_token.address,
-//         &Address::generate(&env),
-//         &Address::generate(&env),
-//         &DEFAULT_COMPLEXITY,
-//     );
-//
-//     env.ledger().with_mut(|li| {
-//         li.timestamp = ONE_WEEK;
-//     });
-//
-//     lp_token.mint(&user, &15_000);
-//
-//     staking.bond(&user, &10_000);
-//
-//     // user bonds for the 2nd time within the same day
-//     env.ledger().with_mut(|li| {
-//         li.timestamp += 3_600; // user bonds again an hour later
-//     });
-//     staking.bond(&user, &5_000);
-//
-//     let bonds = staking.query_staked(&user).stakes;
-//     assert_eq!(
-//         bonds,
-//         vec![
-//             &env,
-//             Stake {
-//                 stake: 15_000,
-//                 stake_timestamp: ONE_WEEK + 3_600,
-//             }
-//         ]
-//     );
-//     assert_eq!(staking.query_total_staked(), 15_000);
-//
-//     assert_eq!(lp_token.balance(&user), 0);
-//     assert_eq!(lp_token.balance(&staking.address), 15_000);
-// }
-//
-// #[test]
-// fn unbond_simple() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let admin = Address::generate(&env);
-//     let user = Address::generate(&env);
-//     let user2 = Address::generate(&env);
-//     let manager = Address::generate(&env);
-//     let owner = Address::generate(&env);
-//     let lp_token = deploy_token_contract(&env, &admin);
-//
-//     let staking = deploy_staking_contract(
-//         &env,
-//         admin.clone(),
-//         &lp_token.address,
-//         &manager,
-//         &owner,
-//         &DEFAULT_COMPLEXITY,
-//     );
-//
-//     lp_token.mint(&user, &35_000);
-//     lp_token.mint(&user2, &10_000);
-//
-//     env.ledger().with_mut(|li| {
-//         li.timestamp += ONE_DAY;
-//     });
-//     staking.bond(&user, &10_000);
-//     env.ledger().with_mut(|li| {
-//         li.timestamp += ONE_DAY;
-//     });
-//     staking.bond(&user, &10_000);
-//     staking.bond(&user2, &10_000);
-//     env.ledger().with_mut(|li| {
-//         li.timestamp += ONE_DAY;
-//     });
-//     staking.bond(&user, &15_000);
-//
-//     assert_eq!(staking.query_staked(&user).stakes.len(), 3);
-//     assert_eq!(lp_token.balance(&user), 0);
-//     assert_eq!(lp_token.balance(&staking.address), 45_000);
-//
-//     staking.unbond(&user, &10_000, &(ONE_DAY + ONE_DAY));
-//
-//     let bonds = staking.query_staked(&user).stakes;
-//     assert_eq!(
-//         bonds,
-//         vec![
-//             &env,
-//             Stake {
-//                 stake: 10_000,
-//                 stake_timestamp: ONE_DAY,
-//             },
-//             Stake {
-//                 stake: 15_000,
-//                 stake_timestamp: 3 * ONE_DAY,
-//             }
-//         ]
-//     );
-//     assert_eq!(staking.query_total_staked(), 35_000);
-//
-//     assert_eq!(lp_token.balance(&user), 10_000);
-//     assert_eq!(lp_token.balance(&user2), 0);
-//     assert_eq!(lp_token.balance(&staking.address), 35_000);
-// }
-//
+#[test]
+fn calculate_unbond_one_user() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let (staking, staking_rewards) =
+        deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
+    assert_eq!(staking.query_total_staked(), 0);
+
+    let start_timestamp = 100;
+    env.ledger().with_mut(|li| {
+        li.timestamp = start_timestamp;
+    });
+
+    reward_token.mint(&admin, &1_000_000);
+    let reward_duration = 600;
+    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+
+    let user1 = Address::generate(&env);
+    lp_token.mint(&user1, &10_000);
+    assert_eq!(lp_token.balance(&user1), 10_000);
+    assert_eq!(lp_token.balance(&staking.address), 0);
+    assert_eq!(staking.query_config().config.lp_token, lp_token.address);
+    staking.bond(&user1, &10_000);
+
+    staking_rewards.calculate_bond(&user1);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = start_timestamp + 300; // move to a middle of distribution
+    });
+
+    staking_rewards.distribute_rewards();
+
+    assert_eq!(
+        staking_rewards.query_undistributed_reward(&reward_token.address),
+        500_000 // half of the reward are undistributed
+    );
+    assert_eq!(
+        staking_rewards.query_distributed_reward(&reward_token.address),
+        500_000
+    );
+
+    staking_rewards.withdraw_rewards(&user1);
+    assert_eq!(reward_token.balance(&user1), 500_000);
+
+    // now calculate unbond and unbond tokens, which should result
+    // in the rest of the reward being undistributed
+
+    staking_rewards.calculate_unbond(&user1);
+    staking.unbond(&user1, &10_000, &start_timestamp);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = start_timestamp + reward_duration; // move to the end of the distribution
+    });
+
+    staking_rewards.distribute_rewards();
+
+    assert_eq!(
+        staking_rewards.query_undistributed_reward(&reward_token.address),
+        500_000
+    );
+    assert_eq!(
+        staking_rewards.query_distributed_reward(&reward_token.address),
+        500_000
+    );
+}
+
 // #[test]
 // fn initializing_contract_sets_total_staked_var() {
 //     let env = Env::default();
