@@ -437,115 +437,79 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     assert_eq!(reward_token.balance(&user1), 25_000i128);
 }
 
-// #[should_panic(expected = "Stake: Fund distribution: Curve complexity validation failed")]
-// #[test]
-// fn panic_when_funding_distribution_with_curve_too_complex() {
-//     const DISTRIBUTION_MAX_COMPLEXITY: u32 = 3;
-//     const FIVE_MINUTES: u64 = 300;
-//     const TEN_MINUTES: u64 = 600;
-//     const ONE_WEEK: u64 = 604_800;
-//
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let admin = Address::generate(&env);
-//     let manager = Address::generate(&env);
-//     let owner = Address::generate(&env);
-//     let lp_token = deploy_token_contract(&env, &admin);
-//     let reward_token = deploy_token_contract(&env, &admin);
-//
-//     let staking = deploy_staking_contract(
-//         &env,
-//         admin.clone(),
-//         &lp_token.address,
-//         &manager,
-//         &owner,
-//         &DISTRIBUTION_MAX_COMPLEXITY,
-//     );
-//
-//     staking.create_distribution_flow(&manager, &reward_token.address);
-//
-//     reward_token.mint(&admin, &3000);
-//
-//     staking.fund_distribution(&admin, &0, &FIVE_MINUTES, &reward_token.address, &1000);
-//     staking.fund_distribution(
-//         &admin,
-//         &FIVE_MINUTES,
-//         &TEN_MINUTES,
-//         &reward_token.address,
-//         &1000,
-//     );
-//
-//     // assert just to prove that we have 2 successful fund distributions
-//     assert_eq!(
-//         staking.query_undistributed_rewards(&reward_token.address),
-//         2000
-//     );
-//
-//     // uh-oh fail
-//     staking.fund_distribution(
-//         &admin,
-//         &TEN_MINUTES,
-//         &ONE_WEEK,
-//         &reward_token.address,
-//         &1000,
-//     );
-// }
-//
+#[should_panic(expected = "Stake rewards: Fund distribution: Curve complexity validation failed")]
+#[test]
+fn panic_when_funding_distribution_with_curve_too_complex() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let (staking, staking_rewards) =
+        deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
+
+    reward_token.mint(&admin, &10_000);
+
+    // Default max complexity in setup.rs is 10
+    staking_rewards.fund_distribution(&admin, &17, &300, &1000);
+    staking_rewards.fund_distribution(&admin, &15, &280, &1000);
+    staking_rewards.fund_distribution(&admin, &30, &154, &1000);
+    staking_rewards.fund_distribution(&admin, &532, &754, &1000);
+    staking_rewards.fund_distribution(&admin, &210, &423154, &1000);
+    staking_rewards.fund_distribution(&admin, &640, &53254, &1000);
+}
+
 // #[test]
 // fn one_user_bond_twice_in_a_day_bond_one_more_time_after_a_week_get_rewards() {
+//     let day_in_seconds = 3600 * 24;
+//
 //     let env = Env::default();
 //     env.mock_all_auths();
+//     env.budget().reset_unlimited();
 //
 //     let admin = Address::generate(&env);
-//     let user = Address::generate(&env);
-//     let manager = Address::generate(&env);
 //     let lp_token = deploy_token_contract(&env, &admin);
 //     let reward_token = deploy_token_contract(&env, &admin);
 //
-//     let staking = deploy_staking_contract(
-//         &env,
-//         admin.clone(),
-//         &lp_token.address,
-//         &manager,
-//         &Address::generate(&env),
-//         &50u32,
-//     );
-//
-//     staking.create_distribution_flow(&manager, &reward_token.address);
+//     let (staking, staking_rewards) =
+//         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
 //
 //     let reward_amount: u128 = 100_000;
 //     reward_token.mint(&admin, &(reward_amount as i128));
 //
 //     // bond tokens for user to enable distribution for him
+//     let user = Address::generate(&env);
 //     lp_token.mint(&user, &3000);
 //     env.ledger().with_mut(|li| {
-//         li.timestamp = ONE_DAY;
+//         li.timestamp = day_in_seconds;
 //     });
 //
-//     staking.fund_distribution(
+//     staking_rewards.fund_distribution(
 //         &admin,
-//         &ONE_DAY,
-//         &(2 * ONE_WEEK),
-//         &reward_token.address,
+//         &day_in_seconds,
+//         &(14 * day_in_seconds),
 //         &(reward_amount as i128),
 //     );
 //
 //     // first bond for the day
 //     staking.bond(&user, &1000);
+//     staking_rewards.calculate_bond(&user);
 //
 //     staking.distribute_rewards();
 //
 //     // it's the start of the rewards distribution, so we should have 0 distributed rewards
 //     assert_eq!(
-//         staking.query_undistributed_rewards(&reward_token.address),
+//         staking_rewards.query_undistributed_reward(&reward_token.address),
 //         reward_amount
 //     );
 //
 //     // user bonds for the second time in a day (12 hours later minus one second)
 //     env.ledger()
-//         .with_mut(|li| li.timestamp += (ONE_DAY / 2) - 1);
+//         .with_mut(|li| li.timestamp += (day_in_seconds / 2) - 1);
 //     staking.bond(&user, &1000);
+//     staking_rewards.calculate_bond(&user);
 //
 //     assert_eq!(staking.query_staked(&user).stakes.len(), 1);
 //

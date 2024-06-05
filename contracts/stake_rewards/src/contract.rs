@@ -345,7 +345,10 @@ impl StakingRewardsTrait for StakingRewards {
         // also fully unlocks all rewards sent
         let (min, max) = new_reward_distribution.range();
         if min != 0 || max > token_amount as u128 {
-            log!(&env, "Stake: Fund distribution: Rewards validation failed");
+            log!(
+                &env,
+                "Stake rewards: Fund distribution: Rewards validation failed"
+            );
             panic_with_error!(&env, ContractError::RewardsInvalid);
         }
 
@@ -363,7 +366,7 @@ impl StakingRewardsTrait for StakingRewards {
                     .unwrap_or_else(|_| {
                         log!(
                             &env,
-                            "Stake: Fund distribution: Curve complexity validation failed"
+                            "Stake rewards: Fund distribution: Curve complexity validation failed"
                         );
                         panic_with_error!(&env, ContractError::InvalidMaxComplexity);
                     });
