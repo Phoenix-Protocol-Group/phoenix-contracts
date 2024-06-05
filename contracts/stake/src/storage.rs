@@ -14,7 +14,6 @@ pub struct Config {
     pub max_complexity: u32,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
-pub const SECONDS_IN_A_DAY: u64 = 86_400;
 
 pub fn get_config(env: &Env) -> Config {
     env.storage()

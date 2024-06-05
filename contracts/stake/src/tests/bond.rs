@@ -156,55 +156,6 @@ fn bond_simple() {
 }
 
 #[test]
-fn bond_simple_within_one_day() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let admin = Address::generate(&env);
-    let user = Address::generate(&env);
-    let lp_token = deploy_token_contract(&env, &admin);
-
-    let staking = deploy_staking_contract(
-        &env,
-        admin.clone(),
-        &lp_token.address,
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &DEFAULT_COMPLEXITY,
-    );
-
-    env.ledger().with_mut(|li| {
-        li.timestamp = ONE_WEEK;
-    });
-
-    lp_token.mint(&user, &15_000);
-
-    staking.bond(&user, &10_000);
-
-    // user bonds for the 2nd time within the same day
-    env.ledger().with_mut(|li| {
-        li.timestamp += 3_600; // user bonds again an hour later
-    });
-    staking.bond(&user, &5_000);
-
-    let bonds = staking.query_staked(&user).stakes;
-    assert_eq!(
-        bonds,
-        vec![
-            &env,
-            Stake {
-                stake: 15_000,
-                stake_timestamp: ONE_WEEK + 3_600,
-            }
-        ]
-    );
-    assert_eq!(staking.query_total_staked(), 15_000);
-
-    assert_eq!(lp_token.balance(&user), 0);
-    assert_eq!(lp_token.balance(&staking.address), 15_000);
-}
-
-#[test]
 fn unbond_simple() {
     let env = Env::default();
     env.mock_all_auths();
