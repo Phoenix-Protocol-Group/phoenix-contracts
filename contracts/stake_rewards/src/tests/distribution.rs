@@ -41,7 +41,7 @@ fn two_users_one_starts_after_distribution_begins() {
     assert_eq!(lp_token.balance(&staking.address), 0);
     assert_eq!(staking.query_config().config.lp_token, lp_token.address);
     staking.bond(&user1, &10_000);
-    // staking_rewards.calculate_bond(&user1);
+    staking_rewards.calculate_bond(&user1);
 
     // staking_rewards.distribute_rewards();
 
