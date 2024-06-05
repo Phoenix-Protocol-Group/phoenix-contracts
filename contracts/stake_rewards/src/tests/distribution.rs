@@ -34,65 +34,59 @@ fn two_users_one_starts_after_distribution_begins() {
         li.timestamp = start_timestamp + 200; // distribution already goes for 1/3 of the time
     });
 
-    // first user bonds before distribution started
+    // first user bonds after distribution started
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &10_000);
-    assert_eq!(lp_token.balance(&user1), 10_000);
-    assert_eq!(lp_token.balance(&staking.address), 0);
-    assert_eq!(staking.query_config().config.lp_token, lp_token.address);
     staking.bond(&user1, &10_000);
     staking_rewards.calculate_bond(&user1);
 
-    // staking_rewards.distribute_rewards();
+    staking_rewards.distribute_rewards();
 
-    // // at this points, since 1/3 of the time has passed and only one user is staking, he should have 33% of the rewards
-    // assert_eq!(
-    //     staking_rewards.query_withdrawable_reward(&user1),
-    //     WithdrawableRewardResponse {
-    //         reward_address: reward_token.address.clone(),
-    //         reward_amount: 50_000
-    //     }
-    // );
+    // at this points, since 1/3 of the time has passed and only one user is staking, he should have 33% of the rewards
+    assert_eq!(
+        staking_rewards.query_withdrawable_reward(&user1),
+        WithdrawableRewardResponse {
+            reward_address: reward_token.address.clone(),
+            reward_amount: 333_332
+        }
+    );
 
-    // // user2 starts staking after the distribution has begun
-    // lp_token.mint(&user2, &1000);
-    // staking.bond(&user2, &1000);
+    env.ledger().with_mut(|li| {
+        li.timestamp = start_timestamp + 400; // distribution already goes for 2/3 of the time
+    });
 
-    // env.ledger().with_mut(|li| {
-    //     li.timestamp += 300;
-    // });
-    // staking.distribute_rewards();
+    // first user bonds before distribution started
+    let user2 = Address::generate(&env);
+    lp_token.mint(&user2, &10_000);
+    staking.bond(&user2, &10_000);
+    staking_rewards.calculate_bond(&user2);
 
-    // // first user should get 75_000, second user 25_000 since he joined at the half time
-    // assert_eq!(
-    //     staking.query_withdrawable_rewards(&user),
-    //     WithdrawableRewardsResponse {
-    //         rewards: vec![
-    //             &env,
-    //             WithdrawableReward {
-    //                 reward_address: reward_token.address.clone(),
-    //                 reward_amount: 75_000
-    //             }
-    //         ]
-    //     }
-    // );
-    // assert_eq!(
-    //     staking.query_withdrawable_rewards(&user2),
-    //     WithdrawableRewardsResponse {
-    //         rewards: vec![
-    //             &env,
-    //             WithdrawableReward {
-    //                 reward_address: reward_token.address.clone(),
-    //                 reward_amount: 25_000
-    //             }
-    //         ]
-    //     }
-    // );
+    staking_rewards.distribute_rewards();
 
-    // staking.withdraw_rewards(&user);
-    // assert_eq!(reward_token.balance(&user), 75_000);
-    // staking.withdraw_rewards(&user2);
-    // assert_eq!(reward_token.balance(&user2), 25_000);
+    // Now we need to split the previous reward equivalent into a two users
+    assert_eq!(
+        staking_rewards.query_withdrawable_reward(&user1),
+        WithdrawableRewardResponse {
+            reward_address: reward_token.address.clone(),
+            reward_amount: 333_332 + 166_667,
+        }
+    );
+    assert_eq!(
+        staking_rewards.query_withdrawable_reward(&user2),
+        WithdrawableRewardResponse {
+            reward_address: reward_token.address.clone(),
+            reward_amount: 166_666
+        }
+    );
+
+    staking_rewards.withdraw_rewards(&user1);
+    assert_eq!(reward_token.balance(&user1), 499_999);
+    staking_rewards.withdraw_rewards(&user2);
+    assert_eq!(reward_token.balance(&user2), 166_666);
+    assert_eq!(
+        staking_rewards.query_undistributed_reward(&reward_token.address),
+        333_334
+    );
 }
 
 // #[test]
