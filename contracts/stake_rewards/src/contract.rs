@@ -318,7 +318,7 @@ impl StakingRewardsTrait for StakingRewards {
         if start_time < current_time {
             log!(
                 &env,
-                "Stake: Fund distribution: Fund distribution start time is too early"
+                "Stake rewards: Fund distribution: Fund distribution start time is too early"
             );
             panic_with_error!(&env, ContractError::InvalidTime);
         }
@@ -326,7 +326,7 @@ impl StakingRewardsTrait for StakingRewards {
         if config.min_reward > token_amount {
             log!(
                 &env,
-                "Stake: Fund distribution: minimum reward amount not reached",
+                "Stake rewards: Fund distribution: minimum reward amount not reached",
             );
             panic_with_error!(&env, ContractError::MinRewardNotEnough);
         }
@@ -345,7 +345,10 @@ impl StakingRewardsTrait for StakingRewards {
         // also fully unlocks all rewards sent
         let (min, max) = new_reward_distribution.range();
         if min != 0 || max > token_amount as u128 {
-            log!(&env, "Stake: Fund distribution: Rewards validation failed");
+            log!(
+                &env,
+                "Stake rewards: Fund distribution: Rewards validation failed"
+            );
             panic_with_error!(&env, ContractError::RewardsInvalid);
         }
 
@@ -363,7 +366,7 @@ impl StakingRewardsTrait for StakingRewards {
                     .unwrap_or_else(|_| {
                         log!(
                             &env,
-                            "Stake: Fund distribution: Curve complexity validation failed"
+                            "Stake rewards: Fund distribution: Curve complexity validation failed"
                         );
                         panic_with_error!(&env, ContractError::InvalidMaxComplexity);
                     });
