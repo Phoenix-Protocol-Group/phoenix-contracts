@@ -460,34 +460,36 @@ fn withdraw_liquidity() {
 //     );
 //     assert_eq!(token2.balance(&pool.address), 30_100_000);
 // }
-//
-// #[test]
-// #[should_panic(expected = "The value 10001 is out of range. Must be between 0 and 10000 bps.")]
-// fn provide_liqudity_too_high_fees() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let mut admin1 = Address::generate(&env);
-//     let mut admin2 = Address::generate(&env);
-//
-//     let mut token1 = deploy_token_contract(&env, &admin1);
-//     let mut token2 = deploy_token_contract(&env, &admin2);
-//     if token2.address < token1.address {
-//         std::mem::swap(&mut token1, &mut token2);
-//         std::mem::swap(&mut admin1, &mut admin2);
-//     }
-//     let swap_fees = 10_001i64;
-//     deploy_stable_liquidity_pool_contract(
-//         &env,
-//         None,
-//         (&token1.address, &token2.address),
-//         swap_fees,
-//         None,
-//         None,
-//         None,
-//     );
-// }
-//
+
+#[test]
+#[should_panic(expected = "The value 10001 is out of range. Must be between 0 and 10000 bps.")]
+fn provide_liqudity_too_high_fees() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let swap_fees = 10_001i64;
+    deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+    );
+}
+
 // #[test]
 // #[should_panic(
 //     expected = "Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!"
