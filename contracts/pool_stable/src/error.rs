@@ -20,4 +20,5 @@ pub enum ContractError {
     CalcYErr = 14,
     SwapMinReceivedBiggerThanReturn = 15,
     ProvideLiquidityBothTokensMustBeMoreThanZero = 16,
+    DivisionByZero = 17,
 }

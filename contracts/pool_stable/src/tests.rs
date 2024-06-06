@@ -3,4 +3,4 @@ mod liquidity;
 mod setup;
 mod stake_deployment;
 // mod swap;
-// mod queries;
+mod queries;

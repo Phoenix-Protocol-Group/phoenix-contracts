@@ -271,6 +271,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         }
 
         // sender needs to authorize the deposit
+        dbg!("SENDER: ", sender.clone());
         sender.require_auth();
 
         let config = get_config(&env);
@@ -289,21 +290,26 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             }
         }
 
-        let amp_parameters = get_amp(&env).unwrap(); // FIXME: This is minor, but add some
-                                                     // validation to AMP parameters
+        // FIXME: This is minor, but add some validation to AMP parameters
+        let amp_parameters = get_amp(&env).unwrap();
         let amp = compute_current_amp(&env, &amp_parameters);
+
+        let token_a_client = token_contract::Client::new(&env, &config.token_a);
+        let token_a_decimals = token_a_client.decimals();
+        let token_b_client = token_contract::Client::new(&env, &config.token_b);
+        let token_b_decimals = token_b_client.decimals();
 
         // Invariant (D) after deposit added
         let new_balance_a = desired_a + old_balance_a;
         let new_balance_b = desired_b + old_balance_b;
-        let new_invariant = compute_d(
+        let new_invariant = dbg!(compute_d(
             &env,
             amp as u128,
             &[
-                Decimal::from_atomics(new_balance_a, 6),
-                Decimal::from_atomics(new_balance_b, 6),
+                Decimal::from_atomics(new_balance_a, 7),
+                Decimal::from_atomics(new_balance_b, 7),
             ],
-        );
+        ));
 
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
@@ -318,22 +324,20 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             }
             share
         } else {
-            let initial_invariant = compute_d(
+            let initial_invariant = dbg!(compute_d(
                 &env,
                 amp as u128,
                 &[
-                    Decimal::from_atomics(old_balance_a, 6),
-                    Decimal::from_atomics(old_balance_b, 6),
+                    Decimal::from_atomics(old_balance_a, token_a_decimals as i32),
+                    Decimal::from_atomics(old_balance_b, token_b_decimals as i32),
                 ],
-            );
+            ));
             // Calculate the proportion of the change in invariant
-            (Decimal::from_ratio((new_invariant - initial_invariant) * total_shares, 1)
-                / initial_invariant)
+            (dbg!(Decimal::from_ratio((new_invariant - initial_invariant) * total_shares, 1))
+                / dbg!(initial_invariant))
                 .to_i128_with_precision(greatest_precision)
         };
-
-        let token_a_client = token_contract::Client::new(&env, &config.token_a);
-        let token_b_client = token_contract::Client::new(&env, &config.token_b);
+        dbg!("SHARES: ", shares);
 
         // Move tokens from client's wallet to the contract
         token_a_client.transfer(&sender, &env.current_contract_address(), &(desired_a));
