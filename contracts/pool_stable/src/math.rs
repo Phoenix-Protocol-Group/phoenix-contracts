@@ -67,7 +67,7 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[Decimal]) -> Decimal {
     for _ in 0..ITERATIONS {
         let d_product = d.pow(3) / (amount_a_times_coins * amount_b_times_coins);
         d_previous = d;
-        d = calculate_step(d, leverage, sum_x, d_product);
+        d = calculate_step(env, d, leverage, sum_x, d_product);
         // Equality with the precision of 1e-6
         if (d - d_previous).abs() <= TOL {
             return d;
@@ -81,27 +81,47 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[Decimal]) -> Decimal {
     panic_with_error!(&env, ContractError::NewtonMethodFailed);
 }
 
+use soroban_sdk::I256;
+
 /// Helper function used to calculate the D invariant as a last step in the `compute_d` public function.
 ///
 /// * **Equation**:
 ///
 /// d = (leverage * sum_x + d_product * n_coins) * initial_d / ((leverage - 1) * initial_d + (n_coins + 1) * d_product)
 fn calculate_step(
+    env: &Env,
     initial_d: Decimal,
     leverage: Decimal,
     sum_x: Decimal,
     d_product: Decimal,
 ) -> Decimal {
-    let leverage_mul = leverage * sum_x;
-    let d_p_mul = d_product * N_COINS;
+    // Convert Decimal to I256 for intermediate calculations
+    let initial_d_i256 = I256::from_i128(env, initial_d.atomics());
+    let leverage_i256 = I256::from_i128(env, leverage.atomics());
+    let sum_x_i256 = I256::from_i128(env, sum_x.atomics());
+    let d_product_i256 = I256::from_i128(env, d_product.atomics());
+    let n_coins_i256 = I256::from_i128(env, N_COINS.atomics());
 
-    let l_val = leverage_mul + d_p_mul * initial_d;
-    let leverage_sub = initial_d * (leverage - Decimal::one());
-    let n_coins_sum = d_product * (N_COINS + Decimal::one());
+    // (leverage * sum_x + d_product * n_coins)
+    let leverage_mul = leverage_i256.mul(&sum_x_i256);
+    let d_p_mul = d_product_i256.mul(&n_coins_i256);
+    let l_val_i256 = leverage_mul.add(&d_p_mul);
 
-    let r_val = leverage_sub + n_coins_sum;
+    // (leverage - 1) * initial_d
+    let leverage_sub = leverage_i256.sub(&I256::from_i128(env, Decimal::one().atomics()));
+    let leverage_sub_mul = leverage_sub.mul(&initial_d_i256);
 
-    l_val / r_val
+    // (n_coins + 1) * d_product
+    let n_coins_sum = n_coins_i256.add(&I256::from_i128(env, Decimal::one().atomics()));
+    let n_coins_sum_mul = n_coins_sum.mul(&d_product_i256);
+
+    // Calculate the final step value
+    let l_val = l_val_i256.mul(&initial_d_i256);
+    let r_val = leverage_sub_mul.add(&n_coins_sum_mul);
+
+    // Convert the result back to Decimal
+    let result = l_val.div(&r_val);
+    Decimal::new(result.to_i128().unwrap_or(0))
 }
 
 /// Compute the swap amount `y` in proportion to `x`.
