@@ -490,41 +490,43 @@ fn provide_liqudity_too_high_fees() {
     );
 }
 
-// #[test]
-// #[should_panic(
-//     expected = "Pool: ProvideLiquidity: At least one token must be provided and must be bigger then 0!"
-// )]
-// fn swap_with_no_amounts() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let mut admin1 = Address::generate(&env);
-//     let mut admin2 = Address::generate(&env);
-//     let user1 = Address::generate(&env);
-//
-//     let mut token1 = deploy_token_contract(&env, &admin1);
-//     let mut token2 = deploy_token_contract(&env, &admin2);
-//     if token2.address < token1.address {
-//         std::mem::swap(&mut token1, &mut token2);
-//         std::mem::swap(&mut admin1, &mut admin2);
-//     }
-//     let swap_fees = 0i64;
-//     let pool = deploy_stable_liquidity_pool_contract(
-//         &env,
-//         None,
-//         (&token1.address, &token2.address),
-//         swap_fees,
-//         None,
-//         None,
-//         None,
-//     );
-//
-//     token1.mint(&user1, &1_001_000);
-//     token2.mint(&user1, &1_001_000);
-//     // providing all amounts as None
-//     pool.provide_liquidity(&user1, &0i128, &0i128, &None);
-// }
-//
+#[test]
+#[should_panic(
+    expected = "Pool Stable: ProvideLiquidity: Both tokens must be provided and must be bigger then 0!"
+)]
+fn swap_with_no_amounts() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let user1 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    // providing all amounts as None
+    pool.provide_liquidity(&user1, &0i128, &0i128, &None);
+}
+
 // #[test]
 // #[should_panic(
 //     expected = "Pool: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied!"

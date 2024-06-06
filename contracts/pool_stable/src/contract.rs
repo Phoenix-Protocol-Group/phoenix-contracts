@@ -259,7 +259,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         desired_b: i128,
         custom_slippage_bps: Option<i64>,
     ) {
-        validate_int_parameters!(desired_a, desired_b);
+        if desired_a == 0 || desired_b == 0 {
+            log!(
+                    &env,
+                    "Pool Stable: ProvideLiquidity: Both tokens must be provided and must be bigger then 0!"
+                );
+            panic_with_error!(
+                env,
+                ContractError::ProvideLiquidityBothTokensMustBeMoreThanZero
+            );
+        }
 
         // sender needs to authorize the deposit
         sender.require_auth();
@@ -274,7 +283,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             if custom_slippage > config.max_allowed_slippage_bps {
                 log!(
                     &env,
-                    "Pool Stable: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage toleranc"
+                    "Pool Stable: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage tolerance"
                 );
                 panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
             }
