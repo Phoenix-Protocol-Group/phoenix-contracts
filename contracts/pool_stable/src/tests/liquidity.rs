@@ -1,4 +1,3 @@
-use soroban_sdk::testutils::arbitrary::std::dbg;
 extern crate std;
 
 use pretty_assertions::assert_eq;
@@ -118,103 +117,91 @@ fn provide_liqudity() {
     assert_eq!(pool.query_total_issued_lp(), 1000);
 }
 
-// #[test]
-// fn withdraw_liquidity() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//     env.budget().reset_unlimited();
-//
-//     let mut admin1 = Address::generate(&env);
-//     let mut admin2 = Address::generate(&env);
-//     let user1 = Address::generate(&env);
-//
-//     let mut token1 = deploy_token_contract(&env, &admin1);
-//     let mut token2 = deploy_token_contract(&env, &admin2);
-//     if token2.address < token1.address {
-//         std::mem::swap(&mut token1, &mut token2);
-//         std::mem::swap(&mut admin1, &mut admin2);
-//     }
-//     let swap_fees = 0i64;
-//     let pool = deploy_stable_liquidity_pool_contract(
-//         &env,
-//         None,
-//         (&token1.address, &token2.address),
-//         swap_fees,
-//         None,
-//         None,
-//         None,
-//     );
-//
-//     let share_token_address = pool.query_share_token_address();
-//     let token_share = token_contract::Client::new(&env, &share_token_address);
-//
-//     token1.mint(&user1, &100);
-//     token2.mint(&user1, &100);
-//     pool.provide_liquidity(&user1, &100, &100, &None);
-//
-//     assert_eq!(token1.balance(&user1), 0);
-//     assert_eq!(token1.balance(&pool.address), 100);
-//     assert_eq!(token2.balance(&user1), 0);
-//     assert_eq!(token2.balance(&pool.address), 100);
-//
-//     let share_amount = 50;
-//     let min_a = 50;
-//     let min_b = 50;
-//     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
-//     // assert_eq!(
-//     //     env.auths(),
-//     //     [
-//     //         (
-//     //             user1.clone(),
-//     //             pool.address.clone(),
-//     //             Symbol::new(&env, "withdraw_liquidity"),
-//     //             (&user1, 50_i128, 50_i128, 50_i128).into_val(&env)
-//     //         ),
-//     //         (
-//     //             user1.clone(),
-//     //             share_token_address.clone(),
-//     //             Symbol::short("transfer"),
-//     //             (&user1, &pool.address, 50_i128).into_val(&env)
-//     //         )
-//     //     ]
-//     // );
-//
-//     assert_eq!(token_share.balance(&user1), 50);
-//     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
-//     assert_eq!(token1.balance(&user1), 50);
-//     assert_eq!(token1.balance(&pool.address), 50);
-//     assert_eq!(token2.balance(&user1), 50);
-//     assert_eq!(token2.balance(&pool.address), 50);
-//
-//     let result = pool.query_pool_info();
-//     assert_eq!(
-//         result,
-//         PoolResponse {
-//             asset_a: Asset {
-//                 address: token1.address.clone(),
-//                 amount: 50i128,
-//             },
-//             asset_b: Asset {
-//                 address: token2.address.clone(),
-//                 amount: 50i128,
-//             },
-//             asset_lp_share: Asset {
-//                 address: share_token_address,
-//                 amount: 50i128,
-//             },
-//         }
-//     );
-//
-//     // clear the pool
-//     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
-//     assert_eq!(token_share.balance(&user1), 0);
-//     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
-//     assert_eq!(token1.balance(&user1), 100);
-//     assert_eq!(token1.balance(&pool.address), 0);
-//     assert_eq!(token2.balance(&user1), 100);
-//     assert_eq!(token2.balance(&pool.address), 0);
-// }
-//
+#[test]
+fn withdraw_liquidity() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let user1 = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let token_share = token_contract::Client::new(&env, &share_token_address);
+
+    token1.mint(&user1, &100);
+    token2.mint(&user1, &100);
+    pool.provide_liquidity(&user1, &100, &100, &None);
+
+    assert_eq!(token_share.balance(&user1), 1000);
+    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token1.balance(&user1), 0);
+    assert_eq!(token1.balance(&pool.address), 100);
+    assert_eq!(token2.balance(&user1), 0);
+    assert_eq!(token2.balance(&pool.address), 100);
+
+    let share_amount = 500; // half of the shares
+    let min_a = 50;
+    let min_b = 50;
+    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
+
+    assert_eq!(token_share.balance(&user1), 500);
+    assert_eq!(token_share.balance(&pool.address), 0); // sanity check
+    assert_eq!(token1.balance(&user1), 50);
+    assert_eq!(token1.balance(&pool.address), 50);
+    assert_eq!(token2.balance(&user1), 50);
+    assert_eq!(token2.balance(&pool.address), 50);
+
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 50i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 50i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 500i128,
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+
+    // clear the pool
+    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
+    assert_eq!(token_share.balance(&user1), 0);
+    assert_eq!(token_share.balance(&pool.address), 0); // sanity check
+    assert_eq!(token1.balance(&user1), 100);
+    assert_eq!(token1.balance(&pool.address), 0);
+    assert_eq!(token2.balance(&user1), 100);
+    assert_eq!(token2.balance(&pool.address), 0);
+}
+
 // #[test]
 // #[should_panic = "Pool: split_deposit_based_on_pool_ratio: Both pools and deposit must be a positive!"]
 // fn provide_liqudity_single_asset_on_empty_pool() {
