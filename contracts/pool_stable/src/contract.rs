@@ -415,7 +415,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         if return_amount_a < min_a || return_amount_b < min_b {
             log!(
                 &env,
-                "Pool Stable: Minimum amount of token_a or token_b is not satisfied! min_a: {}, min_b: {}, return_amount_a: {}, return_amount_b: {}",
+                "Pool Stable: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied! min_a: {}, min_b: {}, return_amount_a: {}, return_amount_b: {}",
                 min_a,
                 min_b,
                 return_amount_a,

@@ -1,7 +1,5 @@
 extern crate std;
 
-use pretty_assertions::assert_eq;
-
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
@@ -13,7 +11,6 @@ use crate::{
     storage::{Asset, PoolResponse},
     token_contract,
 };
-use soroban_decimal::Decimal;
 
 #[test]
 fn provide_liqudity() {
@@ -527,40 +524,42 @@ fn swap_with_no_amounts() {
     pool.provide_liquidity(&user1, &0i128, &0i128, &None);
 }
 
-// #[test]
-// #[should_panic(
-//     expected = "Pool: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied!"
-// )]
-// fn withdraw_liqudity_below_min() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let mut admin1 = Address::generate(&env);
-//     let mut admin2 = Address::generate(&env);
-//     let user1 = Address::generate(&env);
-//
-//     let mut token1 = deploy_token_contract(&env, &admin1);
-//     let mut token2 = deploy_token_contract(&env, &admin2);
-//     if token2.address < token1.address {
-//         std::mem::swap(&mut token1, &mut token2);
-//         std::mem::swap(&mut admin1, &mut admin2);
-//     }
-//     let swap_fees = 0i64;
-//     let pool = deploy_stable_liquidity_pool_contract(
-//         &env,
-//         None,
-//         (&token1.address, &token2.address),
-//         swap_fees,
-//         None,
-//         None,
-//         None,
-//     );
-//
-//     token1.mint(&user1, &100);
-//     token2.mint(&user1, &100);
-//     pool.provide_liquidity(&user1, &100, &100, &None);
-//
-//     let share_amount = 50;
-//     // Expecting min_a and/or min_b as huge bigger then available
-//     pool.withdraw_liquidity(&user1, &share_amount, &3000, &3000);
-// }
+#[test]
+#[should_panic(
+    expected = "Pool Stable: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied!"
+)]
+fn withdraw_liqudity_below_min() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let user1 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+    );
+
+    token1.mint(&user1, &100);
+    token2.mint(&user1, &100);
+    pool.provide_liquidity(&user1, &100, &100, &None);
+
+    let share_amount = 50;
+    // Expecting min_a and/or min_b as huge bigger then available
+    pool.withdraw_liquidity(&user1, &share_amount, &3000, &3000);
+}
