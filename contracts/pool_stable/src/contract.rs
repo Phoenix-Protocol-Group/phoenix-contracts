@@ -306,8 +306,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &env,
             amp as u128,
             &[
-                Decimal::from_atomics(new_balance_a, 7),
-                Decimal::from_atomics(new_balance_b, 7),
+                Decimal::from_atomics(new_balance_a, token_a_decimals as i32),
+                Decimal::from_atomics(new_balance_b, token_b_decimals as i32),
             ],
         ));
 
