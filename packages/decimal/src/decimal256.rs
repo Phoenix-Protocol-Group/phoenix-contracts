@@ -247,28 +247,32 @@ impl Decimal256 {
     }
 }
 
-// impl fmt::Display for Decimal256 {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         let env = Env::default();
-//         let whole = self.0.div(&env, &I256::from_i128(&env, 1_000_000_000_000_000_000)).to_i128();
-//         let fractional = self.0.rem_euclid(&env, &I256::from_i128(&env, 1_000_000_000_000_000_000)).to_i128();
-//
-//         if fractional == 0 {
-//             write!(f, "{}", whole)
-//         } else {
-//             let fractional_string = alloc::format!(
-//                 "{:0>padding$}",
-//                 fractional,
-//                 padding = 18
-//             );
-//             f.write_fmt(format_args!(
-//                 "{}.{}",
-//                 whole,
-//                 fractional_string.trim_end_matches('0')
-//             ))
-//         }
-//     }
-// }
+impl fmt::Display for Decimal256 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let env = Env::default();
+        let whole = self
+            .0
+            .div(&I256::from_i128(&env, 1_000_000_000_000_000_000))
+            .to_i128()
+            .unwrap();
+        let fractional = self
+            .0
+            .rem_euclid(&I256::from_i128(&env, 1_000_000_000_000_000_000))
+            .to_i128()
+            .unwrap();
+
+        if fractional == 0 {
+            write!(f, "{}", whole)
+        } else {
+            let fractional_string = alloc::format!("{:0>padding$}", fractional, padding = 18);
+            f.write_fmt(format_args!(
+                "{}.{}",
+                whole,
+                fractional_string.trim_end_matches('0')
+            ))
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -279,35 +283,38 @@ mod tests {
     fn decimal_new() {
         let env = Env::default();
         let expected = 300i128;
-        assert_eq!(Decimal256::new(&env, expected).0.to_i128(), expected);
+        assert_eq!(
+            Decimal256::new(&env, expected).0.to_i128().unwrap(),
+            expected
+        );
     }
 
     #[test]
     fn decimal_raw() {
         let env = Env::default();
         let value = 300i128;
-        assert_eq!(Decimal256::raw(&env, value).0.to_i128(), value);
+        assert_eq!(Decimal256::raw(&env, value).0.to_i128().unwrap(), value);
     }
 
     #[test]
     fn decimal_one() {
         let env = Env::default();
         let value = Decimal256::one(&env);
-        assert_eq!(value.0.to_i128(), 1_000_000_000_000_000_000);
+        assert_eq!(value.0.to_i128().unwrap(), 1_000_000_000_000_000_000);
     }
 
     #[test]
     fn decimal_zero() {
         let env = Env::default();
         let value = Decimal256::zero(&env);
-        assert_eq!(value.0.to_i128(), 0);
+        assert_eq!(value.0.to_i128().unwrap(), 0);
     }
 
     #[test]
     fn decimal_percent() {
         let env = Env::default();
         let value = Decimal256::percent(&env, 50);
-        assert_eq!(value.0.to_i128(), 500_000_000_000_000_000);
+        assert_eq!(value.0.to_i128().unwrap(), 500_000_000_000_000_000);
     }
 
     #[test]
