@@ -33,6 +33,10 @@ impl Decimal256 {
         Self(I256::from_i128(env, value))
     }
 
+    pub fn decimal_fractional(env: &Env) -> I256 {
+        I256::from_i128(env, 1_000_000_000_000_000_000i128) // 1*10**18
+    }
+
     pub fn one(env: &Env) -> Self {
         Self(I256::from_i128(env, 1_000_000_000_000_000_000))
     }
@@ -1236,48 +1240,48 @@ mod tests {
     //     assert_eq!(format!("{}", value), "0.0789");
     // }
 
-    // #[test]
-    // fn test_denominator() {
-    //     let env = Env::default();
-    //     let decimal = Decimal256::percent(&env, 123);
-    //     assert_eq!(decimal.denominator(&env), Decimal256::denominator(&env));
-    // }
+    #[test]
+    fn test_denominator() {
+        let env = Env::default();
+        let decimal = Decimal256::percent(&env, 123);
+        assert_eq!(decimal.denominator(&env), Decimal256::decimal_fractional(&env));
+    }
 
-    // #[test]
-    // fn test_atomics() {
-    //     let env = Env::default();
-    //     let decimal = Decimal256::percent(&env, 123);
-    //     assert_eq!(decimal.atomics(), 1230000000000000000);
-    // }
+    #[test]
+    fn test_atomics() {
+        let env = Env::default();
+        let decimal = Decimal256::percent(&env, 123);
+        assert_eq!(decimal.atomics().unwrap(), 1230000000000000000);
+    }
 
-    // #[test]
-    // fn test_to_i128_with_precision() {
-    //     let env = Env::default();
-    //     let decimal = Decimal256::percent(&env, 124);
-    //     assert_eq!(decimal.to_i128_with_precision(1), 12);
-    //     assert_eq!(decimal.to_i128_with_precision(2), 124);
-    // }
+    #[test]
+    fn test_to_i128_with_precision() {
+        let env = Env::default();
+        let decimal = Decimal256::percent(&env, 124);
+        assert_eq!(decimal.to_i128_with_precision(1), 12);
+        assert_eq!(decimal.to_i128_with_precision(2), 124);
+    }
 
-    // #[test]
-    // fn test_multiply_ratio() {
-    //     let env = Env::default();
-    //     let decimal = Decimal256::percent(&env, 1);
-    //     let numerator = Decimal256::new(&env, 2);
-    //     let denominator = Decimal256::new(&env, 5);
+    #[test]
+    fn test_multiply_ratio() {
+        let env = Env::default();
+        let decimal = Decimal256::percent(&env, 1);
+        let numerator = Decimal256::new(&env, 2);
+        let denominator = Decimal256::new(&env, 5);
 
-    //     // decimal is 10_000_000_000_000_000, atomics would be same
-    //     // numerator is 20_000_000_000_000_000, atomics would be same
-    //     // denominator is 50_000_000_000_000_000, amount would be same
-    //     // decimal * numerator = 200_000_000_000_000_000_000_000_000_000
-    //     // decimal from ratio
-    //     // numerator 200_000_000_000_000_000_000_000_000_000
-    //     // denominator = 50_000_000_000_000_000
-    //     // numerator * decimal256_FRACTIONAL / denominator is the result
-    //     assert_eq!(
-    //         decimal.multiply_ratio(&env, numerator, denominator),
-    //         Decimal256::new(&env, 4000000000000000000000000000000000)
-    //     );
-    // }
+        // decimal is 10_000_000_000_000_000, atomics would be same
+        // numerator is 20_000_000_000_000_000, atomics would be same
+        // denominator is 50_000_000_000_000_000, amount would be same
+        // decimal * numerator = 200_000_000_000_000_000_000_000_000_000
+        // decimal from ratio
+        // numerator 200_000_000_000_000_000_000_000_000_000
+        // denominator = 50_000_000_000_000_000
+        // numerator * decimal256_FRACTIONAL / denominator is the result
+        assert_eq!(
+            decimal.multiply_ratio(&env, numerator, denominator),
+            Decimal256::new(&env, 4000000000000000000000000000000000)
+        );
+    }
 
     #[test]
     fn test_abs_difference() {
