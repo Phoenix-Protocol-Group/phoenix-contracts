@@ -131,8 +131,8 @@ pub struct AmplifierParameters {
     pub next_amp_time: u64,
 }
 
-pub fn get_amp(env: &Env) -> Option<AmplifierParameters> {
-    env.storage().instance().get(&DataKey::Amp)
+pub fn get_amp(env: &Env) -> AmplifierParameters {
+    env.storage().instance().get(&DataKey::Amp).unwrap()
 }
 
 pub fn save_amp(env: &Env, amp: AmplifierParameters) {

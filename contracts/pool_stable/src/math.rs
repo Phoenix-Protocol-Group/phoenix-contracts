@@ -173,7 +173,10 @@ pub(crate) fn calc_y(
         y = (y.pow(2).add(&c)).div(&(y.mul(&n_coins).add(&b).sub(&d)));
         if abs_diff(&y, &y_prev) <= U256::from_u128(env, TOL) {
             let divisor = 10u128.pow(DECIMAL_PRECISION - target_precision);
-            return y.to_u128().unwrap() / divisor;
+            return y
+                .to_u128()
+                .expect("Pool stable: calc_y: conversion to u128 failed")
+                / divisor;
         }
     }
 

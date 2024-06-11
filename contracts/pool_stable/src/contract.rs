@@ -292,7 +292,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             }
         }
 
-        let amp_parameters = get_amp(&env).unwrap();
+        let amp_parameters = get_amp(&env);
         let amp = compute_current_amp(&env, &amp_parameters);
 
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
@@ -316,8 +316,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
             let divisor = 10u128.pow(DECIMAL_PRECISION - greatest_precision);
-            let share =
-                (new_invariant.to_u128().unwrap() / divisor) - MINIMUM_LIQUIDITY_AMOUNT as u128;
+            let share = (new_invariant
+                .to_u128()
+                .expect("Pool stable: provide_liquidity: conversion to u128 failed")
+                / divisor)
+                - MINIMUM_LIQUIDITY_AMOUNT as u128;
             if share == 0 {
                 log!(
                     &env,
@@ -337,11 +340,15 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 ],
             )
             .to_u128()
-            .unwrap();
+            .expect("Pool stable: provide_liquidity: conversion to u128 failed");
             // Calculate the proportion of the change in invariant
             (total_shares
-                * (Decimal::new((new_invariant.to_u128().unwrap() - initial_invariant) as i128)
-                    / Decimal::new(initial_invariant as i128))) as u128
+                * (Decimal::new(
+                    (new_invariant
+                        .to_u128()
+                        .expect("Pool stable: provide_liquidity: conversion to u128 failed")
+                        - initial_invariant) as i128,
+                ) / Decimal::new(initial_invariant as i128))) as u128
         };
 
         // Move tokens from client's wallet to the contract
@@ -867,7 +874,7 @@ pub fn compute_swap(
     offer_amount: u128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    let amp_parameters = get_amp(env).unwrap();
+    let amp_parameters = get_amp(env);
     let amp = compute_current_amp(env, &amp_parameters);
 
     let greatest_precision = get_greatest_precision(env);
@@ -917,7 +924,7 @@ pub fn compute_offer_amount(
     ask_amount: u128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    let amp_parameters = get_amp(env).unwrap();
+    let amp_parameters = get_amp(env);
     let amp = compute_current_amp(env, &amp_parameters);
 
     let one_minus_commission = Decimal::one() - commission_rate;
