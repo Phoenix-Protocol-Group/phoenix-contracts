@@ -1,9 +1,6 @@
-use soroban_sdk::{log, panic_with_error, Env};
-use soroban_sdk::{I256, U256};
+use soroban_sdk::{log, panic_with_error, Env, U256};
 
 use crate::{error::ContractError, storage::AmplifierParameters};
-
-use soroban_decimal::Decimal;
 
 // TODO: Those parameters will be used for updating AMP function later
 #[allow(dead_code)]

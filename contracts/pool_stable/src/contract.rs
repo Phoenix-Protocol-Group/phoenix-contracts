@@ -314,8 +314,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
+            let divisor = 10u128.pow(18 - greatest_precision as u32);
             let share =
-                new_invariant.to_i128_with_precision(greatest_precision) - MINIMUM_LIQUIDITY_AMOUNT;
+                (new_invariant.to_u128().unwrap() / divisor) - MINIMUM_LIQUIDITY_AMOUNT as u128;
             if share == 0 {
                 log!(
                     &env,
@@ -334,11 +335,14 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 ],
             ));
             // Calculate the proportion of the change in invariant
-            (dbg!(Decimal::from_ratio(
-                (new_invariant - initial_invariant) * total_shares,
-                1
-            )) / dbg!(initial_invariant))
-            .to_i128_with_precision(greatest_precision)
+            U256::from_u128(&env, total_shares as u128)
+                .mul(
+                    &(new_invariant
+                        .sub(&initial_invariant)
+                        .div(&initial_invariant)),
+                )
+                .to_u128()
+                .unwrap()
         };
         dbg!("SHARES: ", shares);
 
