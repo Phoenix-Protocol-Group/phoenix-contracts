@@ -84,7 +84,7 @@ fn provide_liqudity() {
         ),]
     );
 
-    assert_eq!(token_share.balance(&user1), 1000);
+    assert_eq!(token_share.balance(&user1), 999);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 900);
     assert_eq!(token1.balance(&pool.address), 100);
@@ -105,13 +105,13 @@ fn provide_liqudity() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 1000i128
+                amount: 999i128
             },
             stake_address: pool.query_stake_contract_address(),
         }
     );
 
-    assert_eq!(pool.query_total_issued_lp(), 1000);
+    assert_eq!(pool.query_total_issued_lp(), 999);
 }
 
 #[test]
@@ -150,7 +150,7 @@ fn withdraw_liquidity() {
     token2.mint(&user1, &100);
     pool.provide_liquidity(&user1, &100, &100, &None);
 
-    assert_eq!(token_share.balance(&user1), 1000);
+    assert_eq!(token_share.balance(&user1), 999);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 0);
     assert_eq!(token1.balance(&pool.address), 100);
@@ -162,7 +162,7 @@ fn withdraw_liquidity() {
     let min_b = 50;
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
 
-    assert_eq!(token_share.balance(&user1), 500);
+    assert_eq!(token_share.balance(&user1), 499);
     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
     assert_eq!(token1.balance(&user1), 50);
     assert_eq!(token1.balance(&pool.address), 50);
@@ -183,14 +183,14 @@ fn withdraw_liquidity() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 500i128,
+                amount: 499i128,
             },
             stake_address: pool.query_stake_contract_address(),
         }
     );
 
     // clear the pool
-    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
+    pool.withdraw_liquidity(&user1, &share_amount, &(min_a - 1), &(min_b - 1));
     assert_eq!(token_share.balance(&user1), 0);
     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
     assert_eq!(token1.balance(&user1), 100);

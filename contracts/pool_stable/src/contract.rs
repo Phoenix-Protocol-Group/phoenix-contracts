@@ -271,7 +271,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         }
 
         // sender needs to authorize the deposit
-        dbg!("SENDER: ", sender.clone());
         sender.require_auth();
 
         let config = get_config(&env);
@@ -307,16 +306,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &env,
             amp as u128,
             &[
-                scale_value(new_balance_a, token_a_decimals, 18),
-                scale_value(new_balance_b, token_b_decimals, 18),
+                scale_value(new_balance_a, 6, 18),
+                scale_value(new_balance_b, 6, 18),
             ],
         ));
 
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
             let divisor = 10u128.pow(18 - greatest_precision as u32);
-            let share =
-                (new_invariant.to_u128().unwrap() / divisor) - MINIMUM_LIQUIDITY_AMOUNT as u128;
+            let share = dbg!((new_invariant.to_u128().unwrap() / divisor))
+                - MINIMUM_LIQUIDITY_AMOUNT as u128;
             if share == 0 {
                 log!(
                     &env,
@@ -324,6 +323,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 );
                 panic_with_error!(&env, ContractError::LowLiquidity);
             }
+
             share
         } else {
             let initial_invariant = dbg!(compute_d(

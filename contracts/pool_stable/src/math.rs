@@ -13,23 +13,22 @@ pub const AMP_PRECISION: u64 = 100;
 
 /// The maximum number of calculation steps for Newton's method.
 const ITERATIONS: u8 = 64;
-/// N = 2 with 18 digits precision
-pub const N_COINS: u128 = 2000000000000000000;
+/// N = 2
+pub const N_COINS: u128 = 2;
 /// 1e-6
 pub const TOL: u128 = 1000000000000;
 
 pub fn scale_value(atomics: u128, decimal_places: u32, target_decimal_places: u32) -> u128 {
     const TEN: u128 = 10;
-    let scaling_factor = if decimal_places < target_decimal_places {
-        TEN.pow((target_decimal_places - decimal_places) as u32)
-    } else {
-        TEN.pow((decimal_places - target_decimal_places) as u32)
-    };
 
     if decimal_places < target_decimal_places {
-        atomics * scaling_factor
+        let factor = TEN.pow((target_decimal_places - decimal_places) as u32);
+        atomics
+            .checked_mul(factor)
+            .expect("Multiplication overflow")
     } else {
-        atomics / scaling_factor
+        let factor = TEN.pow((decimal_places - target_decimal_places) as u32);
+        atomics.checked_div(factor).expect("Division overflow")
     }
 }
 
@@ -72,7 +71,9 @@ pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -
 ///
 /// A * sum(x_i) * n**n + D = A * D * n**n + D**(n+1) / (n**n * prod(x_i))
 pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
-    let leverage = U256::from_u128(env, (amp / AMP_PRECISION as u128) * N_COINS);
+    // * number of coins with 18 digits precision
+    let leverage = U256::from_u128(env, (amp / AMP_PRECISION as u128) * 2000000000000000000);
+    dbg!(leverage.to_u128().unwrap());
     let amount_a_times_coins = pools[0] * N_COINS;
     let amount_b_times_coins = pools[1] * N_COINS;
 
@@ -86,7 +87,7 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
     let mut d: U256 = sum_x.clone();
 
     // Newton's method to approximate D
-    for _ in 0..ITERATIONS {
+    for i in 0..ITERATIONS {
         let d_product = d.pow(3).div(&U256::from_u128(
             env,
             amount_a_times_coins * amount_b_times_coins,
@@ -125,10 +126,10 @@ fn calculate_step(
     let l_val = leverage_mul.add(&d_p_mul).mul(&initial_d);
 
     // (leverage - 1) * initial_d
-    let leverage_sub = leverage_mul.add(&leverage.sub(&U256::from_u128(env, 1000000000000000000)));
+    let leverage_sub = leverage_mul.add(&leverage.sub(&U256::from_u128(env, 1)));
 
     // (n_coins + 1) * d_product
-    let n_coins_sum = d_product.mul(&(U256::from_u128(env, 3000000000000000000)));
+    let n_coins_sum = d_product.mul(&(U256::from_u128(env, 3)));
 
     // Calculate the final step value
     let r_val = leverage_sub.add(&n_coins_sum);
