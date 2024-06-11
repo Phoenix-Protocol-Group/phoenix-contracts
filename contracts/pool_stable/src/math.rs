@@ -22,12 +22,12 @@ pub fn scale_value(atomics: u128, decimal_places: u32, target_decimal_places: u3
     const TEN: u128 = 10;
 
     if decimal_places < target_decimal_places {
-        let factor = TEN.pow((target_decimal_places - decimal_places) as u32);
+        let factor = TEN.pow(target_decimal_places - decimal_places);
         atomics
             .checked_mul(factor)
             .expect("Multiplication overflow")
     } else {
-        let factor = TEN.pow((decimal_places - target_decimal_places) as u32);
+        let factor = TEN.pow(decimal_places - target_decimal_places);
         atomics.checked_div(factor).expect("Division overflow")
     }
 }
@@ -77,7 +77,7 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
     let amount_b_times_coins = pools[1] * N_COINS;
 
     let sum_x = U256::from_u128(env, pools[0] + pools[1]); // sum(x_i), a.k.a S
-    let zero = U256::from_u128(&env, 0u128);
+    let zero = U256::from_u128(env, 0u128);
     if sum_x == zero {
         return zero;
     }
@@ -86,7 +86,7 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
     let mut d: U256 = sum_x.clone();
 
     // Newton's method to approximate D
-    for i in 0..ITERATIONS {
+    for _i in 0..ITERATIONS {
         let d_product = d.pow(3).div(&U256::from_u128(
             env,
             amount_a_times_coins * amount_b_times_coins,
@@ -119,10 +119,10 @@ fn calculate_step(
     d_product: &U256,
 ) -> U256 {
     // (leverage * sum_x + d_product * n_coins)
-    let leverage_mul = leverage.mul(&sum_x);
+    let leverage_mul = leverage.mul(sum_x);
     let d_p_mul = d_product.mul(&U256::from_u128(env, N_COINS));
 
-    let l_val = leverage_mul.add(&d_p_mul).mul(&initial_d);
+    let l_val = leverage_mul.add(&d_p_mul).mul(initial_d);
 
     // (leverage - 1) * initial_d
     let leverage_sub = leverage_mul.add(&leverage.sub(&U256::from_u128(env, 1)));
@@ -154,11 +154,8 @@ pub(crate) fn calc_y(
     let new_amount = U256::from_u128(env, new_amount);
 
     let d = compute_d(env, amp, xp);
-    let leverage = U256::from_u128(env, (amp * 1_000_000_000_000_000_000u128 / 1u128) * N_COINS);
-    let amp_prec = U256::from_u128(
-        env,
-        AMP_PRECISION as u128 * 1_000_000_000_000_000_000u128 / 1u128,
-    );
+    let leverage = U256::from_u128(env, amp * 1_000_000_000_000_000_000u128 * N_COINS);
+    let amp_prec = U256::from_u128(env, AMP_PRECISION as u128 * 1_000_000_000_000_000_000u128);
 
     let c = d
         .pow(3)

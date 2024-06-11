@@ -1,7 +1,7 @@
 use phoenix::utils::LiquidityPoolInitInfo;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String, U256,
+    String,
 };
 
 use crate::error::ContractError;
@@ -337,7 +337,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .to_u128()
             .unwrap();
             // Calculate the proportion of the change in invariant
-            (total_shares as i128
+            (total_shares
                 * (Decimal::new((new_invariant.to_u128().unwrap() - initial_invariant) as i128)
                     / Decimal::new(initial_invariant as i128))) as u128
         };
@@ -836,11 +836,11 @@ pub fn compute_swap(
     let new_ask_pool = calc_y(
         env,
         amp as u128,
-        scale_value(offer_pool as u128 + offer_amount as u128, 7, 18),
+        scale_value(offer_pool + offer_amount, 7, 18),
         &[
             // FIXME: Use token's decimals instead of hardcoded 7
-            scale_value(offer_pool as u128, 7, 18),
-            scale_value(ask_pool as u128, 7, 18),
+            scale_value(offer_pool, 7, 18),
+            scale_value(ask_pool, 7, 18),
         ],
         7,
     );
@@ -883,11 +883,8 @@ pub fn compute_offer_amount(
     let new_offer_pool = calc_y(
         env,
         amp as u128,
-        scale_value(ask_pool as u128 - before_commission as u128, 7, 18),
-        &[
-            scale_value(offer_pool as u128, 7, 18),
-            scale_value(ask_pool as u128, 7, 18),
-        ],
+        scale_value(ask_pool - before_commission as u128, 7, 18),
+        &[scale_value(offer_pool, 7, 18), scale_value(ask_pool, 7, 18)],
         7,
     );
 
