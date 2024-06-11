@@ -1,14 +1,14 @@
 use phoenix::utils::LiquidityPoolInitInfo;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String,
+    String, U256,
 };
 
 use crate::error::ContractError;
 use crate::storage::utils::{get_admin, is_initialized, set_initialized};
 use crate::storage::StableLiquidityPoolInfo;
 use crate::{
-    math::{calc_y, compute_current_amp, compute_d, AMP_PRECISION},
+    math::{calc_y, compute_current_amp, compute_d, scale_value, AMP_PRECISION},
     stake_contract,
     storage::{
         get_amp, get_config, get_greatest_precision, save_amp, save_config,
@@ -300,14 +300,15 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let token_b_decimals = token_b_client.decimals();
 
         // Invariant (D) after deposit added
-        let new_balance_a = desired_a + old_balance_a;
-        let new_balance_b = desired_b + old_balance_b;
+        let new_balance_a = desired_a as u128 + old_balance_a as u128;
+        let new_balance_b = desired_b as u128 + old_balance_b as u128;
+
         let new_invariant = dbg!(compute_d(
             &env,
             amp as u128,
             &[
-                Decimal::from_atomics(new_balance_a, token_a_decimals as i32),
-                Decimal::from_atomics(new_balance_b, token_b_decimals as i32),
+                scale_value(&env, new_balance_a, token_a_decimals, 18),
+                scale_value(&env, new_balance_b, token_b_decimals, 18),
             ],
         ));
 
@@ -328,14 +329,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 &env,
                 amp as u128,
                 &[
-                    Decimal::from_atomics(old_balance_a, token_a_decimals as i32),
-                    Decimal::from_atomics(old_balance_b, token_b_decimals as i32),
+                    scale_value(&env, old_balance_a as u128, token_a_decimals, 18),
+                    scale_value(&env, old_balance_b as u128, token_b_decimals, 18),
                 ],
             ));
             // Calculate the proportion of the change in invariant
-            (dbg!(Decimal::from_ratio((new_invariant - initial_invariant) * total_shares, 1))
-                / dbg!(initial_invariant))
-                .to_i128_with_precision(greatest_precision)
+            (dbg!(Decimal::from_ratio(
+                (new_invariant - initial_invariant) * total_shares,
+                1
+            )) / dbg!(initial_invariant))
+            .to_i128_with_precision(greatest_precision)
         };
         dbg!("SHARES: ", shares);
 
