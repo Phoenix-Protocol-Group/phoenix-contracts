@@ -302,20 +302,20 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let new_balance_a = desired_a as u128 + old_balance_a as u128;
         let new_balance_b = desired_b as u128 + old_balance_b as u128;
 
-        let new_invariant = dbg!(compute_d(
+        let new_invariant = compute_d(
             &env,
             amp as u128,
             &[
-                scale_value(new_balance_a, 6, 18),
-                scale_value(new_balance_b, 6, 18),
+                scale_value(new_balance_a, token_a_decimals, 18),
+                scale_value(new_balance_b, token_b_decimals, 18),
             ],
-        ));
+        );
 
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
             let divisor = 10u128.pow(18 - greatest_precision as u32);
-            let share = dbg!((new_invariant.to_u128().unwrap() / divisor))
-                - MINIMUM_LIQUIDITY_AMOUNT as u128;
+            let share =
+                (new_invariant.to_u128().unwrap() / divisor) - MINIMUM_LIQUIDITY_AMOUNT as u128;
             if share == 0 {
                 log!(
                     &env,
@@ -326,23 +326,20 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
             share
         } else {
-            let initial_invariant = dbg!(compute_d(
+            let initial_invariant = compute_d(
                 &env,
                 amp as u128,
                 &[
                     scale_value(old_balance_a as u128, token_a_decimals, 18),
                     scale_value(old_balance_b as u128, token_b_decimals, 18),
                 ],
-            ));
+            )
+            .to_u128()
+            .unwrap();
             // Calculate the proportion of the change in invariant
-            U256::from_u128(&env, total_shares as u128)
-                .mul(
-                    &(new_invariant
-                        .sub(&initial_invariant)
-                        .div(&initial_invariant)),
-                )
-                .to_u128()
-                .unwrap()
+            (total_shares as i128
+                * (Decimal::new((new_invariant.to_u128().unwrap() - initial_invariant) as i128)
+                    / Decimal::new(initial_invariant as i128))) as u128
         };
         dbg!("SHARES: ", shares);
 

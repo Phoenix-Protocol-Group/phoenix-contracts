@@ -50,7 +50,8 @@ fn provide_liqudity() {
     token2.mint(&user1, &1000);
     assert_eq!(token2.balance(&user1), 1000);
 
-    pool.provide_liquidity(&user1, &100, &100, &None);
+    // tokens 1 & 2 have 7 decimal digits, meaning those values are 0.0001 of token
+    pool.provide_liquidity(&user1, &1000, &1000, &None);
 
     assert_eq!(
         env.auths(),
@@ -60,14 +61,14 @@ fn provide_liqudity() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     Symbol::new(&env, "provide_liquidity"),
-                    (&user1, 100i128, 100i128, None::<i64>).into_val(&env),
+                    (&user1, 1000i128, 1000i128, None::<i64>).into_val(&env),
                 )),
                 sub_invocations: std::vec![
                     AuthorizedInvocation {
                         function: AuthorizedFunction::Contract((
                             token1.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 100_i128).into_val(&env)
+                            (&user1, &pool.address, 1000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     },
@@ -75,7 +76,7 @@ fn provide_liqudity() {
                         function: AuthorizedFunction::Contract((
                             token2.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 100_i128).into_val(&env)
+                            (&user1, &pool.address, 1000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     },
@@ -86,10 +87,10 @@ fn provide_liqudity() {
 
     assert_eq!(token_share.balance(&user1), 999);
     assert_eq!(token_share.balance(&pool.address), 0);
-    assert_eq!(token1.balance(&user1), 900);
-    assert_eq!(token1.balance(&pool.address), 100);
-    assert_eq!(token2.balance(&user1), 900);
-    assert_eq!(token2.balance(&pool.address), 100);
+    assert_eq!(token1.balance(&user1), 0);
+    assert_eq!(token1.balance(&pool.address), 1000);
+    assert_eq!(token2.balance(&user1), 0);
+    assert_eq!(token2.balance(&pool.address), 1000);
 
     let result = pool.query_pool_info();
     assert_eq!(
@@ -97,11 +98,11 @@ fn provide_liqudity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address,
-                amount: 100i128
+                amount: 1000i128
             },
             asset_b: Asset {
                 address: token2.address,
-                amount: 100i128
+                amount: 1000i128
             },
             asset_lp_share: Asset {
                 address: share_token_address,
@@ -146,28 +147,29 @@ fn withdraw_liquidity() {
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);
 
-    token1.mint(&user1, &100);
-    token2.mint(&user1, &100);
-    pool.provide_liquidity(&user1, &100, &100, &None);
+    token1.mint(&user1, &1000);
+    token2.mint(&user1, &1000);
+    // tokens 1 & 2 have 7 decimal digits, meaning those values are 0.0001 of token
+    pool.provide_liquidity(&user1, &1000, &1000, &None);
 
     assert_eq!(token_share.balance(&user1), 999);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 0);
-    assert_eq!(token1.balance(&pool.address), 100);
+    assert_eq!(token1.balance(&pool.address), 1000);
     assert_eq!(token2.balance(&user1), 0);
-    assert_eq!(token2.balance(&pool.address), 100);
+    assert_eq!(token2.balance(&pool.address), 1000);
 
     let share_amount = 500; // half of the shares
-    let min_a = 50;
-    let min_b = 50;
+    let min_a = 500;
+    let min_b = 500;
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
 
     assert_eq!(token_share.balance(&user1), 499);
     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
-    assert_eq!(token1.balance(&user1), 50);
-    assert_eq!(token1.balance(&pool.address), 50);
-    assert_eq!(token2.balance(&user1), 50);
-    assert_eq!(token2.balance(&pool.address), 50);
+    assert_eq!(token1.balance(&user1), 500);
+    assert_eq!(token1.balance(&pool.address), 500);
+    assert_eq!(token2.balance(&user1), 500);
+    assert_eq!(token2.balance(&pool.address), 500);
 
     let result = pool.query_pool_info();
     assert_eq!(
@@ -175,11 +177,11 @@ fn withdraw_liquidity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 50i128,
+                amount: 500i128,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 50i128,
+                amount: 500i128,
             },
             asset_lp_share: Asset {
                 address: share_token_address,
@@ -190,12 +192,12 @@ fn withdraw_liquidity() {
     );
 
     // clear the pool
-    pool.withdraw_liquidity(&user1, &share_amount, &(min_a - 1), &(min_b - 1));
+    pool.withdraw_liquidity(&user1, &499, &500, &500);
     assert_eq!(token_share.balance(&user1), 0);
     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
-    assert_eq!(token1.balance(&user1), 100);
+    assert_eq!(token1.balance(&user1), 1000);
     assert_eq!(token1.balance(&pool.address), 0);
-    assert_eq!(token2.balance(&user1), 100);
+    assert_eq!(token2.balance(&user1), 1000);
     assert_eq!(token2.balance(&pool.address), 0);
 }
 
@@ -555,11 +557,11 @@ fn withdraw_liqudity_below_min() {
         factory,
     );
 
-    token1.mint(&user1, &100);
-    token2.mint(&user1, &100);
-    pool.provide_liquidity(&user1, &100, &100, &None);
+    token1.mint(&user1, &1000);
+    token2.mint(&user1, &1000);
+    pool.provide_liquidity(&user1, &1000, &1000, &None);
 
-    let share_amount = 50;
+    let share_amount = 500;
     // Expecting min_a and/or min_b as huge bigger then available
     pool.withdraw_liquidity(&user1, &share_amount, &3000, &3000);
 }

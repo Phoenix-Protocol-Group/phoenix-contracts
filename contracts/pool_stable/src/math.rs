@@ -73,7 +73,6 @@ pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -
 pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
     // * number of coins with 18 digits precision
     let leverage = U256::from_u128(env, (amp / AMP_PRECISION as u128) * 2000000000000000000);
-    dbg!(leverage.to_u128().unwrap());
     let amount_a_times_coins = pools[0] * N_COINS;
     let amount_b_times_coins = pools[1] * N_COINS;
 
