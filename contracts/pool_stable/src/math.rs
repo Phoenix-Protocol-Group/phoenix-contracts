@@ -14,9 +14,13 @@ pub const AMP_PRECISION: u64 = 100;
 /// The maximum number of calculation steps for Newton's method.
 const ITERATIONS: u8 = 64;
 /// N = 2
-pub const N_COINS: u128 = 2;
+const N_COINS: u128 = 2;
+/// N = 2 with DECIMAL_PRECISION (18) digits
+const N_COINS_PRECISION: u128 = 2000000000000000000;
+/// 1*10**18
+const DECIMAL_FRACTIONAL: u128 = 1_000_000_000_000_000_000;
 /// 1e-6
-pub const TOL: u128 = 1000000000000;
+const TOL: u128 = 1000000000000;
 
 pub fn scale_value(atomics: u128, decimal_places: u32, target_decimal_places: u32) -> u128 {
     const TEN: u128 = 10;
@@ -71,8 +75,7 @@ pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -
 ///
 /// A * sum(x_i) * n**n + D = A * D * n**n + D**(n+1) / (n**n * prod(x_i))
 pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
-    // * number of coins with 18 digits precision
-    let leverage = U256::from_u128(env, (amp / AMP_PRECISION as u128) * 2000000000000000000);
+    let leverage = U256::from_u128(env, (amp / AMP_PRECISION as u128) * N_COINS_PRECISION);
     let amount_a_times_coins = pools[0] * N_COINS;
     let amount_b_times_coins = pools[1] * N_COINS;
 
@@ -154,8 +157,8 @@ pub(crate) fn calc_y(
     let new_amount = U256::from_u128(env, new_amount);
 
     let d = compute_d(env, amp, xp);
-    let leverage = U256::from_u128(env, amp * 1_000_000_000_000_000_000u128 * N_COINS);
-    let amp_prec = U256::from_u128(env, AMP_PRECISION as u128 * 1_000_000_000_000_000_000u128);
+    let leverage = U256::from_u128(env, amp * DECIMAL_FRACTIONAL * N_COINS);
+    let amp_prec = U256::from_u128(env, AMP_PRECISION as u128 * DECIMAL_FRACTIONAL);
 
     let c = d
         .pow(3)
