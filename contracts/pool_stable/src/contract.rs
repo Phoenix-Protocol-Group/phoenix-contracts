@@ -829,9 +829,9 @@ pub fn assert_max_spread(env: &Env, max_spread: Decimal, return_amount: i128, sp
 /// - The commission amount, representing the fees charged for the swap.
 pub fn compute_swap(
     env: &Env,
-    offer_pool: i128,
-    ask_pool: i128,
-    offer_amount: i128,
+    offer_pool: u128,
+    ask_pool: u128,
+    offer_amount: u128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
     let amp_parameters = get_amp(env).unwrap();
@@ -840,10 +840,11 @@ pub fn compute_swap(
     let new_ask_pool = calc_y(
         env,
         amp as u128,
-        Decimal::from_atomics(offer_pool + offer_amount, 6),
+        scale_value(env, offer_pool as u128 + offer_amount as u128, 7, 18),
         &[
-            Decimal::from_atomics(offer_pool, 6),
-            Decimal::from_atomics(ask_pool, 6),
+            // FIXME: Use token's decimals instead of hardcoded 7
+            scale_value(env, offer_pool as u128, 7, 18),
+            scale_value(env, ask_pool as u128, 7, 18),
         ],
         6,
     );
@@ -851,11 +852,11 @@ pub fn compute_swap(
     let return_amount = ask_pool - new_ask_pool;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = offer_amount - return_amount;
-    let commission_amount = return_amount * commission_rate;
+    let commission_amount = return_amount as i128 * commission_rate;
     // Because of issue #211
-    let return_amount = return_amount - commission_amount;
+    let return_amount = return_amount as i128 - commission_amount;
 
-    (return_amount, spread_amount, commission_amount)
+    (return_amount, spread_amount as i128, commission_amount)
 }
 
 /// Returns an amount of offer assets for a specified amount of ask assets.
@@ -866,9 +867,9 @@ pub fn compute_swap(
 /// * **commission_rate** total amount of fees charged for the swap.
 pub fn compute_offer_amount(
     env: &Env,
-    offer_pool: i128,
-    ask_pool: i128,
-    ask_amount: i128,
+    offer_pool: u128,
+    ask_pool: u128,
+    ask_amount: u128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
     let amp_parameters = get_amp(env).unwrap();
@@ -877,10 +878,10 @@ pub fn compute_offer_amount(
     let new_offer_pool = calc_y(
         env,
         amp as u128,
-        Decimal::from_atomics(ask_pool - ask_amount, 6),
+        scale_value(env, ask_pool as u128 - ask_amount as u128, 7, 18),
         &[
-            Decimal::from_atomics(offer_pool, 6),
-            Decimal::from_atomics(ask_pool, 6),
+            scale_value(env, offer_pool as u128, 7, 18),
+            scale_value(env, ask_pool as u128, 7, 18),
         ],
         6,
     );
@@ -889,14 +890,19 @@ pub fn compute_offer_amount(
 
     let one_minus_commission = Decimal::one() - commission_rate;
     let inv_one_minus_commission = Decimal::one() / one_minus_commission;
-    let ask_before_commission = ask_amount * inv_one_minus_commission;
+    let ask_before_commission = ask_amount as i128 * inv_one_minus_commission;
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_before_commission;
+    let spread_amount: u128 =
+        (offer_amount * ask_pool / offer_pool) - ask_before_commission as u128;
 
     // Calculate the commission amount
     let commission_amount: i128 = ask_before_commission * commission_rate;
 
-    (offer_amount, spread_amount, commission_amount)
+    (
+        offer_amount as i128,
+        spread_amount as i128,
+        commission_amount,
+    )
 }
 
 #[cfg(test)]
