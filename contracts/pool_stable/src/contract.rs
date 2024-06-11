@@ -341,7 +341,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 * (Decimal::new((new_invariant.to_u128().unwrap() - initial_invariant) as i128)
                     / Decimal::new(initial_invariant as i128))) as u128
         };
-        dbg!("SHARES: ", shares);
 
         // Move tokens from client's wallet to the contract
         token_a_client.transfer(&sender, &env.current_contract_address(), &(desired_a));
@@ -843,12 +842,17 @@ pub fn compute_swap(
             scale_value(offer_pool as u128, 7, 18),
             scale_value(ask_pool as u128, 7, 18),
         ],
-        6,
+        7,
     );
 
     let return_amount = ask_pool - new_ask_pool;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
-    let spread_amount = offer_amount - return_amount;
+    let spread_amount = if offer_amount > return_amount {
+        offer_amount - return_amount
+    } else {
+        // saturating sub equivalent
+        0
+    };
     let commission_amount = return_amount as i128 * commission_rate;
     // Because of issue #211
     let return_amount = return_amount as i128 - commission_amount;
