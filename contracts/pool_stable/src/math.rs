@@ -1,6 +1,6 @@
 use soroban_sdk::{log, panic_with_error, Env, U256};
 
-use crate::{error::ContractError, storage::AmplifierParameters};
+use crate::{error::ContractError, storage::AmplifierParameters, DECIMAL_PRECISION};
 
 // TODO: Those parameters will be used for updating AMP function later
 #[allow(dead_code)]
@@ -148,7 +148,7 @@ pub(crate) fn calc_y(
     amp: u128,
     new_amount: u128,
     xp: &[u128],
-    target_precision: u8,
+    target_precision: u32,
 ) -> u128 {
     let n_coins = U256::from_u128(env, N_COINS);
     let new_amount = U256::from_u128(env, new_amount);
@@ -171,7 +171,7 @@ pub(crate) fn calc_y(
         y_prev = y.clone();
         y = (y.pow(2).add(&c)).div(&(y.mul(&n_coins).add(&b).sub(&d)));
         if abs_diff(&y, &y_prev) <= U256::from_u128(env, TOL) {
-            let divisor = 10u128.pow(18 - target_precision as u32);
+            let divisor = 10u128.pow(DECIMAL_PRECISION - target_precision);
             return y.to_u128().unwrap() / divisor;
         }
     }

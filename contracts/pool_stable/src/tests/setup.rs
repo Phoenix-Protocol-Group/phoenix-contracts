@@ -75,7 +75,6 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         &token_wasm_hash,
         &lp_init_info,
         &factory,
-        &7u32,
         &String::from_str(env, "LP_SHARE_TOKEN"),
         &String::from_str(env, "PHOBTCLP"),
         &6u64,

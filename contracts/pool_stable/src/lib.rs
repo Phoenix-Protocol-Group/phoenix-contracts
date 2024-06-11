@@ -1,4 +1,4 @@
-// #![no_std]
+#![no_std]
 mod contract;
 mod error;
 mod math;
@@ -19,6 +19,8 @@ pub mod stake_contract {
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
 }
+
+const DECIMAL_PRECISION: u32 = 18;
 
 #[cfg(test)]
 mod tests;
