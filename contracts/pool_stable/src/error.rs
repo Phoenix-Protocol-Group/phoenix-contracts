@@ -21,4 +21,5 @@ pub enum ContractError {
     SwapMinReceivedBiggerThanReturn = 15,
     ProvideLiquidityBothTokensMustBeMoreThanZero = 16,
     DivisionByZero = 17,
+    InvalidAMP = 18,
 }

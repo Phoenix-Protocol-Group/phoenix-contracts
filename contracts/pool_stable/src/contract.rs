@@ -22,6 +22,7 @@ use soroban_decimal::Decimal;
 
 // Minimum amount of initial LP shares to mint
 const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1000;
+const MAX_AMP: u64 = 1_000_000;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -230,6 +231,10 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         };
         save_config(&env, config);
         let current_time = env.ledger().timestamp();
+        if amp == 0 || amp > MAX_AMP {
+            log!(&env, "Pool Stable: Initialize: AMP parameter is incorrect");
+            panic_with_error!(&env, ContractError::InvalidAMP);
+        }
         save_amp(
             &env,
             AmplifierParameters {
@@ -287,7 +292,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             }
         }
 
-        // FIXME: This is minor, but add some validation to AMP parameters
         let amp_parameters = get_amp(&env).unwrap();
         let amp = compute_current_amp(&env, &amp_parameters);
 

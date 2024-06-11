@@ -33,6 +33,7 @@ fn update_config() {
         200,
         stake_manager,
         factory,
+        None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -124,6 +125,7 @@ fn update_config_unauthorized() {
         200,
         stake_manager,
         factory,
+        None,
     );
 
     pool.update_config(
@@ -165,6 +167,7 @@ fn update_config_update_admin() {
         200,
         stake_manager,
         factory,
+        None,
     );
 
     // update admin to new admin
@@ -220,6 +223,7 @@ fn update_config_too_high_fees() {
         200,
         stake_manager,
         factory,
+        None,
     );
 
     // update fees and recipient
@@ -230,5 +234,38 @@ fn update_config_too_high_fees() {
         &Some(admin2.clone()),
         &None,
         &None,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Pool Stable: Initialize: AMP parameter is incorrect")]
+fn initialize_with_incorrect_amp() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let swap_fees = 0i64;
+    let stake_manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+    deploy_stable_liquidity_pool_contract(
+        &env,
+        Some(admin1.clone()),
+        (&token1.address, &token2.address),
+        swap_fees,
+        user1,
+        500,
+        200,
+        stake_manager,
+        factory,
+        0, // init AMP
     );
 }

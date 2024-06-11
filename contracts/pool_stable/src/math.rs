@@ -4,8 +4,6 @@ use crate::{error::ContractError, storage::AmplifierParameters, DECIMAL_PRECISIO
 
 // TODO: Those parameters will be used for updating AMP function later
 #[allow(dead_code)]
-pub const MAX_AMP: u64 = 1_000_000;
-#[allow(dead_code)]
 pub const MAX_AMP_CHANGE: u64 = 10;
 #[allow(dead_code)]
 pub const MIN_AMP_CHANGING_TIME: u64 = 86400;

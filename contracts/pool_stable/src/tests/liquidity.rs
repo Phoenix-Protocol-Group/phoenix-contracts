@@ -39,6 +39,7 @@ fn provide_liqudity() {
         None,
         manager,
         factory,
+        None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -142,6 +143,7 @@ fn withdraw_liquidity() {
         None,
         manager,
         factory,
+        None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -405,6 +407,7 @@ fn provide_liqudity_too_high_fees() {
         None,
         manager,
         factory,
+        None,
     );
 }
 
@@ -437,6 +440,7 @@ fn swap_with_no_amounts() {
         None,
         manager,
         factory,
+        None,
     );
 
     token1.mint(&user1, &1_001_000);
@@ -474,6 +478,7 @@ fn withdraw_liqudity_below_min() {
         None,
         manager,
         factory,
+        None,
     );
 
     token1.mint(&user1, &1000);

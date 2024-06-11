@@ -37,6 +37,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     max_allowed_spread_bps: impl Into<Option<i64>>,
     stake_manager: Address,
     factory: Address,
+    init_amp: impl Into<Option<u64>>,
 ) -> StableLiquidityPoolClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
     let pool =
@@ -77,7 +78,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         &factory,
         &String::from_str(env, "LP_SHARE_TOKEN"),
         &String::from_str(env, "PHOBTCLP"),
-        &6u64,
+        &init_amp.into().unwrap_or(6u64),
     );
     pool
 }

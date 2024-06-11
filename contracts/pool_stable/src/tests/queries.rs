@@ -37,6 +37,7 @@ fn query_share_valid_liquidity() {
         None,
         stake_manager,
         stake_owner,
+        None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -247,6 +248,7 @@ fn query_share_empty_pool() {
         None,
         stake_manager,
         stake_owner,
+        None,
     );
 
     let share_token_address = pool.query_share_token_address();

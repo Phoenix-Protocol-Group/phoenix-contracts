@@ -34,6 +34,7 @@ fn simple_swap() {
         None,
         manager,
         factory,
+        None,
     );
 
     token1.mint(&user1, &1_001_000);
@@ -147,6 +148,7 @@ fn swap_with_high_fee() {
         None,
         manager,
         factory,
+        None,
     );
 
     let initial_liquidity = 1_000_000i128;
@@ -215,6 +217,7 @@ fn swap_simulation_even_pool() {
         None,
         manager,
         factory,
+        None,
     );
 
     let initial_liquidity = 1_000_000i128;

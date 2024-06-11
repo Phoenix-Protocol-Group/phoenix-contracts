@@ -39,6 +39,7 @@ fn confirm_stake_contract_deployment() {
         200,
         stake_manager.clone(),
         factory.clone(),
+        None,
     );
 
     let share_token_address = pool.query_share_token_address();
