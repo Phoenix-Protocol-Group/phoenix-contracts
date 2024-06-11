@@ -307,8 +307,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &env,
             amp as u128,
             &[
-                scale_value(&env, new_balance_a, token_a_decimals, 18),
-                scale_value(&env, new_balance_b, token_b_decimals, 18),
+                scale_value(new_balance_a, token_a_decimals, 18),
+                scale_value(new_balance_b, token_b_decimals, 18),
             ],
         ));
 
@@ -330,8 +330,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 &env,
                 amp as u128,
                 &[
-                    scale_value(&env, old_balance_a as u128, token_a_decimals, 18),
-                    scale_value(&env, old_balance_b as u128, token_b_decimals, 18),
+                    scale_value(old_balance_a as u128, token_a_decimals, 18),
+                    scale_value(old_balance_b as u128, token_b_decimals, 18),
                 ],
             ));
             // Calculate the proportion of the change in invariant
@@ -354,7 +354,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let balance_a = utils::get_balance(&env, &config.token_a);
         let balance_b = utils::get_balance(&env, &config.token_b);
 
-        utils::mint_shares(&env, &config.share_token, &sender, shares);
+        utils::mint_shares(&env, &config.share_token, &sender, shares as i128);
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
@@ -589,9 +589,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let (ask_amount, spread_amount, commission_amount) = compute_swap(
             &env,
-            pool_balance_offer,
-            pool_balance_ask,
-            offer_amount,
+            pool_balance_offer as u128,
+            pool_balance_ask as u128,
+            offer_amount as u128,
             config.protocol_fee_rate(),
         );
 
@@ -625,9 +625,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
             &env,
-            pool_balance_offer,
-            pool_balance_ask,
-            ask_amount,
+            pool_balance_offer as u128,
+            pool_balance_ask as u128,
+            ask_amount as u128,
             config.protocol_fee_rate(),
         );
 
@@ -720,9 +720,9 @@ fn do_swap(
 
     let (return_amount, spread_amount, commission_amount) = compute_swap(
         &env,
-        pool_balance_sell,
-        pool_balance_buy,
-        offer_amount,
+        pool_balance_sell as u128,
+        pool_balance_buy as u128,
+        offer_amount as u128,
         config.protocol_fee_rate(),
     );
 
@@ -840,11 +840,11 @@ pub fn compute_swap(
     let new_ask_pool = calc_y(
         env,
         amp as u128,
-        scale_value(env, offer_pool as u128 + offer_amount as u128, 7, 18),
+        scale_value(offer_pool as u128 + offer_amount as u128, 7, 18),
         &[
             // FIXME: Use token's decimals instead of hardcoded 7
-            scale_value(env, offer_pool as u128, 7, 18),
-            scale_value(env, ask_pool as u128, 7, 18),
+            scale_value(offer_pool as u128, 7, 18),
+            scale_value(ask_pool as u128, 7, 18),
         ],
         6,
     );
@@ -878,10 +878,10 @@ pub fn compute_offer_amount(
     let new_offer_pool = calc_y(
         env,
         amp as u128,
-        scale_value(env, ask_pool as u128 - ask_amount as u128, 7, 18),
+        scale_value(ask_pool as u128 - ask_amount as u128, 7, 18),
         &[
-            scale_value(env, offer_pool as u128, 7, 18),
-            scale_value(env, ask_pool as u128, 7, 18),
+            scale_value(offer_pool as u128, 7, 18),
+            scale_value(ask_pool as u128, 7, 18),
         ],
         6,
     );

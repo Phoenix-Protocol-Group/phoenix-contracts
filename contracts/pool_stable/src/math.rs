@@ -18,12 +18,7 @@ pub const N_COINS: u128 = 2000000000000000000;
 /// 1e-6
 pub const TOL: u128 = 1000000000000;
 
-pub fn scale_value(
-    env: &Env,
-    atomics: u128,
-    decimal_places: u32,
-    target_decimal_places: u32,
-) -> u128 {
+pub fn scale_value(atomics: u128, decimal_places: u32, target_decimal_places: u32) -> u128 {
     const TEN: u128 = 10;
     let scaling_factor = if decimal_places < target_decimal_places {
         TEN.pow((target_decimal_places - decimal_places) as u32)
@@ -88,7 +83,7 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
     }
 
     let mut d_previous: U256;
-    let mut d: U256 = sum_x;
+    let mut d: U256 = sum_x.clone();
 
     // Newton's method to approximate D
     for _ in 0..ITERATIONS {
@@ -96,8 +91,8 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
             env,
             amount_a_times_coins * amount_b_times_coins,
         ));
-        d_previous = d;
-        d = calculate_step(env, d, leverage, sum_x, d_product);
+        d_previous = d.clone();
+        d = calculate_step(env, &d, &leverage, &sum_x, &d_product);
         // Equality with the precision of 1e-6
         if abs_diff(&d, &d_previous) <= U256::from_u128(env, TOL) {
             return d;
@@ -118,10 +113,10 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
 /// d = (leverage * sum_x + d_product * n_coins) * initial_d / ((leverage - 1) * initial_d + (n_coins + 1) * d_product)
 fn calculate_step(
     env: &Env,
-    initial_d: U256,
-    leverage: U256,
-    sum_x: U256,
-    d_product: U256,
+    initial_d: &U256,
+    leverage: &U256,
+    sum_x: &U256,
+    d_product: &U256,
 ) -> U256 {
     // (leverage * sum_x + d_product * n_coins)
     let leverage_mul = leverage.mul(&sum_x);
@@ -174,9 +169,9 @@ pub(crate) fn calc_y(
 
     // Solve for y by approximating: y**2 + b*y = c
     let mut y_prev;
-    let mut y = d;
+    let mut y = d.clone();
     for _ in 0..ITERATIONS {
-        y_prev = y;
+        y_prev = y.clone();
         y = (y.pow(2).add(&c)).div(&(y.mul(&n_coins).add(&b).sub(&d)));
         if abs_diff(&y, &y_prev) <= U256::from_u128(env, TOL) {
             let divisor = 10u128.pow(18 - target_precision as u32);
