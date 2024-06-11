@@ -876,25 +876,31 @@ pub fn compute_offer_amount(
     let amp_parameters = get_amp(env).unwrap();
     let amp = compute_current_amp(env, &amp_parameters);
 
+    let one_minus_commission = Decimal::one() - commission_rate;
+    let inv_one_minus_commission = Decimal::one() / one_minus_commission;
+    let before_commission = inv_one_minus_commission * ask_amount as i128;
+
     let new_offer_pool = calc_y(
         env,
         amp as u128,
-        scale_value(ask_pool as u128 - ask_amount as u128, 7, 18),
+        scale_value(ask_pool as u128 - before_commission as u128, 7, 18),
         &[
             scale_value(offer_pool as u128, 7, 18),
             scale_value(ask_pool as u128, 7, 18),
         ],
-        6,
+        7,
     );
 
     let offer_amount = new_offer_pool - offer_pool;
 
-    let one_minus_commission = Decimal::one() - commission_rate;
-    let inv_one_minus_commission = Decimal::one() / one_minus_commission;
     let ask_before_commission = ask_amount as i128 * inv_one_minus_commission;
-    // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: u128 =
-        (offer_amount * ask_pool / offer_pool) - ask_before_commission as u128;
+    // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
+    let spread_amount = if offer_amount > ask_amount {
+        offer_amount - ask_amount
+    } else {
+        // saturating sub equivalent
+        0
+    };
 
     // Calculate the commission amount
     let commission_amount: i128 = ask_before_commission * commission_rate;

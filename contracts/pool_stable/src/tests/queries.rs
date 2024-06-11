@@ -56,7 +56,7 @@ fn query_share_valid_liquidity() {
     pool.provide_liquidity(&user3, &1500, &2000, &None);
 
     // user1 assertions
-    let lp_share_balance_user1 = dbg!(token_share.balance(&user1));
+    let lp_share_balance_user1 = token_share.balance(&user1);
     let query_share_result_user1 = pool.query_share(&lp_share_balance_user1);
     // rounding errors, again - 1 token is 0.0000001
     assert_eq!(
