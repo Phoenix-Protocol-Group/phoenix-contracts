@@ -89,7 +89,7 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
     let mut d: U256 = sum_x.clone();
 
     // Newton's method to approximate D
-    for _i in 0..ITERATIONS {
+    for _ in 0..ITERATIONS {
         let d_product = d.pow(3).div(&U256::from_u128(
             env,
             amount_a_times_coins * amount_b_times_coins,

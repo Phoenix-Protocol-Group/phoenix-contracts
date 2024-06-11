@@ -163,6 +163,27 @@ fn withdraw_liquidity() {
     let min_a = 500;
     let min_b = 500;
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    Symbol::new(&env, "withdraw_liquidity"),
+                    (&user1, 500i128, 500i128, 500i128).into_val(&env),
+                )),
+                sub_invocations: std::vec![AuthorizedInvocation {
+                    function: AuthorizedFunction::Contract((
+                        share_token_address.clone(),
+                        symbol_short!("transfer"),
+                        (&user1, &pool.address, 500_i128).into_val(&env)
+                    )),
+                    sub_invocations: std::vec![],
+                },],
+            }
+        ),]
+    );
 
     assert_eq!(token_share.balance(&user1), 499);
     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
@@ -200,6 +221,8 @@ fn withdraw_liquidity() {
     assert_eq!(token2.balance(&user1), 1000);
     assert_eq!(token2.balance(&pool.address), 0);
 }
+
+// Single asset liquidity providing is now disabled
 
 // #[test]
 // #[should_panic = "Pool: split_deposit_based_on_pool_ratio: Both pools and deposit must be a positive!"]
@@ -354,110 +377,6 @@ fn withdraw_liquidity() {
 //     );
 //     assert_eq!(token1.balance(&user1), 0);
 //     assert_eq!(token2.balance(&user1), 0);
-// }
-//
-// #[test]
-// fn provide_liqudity_single_asset_one_third() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//     env.budget().reset_unlimited();
-//
-//     let mut admin1 = Address::generate(&env);
-//     let mut admin2 = Address::generate(&env);
-//     let user1 = Address::generate(&env);
-//
-//     let mut token1 = deploy_token_contract(&env, &admin1);
-//     let mut token2 = deploy_token_contract(&env, &admin2);
-//     if token2.address < token1.address {
-//         std::mem::swap(&mut token1, &mut token2);
-//         std::mem::swap(&mut admin1, &mut admin2);
-//     }
-//     let swap_fees = 0i64;
-//     let pool = deploy_stable_liquidity_pool_contract(
-//         &env,
-//         None,
-//         (&token1.address, &token2.address),
-//         swap_fees,
-//         None,
-//         None,
-//         None,
-//     );
-//
-//     token1.mint(&user1, &10_000_000);
-//     token2.mint(&user1, &30_000_000);
-//
-//     // providing liquidity with single asset is not allowed on an empty pool
-//     pool.provide_liquidity(&user1, &10_000_000, &30_000_000, &None);
-//     assert_eq!(token1.balance(&pool.address), 10_000_000);
-//     assert_eq!(token2.balance(&pool.address), 30_000_000);
-//
-//     token2.mint(&user1, &100_000);
-//     // Providing 100k of token2 to 1:3 pool will perform swap which will create imbalance
-//     let slippage_tolerance_bps = 300; // 3%
-//     pool.provide_liquidity(&user1, &0i128, &100_000, &Some(slippage_tolerance_bps));
-//     // before swap : A(10_000_000), B(30_000_000)
-//     // since pool is 1/3 divides 75k/25k sum for swap
-//     // swap 25k B for A = 8327
-//     // after swap : A(9_991_673), B(30_025_000)
-//     // after providing liquidity
-//     // A(10_000_000), B(30_100_000)
-//
-//     assert_eq!(token1.balance(&pool.address), 10_000_000);
-//     assert_eq!(token2.balance(&pool.address), 30_100_000);
-// }
-//
-// #[test]
-// fn provide_liqudity_single_asset_one_third_with_fees() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//     env.budget().reset_unlimited();
-//
-//     let mut admin1 = Address::generate(&env);
-//     let mut admin2 = Address::generate(&env);
-//     let user1 = Address::generate(&env);
-//
-//     let mut token1 = deploy_token_contract(&env, &admin1);
-//     let mut token2 = deploy_token_contract(&env, &admin2);
-//     if token2.address < token1.address {
-//         std::mem::swap(&mut token1, &mut token2);
-//         std::mem::swap(&mut admin1, &mut admin2);
-//     }
-//     let swap_fees = 1_000i64; // 10% bps
-//     let pool = deploy_stable_liquidity_pool_contract(
-//         &env,
-//         None,
-//         (&token1.address, &token2.address),
-//         swap_fees,
-//         None,
-//         None,
-//         None,
-//     );
-//
-//     token1.mint(&user1, &10_000_000);
-//     token2.mint(&user1, &30_000_000);
-//
-//     // providing liquidity with single asset is not allowed on an empty pool
-//     pool.provide_liquidity(&user1, &10_000_000, &30_000_000, &None);
-//     assert_eq!(token1.balance(&pool.address), 10_000_000);
-//     assert_eq!(token2.balance(&pool.address), 30_000_000);
-//
-//     token2.mint(&user1, &100_000);
-//     pool.provide_liquidity(&user1, &0i128, &100_000, &None);
-//     // before swap : A(10_000_000), B(30_000_000)
-//     // since pool is 1/3 algorithm will split it around 15794/52734
-//     // swap 47_226k B for A = 17_548 (-10% fee = 15_793)
-//     // after swap : A(9_982_452), B(30_052_734)
-//     // after providing liquidity
-//     // A(10_000_000), B(30_100_000)
-//
-//     // return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount))
-//     let return_amount = 17_548;
-//     let fees = Decimal::percent(10);
-//     assert_eq!(
-//         token1.balance(&pool.address),
-//         10_000_000 - return_amount * fees
-//     );
-//     assert_eq!(token2.balance(&pool.address), 30_100_000);
 // }
 
 #[test]

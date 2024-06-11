@@ -762,7 +762,6 @@ version = "1.0.0"
 dependencies = [
  "num-integer",
  "phoenix",
- "pretty_assertions",
  "soroban-decimal",
  "soroban-sdk",
 ]
