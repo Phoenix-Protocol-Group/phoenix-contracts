@@ -4,24 +4,25 @@ use soroban_sdk::{
     String,
 };
 
-use crate::error::ContractError;
-use crate::storage::utils::{get_admin, is_initialized, set_initialized};
-use crate::storage::StableLiquidityPoolInfo;
 use crate::{
-    math::{calc_y, compute_current_amp, compute_d, AMP_PRECISION},
+    error::ContractError,
+    math::{calc_y, compute_current_amp, compute_d, scale_value, AMP_PRECISION},
     stake_contract,
     storage::{
-        get_amp, get_config, get_greatest_precision, save_amp, save_config,
-        save_greatest_precision, utils, validate_fee_bps, AmplifierParameters, Asset, Config,
-        PairType, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse,
+        get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
+        save_greatest_precision, utils,
+        utils::{get_admin, is_initialized, set_initialized},
+        validate_fee_bps, AmplifierParameters, Asset, Config, PairType, PoolResponse,
+        SimulateReverseSwapResponse, SimulateSwapResponse, StableLiquidityPoolInfo,
     },
-    token_contract,
+    token_contract, DECIMAL_PRECISION,
 };
 use phoenix::{validate_bps, validate_int_parameters};
 use soroban_decimal::Decimal;
 
 // Minimum amount of initial LP shares to mint
 const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1000;
+const MAX_AMP: u64 = 1_000_000;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -43,7 +44,7 @@ pub trait StableLiquidityPoolTrait {
         token_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
-        share_token_decimals: u32,
+        share_token_decimal: u32,
         share_token_name: String,
         share_token_symbol: String,
         amp: u64,
@@ -139,7 +140,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         token_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
-        share_token_decimals: u32,
+        _share_token_decimal: u32,
         share_token_name: String,
         share_token_symbol: String,
         amp: u64,
@@ -201,7 +202,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             // admin
             &env.current_contract_address(),
             // number of decimals on the share token
-            &share_token_decimals,
+            &get_greatest_precision(&env),
             // name
             &share_token_name.into_val(&env),
             // symbol
@@ -232,6 +233,10 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         };
         save_config(&env, config);
         let current_time = env.ledger().timestamp();
+        if amp == 0 || amp > MAX_AMP {
+            log!(&env, "Pool Stable: Initialize: AMP parameter is incorrect");
+            panic_with_error!(&env, ContractError::InvalidAMP);
+        }
         save_amp(
             &env,
             AmplifierParameters {
@@ -259,7 +264,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         desired_b: i128,
         custom_slippage_bps: Option<i64>,
     ) {
-        validate_int_parameters!(desired_a, desired_b);
+        if desired_a == 0 || desired_b == 0 {
+            log!(
+                    &env,
+                    "Pool Stable: ProvideLiquidity: Both tokens must be provided and must be bigger then 0!"
+                );
+            panic_with_error!(
+                env,
+                ContractError::ProvideLiquidityBothTokensMustBeMoreThanZero
+            );
+        }
 
         // sender needs to authorize the deposit
         sender.require_auth();
@@ -274,32 +288,41 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             if custom_slippage > config.max_allowed_slippage_bps {
                 log!(
                     &env,
-                    "Pool Stable: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage toleranc"
+                    "Pool Stable: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage tolerance"
                 );
                 panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
             }
         }
 
-        let amp_parameters = get_amp(&env).unwrap(); // FIXME: This is minor, but add some
-                                                     // validation to AMP parameters
+        let amp_parameters = get_amp(&env);
         let amp = compute_current_amp(&env, &amp_parameters);
 
+        let token_a_client = token_contract::Client::new(&env, &config.token_a);
+        let token_a_decimals = token_a_client.decimals();
+        let token_b_client = token_contract::Client::new(&env, &config.token_b);
+        let token_b_decimals = token_b_client.decimals();
+
         // Invariant (D) after deposit added
-        let new_balance_a = desired_a + old_balance_a;
-        let new_balance_b = desired_b + old_balance_b;
+        let new_balance_a = desired_a as u128 + old_balance_a as u128;
+        let new_balance_b = desired_b as u128 + old_balance_b as u128;
+
         let new_invariant = compute_d(
             &env,
             amp as u128,
             &[
-                Decimal::from_atomics(new_balance_a, 6),
-                Decimal::from_atomics(new_balance_b, 6),
+                scale_value(new_balance_a, token_a_decimals, DECIMAL_PRECISION),
+                scale_value(new_balance_b, token_b_decimals, DECIMAL_PRECISION),
             ],
         );
 
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
-            let share =
-                new_invariant.to_i128_with_precision(greatest_precision) - MINIMUM_LIQUIDITY_AMOUNT;
+            let divisor = 10u128.pow(DECIMAL_PRECISION - greatest_precision);
+            let share = (new_invariant
+                .to_u128()
+                .expect("Pool stable: provide_liquidity: conversion to u128 failed")
+                / divisor)
+                - MINIMUM_LIQUIDITY_AMOUNT as u128;
             if share == 0 {
                 log!(
                     &env,
@@ -307,24 +330,28 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 );
                 panic_with_error!(&env, ContractError::LowLiquidity);
             }
+
             share
         } else {
             let initial_invariant = compute_d(
                 &env,
                 amp as u128,
                 &[
-                    Decimal::from_atomics(old_balance_a, 6),
-                    Decimal::from_atomics(old_balance_b, 6),
+                    scale_value(old_balance_a as u128, token_a_decimals, DECIMAL_PRECISION),
+                    scale_value(old_balance_b as u128, token_b_decimals, DECIMAL_PRECISION),
                 ],
-            );
+            )
+            .to_u128()
+            .expect("Pool stable: provide_liquidity: conversion to u128 failed");
             // Calculate the proportion of the change in invariant
-            (Decimal::from_ratio((new_invariant - initial_invariant) * total_shares, 1)
-                / initial_invariant)
-                .to_i128_with_precision(greatest_precision)
+            (total_shares
+                * (Decimal::new(
+                    (new_invariant
+                        .to_u128()
+                        .expect("Pool stable: provide_liquidity: conversion to u128 failed")
+                        - initial_invariant) as i128,
+                ) / Decimal::new(initial_invariant as i128))) as u128
         };
-
-        let token_a_client = token_contract::Client::new(&env, &config.token_a);
-        let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
         // Move tokens from client's wallet to the contract
         token_a_client.transfer(&sender, &env.current_contract_address(), &(desired_a));
@@ -334,7 +361,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let balance_a = utils::get_balance(&env, &config.token_a);
         let balance_b = utils::get_balance(&env, &config.token_b);
 
-        utils::mint_shares(&env, &config.share_token, &sender, shares);
+        utils::mint_shares(&env, &config.share_token, &sender, shares as i128);
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
@@ -406,7 +433,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         if return_amount_a < min_a || return_amount_b < min_b {
             log!(
                 &env,
-                "Pool Stable: Minimum amount of token_a or token_b is not satisfied! min_a: {}, min_b: {}, return_amount_a: {}, return_amount_b: {}",
+                "Pool Stable: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied! min_a: {}, min_b: {}, return_amount_a: {}, return_amount_b: {}",
                 min_a,
                 min_b,
                 return_amount_a,
@@ -558,20 +585,34 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
-        let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_a {
-            (pool_balance_a, pool_balance_b)
-        } else if offer_asset == config.token_b {
-            (pool_balance_b, pool_balance_a)
-        } else {
-            log!(&env, "Pool Stable: Token offered to swap not found in Pool");
-            panic_with_error!(env, ContractError::AssetNotInPool);
-        };
+
+        let (sell_token, pool_balance_sell, buy_token, pool_balance_buy) =
+            if offer_asset == config.token_a {
+                (
+                    config.clone().token_a,
+                    pool_balance_a,
+                    config.clone().token_b,
+                    pool_balance_b,
+                )
+            } else if offer_asset == config.token_b {
+                (
+                    config.clone().token_b,
+                    pool_balance_b,
+                    config.clone().token_a,
+                    pool_balance_a,
+                )
+            } else {
+                log!(&env, "Pool Stable: Token offered to swap not found in Pool");
+                panic_with_error!(env, ContractError::AssetNotInPool);
+            };
 
         let (ask_amount, spread_amount, commission_amount) = compute_swap(
             &env,
-            pool_balance_offer,
-            pool_balance_ask,
-            offer_amount,
+            pool_balance_sell as u128,
+            get_precisions(&env, &sell_token),
+            pool_balance_buy as u128,
+            get_precisions(&env, &buy_token),
+            offer_amount as u128,
             config.protocol_fee_rate(),
         );
 
@@ -594,20 +635,33 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
-        let (pool_balance_offer, pool_balance_ask) = if offer_asset == config.token_b {
-            (pool_balance_a, pool_balance_b)
-        } else if offer_asset == config.token_a {
-            (pool_balance_b, pool_balance_a)
-        } else {
-            log!(&env, "Pool Stable: Token offered to swap not found in Pool");
-            panic_with_error!(env, ContractError::AssetNotInPool);
-        };
+        let (sell_token, pool_balance_sell, buy_token, pool_balance_buy) =
+            if offer_asset == config.token_a {
+                (
+                    config.clone().token_a,
+                    pool_balance_a,
+                    config.clone().token_b,
+                    pool_balance_b,
+                )
+            } else if offer_asset == config.token_b {
+                (
+                    config.clone().token_b,
+                    pool_balance_b,
+                    config.clone().token_a,
+                    pool_balance_a,
+                )
+            } else {
+                log!(&env, "Pool Stable: Token offered to swap not found in Pool");
+                panic_with_error!(env, ContractError::AssetNotInPool);
+            };
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
             &env,
-            pool_balance_offer,
-            pool_balance_ask,
-            ask_amount,
+            pool_balance_sell as u128,
+            get_precisions(&env, &sell_token),
+            pool_balance_buy as u128,
+            get_precisions(&env, &buy_token),
+            ask_amount as u128,
             config.protocol_fee_rate(),
         );
 
@@ -689,20 +743,33 @@ fn do_swap(
     let pool_balance_a = utils::get_pool_balance_a(&env);
     let pool_balance_b = utils::get_pool_balance_b(&env);
 
-    let (pool_balance_sell, pool_balance_buy) = if offer_asset == config.token_a {
-        (pool_balance_a, pool_balance_b)
-    } else if offer_asset == config.token_b {
-        (pool_balance_b, pool_balance_a)
-    } else {
-        log!(&env, "Pool Stable: Token offered to swap not found in Pool");
-        panic_with_error!(env, ContractError::AssetNotInPool);
-    };
+    let (sell_token, pool_balance_sell, buy_token, pool_balance_buy) =
+        if offer_asset == config.token_a {
+            (
+                config.clone().token_a,
+                pool_balance_a,
+                config.clone().token_b,
+                pool_balance_b,
+            )
+        } else if offer_asset == config.token_b {
+            (
+                config.clone().token_b,
+                pool_balance_b,
+                config.clone().token_a,
+                pool_balance_a,
+            )
+        } else {
+            log!(&env, "Pool Stable: Token offered to swap not found in Pool");
+            panic_with_error!(env, ContractError::AssetNotInPool);
+        };
 
     let (return_amount, spread_amount, commission_amount) = compute_swap(
         &env,
-        pool_balance_sell,
-        pool_balance_buy,
-        offer_amount,
+        pool_balance_sell as u128,
+        get_precisions(&env, &sell_token),
+        pool_balance_buy as u128,
+        get_precisions(&env, &buy_token),
+        offer_amount as u128,
         config.protocol_fee_rate(),
     );
 
@@ -722,13 +789,6 @@ fn do_swap(
         return_amount + commission_amount,
         spread_amount,
     );
-
-    // Transfer the amount being sold to the contract
-    let (sell_token, buy_token) = if offer_asset == config.clone().token_a {
-        (config.clone().token_a, config.clone().token_b)
-    } else {
-        (config.clone().token_b, config.clone().token_a)
-    };
 
     // transfer tokens to swap
     token_contract::Client::new(&env, &sell_token).transfer(
@@ -809,33 +869,46 @@ pub fn assert_max_spread(env: &Env, max_spread: Decimal, return_amount: i128, sp
 /// - The commission amount, representing the fees charged for the swap.
 pub fn compute_swap(
     env: &Env,
-    offer_pool: i128,
-    ask_pool: i128,
-    offer_amount: i128,
+    offer_pool: u128,
+    offer_pool_precision: u32,
+    ask_pool: u128,
+    ask_pool_precision: u32,
+    offer_amount: u128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    let amp_parameters = get_amp(env).unwrap();
+    let amp_parameters = get_amp(env);
     let amp = compute_current_amp(env, &amp_parameters);
+
+    let greatest_precision = get_greatest_precision(env);
 
     let new_ask_pool = calc_y(
         env,
         amp as u128,
-        Decimal::from_atomics(offer_pool + offer_amount, 6),
+        scale_value(
+            offer_pool + offer_amount,
+            greatest_precision,
+            DECIMAL_PRECISION,
+        ),
         &[
-            Decimal::from_atomics(offer_pool, 6),
-            Decimal::from_atomics(ask_pool, 6),
+            scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
+            scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
         ],
-        6,
+        greatest_precision,
     );
 
     let return_amount = ask_pool - new_ask_pool;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
-    let spread_amount = offer_amount - return_amount;
-    let commission_amount = return_amount * commission_rate;
+    let spread_amount = if offer_amount > return_amount {
+        offer_amount - return_amount
+    } else {
+        // saturating sub equivalent
+        0
+    };
+    let commission_amount = return_amount as i128 * commission_rate;
     // Because of issue #211
-    let return_amount = return_amount - commission_amount;
+    let return_amount = return_amount as i128 - commission_amount;
 
-    (return_amount, spread_amount, commission_amount)
+    (return_amount, spread_amount as i128, commission_amount)
 }
 
 /// Returns an amount of offer assets for a specified amount of ask assets.
@@ -846,37 +919,56 @@ pub fn compute_swap(
 /// * **commission_rate** total amount of fees charged for the swap.
 pub fn compute_offer_amount(
     env: &Env,
-    offer_pool: i128,
-    ask_pool: i128,
-    ask_amount: i128,
+    offer_pool: u128,
+    offer_pool_precision: u32,
+    ask_pool: u128,
+    ask_pool_precision: u32,
+    ask_amount: u128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    let amp_parameters = get_amp(env).unwrap();
+    let amp_parameters = get_amp(env);
     let amp = compute_current_amp(env, &amp_parameters);
+
+    let one_minus_commission = Decimal::one() - commission_rate;
+    let inv_one_minus_commission = Decimal::one() / one_minus_commission;
+    let before_commission = inv_one_minus_commission * ask_amount as i128;
+
+    let greatest_precision = get_greatest_precision(env);
 
     let new_offer_pool = calc_y(
         env,
         amp as u128,
-        Decimal::from_atomics(ask_pool - ask_amount, 6),
+        scale_value(
+            ask_pool - before_commission as u128,
+            greatest_precision,
+            DECIMAL_PRECISION,
+        ),
         &[
-            Decimal::from_atomics(offer_pool, 6),
-            Decimal::from_atomics(ask_pool, 6),
+            scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
+            scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
         ],
-        6,
+        greatest_precision,
     );
 
     let offer_amount = new_offer_pool - offer_pool;
 
-    let one_minus_commission = Decimal::one() - commission_rate;
-    let inv_one_minus_commission = Decimal::one() / one_minus_commission;
-    let ask_before_commission = ask_amount * inv_one_minus_commission;
-    // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_before_commission;
+    let ask_before_commission = ask_amount as i128 * inv_one_minus_commission;
+    // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
+    let spread_amount = if offer_amount > ask_amount {
+        offer_amount - ask_amount
+    } else {
+        // saturating sub equivalent
+        0
+    };
 
     // Calculate the commission amount
     let commission_amount: i128 = ask_before_commission * commission_rate;
 
-    (offer_amount, spread_amount, commission_amount)
+    (
+        offer_amount as i128,
+        spread_amount as i128,
+        commission_amount,
+    )
 }
 
 #[cfg(test)]

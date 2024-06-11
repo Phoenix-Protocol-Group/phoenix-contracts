@@ -19,4 +19,7 @@ pub enum ContractError {
     NewtonMethodFailed = 13,
     CalcYErr = 14,
     SwapMinReceivedBiggerThanReturn = 15,
+    ProvideLiquidityBothTokensMustBeMoreThanZero = 16,
+    DivisionByZero = 17,
+    InvalidAMP = 18,
 }

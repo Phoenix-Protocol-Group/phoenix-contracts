@@ -16,6 +16,7 @@ pub enum DataKey {
     Initialized = 4,
     Amp = 5,
     MaxPrecision = 6,
+    TokenPrecision = 7,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -88,10 +89,17 @@ pub fn save_config(env: &Env, config: Config) {
     env.storage().instance().set(&CONFIG, &config);
 }
 
-pub fn get_greatest_precision(env: &Env) -> i32 {
+pub fn get_greatest_precision(env: &Env) -> u32 {
     env.storage()
         .instance()
         .get(&DataKey::MaxPrecision)
+        .unwrap()
+}
+
+pub fn get_precisions(env: &Env, token: &Address) -> u32 {
+    env.storage()
+        .instance()
+        .get(&(DataKey::TokenPrecision, token))
         .unwrap()
 }
 
@@ -105,7 +113,13 @@ pub fn save_greatest_precision(env: &Env, token1: &Address, token2: &Address) {
     };
     env.storage()
         .instance()
-        .set(&DataKey::MaxPrecision, &i32::try_from(max_precision).ok());
+        .set(&DataKey::MaxPrecision, &max_precision);
+    env.storage()
+        .instance()
+        .set(&(DataKey::TokenPrecision, token1), &precision1);
+    env.storage()
+        .instance()
+        .set(&(DataKey::TokenPrecision, token2), &precision2);
 }
 
 #[contracttype]
@@ -117,8 +131,8 @@ pub struct AmplifierParameters {
     pub next_amp_time: u64,
 }
 
-pub fn get_amp(env: &Env) -> Option<AmplifierParameters> {
-    env.storage().instance().get(&DataKey::Amp)
+pub fn get_amp(env: &Env) -> AmplifierParameters {
+    env.storage().instance().get(&DataKey::Amp).unwrap()
 }
 
 pub fn save_amp(env: &Env, amp: AmplifierParameters) {

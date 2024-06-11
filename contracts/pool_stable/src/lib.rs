@@ -20,5 +20,7 @@ pub mod stake_contract {
     );
 }
 
+const DECIMAL_PRECISION: u32 = 18;
+
 #[cfg(test)]
 mod tests;

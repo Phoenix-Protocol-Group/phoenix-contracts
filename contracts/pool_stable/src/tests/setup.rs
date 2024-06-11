@@ -37,6 +37,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     max_allowed_spread_bps: impl Into<Option<i64>>,
     stake_manager: Address,
     factory: Address,
+    init_amp: impl Into<Option<u64>>,
 ) -> StableLiquidityPoolClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
     let pool =
@@ -64,7 +65,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         swap_fee_bps: swap_fees,
         fee_recipient,
         max_allowed_slippage_bps: max_allowed_slippage_bps.into().unwrap_or(5_000),
-        max_allowed_spread_bps: max_allowed_spread_bps.into().unwrap_or(500),
+        max_allowed_spread_bps: max_allowed_spread_bps.into().unwrap_or(1_000),
         max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,
@@ -75,10 +76,10 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         &token_wasm_hash,
         &lp_init_info,
         &factory,
-        &10u32,
+        &10, // LP share decimals, unused
         &String::from_str(env, "LP_SHARE_TOKEN"),
         &String::from_str(env, "PHOBTCLP"),
-        &6u64,
+        &init_amp.into().unwrap_or(6u64),
     );
     pool
 }

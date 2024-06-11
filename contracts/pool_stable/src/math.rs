@@ -1,12 +1,8 @@
-use soroban_sdk::{log, panic_with_error, Env};
+use soroban_sdk::{log, panic_with_error, Env, U256};
 
-use crate::{error::ContractError, storage::AmplifierParameters};
-
-use soroban_decimal::Decimal;
+use crate::{error::ContractError, storage::AmplifierParameters, DECIMAL_PRECISION};
 
 // TODO: Those parameters will be used for updating AMP function later
-#[allow(dead_code)]
-pub const MAX_AMP: u64 = 1_000_000;
 #[allow(dead_code)]
 pub const MAX_AMP_CHANGE: u64 = 10;
 #[allow(dead_code)]
@@ -16,9 +12,35 @@ pub const AMP_PRECISION: u64 = 100;
 /// The maximum number of calculation steps for Newton's method.
 const ITERATIONS: u8 = 64;
 /// N = 2
-pub const N_COINS: Decimal = Decimal::raw(2000000000000000000);
+const N_COINS: u128 = 2;
+/// N = 2 with DECIMAL_PRECISION (18) digits
+const N_COINS_PRECISION: u128 = 2000000000000000000;
+/// 1*10**18
+const DECIMAL_FRACTIONAL: u128 = 1_000_000_000_000_000_000;
 /// 1e-6
-pub const TOL: Decimal = Decimal::raw(1000000000000);
+const TOL: u128 = 1000000000000;
+
+pub fn scale_value(atomics: u128, decimal_places: u32, target_decimal_places: u32) -> u128 {
+    const TEN: u128 = 10;
+
+    if decimal_places < target_decimal_places {
+        let factor = TEN.pow(target_decimal_places - decimal_places);
+        atomics
+            .checked_mul(factor)
+            .expect("Multiplication overflow")
+    } else {
+        let factor = TEN.pow(decimal_places - target_decimal_places);
+        atomics.checked_div(factor).expect("Division overflow")
+    }
+}
+
+fn abs_diff(a: &U256, b: &U256) -> U256 {
+    if a < b {
+        b.sub(a)
+    } else {
+        a.sub(b)
+    }
+}
 
 /// Compute the current pool amplification coefficient (AMP).
 pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -> u64 {
@@ -50,26 +72,30 @@ pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -
 /// * **Equation**
 ///
 /// A * sum(x_i) * n**n + D = A * D * n**n + D**(n+1) / (n**n * prod(x_i))
-pub fn compute_d(env: &Env, amp: u128, pools: &[Decimal]) -> Decimal {
-    let leverage = Decimal::from_ratio(amp as i128, AMP_PRECISION) * N_COINS;
+pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
+    let leverage = U256::from_u128(env, (amp / AMP_PRECISION as u128) * N_COINS_PRECISION);
     let amount_a_times_coins = pools[0] * N_COINS;
     let amount_b_times_coins = pools[1] * N_COINS;
 
-    let sum_x = pools[0] + pools[1]; // sum(x_i), a.k.a S
-    if sum_x.is_zero() {
-        return Decimal::zero();
+    let sum_x = U256::from_u128(env, pools[0] + pools[1]); // sum(x_i), a.k.a S
+    let zero = U256::from_u128(env, 0u128);
+    if sum_x == zero {
+        return zero;
     }
 
-    let mut d_previous: Decimal;
-    let mut d: Decimal = sum_x;
+    let mut d_previous: U256;
+    let mut d: U256 = sum_x.clone();
 
     // Newton's method to approximate D
     for _ in 0..ITERATIONS {
-        let d_product = d.pow(3) / (amount_a_times_coins * amount_b_times_coins);
-        d_previous = d;
-        d = calculate_step(d, leverage, sum_x, d_product);
+        let d_product = d.pow(3).div(&U256::from_u128(
+            env,
+            amount_a_times_coins * amount_b_times_coins,
+        ));
+        d_previous = d.clone();
+        d = calculate_step(env, &d, &leverage, &sum_x, &d_product);
         // Equality with the precision of 1e-6
-        if (d - d_previous).abs() <= TOL {
+        if abs_diff(&d, &d_previous) <= U256::from_u128(env, TOL) {
             return d;
         }
     }
@@ -87,21 +113,28 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[Decimal]) -> Decimal {
 ///
 /// d = (leverage * sum_x + d_product * n_coins) * initial_d / ((leverage - 1) * initial_d + (n_coins + 1) * d_product)
 fn calculate_step(
-    initial_d: Decimal,
-    leverage: Decimal,
-    sum_x: Decimal,
-    d_product: Decimal,
-) -> Decimal {
-    let leverage_mul = leverage * sum_x;
-    let d_p_mul = d_product * N_COINS;
+    env: &Env,
+    initial_d: &U256,
+    leverage: &U256,
+    sum_x: &U256,
+    d_product: &U256,
+) -> U256 {
+    // (leverage * sum_x + d_product * n_coins)
+    let leverage_mul = leverage.mul(sum_x);
+    let d_p_mul = d_product.mul(&U256::from_u128(env, N_COINS));
 
-    let l_val = leverage_mul + d_p_mul * initial_d;
-    let leverage_sub = initial_d * (leverage - Decimal::one());
-    let n_coins_sum = d_product * (N_COINS + Decimal::one());
+    let l_val = leverage_mul.add(&d_p_mul).mul(initial_d);
 
-    let r_val = leverage_sub + n_coins_sum;
+    // (leverage - 1) * initial_d
+    let leverage_sub = leverage_mul.add(&leverage.sub(&U256::from_u128(env, 1)));
 
-    l_val / r_val
+    // (n_coins + 1) * d_product
+    let n_coins_sum = d_product.mul(&(U256::from_u128(env, 3)));
+
+    // Calculate the final step value
+    let r_val = leverage_sub.add(&n_coins_sum);
+
+    l_val.div(&r_val)
 }
 
 /// Compute the swap amount `y` in proportion to `x`.
@@ -114,25 +147,36 @@ fn calculate_step(
 pub(crate) fn calc_y(
     env: &Env,
     amp: u128,
-    new_amount: Decimal,
-    xp: &[Decimal],
-    target_precision: u8,
-) -> i128 {
-    let d = compute_d(env, amp, xp);
-    let leverage = Decimal::from_ratio(amp as i128, 1u8) * N_COINS;
-    let amp_prec = Decimal::from_ratio(AMP_PRECISION, 1u8);
+    new_amount: u128,
+    xp: &[u128],
+    target_precision: u32,
+) -> u128 {
+    let n_coins = U256::from_u128(env, N_COINS);
+    let new_amount = U256::from_u128(env, new_amount);
 
-    let c = d.pow(3) * amp_prec / (new_amount * N_COINS * N_COINS * leverage);
-    let b = new_amount + d * amp_prec / leverage;
+    let d = compute_d(env, amp, xp);
+    let leverage = U256::from_u128(env, amp * DECIMAL_FRACTIONAL * N_COINS);
+    let amp_prec = U256::from_u128(env, AMP_PRECISION as u128 * DECIMAL_FRACTIONAL);
+
+    let c = d
+        .pow(3)
+        .mul(&amp_prec)
+        .div(&new_amount.mul(&n_coins.mul(&n_coins)).mul(&leverage));
+
+    let b = new_amount.add(&d.mul(&amp_prec).div(&leverage));
 
     // Solve for y by approximating: y**2 + b*y = c
     let mut y_prev;
-    let mut y = d;
+    let mut y = d.clone();
     for _ in 0..ITERATIONS {
-        y_prev = y;
-        y = (y.pow(2) + c) / (y * N_COINS + b - d);
-        if (y - y_prev).abs() <= TOL {
-            return y.to_i128_with_precision(target_precision);
+        y_prev = y.clone();
+        y = (y.pow(2).add(&c)).div(&(y.mul(&n_coins).add(&b).sub(&d)));
+        if abs_diff(&y, &y_prev) <= U256::from_u128(env, TOL) {
+            let divisor = 10u128.pow(DECIMAL_PRECISION - target_precision);
+            return y
+                .to_u128()
+                .expect("Pool stable: calc_y: conversion to u128 failed")
+                / divisor;
         }
     }
 
