@@ -1,6 +1,6 @@
 use soroban_decimal::Decimal;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String, Vec,
 };
 
 use crate::distribution::calc_power;
@@ -45,6 +45,10 @@ pub trait StakingRewardsTrait {
         min_reward: i128,
         min_bond: i128,
     );
+
+    fn add_multiple_users(env: Env, users: Vec<Address>);
+
+    fn add_user(env: Env, user: Address);
 
     fn calculate_bond(env: Env, sender: Address);
 
@@ -130,6 +134,36 @@ impl StakingRewardsTrait for StakingRewards {
             .publish(("create_distribution_flow", "asset"), &reward_token);
 
         utils::save_admin(&env, &admin);
+    }
+
+    fn add_multiple_users(env: Env, users: Vec<Address>) {
+        get_admin(&env).require_auth();
+
+        for user in users {
+            StakingRewards::add_user(env.clone(), user);
+        }
+    }
+
+    fn add_user(env: Env, user: Address) {
+        get_admin(&env).require_auth();
+
+        let config = get_config(&env);
+
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+        let stakes = stake_client.query_staked(&user);
+
+        let new_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER);
+        let mut distribution = get_distribution(&env, &config.reward_token);
+        update_rewards(
+            &env,
+            &user,
+            &config.reward_token,
+            &mut distribution,
+            0, // old_rewards power is 0 when user didn't register before
+            new_power,
+        );
+
+        env.events().publish(("stake_rewards", "add_user"), &user);
     }
 
     fn calculate_bond(env: Env, sender: Address) {
