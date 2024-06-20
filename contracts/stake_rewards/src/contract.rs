@@ -321,12 +321,13 @@ impl StakingRewardsTrait for StakingRewards {
         let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
         let stakes = stake_client.query_staked(&sender);
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
+        dbg!("multiplier ", reward_multiplier);
 
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         reward_token_client.transfer(
             &env.current_contract_address(),
             &sender,
-            &(reward_amount as i128 * reward_multiplier),
+            &dbg!(reward_amount as i128 * reward_multiplier),
         );
 
         env.events().publish(

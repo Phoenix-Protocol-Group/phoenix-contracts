@@ -35,7 +35,16 @@ fn calculate_bond_one_user() {
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
     assert_eq!(staking.query_total_staked(), 0);
 
-    let start_timestamp = 100;
+    let user1 = Address::generate(&env);
+    lp_token.mint(&user1, &10_000);
+    assert_eq!(lp_token.balance(&user1), 10_000);
+    assert_eq!(lp_token.balance(&staking.address), 0);
+    assert_eq!(staking.query_config().config.lp_token, lp_token.address);
+    staking.bond(&user1, &10_000);
+    staking_rewards.calculate_bond(&user1);
+
+    // we simulate full stake time
+    let start_timestamp = 60 * 3600 * 24;
     env.ledger().with_mut(|li| {
         li.timestamp = start_timestamp;
     });
@@ -43,15 +52,6 @@ fn calculate_bond_one_user() {
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 600;
     staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
-
-    let user1 = Address::generate(&env);
-    lp_token.mint(&user1, &10_000);
-    assert_eq!(lp_token.balance(&user1), 10_000);
-    assert_eq!(lp_token.balance(&staking.address), 0);
-    assert_eq!(staking.query_config().config.lp_token, lp_token.address);
-    staking.bond(&user1, &10_000);
-
-    staking_rewards.calculate_bond(&user1);
 
     env.ledger().with_mut(|li| {
         li.timestamp = start_timestamp + 300; // move to a middle of distribution

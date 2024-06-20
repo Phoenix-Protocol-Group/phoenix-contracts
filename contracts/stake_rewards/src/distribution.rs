@@ -238,10 +238,14 @@ pub fn calc_power(
     }
 }
 
+// For all user's stakes:
+// - if a stake is active <60 days, apply a multiplier 1/60th for each day it is (up to 1.0)
+// - if a stake is older, just sum it up
+// - weighted average will be used as a final reward's multiplier
 pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
     let current_date = env.ledger().timestamp();
-    let mut weighted_sum = Decimal::zero();
-    let mut total_weight = Decimal::zero();
+    let mut weighted_sum: u128 = 0;
+    let mut total_weight: u128 = 0;
 
     for stake in stakes.iter() {
         // Calculate the number of days the stake has been active
@@ -249,24 +253,27 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
 
         // If stake is younger than 60 days, calculate its power
         let power = if days_active < 60 {
-            Decimal::from_ratio(days_active, 60)
+            days_active as u128
         } else {
-            Decimal::one()
+            60
         };
 
         // Add the weighted power to the sum
-        weighted_sum = weighted_sum + Decimal::from_ratio(power * stake.stake, 1);
+        weighted_sum += power * stake.stake as u128;
         // Accumulate the total weight
-        total_weight = total_weight + Decimal::from_ratio(stake.stake, 1);
+        total_weight +=  60 * stake.stake as u128;
     }
 
+    dbg!(weighted_sum);
+    dbg!(total_weight);
     // Calculate and return the average staking power
-    if total_weight > Decimal::zero() {
-        weighted_sum / total_weight
+    if total_weight > 0 {
+       Decimal::from_ratio(weighted_sum as i128, total_weight as i128)
     } else {
         Decimal::zero()
     }
 }
+
 
 #[cfg(test)]
 mod tests {
