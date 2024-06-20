@@ -7,9 +7,9 @@ use crate::distribution::calc_power;
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
-        calculate_annualized_payout, get_distribution, get_reward_curve, get_withdraw_adjustment,
-        save_distribution, save_reward_curve, save_withdraw_adjustment, update_rewards,
-        withdrawable_rewards, Distribution, SHARES_SHIFT,
+        calc_withdraw_power, calculate_annualized_payout, get_distribution, get_reward_curve,
+        get_withdraw_adjustment, save_distribution, save_reward_curve, save_withdraw_adjustment,
+        update_rewards, withdrawable_rewards, Distribution, SHARES_SHIFT,
     },
     error::ContractError,
     msg::{AnnualizedRewardResponse, ConfigResponse, WithdrawableRewardResponse},
@@ -317,11 +317,16 @@ impl StakingRewardsTrait for StakingRewards {
         save_distribution(&env, &config.reward_token, &distribution);
         save_withdraw_adjustment(&env, &sender, &config.reward_token, &withdraw_adjustment);
 
+        // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+        let stakes = stake_client.query_staked(&sender);
+        let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
+
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         reward_token_client.transfer(
             &env.current_contract_address(),
             &sender,
-            &(reward_amount as i128),
+            &(reward_amount as i128 * reward_multiplier),
         );
 
         env.events().publish(
@@ -470,6 +475,13 @@ impl StakingRewardsTrait for StakingRewards {
         // adjustments
         let reward_amount =
             withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
+
+        // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+        let stakes = stake_client.query_staked(&user);
+        let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
+
+        let reward_amount = (reward_amount as i128 * reward_multiplier) as u128;
 
         WithdrawableRewardResponse {
             reward_address: config.reward_token,

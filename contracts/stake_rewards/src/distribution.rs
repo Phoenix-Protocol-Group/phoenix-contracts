@@ -1,9 +1,9 @@
-use soroban_sdk::{contracttype, Address, Env};
+use soroban_sdk::{contracttype, Address, Env, Vec};
 
 use curve::Curve;
 use soroban_decimal::Decimal;
 
-use crate::{stake_contract, storage::Config, TOKEN_PER_POWER};
+use crate::{stake_contract, stake_contract::Stake, storage::Config, TOKEN_PER_POWER};
 
 /// How much points is the worth of single token in rewards distribution.
 /// The scaling is performed to have better precision of fixed point division.
@@ -15,7 +15,8 @@ use crate::{stake_contract, storage::Config, TOKEN_PER_POWER};
 /// calculations, but I256 is missing and it is required for this.
 pub const SHARES_SHIFT: u8 = 32;
 
-const SECONDS_PER_YEAR: u64 = 365 * 24 * 60 * 60;
+const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
+const SECONDS_PER_YEAR: u64 = 365 * SECONDS_PER_DAY;
 
 #[derive(Clone)]
 #[contracttype]
@@ -234,6 +235,36 @@ pub fn calc_power(
         0
     } else {
         stakes * multiplier / token_per_power as i128
+    }
+}
+
+pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
+    let current_date = env.ledger().timestamp();
+    let mut weighted_sum = Decimal::zero();
+    let mut total_weight = Decimal::zero();
+
+    for stake in stakes.iter() {
+        // Calculate the number of days the stake has been active
+        let days_active = (current_date - stake.stake_timestamp) / SECONDS_PER_DAY;
+
+        // If stake is younger than 60 days, calculate its power
+        let power = if days_active < 60 {
+            Decimal::from_ratio(days_active, 60)
+        } else {
+            Decimal::one()
+        };
+
+        // Add the weighted power to the sum
+        weighted_sum = weighted_sum + Decimal::from_ratio(power * stake.stake, 1);
+        // Accumulate the total weight
+        total_weight = total_weight + Decimal::from_ratio(stake.stake, 1);
+    }
+
+    // Calculate and return the average staking power
+    if total_weight > Decimal::zero() {
+        weighted_sum / total_weight
+    } else {
+        Decimal::zero()
     }
 }
 
