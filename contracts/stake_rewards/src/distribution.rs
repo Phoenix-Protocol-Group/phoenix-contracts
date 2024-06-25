@@ -249,7 +249,7 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
 
     for stake in stakes.iter() {
         // Calculate the number of days the stake has been active
-        let days_active = (current_date - stake.stake_timestamp) / SECONDS_PER_DAY;
+        let days_active = (dbg!(current_date) - dbg!(stake.stake_timestamp)) / SECONDS_PER_DAY;
 
         // If stake is younger than 60 days, calculate its power
         let power = if days_active < 60 {
@@ -261,19 +261,18 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
         // Add the weighted power to the sum
         weighted_sum += power * stake.stake as u128;
         // Accumulate the total weight
-        total_weight +=  60 * stake.stake as u128;
+        total_weight += 60 * stake.stake as u128;
     }
 
     dbg!(weighted_sum);
     dbg!(total_weight);
     // Calculate and return the average staking power
     if total_weight > 0 {
-       Decimal::from_ratio(weighted_sum as i128, total_weight as i128)
+        Decimal::from_ratio(weighted_sum as i128, total_weight as i128)
     } else {
         Decimal::zero()
     }
 }
-
 
 #[cfg(test)]
 mod tests {

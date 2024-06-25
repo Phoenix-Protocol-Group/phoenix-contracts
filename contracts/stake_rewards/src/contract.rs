@@ -482,7 +482,7 @@ impl StakingRewardsTrait for StakingRewards {
         let stakes = stake_client.query_staked(&user);
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
 
-        let reward_amount = (reward_amount as i128 * reward_multiplier) as u128;
+        let reward_amount = dbg!((reward_amount as i128 * reward_multiplier) as u128);
 
         WithdrawableRewardResponse {
             reward_address: config.reward_token,

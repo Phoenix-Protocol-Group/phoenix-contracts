@@ -101,26 +101,25 @@ fn two_users_both_bonds_after_distribution_starts() {
 
     let (staking, staking_rewards) =
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
-    assert_eq!(staking.query_total_staked(), 0);
 
-    let start_timestamp = 100;
-    env.ledger().with_mut(|li| {
-        li.timestamp = start_timestamp;
-    });
+    // we simulate the full APR after 60 days of staking
+    let sixty_days = 3600 * 24 * 60;
 
     reward_token.mint(&admin, &1_000_000);
-    let reward_duration = 600;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
-
-    env.ledger().with_mut(|li| {
-        li.timestamp = start_timestamp + 200; // distribution already goes for 1/3 of the time
-    });
+    // therfore the distribution must take at least 60 days in this test case
+    let reward_duration = sixty_days * 3;
+    // distribution starts at time 0
+    staking_rewards.fund_distribution(&admin, &0, &reward_duration, &1_000_000);
 
     // first user bonds after distribution started
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &10_000);
     staking.bond(&user1, &10_000);
     staking_rewards.calculate_bond(&user1);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = sixty_days; // distribution already goes for 1/3 of the time
+    });
 
     staking_rewards.distribute_rewards();
 
@@ -133,15 +132,15 @@ fn two_users_both_bonds_after_distribution_starts() {
         }
     );
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = start_timestamp + 400; // distribution already goes for 2/3 of the time
-    });
-
-    // first user bonds before distribution started
+    // second user bonds and we are waiting another 60 days for the full APR
     let user2 = Address::generate(&env);
     lp_token.mint(&user2, &10_000);
     staking.bond(&user2, &10_000);
     staking_rewards.calculate_bond(&user2);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = sixty_days * 2; // distribution already goes for 2/3 of the time
+    });
 
     staking_rewards.distribute_rewards();
 
@@ -175,12 +174,13 @@ fn two_users_both_bonds_after_distribution_starts() {
 fn try_to_withdraw_rewards_without_bonding() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let (staking, staking_rewards) =
+    let (_staking, staking_rewards) =
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
 
     let start_timestamp = 100;
@@ -230,7 +230,7 @@ fn fund_distribution_starting_before_current_timestamp() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let (staking, staking_rewards) =
+    let (_staking, staking_rewards) =
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
 
     let start_timestamp = 100;
@@ -253,7 +253,7 @@ fn fund_distribution_with_reward_below_required_minimum() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let (staking, staking_rewards) =
+    let (_staking, staking_rewards) =
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
 
     let start_timestamp = 100;
@@ -337,8 +337,6 @@ fn calculate_apr() {
 
 #[test]
 fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
-    let day_in_seconds = 3600 * 24;
-
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -349,8 +347,6 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
 
     let (staking, staking_rewards) =
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
-
-    env.ledger().with_mut(|li| li.timestamp = day_in_seconds);
 
     // bond tokens for user to enable distribution for him
     let user1 = Address::generate(&env);
@@ -363,12 +359,18 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     staking.bond(&user2, &1_000);
     staking_rewards.calculate_bond(&user2);
 
+    // we simulate full stake time
+    let start_timestamp = 60 * 3600 * 24;
+    env.ledger().with_mut(|li| {
+        li.timestamp = start_timestamp;
+    });
+
     let reward_duration = 10_000;
     let reward_amount = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
     staking_rewards.fund_distribution(
         &admin,
-        &day_in_seconds, // start distirbution
+        &start_timestamp, // start distirbution
         &reward_duration,
         &reward_amount,
     );
@@ -402,7 +404,7 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
         }
     );
     staking_rewards.calculate_unbond(&user1);
-    staking.unbond(&user1, &1_000, &day_in_seconds); // when he bonded
+    staking.unbond(&user1, &1_000, &0); // when he bonded
     assert_eq!(
         staking_rewards.query_withdrawable_reward(&user1),
         WithdrawableRewardResponse {
@@ -447,7 +449,7 @@ fn panic_when_funding_distribution_with_curve_too_complex() {
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
-    let (staking, staking_rewards) =
+    let (_staking, staking_rewards) =
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
 
     reward_token.mint(&admin, &10_000);
@@ -475,11 +477,6 @@ fn add_multiple_users() {
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
     assert_eq!(staking.query_total_staked(), 0);
 
-    let start_timestamp = 100;
-    env.ledger().with_mut(|li| {
-        li.timestamp = start_timestamp;
-    });
-
     // first user bonds before distribution started
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &10_000);
@@ -491,6 +488,12 @@ fn add_multiple_users() {
     let user2 = Address::generate(&env);
     lp_token.mint(&user2, &10_000);
     staking.bond(&user2, &10_000);
+
+    // we simulate full stake time
+    let start_timestamp = 60 * 3600 * 24;
+    env.ledger().with_mut(|li| {
+        li.timestamp = start_timestamp;
+    });
 
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 600;
