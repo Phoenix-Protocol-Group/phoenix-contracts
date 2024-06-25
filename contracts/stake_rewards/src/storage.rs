@@ -16,7 +16,6 @@ pub struct Config {
     pub min_bond: i128,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
-
 pub fn get_config(env: &Env) -> Config {
     env.storage()
         .persistent()

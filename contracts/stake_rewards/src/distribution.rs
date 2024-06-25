@@ -1,9 +1,9 @@
-use soroban_sdk::{contracttype, Address, Env};
+use soroban_sdk::{contracttype, Address, Env, Vec};
 
 use curve::Curve;
 use soroban_decimal::Decimal;
 
-use crate::{stake_contract, storage::Config, TOKEN_PER_POWER};
+use crate::{stake_contract, stake_contract::Stake, storage::Config, TOKEN_PER_POWER};
 
 /// How much points is the worth of single token in rewards distribution.
 /// The scaling is performed to have better precision of fixed point division.
@@ -15,7 +15,8 @@ use crate::{stake_contract, storage::Config, TOKEN_PER_POWER};
 /// calculations, but I256 is missing and it is required for this.
 pub const SHARES_SHIFT: u8 = 32;
 
-const SECONDS_PER_YEAR: u64 = 365 * 24 * 60 * 60;
+const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
+const SECONDS_PER_YEAR: u64 = 365 * SECONDS_PER_DAY;
 
 #[derive(Clone)]
 #[contracttype]
@@ -234,6 +235,42 @@ pub fn calc_power(
         0
     } else {
         stakes * multiplier / token_per_power as i128
+    }
+}
+
+// For all user's stakes:
+// - if a stake is active <60 days, apply a multiplier 1/60th for each day it is (up to 1.0)
+// - if a stake is older, just sum it up
+// - weighted average will be used as a final reward's multiplier
+pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
+    let current_date = env.ledger().timestamp();
+    let mut weighted_sum: u128 = 0;
+    let mut total_weight: u128 = 0;
+
+    for stake in stakes.iter() {
+        // Calculate the number of days the stake has been active
+        let days_active = (dbg!(current_date) - dbg!(stake.stake_timestamp)) / SECONDS_PER_DAY;
+
+        // If stake is younger than 60 days, calculate its power
+        let power = if days_active < 60 {
+            days_active as u128
+        } else {
+            60
+        };
+
+        // Add the weighted power to the sum
+        weighted_sum += power * stake.stake as u128;
+        // Accumulate the total weight
+        total_weight += 60 * stake.stake as u128;
+    }
+
+    dbg!(weighted_sum);
+    dbg!(total_weight);
+    // Calculate and return the average staking power
+    if total_weight > 0 {
+        Decimal::from_ratio(weighted_sum as i128, total_weight as i128)
+    } else {
+        Decimal::zero()
     }
 }
 

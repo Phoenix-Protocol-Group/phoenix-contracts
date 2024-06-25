@@ -1,15 +1,15 @@
 use soroban_decimal::Decimal;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String, Vec,
 };
 
 use crate::distribution::calc_power;
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
-        calculate_annualized_payout, get_distribution, get_reward_curve, get_withdraw_adjustment,
-        save_distribution, save_reward_curve, save_withdraw_adjustment, update_rewards,
-        withdrawable_rewards, Distribution, SHARES_SHIFT,
+        calc_withdraw_power, calculate_annualized_payout, get_distribution, get_reward_curve,
+        get_withdraw_adjustment, save_distribution, save_reward_curve, save_withdraw_adjustment,
+        update_rewards, withdrawable_rewards, Distribution, SHARES_SHIFT,
     },
     error::ContractError,
     msg::{AnnualizedRewardResponse, ConfigResponse, WithdrawableRewardResponse},
@@ -46,6 +46,10 @@ pub trait StakingRewardsTrait {
         min_bond: i128,
     );
 
+    fn add_multiple_users(env: Env, users: Vec<Address>);
+
+    fn add_user(env: Env, user: Address);
+
     fn calculate_bond(env: Env, sender: Address);
 
     fn calculate_unbond(env: Env, sender: Address);
@@ -54,13 +58,9 @@ pub trait StakingRewardsTrait {
 
     fn withdraw_rewards(env: Env, sender: Address);
 
-    fn fund_distribution(
-        env: Env,
-        sender: Address,
-        start_time: u64,
-        distribution_duration: u64,
-        token_amount: i128,
-    );
+    fn fund_distribution(env: Env, start_time: u64, distribution_duration: u64, token_amount: i128);
+
+    fn withdraw_leftover(env: Env, amount: i128);
 
     // QUERIES
 
@@ -130,6 +130,36 @@ impl StakingRewardsTrait for StakingRewards {
             .publish(("create_distribution_flow", "asset"), &reward_token);
 
         utils::save_admin(&env, &admin);
+    }
+
+    fn add_multiple_users(env: Env, users: Vec<Address>) {
+        get_admin(&env).require_auth();
+
+        for user in users {
+            StakingRewards::add_user(env.clone(), user);
+        }
+    }
+
+    fn add_user(env: Env, user: Address) {
+        get_admin(&env).require_auth();
+
+        let config = get_config(&env);
+
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+        let stakes = stake_client.query_staked(&user);
+
+        let new_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER);
+        let mut distribution = get_distribution(&env, &config.reward_token);
+        update_rewards(
+            &env,
+            &user,
+            &config.reward_token,
+            &mut distribution,
+            0, // old_rewards power is 0 when user didn't register before
+            new_power,
+        );
+
+        env.events().publish(("stake_rewards", "add_user"), &user);
     }
 
     fn calculate_bond(env: Env, sender: Address) {
@@ -283,11 +313,17 @@ impl StakingRewardsTrait for StakingRewards {
         save_distribution(&env, &config.reward_token, &distribution);
         save_withdraw_adjustment(&env, &sender, &config.reward_token, &withdraw_adjustment);
 
+        // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+        let stakes = stake_client.query_staked(&sender);
+        let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
+        dbg!("multiplier ", reward_multiplier);
+
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         reward_token_client.transfer(
             &env.current_contract_address(),
             &sender,
-            &(reward_amount as i128),
+            &dbg!(reward_amount as i128 * reward_multiplier),
         );
 
         env.events().publish(
@@ -300,12 +336,12 @@ impl StakingRewardsTrait for StakingRewards {
 
     fn fund_distribution(
         env: Env,
-        sender: Address,
         start_time: u64,
         distribution_duration: u64,
         token_amount: i128,
     ) {
-        sender.require_auth();
+        let admin = get_admin(&env);
+        admin.require_auth();
 
         let config = get_config(&env);
 
@@ -333,7 +369,7 @@ impl StakingRewardsTrait for StakingRewards {
 
         // transfer tokens to fund distribution
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
-        reward_token_client.transfer(&sender, &env.current_contract_address(), &token_amount);
+        reward_token_client.transfer(&admin, &env.current_contract_address(), &token_amount);
 
         let end_time = current_time + distribution_duration;
         // define a distribution curve starting at start_time with token_amount of tokens
@@ -383,6 +419,17 @@ impl StakingRewardsTrait for StakingRewards {
             .publish(("fund_reward_distribution", "start_time"), start_time);
         env.events()
             .publish(("fund_reward_distribution", "end_time"), end_time);
+    }
+
+    // In case there are leftover tokens due to insufficient APR bonus, admin can clean up tokens
+    fn withdraw_leftover(env: Env, amount: i128) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+        token_contract::Client::new(&env, &get_config(&env).reward_token).transfer(
+            &env.current_contract_address(),
+            &admin,
+            &amount,
+        );
     }
 
     // QUERIES
@@ -436,6 +483,13 @@ impl StakingRewardsTrait for StakingRewards {
         // adjustments
         let reward_amount =
             withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
+
+        // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
+        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
+        let stakes = stake_client.query_staked(&user);
+        let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
+
+        let reward_amount = dbg!((reward_amount as i128 * reward_multiplier) as u128);
 
         WithdrawableRewardResponse {
             reward_address: config.reward_token,
