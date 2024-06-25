@@ -51,7 +51,7 @@ fn calculate_bond_one_user() {
 
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 600;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp = start_timestamp + 300; // move to a middle of distribution
@@ -132,7 +132,7 @@ fn calculate_bond_multiple_users() {
 
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 500;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp += 250; // move to a middle of distribution
@@ -212,7 +212,7 @@ fn calculate_unbond_one_user() {
 
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 500;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 
     staking_rewards.calculate_bond(&user1);
 
@@ -287,7 +287,7 @@ fn pay_rewards_during_calculate_unbond() {
 
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 600;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp = start_timestamp + reward_duration; // move to the end of the distribution
@@ -351,7 +351,7 @@ fn calculate_unbond_multiple_users() {
 
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 2000;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp += 500; // move to a 1/4 of distribution
@@ -500,7 +500,7 @@ fn multiple_equal_users_with_different_multipliers() {
     reward_token.mint(&admin, &1_000_000);
     // reward distribution starts at the latest timestamp and lasts just 1 second
     // the point is to prove that the multiplier works correctly
-    staking_rewards.fund_distribution(&admin, &(fifteen_days * 4), &1, &1_000_000);
+    staking_rewards.fund_distribution(&(fifteen_days * 4), &1, &1_000_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp += 1;

@@ -58,13 +58,7 @@ pub trait StakingRewardsTrait {
 
     fn withdraw_rewards(env: Env, sender: Address);
 
-    fn fund_distribution(
-        env: Env,
-        sender: Address,
-        start_time: u64,
-        distribution_duration: u64,
-        token_amount: i128,
-    );
+    fn fund_distribution(env: Env, start_time: u64, distribution_duration: u64, token_amount: i128);
 
     // QUERIES
 
@@ -340,12 +334,12 @@ impl StakingRewardsTrait for StakingRewards {
 
     fn fund_distribution(
         env: Env,
-        sender: Address,
         start_time: u64,
         distribution_duration: u64,
         token_amount: i128,
     ) {
-        sender.require_auth();
+        let admin = get_admin(&env);
+        admin.require_auth();
 
         let config = get_config(&env);
 
@@ -373,7 +367,7 @@ impl StakingRewardsTrait for StakingRewards {
 
         // transfer tokens to fund distribution
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
-        reward_token_client.transfer(&sender, &env.current_contract_address(), &token_amount);
+        reward_token_client.transfer(&admin, &env.current_contract_address(), &token_amount);
 
         let end_time = current_time + distribution_duration;
         // define a distribution curve starting at start_time with token_amount of tokens

@@ -33,7 +33,7 @@ fn two_users_one_starts_after_distribution_begins() {
     // therefore the distribution must take at least 60 days in this test case
     let reward_duration = sixty_days * 3;
     // distribution starts at time 0
-    staking_rewards.fund_distribution(&admin, &0, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&0, &reward_duration, &1_000_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp = sixty_days; // distribution already goes for 1/3 of the time
@@ -108,7 +108,7 @@ fn two_users_both_bonds_after_distribution_starts() {
     // therefore the distribution must take at least 60 days in this test case
     let reward_duration = sixty_days * 3;
     // distribution starts at time 0
-    staking_rewards.fund_distribution(&admin, &0, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&0, &reward_duration, &1_000_000);
 
     // first user bonds after distribution started
     let user1 = Address::generate(&env);
@@ -189,7 +189,7 @@ fn try_to_withdraw_rewards_without_bonding() {
 
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 600;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp = 2_600;
@@ -239,7 +239,7 @@ fn fund_distribution_starting_before_current_timestamp() {
 
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 600;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 }
 
 #[test]
@@ -259,7 +259,7 @@ fn fund_distribution_with_reward_below_required_minimum() {
     reward_token.mint(&admin, &100);
     let reward_duration = 600;
     // Min reward is defined in setup as 1_000 tokens
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &999);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &999);
 }
 
 #[test]
@@ -286,7 +286,7 @@ fn calculate_apr() {
     reward_token.mint(&admin, &1_000_000);
     // whole year of distribution
     let reward_duration = 60 * 60 * 24 * 365;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 
     // nothing bonded, no rewards
     assert_eq!(
@@ -317,12 +317,7 @@ fn calculate_apr() {
     let reward_amount: i128 = 500_000;
     reward_token.mint(&admin, &(reward_amount as i128));
 
-    staking_rewards.fund_distribution(
-        &admin,
-        &(2 * start_timestamp),
-        &reward_duration,
-        &reward_amount,
-    );
+    staking_rewards.fund_distribution(&(2 * start_timestamp), &reward_duration, &reward_amount);
 
     // having another 50k in rewards increases APR
     assert_eq!(
@@ -368,7 +363,6 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     let reward_amount = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
     staking_rewards.fund_distribution(
-        &admin,
         &start_timestamp, // start distirbution
         &reward_duration,
         &reward_amount,
@@ -454,12 +448,12 @@ fn panic_when_funding_distribution_with_curve_too_complex() {
     reward_token.mint(&admin, &10_000);
 
     // Default max complexity in setup.rs is 10
-    staking_rewards.fund_distribution(&admin, &17, &300, &1000);
-    staking_rewards.fund_distribution(&admin, &15, &280, &1000);
-    staking_rewards.fund_distribution(&admin, &30, &154, &1000);
-    staking_rewards.fund_distribution(&admin, &532, &754, &1000);
-    staking_rewards.fund_distribution(&admin, &210, &423154, &1000);
-    staking_rewards.fund_distribution(&admin, &640, &53254, &1000);
+    staking_rewards.fund_distribution(&17, &300, &1000);
+    staking_rewards.fund_distribution(&15, &280, &1000);
+    staking_rewards.fund_distribution(&30, &154, &1000);
+    staking_rewards.fund_distribution(&532, &754, &1000);
+    staking_rewards.fund_distribution(&210, &423154, &1000);
+    staking_rewards.fund_distribution(&640, &53254, &1000);
 }
 
 #[test]
@@ -496,7 +490,7 @@ fn add_multiple_users() {
 
     reward_token.mint(&admin, &1_000_000);
     let reward_duration = 600;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp = start_timestamp + 200; // distribution already goes for 1/3 of the time
