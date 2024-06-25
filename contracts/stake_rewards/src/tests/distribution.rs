@@ -19,12 +19,9 @@ fn two_users_one_starts_after_distribution_begins() {
 
     let (staking, staking_rewards) =
         deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
-    assert_eq!(staking.query_total_staked(), 0);
 
-    let start_timestamp = 100;
-    env.ledger().with_mut(|li| {
-        li.timestamp = start_timestamp;
-    });
+    // we simulate the full APR after 60 days of staking
+    let sixty_days = 3600 * 24 * 60;
 
     // first user bonds before distribution started
     let user1 = Address::generate(&env);
@@ -33,11 +30,13 @@ fn two_users_one_starts_after_distribution_begins() {
     staking_rewards.calculate_bond(&user1);
 
     reward_token.mint(&admin, &1_000_000);
-    let reward_duration = 600;
-    staking_rewards.fund_distribution(&admin, &start_timestamp, &reward_duration, &1_000_000);
+    // therefore the distribution must take at least 60 days in this test case
+    let reward_duration = sixty_days * 3;
+    // distribution starts at time 0
+    staking_rewards.fund_distribution(&admin, &0, &reward_duration, &1_000_000);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = start_timestamp + 200; // distribution already goes for 1/3 of the time
+        li.timestamp = sixty_days; // distribution already goes for 1/3 of the time
     });
 
     staking_rewards.distribute_rewards();
@@ -51,15 +50,15 @@ fn two_users_one_starts_after_distribution_begins() {
         }
     );
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = start_timestamp + 400; // distribution already goes for 2/3 of the time
-    });
-
-    // second user bonds after distribution started
+    // second user bonds and we are waiting another 60 days for the full APR
     let user2 = Address::generate(&env);
     lp_token.mint(&user2, &10_000);
     staking.bond(&user2, &10_000);
     staking_rewards.calculate_bond(&user2);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = sixty_days * 2; // distribution already goes for 2/3 of the time
+    });
 
     staking_rewards.distribute_rewards();
 
@@ -106,7 +105,7 @@ fn two_users_both_bonds_after_distribution_starts() {
     let sixty_days = 3600 * 24 * 60;
 
     reward_token.mint(&admin, &1_000_000);
-    // therfore the distribution must take at least 60 days in this test case
+    // therefore the distribution must take at least 60 days in this test case
     let reward_duration = sixty_days * 3;
     // distribution starts at time 0
     staking_rewards.fund_distribution(&admin, &0, &reward_duration, &1_000_000);
