@@ -441,3 +441,91 @@ fn calculate_unbond_multiple_users() {
         1_000_000
     );
 }
+
+#[test]
+fn multiple_equal_users_with_different_multipliers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let (staking, staking_rewards) =
+        deploy_staking_rewards_contract(&env, &admin, &lp_token.address, &reward_token.address);
+
+    // first user bonds at timestamp 0
+    // he will get 100% of his rewards
+    let user1 = Address::generate(&env);
+    lp_token.mint(&user1, &10_000);
+    staking.bond(&user1, &10_000);
+    staking_rewards.calculate_bond(&user1);
+
+    let fifteen_days = 3600 * 24 * 15;
+    env.ledger().with_mut(|li| {
+        li.timestamp = fifteen_days;
+    });
+
+    // user2 will receive 75% of his reward
+    let user2 = Address::generate(&env);
+    lp_token.mint(&user2, &10_000);
+    staking.bond(&user2, &10_000);
+    staking_rewards.calculate_bond(&user2);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = fifteen_days * 2;
+    });
+
+    // user3 will receive 50% of his reward
+    let user3 = Address::generate(&env);
+    lp_token.mint(&user3, &10_000);
+    staking.bond(&user3, &10_000);
+    staking_rewards.calculate_bond(&user3);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = fifteen_days * 3;
+    });
+
+    // user4 will receive 25% of his reward
+    let user4 = Address::generate(&env);
+    lp_token.mint(&user4, &10_000);
+    staking.bond(&user4, &10_000);
+    staking_rewards.calculate_bond(&user4);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = fifteen_days * 4;
+    });
+
+    reward_token.mint(&admin, &1_000_000);
+    // reward distribution starts at the latest timestamp and lasts just 1 second
+    // the point is to prove that the multiplier works correctly
+    staking_rewards.fund_distribution(&admin, &(fifteen_days * 4), &1, &1_000_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp += 1;
+    });
+
+    staking_rewards.distribute_rewards();
+
+    // The way it works - contract will treat all the funds as distributed, and the amount
+    // that was not sent due to low staking bonus stays on the contract
+
+    assert_eq!(
+        staking_rewards.query_undistributed_reward(&reward_token.address),
+        0
+    );
+    assert_eq!(
+        staking_rewards.query_distributed_reward(&reward_token.address),
+        1_000_000
+    );
+
+    staking_rewards.withdraw_rewards(&user1);
+    assert_eq!(reward_token.balance(&user1), 250_000);
+    staking_rewards.withdraw_rewards(&user2);
+    assert_eq!(reward_token.balance(&user2), 187_500);
+    staking_rewards.withdraw_rewards(&user3);
+    assert_eq!(reward_token.balance(&user3), 125_000);
+    staking_rewards.withdraw_rewards(&user4);
+    assert_eq!(reward_token.balance(&user4), 62_500);
+}
