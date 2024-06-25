@@ -60,6 +60,8 @@ pub trait StakingRewardsTrait {
 
     fn fund_distribution(env: Env, start_time: u64, distribution_duration: u64, token_amount: i128);
 
+    fn withdraw_leftover(env: Env, amount: i128);
+
     // QUERIES
 
     fn query_config(env: Env) -> ConfigResponse;
@@ -417,6 +419,17 @@ impl StakingRewardsTrait for StakingRewards {
             .publish(("fund_reward_distribution", "start_time"), start_time);
         env.events()
             .publish(("fund_reward_distribution", "end_time"), end_time);
+    }
+
+    // In case there are leftover tokens due to insufficient APR bonus, admin can clean up tokens
+    fn withdraw_leftover(env: Env, amount: i128) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+        token_contract::Client::new(&env, &get_config(&env).reward_token).transfer(
+            &env.current_contract_address(),
+            &admin,
+            &amount,
+        );
     }
 
     // QUERIES

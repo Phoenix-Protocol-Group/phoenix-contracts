@@ -315,7 +315,7 @@ fn calculate_apr() {
     );
 
     let reward_amount: i128 = 500_000;
-    reward_token.mint(&admin, &(reward_amount as i128));
+    reward_token.mint(&admin, &reward_amount);
 
     staking_rewards.fund_distribution(&(2 * start_timestamp), &reward_duration, &reward_amount);
 
@@ -361,7 +361,7 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
 
     let reward_duration = 10_000;
     let reward_amount = 100_000;
-    reward_token.mint(&admin, &(reward_amount as i128));
+    reward_token.mint(&admin, &reward_amount);
     staking_rewards.fund_distribution(
         &start_timestamp, // start distirbution
         &reward_duration,
