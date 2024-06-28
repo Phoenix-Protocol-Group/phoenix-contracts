@@ -30,4 +30,6 @@ pub enum ContractError {
 
     SwapMinReceivedBiggerThanReturn = 21,
     TransactionAfterTimestampDeadline = 22,
+    CannotConvertToU128 = 23,
+    CannotConvertToI128 = 24,
 }

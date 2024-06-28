@@ -1,6 +1,6 @@
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String,
+    String, U256,
 };
 
 use num_integer::Roots;
@@ -651,6 +651,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         };
 
         let compute_swap: ComputeSwap = compute_swap(
+            &env,
             pool_balance_offer,
             pool_balance_ask,
             offer_amount,
@@ -791,6 +792,7 @@ fn do_swap(
 
     // 1. We calculate the referral_fee below. If none referral fee will be 0
     let compute_swap: ComputeSwap = compute_swap(
+        &env,
         pool_balance_sell,
         pool_balance_buy,
         offer_amount,
@@ -1073,6 +1075,7 @@ pub fn assert_max_spread(env: &Env, max_spread: Decimal, return_amount: i128, sp
 /// - The commission amount, representing the fees charged for the swap.
 /// - The referral comission fee.
 pub fn compute_swap(
+    env: &Env,
     offer_pool: i128,
     ask_pool: i128,
     offer_amount: i128,
@@ -1080,11 +1083,30 @@ pub fn compute_swap(
     referral_fee: i64,
 ) -> ComputeSwap {
     // Calculate the cross product of offer_pool and ask_pool
-    let cp: i128 = offer_pool * ask_pool;
-
+    // Should be safe to use `as` to cast
+    let cp_as_u256: U256 =
+        U256::from_u128(env, offer_pool as u128).mul(&U256::from_u128(env, ask_pool as u128));
     // Calculate the resulting amount of ask assets after the swap
     // Return amount calculation based on the AMM model's invariant,
     // which ensures the product of the amounts of the two assets remains constant before and after a trade.
+
+    // After multiplying `offer_pool` by `ask_pool` it should be safe to return back to i128
+    // below we make sure that this is possible
+    let cp = match cp_as_u256.to_u128() {
+        Some(cp) => {
+            if cp <= i128::MAX as u128 {
+                cp as i128
+            } else {
+                log!(&env, "Pool: compute swap: cannot convert value to i128");
+                panic_with_error!(&env, ContractError::CannotConvertToI128)
+            }
+        }
+        None => {
+            log!(&env, "Pool: compute swap: cannot convert value to u128");
+            panic_with_error!(&env, ContractError::CannotConvertToU128)
+        }
+    };
+
     let return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount));
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
     let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - return_amount;
@@ -1231,7 +1253,8 @@ mod tests {
 
     #[test]
     fn test_compute_swap_pass() {
-        let result = compute_swap(1000, 2000, 100, Decimal::percent(10), 0i64); // 10% commission rate
+        let env = Env::default();
+        let result = compute_swap(&env, 1000, 2000, 100, Decimal::percent(10), 0i64); // 10% commission rate
         let expected_compute_swap = ComputeSwap {
             return_amount: 164,
             spread_amount: 18,
@@ -1244,10 +1267,11 @@ mod tests {
 
     #[test]
     fn test_compute_swap_pass_with_referral_fee() {
+        let env = Env::default();
         // 10% commission rate + 15% referral fee
         // return_amount would be 164, but after we deduct 15% out of it we get to 139.4 rounded to
         // the closest number 140
-        let result = compute_swap(1000, 2000, 100, Decimal::percent(10), 1_500i64);
+        let result = compute_swap(&env, 1000, 2000, 100, Decimal::percent(10), 1_500i64);
         let expected_compute_swap = ComputeSwap {
             return_amount: 140,
             spread_amount: 18,
@@ -1260,7 +1284,8 @@ mod tests {
 
     #[test]
     fn test_compute_swap_full_commission() {
-        let result = compute_swap(1000, 2000, 100, Decimal::one(), 0i64); // 100% commission rate should lead to return_amount being 0
+        let env = Env::default();
+        let result = compute_swap(&env, 1000, 2000, 100, Decimal::one(), 0i64); // 100% commission rate should lead to return_amount being 0
         let expected_compute_swap = ComputeSwap {
             return_amount: 0,
             spread_amount: 18,
