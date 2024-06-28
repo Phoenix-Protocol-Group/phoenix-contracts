@@ -1093,17 +1093,13 @@ pub fn compute_swap(
     // After multiplying `offer_pool` by `ask_pool` it should be safe to return back to i128
     // below we make sure that this is possible
     let cp = match cp_as_u256.to_u128() {
-        Some(cp) => {
-            if cp <= i128::MAX as u128 {
-                cp as i128
-            } else {
-                log!(&env, "Pool: compute swap: cannot convert value to i128");
-                panic_with_error!(&env, ContractError::CannotConvertToI128)
-            }
-        }
+        Some(cp_u128) => i128::try_from(cp_u128).unwrap_or_else(|_| {
+            log!(env, "Pool: compute swap: cannot convert value to i128");
+            panic_with_error!(env, ContractError::CannotConvertToI128);
+        }),
         None => {
-            log!(&env, "Pool: compute swap: cannot convert value to u128");
-            panic_with_error!(&env, ContractError::CannotConvertToU128)
+            log!(env, "Pool: compute swap: cannot convert value to u128");
+            panic_with_error!(env, ContractError::CannotConvertToU128);
         }
     };
 
