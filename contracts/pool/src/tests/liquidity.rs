@@ -105,7 +105,7 @@ fn provide_liqudity() {
     );
 
     assert_eq!(token_share.balance(&user1), 100);
-    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token_share.balance(&pool.address), 1000);
     assert_eq!(token1.balance(&user1), 900);
     assert_eq!(token1.balance(&pool.address), 100);
     assert_eq!(token2.balance(&user1), 900);
@@ -125,12 +125,12 @@ fn provide_liqudity() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 100i128
+                amount: 1100i128
             },
             stake_address: result.clone().stake_address,
         }
     );
-    assert_eq!(pool.query_total_issued_lp(), 100);
+    assert_eq!(pool.query_total_issued_lp(), 1100);
 }
 
 #[test]
@@ -184,9 +184,9 @@ fn withdraw_liquidity() {
     assert_eq!(token2.balance(&user1), 0);
     assert_eq!(token2.balance(&pool.address), 100);
 
-    let share_amount = 50;
-    let min_a = 50;
-    let min_b = 50;
+    let share_amount = 20;
+    let min_a = 20;
+    let min_b = 20;
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
     // assert_eq!(
     //     env.auths(),
@@ -768,11 +768,11 @@ fn query_share_valid_liquidity() {
         (
             Asset {
                 address: token1.address.clone(),
-                amount: 149
+                amount: 22
             },
             Asset {
                 address: token2.address.clone(),
-                amount: 199
+                amount: 29
             }
         )
     );
