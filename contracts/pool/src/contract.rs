@@ -410,11 +410,42 @@ impl LiquidityPoolTrait for LiquidityPool {
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
             let shares_a = (balance_a * total_shares) / pool_balance_a;
             let shares_b = (balance_b * total_shares) / pool_balance_b;
-            shares_a.min(shares_b)
+            let user_shares = shares_a.min(shares_b);
+            // if user_shares < MIN_SHARES {
+            // err
+            // }
+            user_shares
         } else {
-            // In case of empty pool, just produce X*Y shares
-            (balance_a * balance_b).sqrt()
+            // In case of an empty mint 1000 LP shares to a burner addr
+            utils::mint_shares(
+                &env,
+                &config.share_token,
+                &env.current_contract_address(),
+                1000,
+            );
+            // NOTE: I don't think we should be adding the initial 1_000 shares
+            // to the user_shares - what if the user provides liquidity worthy of just 100 tokens,
+            // they'll end up with 1_100 anyway.
+
+            // let initial_shares = 1000;
+            // now calculate x*y shares to user
+            let user_shares = (balance_a * balance_b).sqrt();
+            // if user_shares < MIN_SHARES {
+            // err
+            // }
+            // initial_shares + user_shares
+            user_shares
         };
+
+        // TODO:
+        // check if this number is not less than some preconfigured minimum
+        if new_total_shares == 0 {
+            log!(
+                env,
+                "Pool: Provide Liquidity: Total shares equal to zero. Invalid state. Aborting!"
+            );
+            panic_with_error!(env, ContractError::TotalSharesEqualZero);
+        }
 
         utils::mint_shares(
             &env,
@@ -422,6 +453,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             &sender,
             new_total_shares - total_shares,
         );
+
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
