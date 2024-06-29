@@ -63,6 +63,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHOBTC"),
         &100i64,
+        &10i128,
     );
 }
 
@@ -114,6 +115,7 @@ fn update_config() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
             default_slippage_bps: 100i64,
+            minimum_lp_shares: 10i128,
         }
     );
 
@@ -140,6 +142,7 @@ fn update_config() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 1_000,
             default_slippage_bps: 100i64,
+            minimum_lp_shares: 10i128,
         }
     );
 
@@ -159,6 +162,7 @@ fn update_config() {
             max_allowed_spread_bps: 5_000,
             max_referral_bps: 500,
             default_slippage_bps: 100i64,
+            minimum_lp_shares: 10i128,
         }
     );
 }
@@ -258,6 +262,7 @@ fn update_config_update_admin() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
             default_slippage_bps: 100i64,
+            minimum_lp_shares: 10i128,
         }
     );
 }

@@ -46,6 +46,7 @@ pub trait LiquidityPoolTrait {
         share_token_name: String,
         share_token_symbol: String,
         default_slippage_bps: i64,
+        minimum_lp_shares: i128,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -147,6 +148,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         share_token_name: String,
         share_token_symbol: String,
         default_slippage_bps: i64,
+        minimum_lp_shares: i128,
     ) {
         if is_initialized(&env) {
             log!(
@@ -222,6 +224,12 @@ impl LiquidityPoolTrait for LiquidityPool {
             &stake_init_info.max_complexity,
         );
 
+        assert!(
+            (0..=100_000).contains(&minimum_lp_shares),
+            "minimum_lp_shares must be between 0 and 100,000, got {}",
+            minimum_lp_shares
+        );
+
         let config = Config {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
@@ -234,6 +242,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_spread_bps,
             max_referral_bps,
             default_slippage_bps,
+            minimum_lp_shares,
         };
 
         save_config(&env, config);
@@ -373,9 +382,13 @@ impl LiquidityPoolTrait for LiquidityPool {
             let shares_a = (balance_a * total_shares) / pool_balance_a;
             let shares_b = (balance_b * total_shares) / pool_balance_b;
             let user_shares = shares_a.min(shares_b);
-            // if user_shares < MIN_SHARES {
-            // err
-            // }
+            if user_shares < config.minimum_lp_shares {
+                log!(
+                    env,
+                    "Pool: Provide Liquidity: User shares will be below the minimum thresshold."
+                );
+                panic_with_error!(env, ContractError::NotEnoughSharesToBeMinted)
+            }
             user_shares
         } else {
             // In case of an empty mint 1000 LP shares to a burner addr
@@ -392,9 +405,13 @@ impl LiquidityPoolTrait for LiquidityPool {
             // let initial_shares = 1000;
             // now calculate x*y shares to user
             let user_shares = (balance_a * balance_b).sqrt();
-            // if user_shares < MIN_SHARES {
-            // err
-            // }
+            if user_shares < config.minimum_lp_shares {
+                log!(
+                    env,
+                    "Pool: Provide Liquidity: User shares will be below the minimum thresshold."
+                );
+                panic_with_error!(env, ContractError::NotEnoughSharesToBeMinted)
+            }
             // initial_shares + user_shares
             user_shares
         };
@@ -1308,6 +1325,7 @@ mod tests {
             max_allowed_spread_bps: 100i64,
             max_referral_bps: 1_000i64,
             default_slippage_bps: 100i64,
+            minimum_lp_shares: 10i128,
         };
         split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
     }

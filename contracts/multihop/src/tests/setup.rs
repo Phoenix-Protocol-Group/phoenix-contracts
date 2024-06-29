@@ -160,6 +160,7 @@ pub fn deploy_and_initialize_pool(
         &pool_type,
         &amp,
         &100i64,
+        &Some(10i128),
     );
 
     match pool_type {
