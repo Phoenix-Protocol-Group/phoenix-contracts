@@ -180,13 +180,14 @@ fn withdraw_liquidity() {
     );
 
     assert_eq!(token1.balance(&user1), 0);
+    assert_eq!(token_share.balance(&user1), 100);
     assert_eq!(token1.balance(&pool.address), 100);
     assert_eq!(token2.balance(&user1), 0);
     assert_eq!(token2.balance(&pool.address), 100);
 
-    let share_amount = 20;
-    let min_a = 20;
-    let min_b = 20;
+    let share_amount = 50;
+    let min_a = 4;
+    let min_b = 4;
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
     // assert_eq!(
     //     env.auths(),
@@ -207,11 +208,11 @@ fn withdraw_liquidity() {
     // );
 
     assert_eq!(token_share.balance(&user1), 50);
-    assert_eq!(token_share.balance(&pool.address), 0); // sanity check
-    assert_eq!(token1.balance(&user1), 50);
-    assert_eq!(token1.balance(&pool.address), 50);
-    assert_eq!(token2.balance(&user1), 50);
-    assert_eq!(token2.balance(&pool.address), 50);
+    assert_eq!(token_share.balance(&pool.address), 1000); // sanity check
+    assert_eq!(token1.balance(&user1), 4);
+    assert_eq!(token1.balance(&pool.address), 96);
+    assert_eq!(token2.balance(&user1), 4);
+    assert_eq!(token2.balance(&pool.address), 96);
 
     let result = pool.query_pool_info();
     assert_eq!(
@@ -219,15 +220,15 @@ fn withdraw_liquidity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 50i128,
+                amount: 96i128,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 50i128,
+                amount: 96i128,
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 50i128,
+                amount: 1050i128,
             },
             stake_address: result.clone().stake_address,
         }
@@ -236,11 +237,11 @@ fn withdraw_liquidity() {
     // clear the pool
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
     assert_eq!(token_share.balance(&user1), 0);
-    assert_eq!(token_share.balance(&pool.address), 0); // sanity check
-    assert_eq!(token1.balance(&user1), 100);
-    assert_eq!(token1.balance(&pool.address), 0);
-    assert_eq!(token2.balance(&user1), 100);
-    assert_eq!(token2.balance(&pool.address), 0);
+    assert_eq!(token_share.balance(&pool.address), 1000); // Because of the minted 1_000 lp shares
+    assert_eq!(token1.balance(&user1), 8);
+    assert_eq!(token1.balance(&pool.address), 92);
+    assert_eq!(token2.balance(&user1), 8);
+    assert_eq!(token2.balance(&pool.address), 92);
 }
 
 // TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
@@ -791,28 +792,28 @@ fn query_share_valid_liquidity() {
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 519
+                amount: 3519
             },
             stake_address: pool_info_before_withdrawal.clone().stake_address,
         }
     );
 
-    pool.withdraw_liquidity(&user1, &lp_share_balance_user1, &100i128, &100i128);
+    pool.withdraw_liquidity(&user1, &lp_share_balance_user1, &22i128, &29i128);
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
         pool_info_after_withdrawal,
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 301
+                amount: 428,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 401
+                amount: 571,
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 346
+                amount: 3346
             },
             stake_address: pool_info_after_withdrawal.clone().stake_address,
         }
@@ -860,15 +861,15 @@ fn query_share_valid_liquidity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 151
+                amount: 278
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 201
+                amount: 371
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 173
+                amount: 2173
             },
             stake_address: pool_info_after_withdrawal.clone().stake_address,
         }
@@ -900,11 +901,11 @@ fn query_share_valid_liquidity() {
         (
             Asset {
                 address: token1.address.clone(),
-                amount: 151
+                amount: 150
             },
             Asset {
                 address: token2.address.clone(),
-                amount: 201
+                amount: 200
             }
         )
     );
@@ -917,22 +918,22 @@ fn query_share_valid_liquidity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 88
+                amount: 269
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 117
+                amount: 359
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 100
+                amount: 2100
             },
             stake_address: pool_info_after_withdrawal.clone().stake_address,
         }
     );
 
     let lp_share_balance_after_withdraw_user3: i128 = token_share.balance(&user3);
-    assert_eq!(lp_share_balance_after_withdraw_user3, 100);
+    assert_eq!(lp_share_balance_after_withdraw_user3, 1100);
 
     let query_share_result_user3 = pool.query_share(&lp_share_balance_after_withdraw_user3);
     assert_eq!(
@@ -940,11 +941,11 @@ fn query_share_valid_liquidity() {
         (
             Asset {
                 address: token1.address.clone(),
-                amount: 88
+                amount: 140
             },
             Asset {
                 address: token2.address.clone(),
-                amount: 117
+                amount: 188
             }
         )
     );
