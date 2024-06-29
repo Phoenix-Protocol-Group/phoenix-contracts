@@ -33,4 +33,5 @@ pub enum ContractError {
     CannotConvertU256ToI128 = 23,
     UserDeclinesPoolFee = 24,
     SwapFeeBpsOverLimit = 25,
+    NotEnoughSharesToBeMinted = 26,
 }

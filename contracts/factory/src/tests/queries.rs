@@ -35,6 +35,7 @@ pub struct LiquidityPoolConfig {
     pub max_allowed_spread_bps: i64,
     pub max_referral_bps: i64,
     pub default_slippage_bps: i64,
+    pub minimum_lp_shares: i128,
 }
 
 #[test]
@@ -145,6 +146,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -155,6 +157,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -165,6 +168,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -360,6 +364,7 @@ fn test_queries_by_tuple() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -370,6 +375,7 @@ fn test_queries_by_tuple() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -380,6 +386,7 @@ fn test_queries_by_tuple() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -394,6 +401,7 @@ fn test_queries_by_tuple() {
         &Symbol::new(&env, "query_share_token_address"),
         Vec::new(&env),
     );
+
     let second_lp_config: LiquidityPoolConfig = env.invoke_contract(
         &second_lp_contract_addr,
         &Symbol::new(&env, "query_config"),
@@ -486,6 +494,7 @@ fn test_query_user_portfolio_with_stake() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -518,11 +527,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 150i128,
+                            amount: 22i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 200i128
+                            amount: 29i128
                         }
                     )
                 }
@@ -545,11 +554,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 150i128,
+                            amount: 22i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 200i128
+                            amount: 29i128
                         }
                     )
                 }
@@ -587,6 +596,7 @@ fn test_query_user_portfolio_with_stake() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -617,11 +627,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 200i128,
+                            amount: 36i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 250i128
+                            amount: 45i128
                         }
                     )
                 }
@@ -642,11 +652,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 200i128,
+                            amount: 36i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 250i128
+                            amount: 45i128
                         }
                     )
                 }
@@ -727,6 +737,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -756,6 +767,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -800,11 +812,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         }
                     )
                 }
@@ -827,11 +839,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128
+                            amount: 499i128
                         }
                     )
                 }
@@ -948,11 +960,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         }
                     )
                 },
@@ -960,11 +972,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 999i128,
+                            amount: 666i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 3_999i128,
+                            amount: 2666i128,
                         }
                     )
                 },
@@ -999,11 +1011,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128
+                            amount: 499i128
                         }
                     )
                 },
@@ -1011,11 +1023,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 999i128,
+                            amount: 666i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 3_999i128,
+                            amount: 2666i128,
                         }
                     )
                 },
@@ -1249,6 +1261,7 @@ fn test_query_user_portfolio_without_stake() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &lp_contract_addr);
@@ -1273,11 +1286,11 @@ fn test_query_user_portfolio_without_stake() {
                     assets: (
                         Asset {
                             address: token1.address,
-                            amount: 150i128
+                            amount: 22i128
                         },
                         Asset {
                             address: token2.address,
-                            amount: 200i128
+                            amount: 29i128
                         }
                     )
                 }

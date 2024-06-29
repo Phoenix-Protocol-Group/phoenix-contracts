@@ -76,6 +76,7 @@ fn factory_successfully_inits_lp() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
@@ -97,6 +98,7 @@ fn factory_successfully_inits_lp() {
             token_b: token2,
             total_fee_bps: 0,
             default_slippage_bps: 100,
+            minimum_lp_shares: 10i128,
         }
     );
 }
@@ -150,6 +152,7 @@ fn factory_successfully_inits_stable_pool() {
         &Some(10),
         &100i64,
         &1_000,
+        &None::<i128>,
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
@@ -219,6 +222,7 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 }
 
@@ -411,6 +415,7 @@ fn factory_stable_pool_creation_should_fail_early_without_amp() {
         &None,
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 }
 
@@ -465,6 +470,7 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
         &Some(10),
         &100i64,
         &1_000,
+        &Some(10i128),
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
@@ -487,6 +493,7 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
             token_b: token2.address,
             total_fee_bps: 0,
             default_slippage_bps: 100,
+            minimum_lp_shares: 10i128,
         }
     );
 }
