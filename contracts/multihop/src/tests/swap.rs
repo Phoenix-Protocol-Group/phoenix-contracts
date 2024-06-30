@@ -95,7 +95,14 @@ fn swap_three_equal_pools_no_fees() {
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &None, &50i128);
-    multihop.swap(&recipient, &operations, &None, &50i128, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &50i128,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -194,7 +201,14 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
     //     &None,
     //     &50i128,
     // );
-    multihop.swap(&recipient, &operations, &None, &50i128, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &50i128,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -250,7 +264,14 @@ fn swap_single_pool_no_fees() {
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, /*&None,*/ &operations, &None, &None, &50i128);
-    multihop.swap(&recipient, &operations, &None, &1_000, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &1_000,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 4_000i128); // -1_000 token0
@@ -298,7 +319,14 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &Some(50), &50);
-    multihop.swap(&recipient, &operations, &Some(50), &50, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &Some(50),
+        &50,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 }
 
 #[test]
@@ -344,7 +372,14 @@ fn swap_single_pool_with_fees() {
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &None, &300i128);
-    multihop.swap(&recipient, &operations, &None, &300i128, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &300i128,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 
     // 5. check if it goes according to plan
     // 1000 tokens initially
@@ -433,7 +468,14 @@ fn swap_three_different_pools_no_fees() {
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &None, &5_000i128);
-    multihop.swap(&recipient, &operations, &None, &5_000i128, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &5_000i128,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 
     // 5. check if it goes according to plan
     assert_eq!(token1.balance(&recipient), 0i128);
@@ -521,7 +563,14 @@ fn swap_three_different_pools_with_fees() {
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &operations, &None, &None, &10_000i128);
-    multihop.swap(&recipient, &operations, &None, &10_000i128, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &10_000i128,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 
     // we start swapping 10_000 tokens
 
@@ -566,7 +615,14 @@ fn swap_panics_with_no_operations() {
 
     // FIXM: Disable Referral struct
     // multihop.swap(&recipient, &None, &swap_vec, &None, &None, &50i128);
-    multihop.swap(&recipient, &swap_vec, &None, &50i128, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &swap_vec,
+        &None,
+        &50i128,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 }
 
 #[test]
@@ -640,7 +696,14 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &None, &5_000i128, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &5_000i128,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 
     assert_eq!(
         token1.balance(&recipient),
@@ -694,7 +757,14 @@ fn test_swap_with_ask_asset_min_amount() {
 
     let operations = vec![&env, swap1];
 
-    multihop.swap(&recipient, &operations, &None, &1_000, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &1_000,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 
     assert_eq!(token1.balance(&recipient), 4_000i128);
     assert_eq!(token2.balance(&recipient), 1_000i128);
@@ -705,7 +775,14 @@ fn test_swap_with_ask_asset_min_amount() {
         ask_asset_min_amount: Some(10_000),
     };
     let operations = vec![&env, greedy_swap];
-    multihop.swap(&recipient, &operations, &None, &1_000, &PoolType::Xyk);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &1_000,
+        &PoolType::Xyk,
+        &None::<u64>,
+    );
 }
 
 #[test]
@@ -785,7 +862,14 @@ fn swap_three_equal_stable_pool() {
 
     let operations = vec![&env, swap1, swap2, swap3];
 
-    multihop.swap(&recipient, &operations, &None, &50i128, &PoolType::Stable);
+    multihop.swap(
+        &recipient,
+        &operations,
+        &None,
+        &50i128,
+        &PoolType::Stable,
+        &None::<u64>,
+    );
 
     assert_eq!(token1.balance(&recipient), 0i128);
     assert_eq!(token4.balance(&recipient), 50i128);

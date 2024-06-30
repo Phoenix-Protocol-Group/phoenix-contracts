@@ -52,6 +52,7 @@ fn simple_swap() {
         &Some(1_000_000),
         &Some(1_000_000),
         &None,
+        &None::<u64>,
     );
 
     // selling just one token with 1% max spread allowed
@@ -64,6 +65,7 @@ fn simple_swap() {
         &1,
         &None,
         &Some(spread),
+        &None::<u64>,
     );
     assert_eq!(
         env.auths(),
@@ -80,7 +82,8 @@ fn simple_swap() {
                         token1.address.clone(),
                         1_i128,
                         None::<i64>,
-                        spread
+                        spread,
+                        None::<u64>
                     )
                         .into_val(&env)
                 )),
@@ -130,6 +133,7 @@ fn simple_swap() {
         &1_000,
         &None,
         &Some(spread),
+        &None::<u64>,
     );
     let result = pool.query_pool_info();
     assert_eq!(
@@ -199,6 +203,7 @@ fn simple_swap_with_referral_fee() {
         &Some(1_000_000),
         &Some(1_000_000),
         &None,
+        &None::<u64>,
     );
 
     // selling just one token with 1% max spread allowed
@@ -218,6 +223,7 @@ fn simple_swap_with_referral_fee() {
         &1,
         &None,
         &Some(spread),
+        &None::<u64>,
     );
 
     // zero referral fee because amount is too low
@@ -254,6 +260,7 @@ fn simple_swap_with_referral_fee() {
         &1_000,
         &None,
         &Some(spread),
+        &None::<u64>,
     );
     let result = pool.query_pool_info();
     assert_eq!(
@@ -324,6 +331,7 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
         &Some(1_000_000),
         &Some(1_000_000),
         &None,
+        &None::<u64>,
     );
 
     let spread = 100i64; // 1% maximum spread allowed
@@ -343,6 +351,7 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
         &1,
         &None,
         &Some(spread),
+        &None::<u64>,
     );
 }
 
@@ -380,11 +389,19 @@ fn swap_should_panic_with_bad_max_spread() {
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &2_001_000);
-    pool.provide_liquidity(&user1, &Some(5000), &None, &Some(2_000_000), &None, &None);
+    pool.provide_liquidity(
+        &user1,
+        &Some(5000),
+        &None,
+        &Some(2_000_000),
+        &None,
+        &None,
+        &None::<u64>,
+    );
 
     // selling just one token with 1% max spread allowed and 50 bps max spread
     // FIXM: Disable Referral struct
-    pool.swap(&user1, &token1.address, &50, &None, &Some(50));
+    pool.swap(&user1, &token1.address, &50, &None, &Some(50), &None::<u64>);
 }
 
 #[test]
@@ -431,6 +448,7 @@ fn swap_with_high_fee() {
         &Some(initial_liquidity),
         &Some(initial_liquidity),
         &None,
+        &None::<u64>,
     );
 
     let spread = 1_000; // 10% maximum spread allowed
@@ -444,6 +462,7 @@ fn swap_with_high_fee() {
         &100_000,
         &None,
         &Some(spread),
+        &None::<u64>,
     );
 
     // This is XYK LP with constant product formula
@@ -514,6 +533,7 @@ fn swap_simulation_even_pool() {
         &Some(initial_liquidity),
         &Some(initial_liquidity),
         &None,
+        &None::<u64>,
     );
 
     // let's simulate swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
@@ -618,6 +638,7 @@ fn swap_simulation_one_third_pool() {
         &Some(3 * initial_liquidity),
         &Some(3 * initial_liquidity),
         &None,
+        &None::<u64>,
     );
 
     // let's simulate swap 100_000 units of Token 1 in 1:3 pool with 5% protocol fee
@@ -722,6 +743,7 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
         &Some(initial_liquidity),
         &Some(initial_liquidity),
         &None,
+        &None::<u64>,
     );
 
     // simulating a swap with 1_000_000_000 units
@@ -804,6 +826,7 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         &Some(1_000_000),
         &Some(1_000_000),
         &None,
+        &None::<u64>,
     );
 
     pool.swap(
@@ -814,6 +837,7 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         &1,
         &None,
         &max_spread,
+        &None::<u64>,
     );
 }
 
@@ -856,6 +880,7 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
         &1,
         &None,
         &Some(100),
+        &None::<u64>,
     );
 }
 
@@ -971,9 +996,17 @@ fn test_should_swap_with_valid_ask_asset_min_amount() {
         &Some(1_000_000),
         &Some(1_000_000),
         &None,
+        &None::<u64>,
     );
 
-    pool.swap(&user, &token1.address, &10, &Some(10), &None::<i64>);
+    pool.swap(
+        &user,
+        &token1.address,
+        &10,
+        &Some(10),
+        &None::<i64>,
+        &None::<u64>,
+    );
     assert_eq!(token1.balance(&user), 49_990);
     assert_eq!(token2.balance(&user), 50_010);
 
@@ -983,6 +1016,7 @@ fn test_should_swap_with_valid_ask_asset_min_amount() {
         &5_000i128,
         &Some(4_900i128),
         &Some(500i64),
+        &None::<u64>,
     );
 
     assert_eq!(token1.balance(&user), 54_966);
@@ -1027,8 +1061,16 @@ fn test_should_fail_when_invalid_ask_asset_min_amount() {
         &Some(1_000_000),
         &Some(1_000_000),
         &None,
+        &None::<u64>,
     );
 
     let spread = 100i64; // 1% maximum spread allowed
-    pool.swap(&user, &token1.address, &1, &Some(10), &Some(spread));
+    pool.swap(
+        &user,
+        &token1.address,
+        &1,
+        &Some(10),
+        &Some(spread),
+        &None::<u64>,
+    );
 }

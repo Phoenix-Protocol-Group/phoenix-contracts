@@ -17,6 +17,7 @@ use crate::{
     token_contract,
 };
 use phoenix::{
+    ensure_not_expired,
     utils::{is_approx_ratio, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
@@ -50,6 +51,7 @@ pub trait LiquidityPoolTrait {
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
     // is determined based on the difference between the reserves stored by this contract, and
     // the actual balance of token_a and token_b for this contract.
+    #[allow(clippy::too_many_arguments)]
     fn provide_liquidity(
         env: Env,
         depositor: Address,
@@ -58,6 +60,7 @@ pub trait LiquidityPoolTrait {
         desired_b: Option<i128>,
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
+        deadline: Option<u64>,
     );
 
     // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
@@ -74,6 +77,7 @@ pub trait LiquidityPoolTrait {
         // Minimum amount of the ask token user expects to receive
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
+        deadline: Option<u64>,
     ) -> i128;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
@@ -85,6 +89,7 @@ pub trait LiquidityPoolTrait {
         share_amount: i128,
         min_a: i128,
         min_b: i128,
+        deadline: Option<u64>,
     ) -> (i128, i128);
 
     // Allows admin address set during initialization to change some parameters of the
@@ -244,6 +249,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             .publish(("initialize", "XYK LP token_b"), token_b);
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn provide_liquidity(
         env: Env,
         sender: Address,
@@ -252,7 +258,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         desired_b: Option<i128>,
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
+        deadline: Option<u64>,
     ) {
+        if let Some(deadline) = deadline {
+            ensure_not_expired!(env, deadline)
+        }
+
         validate_int_parameters!(desired_a, min_a, desired_b, min_b);
 
         // sender needs to authorize the deposit
@@ -404,7 +415,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         offer_amount: i128,
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
+        deadline: Option<u64>,
     ) -> i128 {
+        if let Some(deadline) = deadline {
+            ensure_not_expired!(env, deadline)
+        }
+
         validate_int_parameters!(offer_amount);
 
         sender.require_auth();
@@ -426,7 +442,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         share_amount: i128,
         min_a: i128,
         min_b: i128,
+        deadline: Option<u64>,
     ) -> (i128, i128) {
+        if let Some(deadline) = deadline {
+            ensure_not_expired!(env, deadline)
+        }
+
         validate_int_parameters!(share_amount, min_a, min_b);
 
         sender.require_auth();

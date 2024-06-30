@@ -52,7 +52,7 @@ fn provide_liqudity() {
     assert_eq!(token2.balance(&user1), 1000);
 
     // tokens 1 & 2 have 7 decimal digits, meaning those values are 0.0001 of token
-    pool.provide_liquidity(&user1, &1000, &1000, &None);
+    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>);
 
     assert_eq!(
         env.auths(),
@@ -62,7 +62,7 @@ fn provide_liqudity() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     Symbol::new(&env, "provide_liquidity"),
-                    (&user1, 1000i128, 1000i128, None::<i64>).into_val(&env),
+                    (&user1, 1000i128, 1000i128, None::<i64>, None::<u64>).into_val(&env),
                 )),
                 sub_invocations: std::vec![
                     AuthorizedInvocation {
@@ -152,7 +152,7 @@ fn withdraw_liquidity() {
     token1.mint(&user1, &1000);
     token2.mint(&user1, &1000);
     // tokens 1 & 2 have 7 decimal digits, meaning those values are 0.0001 of token
-    pool.provide_liquidity(&user1, &1000, &1000, &None);
+    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>);
 
     assert_eq!(token_share.balance(&user1), 999);
     assert_eq!(token_share.balance(&pool.address), 0);
@@ -164,7 +164,7 @@ fn withdraw_liquidity() {
     let share_amount = 500; // half of the shares
     let min_a = 500;
     let min_b = 500;
-    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b);
+    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &None::<u64>);
     assert_eq!(
         env.auths(),
         [(
@@ -173,7 +173,7 @@ fn withdraw_liquidity() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     Symbol::new(&env, "withdraw_liquidity"),
-                    (&user1, 500i128, 500i128, 500i128).into_val(&env),
+                    (&user1, 500i128, 500i128, 500i128, None::<u64>).into_val(&env),
                 )),
                 sub_invocations: std::vec![AuthorizedInvocation {
                     function: AuthorizedFunction::Contract((
@@ -215,7 +215,7 @@ fn withdraw_liquidity() {
     );
 
     // clear the pool
-    pool.withdraw_liquidity(&user1, &499, &500, &500);
+    pool.withdraw_liquidity(&user1, &499, &500, &500, &None::<u64>);
     assert_eq!(token_share.balance(&user1), 0);
     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
     assert_eq!(token1.balance(&user1), 1000);
@@ -446,7 +446,7 @@ fn swap_with_no_amounts() {
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
     // providing all amounts as None
-    pool.provide_liquidity(&user1, &0i128, &0i128, &None);
+    pool.provide_liquidity(&user1, &0i128, &0i128, &None, &None::<u64>);
 }
 
 #[test]
@@ -483,9 +483,9 @@ fn withdraw_liqudity_below_min() {
 
     token1.mint(&user1, &1000);
     token2.mint(&user1, &1000);
-    pool.provide_liquidity(&user1, &1000, &1000, &None);
+    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>);
 
     let share_amount = 500;
     // Expecting min_a and/or min_b as huge bigger then available
-    pool.withdraw_liquidity(&user1, &share_amount, &3000, &3000);
+    pool.withdraw_liquidity(&user1, &share_amount, &3000, &3000, &None::<u64>);
 }
