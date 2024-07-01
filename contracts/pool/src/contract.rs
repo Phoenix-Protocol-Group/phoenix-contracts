@@ -17,8 +17,7 @@ use crate::{
     token_contract,
 };
 use phoenix::{
-    ensure_not_expired,
-    utils::{is_approx_ratio, LiquidityPoolInitInfo},
+    utils::{is_approx_ratio, is_tx_active, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
 use soroban_decimal::Decimal;
@@ -261,7 +260,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         deadline: Option<u64>,
     ) {
         if let Some(deadline) = deadline {
-            ensure_not_expired!(env, deadline)
+            if !is_tx_active(&env, deadline) {
+                log!(
+                    env,
+                    "Pool: Provide Liquidity: Transaction executed after deadline!"
+                );
+                panic_with_error!(env, ContractError::TransactionAfterTimestampDeadline)
+            }
         }
 
         validate_int_parameters!(desired_a, min_a, desired_b, min_b);
@@ -418,7 +423,10 @@ impl LiquidityPoolTrait for LiquidityPool {
         deadline: Option<u64>,
     ) -> i128 {
         if let Some(deadline) = deadline {
-            ensure_not_expired!(env, deadline)
+            if !is_tx_active(&env, deadline) {
+                log!(env, "Pool: Swap: Transaction executed after deadline!");
+                panic_with_error!(env, ContractError::TransactionAfterTimestampDeadline)
+            }
         }
 
         validate_int_parameters!(offer_amount);
@@ -445,7 +453,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         deadline: Option<u64>,
     ) -> (i128, i128) {
         if let Some(deadline) = deadline {
-            ensure_not_expired!(env, deadline)
+            if !is_tx_active(&env, deadline) {
+                log!(
+                    env,
+                    "Pool: Withdraw Liquidity: Transaction executed after deadline!"
+                );
+                panic_with_error!(env, ContractError::TransactionAfterTimestampDeadline)
+            }
         }
 
         validate_int_parameters!(share_amount, min_a, min_b);

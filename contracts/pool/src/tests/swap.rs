@@ -1196,7 +1196,7 @@ fn simple_swap_with_deadline_success() {
 }
 
 #[test]
-#[should_panic(expected = "Transaction has expired")]
+#[should_panic(expected = "Pool: Swap: Transaction executed after deadline!")]
 fn simple_swap_with_should_fail_when_after_the_deadline() {
     let env = Env::default();
     env.mock_all_auths();

@@ -1,4 +1,4 @@
-use phoenix::{ensure_not_expired, utils::LiquidityPoolInitInfo};
+use phoenix::utils::{is_tx_active, LiquidityPoolInitInfo};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
     String,
@@ -269,7 +269,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         deadline: Option<u64>,
     ) {
         if let Some(deadline) = deadline {
-            ensure_not_expired!(env, deadline)
+            if !is_tx_active(&env, deadline) {
+                log!(
+                    env,
+                    "Pool Stable: Provide Liquidity: Transaction executed after deadline!"
+                );
+                panic_with_error!(env, ContractError::TransactionAfterTimestampDeadline)
+            }
         }
 
         if desired_a == 0 || desired_b == 0 {
@@ -395,7 +401,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         deadline: Option<u64>,
     ) -> i128 {
         if let Some(deadline) = deadline {
-            ensure_not_expired!(env, deadline)
+            if !is_tx_active(&env, deadline) {
+                log!(
+                    env,
+                    "Pool Stable: Swap: Transaction executed after deadline!"
+                );
+                panic_with_error!(env, ContractError::TransactionAfterTimestampDeadline)
+            }
         }
 
         validate_int_parameters!(offer_amount);
@@ -421,7 +433,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         deadline: Option<u64>,
     ) -> (i128, i128) {
         if let Some(deadline) = deadline {
-            ensure_not_expired!(env, deadline)
+            if !is_tx_active(&env, deadline) {
+                log!(
+                    env,
+                    "Pool Stable: Withdraw Liquidity: Transaction executed after deadline!"
+                );
+                panic_with_error!(env, ContractError::TransactionAfterTimestampDeadline)
+            }
         }
 
         validate_int_parameters!(share_amount, min_a, min_b);
