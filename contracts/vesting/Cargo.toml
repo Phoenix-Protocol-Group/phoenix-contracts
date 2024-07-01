@@ -21,6 +21,6 @@ curve = { workspace = true }
 phoenix = { workspace = true }
 soroban-sdk = { workspace = true }
 
-[dev_dependencies]
+[dev-dependencies]
 curve = { workspace = true, features = ["testutils"] }
 soroban-sdk = { workspace = true, features = ["testutils"] }
