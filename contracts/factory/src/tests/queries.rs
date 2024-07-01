@@ -34,6 +34,7 @@ pub struct LiquidityPoolConfig {
     /// The maximum amount of spread (in bps) that is tolerated during swap
     pub max_allowed_spread_bps: i64,
     pub max_referral_bps: i64,
+    pub default_slippage_bps: i64,
 }
 
 #[test]

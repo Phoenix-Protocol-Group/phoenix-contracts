@@ -59,6 +59,7 @@ fn confirm_stake_contract_deployment() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
+            default_slippage_bps: 100i64,
         }
     );
 
@@ -134,6 +135,7 @@ fn second_pool_deployment_should_fail() {
         &10u32,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHOBTC"),
+        &100i64,
     );
 
     pool.initialize(
@@ -144,5 +146,6 @@ fn second_pool_deployment_should_fail() {
         &10u32,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHOBTC"),
+        &100i64,
     );
 }

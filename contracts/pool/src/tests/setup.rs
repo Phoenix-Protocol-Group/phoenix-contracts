@@ -84,6 +84,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
         &10u32,
         &String::from_str(env, "Pool"),
         &String::from_str(env, "PHOBTC"),
+        &100i64,
     );
     pool
 }

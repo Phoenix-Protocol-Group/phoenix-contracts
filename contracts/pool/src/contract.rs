@@ -45,6 +45,7 @@ pub trait LiquidityPoolTrait {
         share_token_decimals: u32,
         share_token_name: String,
         share_token_symbol: String,
+        default_slippage_bps: i64,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -145,6 +146,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         share_token_decimals: u32,
         share_token_name: String,
         share_token_symbol: String,
+        default_slippage_bps: i64,
     ) {
         if is_initialized(&env) {
             log!(
@@ -167,7 +169,8 @@ impl LiquidityPoolTrait for LiquidityPool {
             swap_fee_bps,
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
-            max_referral_bps
+            max_referral_bps,
+            default_slippage_bps
         );
 
         set_initialized(&env);
@@ -230,6 +233,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
             max_referral_bps,
+            default_slippage_bps,
         };
 
         save_config(&env, config);
@@ -285,7 +289,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     min_b,
                     pool_balance_a,
                     pool_balance_b,
-                    Decimal::bps(custom_slippage_bps.unwrap_or(100)),
+                    Decimal::bps(custom_slippage_bps.unwrap_or(config.default_slippage_bps)),
                 )
             }
             // TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
@@ -1271,6 +1275,7 @@ mod tests {
             max_allowed_slippage_bps: 100i64,
             max_allowed_spread_bps: 100i64,
             max_referral_bps: 1_000i64,
+            default_slippage_bps: 100i64,
         };
         split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
     }

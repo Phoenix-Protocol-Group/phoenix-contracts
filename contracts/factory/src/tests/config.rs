@@ -94,6 +94,7 @@ fn factory_successfully_inits_lp() {
             token_a: token1,
             token_b: token2,
             total_fee_bps: 0,
+            default_slippage_bps: 100,
         }
     );
 }
@@ -474,6 +475,7 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
             token_a: token1.address,
             token_b: token2.address,
             total_fee_bps: 0,
+            default_slippage_bps: 100,
         }
     );
 }

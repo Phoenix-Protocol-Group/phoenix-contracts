@@ -188,6 +188,10 @@ impl FactoryTrait for Factory {
         )
             .into_val(&env);
 
+        if let PoolType::Xyk = pool_type {
+            init_fn_args.push_back(100i64.into_val(&env));
+        }
+
         if let PoolType::Stable = pool_type {
             init_fn_args.push_back(amp.unwrap().into_val(&env));
         }
