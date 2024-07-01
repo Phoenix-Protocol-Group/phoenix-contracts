@@ -98,6 +98,7 @@ pub trait LiquidityPoolTrait {
 
     // Allows admin address set during initialization to change some parameters of the
     // configuration
+    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         new_admin: Option<Address>,
@@ -106,6 +107,7 @@ pub trait LiquidityPoolTrait {
         max_allowed_slippage_bps: Option<i64>,
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
+        minimum_lp_shares: Option<i128>,
     );
 
     // Migration entrypoint
@@ -436,11 +438,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 &env.current_contract_address(),
                 1000,
             );
-            // NOTE: I don't think we should be adding the initial 1_000 shares
-            // to the user_shares - what if the user provides liquidity worthy of just 100 tokens,
-            // they'll end up with 1_100 anyway.
 
-            // let initial_shares = 1000;
             // now calculate x*y shares to user
             let user_shares = (balance_a * balance_b).sqrt();
             if user_shares < config.minimum_lp_shares {
@@ -450,12 +448,10 @@ impl LiquidityPoolTrait for LiquidityPool {
                 );
                 panic_with_error!(env, ContractError::NotEnoughSharesToBeMinted)
             }
-            // initial_shares + user_shares
+
             user_shares
         };
 
-        // TODO:
-        // check if this number is not less than some preconfigured minimum
         if new_total_shares == 0 {
             log!(
                 env,
@@ -608,6 +604,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         (return_amount_a, return_amount_b)
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         new_admin: Option<Address>,
@@ -616,6 +613,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         max_allowed_slippage_bps: Option<i64>,
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
+        minimum_lp_shares: Option<i128>,
     ) {
         let admin: Address = utils::get_admin(&env);
         admin.require_auth();
@@ -643,6 +641,10 @@ impl LiquidityPoolTrait for LiquidityPool {
         if let Some(max_referral_bps) = max_referral_bps {
             validate_bps!(max_referral_bps);
             config.max_referral_bps = max_referral_bps;
+        }
+
+        if let Some(minimum_lp_shares) = minimum_lp_shares {
+            config.minimum_lp_shares = minimum_lp_shares;
         }
 
         save_config(&env, config);
