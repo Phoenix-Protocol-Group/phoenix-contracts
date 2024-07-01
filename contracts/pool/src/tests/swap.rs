@@ -2,7 +2,7 @@ extern crate std;
 use pretty_assertions::assert_eq;
 use soroban_sdk::{
     symbol_short,
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
     Address, Env, IntoVal,
 };
 use test_case::test_case;
@@ -1072,5 +1072,187 @@ fn test_should_fail_when_invalid_ask_asset_min_amount() {
         &Some(10),
         &Some(spread),
         &None::<u64>,
+    );
+}
+
+#[test]
+fn simple_swap_with_deadline_success() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 49);
+    pool.provide_liquidity(
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+        &Some(50u64),
+    );
+
+    // selling just one token with 1% max spread allowed
+    let spread = 100i64; // 1% maximum spread allowed
+    env.ledger().with_mut(|li| li.timestamp = 99);
+    // we set the deadline to be at latest 100 and we execute swap at 99
+    pool.swap(
+        &user1,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+        &Some(100u64),
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 1_000_000i128,
+            },
+            stake_address: result.clone().stake_address,
+        }
+    );
+    assert_eq!(token1.balance(&user1), 999); // -1 from the swap
+    assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
+
+    // this time 100 units
+    env.ledger().with_mut(|li| li.timestamp = 149);
+    let output_amount = pool.swap(
+        &user1,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &token2.address,
+        &1_000,
+        &None,
+        &Some(spread),
+        &Some(150),
+    );
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001 - 1_000, // previous balance minus 1_000
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999 + 1000,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1_000_000i128, // this has not changed
+            },
+            stake_address: result.clone().stake_address,
+        }
+    );
+    assert_eq!(output_amount, 1000);
+    assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
+    assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
+}
+
+#[test]
+#[should_panic(expected = "Transaction has expired")]
+fn simple_swap_with_should_fail_when_after_the_deadline() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+
+    pool.provide_liquidity(
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+        &None::<u64>,
+    );
+
+    // selling just one token with 1% max spread allowed
+    let spread = 100i64; // 1% maximum spread allowed
+    env.ledger().with_mut(|li| li.timestamp = 100);
+    // this will panic, because our deadline is before the current timestamp
+    pool.swap(
+        &user1,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+        &Some(99u64),
     );
 }

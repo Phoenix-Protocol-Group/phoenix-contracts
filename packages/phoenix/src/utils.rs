@@ -37,7 +37,7 @@ macro_rules! validate_bps {
 #[macro_export]
 macro_rules! ensure_not_expired {
     ($env:expr, $expiration_timestamp:expr) => {
-        if $env.ledger().timestamp() >= $expiration_timestamp {
+        if $env.ledger().timestamp() > $expiration_timestamp {
             panic!("Transaction has expired")
         }
     };
