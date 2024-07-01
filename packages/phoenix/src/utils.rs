@@ -33,6 +33,16 @@ macro_rules! validate_bps {
     }
 }
 
+/// Validate if the current timestamp is within desired timestamp
+#[macro_export]
+macro_rules! ensure_not_expired {
+    ($env:expr, $expiration_timestamp:expr) => {
+        if $env.ledger().timestamp() >= $expiration_timestamp {
+            panic!("Transaction has expired")
+        }
+    };
+}
+
 pub fn is_approx_ratio(a: Decimal, b: Decimal, tolerance: Decimal) -> bool {
     let diff = (a - b).abs();
     diff <= tolerance
@@ -77,6 +87,8 @@ pub enum PoolType {
 
 #[cfg(test)]
 mod tests {
+    use soroban_sdk::{testutils::Ledger, Env};
+
     use super::*;
 
     #[test]
@@ -158,5 +170,20 @@ mod tests {
     #[test]
     fn bps_valid_range() {
         validate_bps!(0, 5_000, 7_500, 10_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "Transaction has expired")]
+    fn ensure_not_expired_should_panic_when_desired_is_after_current() {
+        let env = Env::default();
+        env.ledger().with_mut(|li| li.timestamp = 100);
+        ensure_not_expired!(env, 99);
+    }
+
+    #[test]
+    fn ensure_not_expired_should_work_fine() {
+        let env = Env::default();
+        env.ledger().with_mut(|li| li.timestamp = 100);
+        ensure_not_expired!(env, 101);
     }
 }
