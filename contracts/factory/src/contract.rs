@@ -35,6 +35,7 @@ pub trait FactoryTrait {
         lp_token_decimals: u32,
     );
 
+    #[allow(clippy::too_many_arguments)]
     fn create_liquidity_pool(
         env: Env,
         sender: Address,
@@ -43,6 +44,7 @@ pub trait FactoryTrait {
         share_token_symbol: String,
         pool_type: PoolType,
         amp: Option<u64>,
+        default_slippage_bps: i64,
     ) -> Address;
 
     fn update_whitelisted_accounts(
@@ -126,6 +128,7 @@ impl FactoryTrait for Factory {
             .publish(("initialize", "LP factory contract"), admin);
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn create_liquidity_pool(
         env: Env,
         sender: Address,
@@ -134,6 +137,7 @@ impl FactoryTrait for Factory {
         share_token_symbol: String,
         pool_type: PoolType,
         amp: Option<u64>,
+        default_slippage_bps: i64,
     ) -> Address {
         sender.require_auth();
         validate_pool_info(&pool_type, &amp);
@@ -172,7 +176,8 @@ impl FactoryTrait for Factory {
             lp_init_info.swap_fee_bps,
             lp_init_info.max_allowed_slippage_bps,
             lp_init_info.max_allowed_spread_bps,
-            lp_init_info.max_referral_bps
+            lp_init_info.max_referral_bps,
+            default_slippage_bps
         );
 
         let factory_addr = env.current_contract_address();
@@ -189,7 +194,7 @@ impl FactoryTrait for Factory {
             .into_val(&env);
 
         if let PoolType::Xyk = pool_type {
-            init_fn_args.push_back(100i64.into_val(&env));
+            init_fn_args.push_back(default_slippage_bps.into_val(&env));
         }
 
         if let PoolType::Stable = pool_type {

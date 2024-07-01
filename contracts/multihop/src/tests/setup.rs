@@ -159,6 +159,7 @@ pub fn deploy_and_initialize_pool(
         &String::from_str(env, "PHO/XLM"),
         &pool_type,
         &amp,
+        &100i64,
     );
 
     match pool_type {

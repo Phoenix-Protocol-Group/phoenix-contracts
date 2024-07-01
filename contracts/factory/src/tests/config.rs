@@ -74,6 +74,7 @@ fn factory_successfully_inits_lp() {
         &String::from_str(&env, "PHO/BTC"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
@@ -146,6 +147,7 @@ fn factory_successfully_inits_stable_pool() {
         &String::from_str(&env, "EURC/USDC"),
         &PoolType::Stable,
         &Some(10),
+        &100i64,
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
@@ -212,6 +214,7 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
         &String::from_str(&env, "PHO/BTC"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
 }
 
@@ -402,6 +405,7 @@ fn factory_stable_pool_creation_should_fail_early_without_amp() {
         &String::from_str(&env, "EUROC/USDC"),
         &PoolType::Stable,
         &None,
+        &100i64,
     );
 }
 
@@ -454,6 +458,7 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
         &String::from_str(&env, "EUROC/USDC"),
         &PoolType::Xyk,
         &Some(10),
+        &100i64,
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
