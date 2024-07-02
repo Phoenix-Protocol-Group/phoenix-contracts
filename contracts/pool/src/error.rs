@@ -29,4 +29,7 @@ pub enum ContractError {
     SlippageInvalid = 20,
 
     SwapMinReceivedBiggerThanReturn = 21,
+
+    CannotConvertToU128 = 22,
+    CannotConvertToI128 = 23,
 }
