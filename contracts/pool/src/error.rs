@@ -29,4 +29,6 @@ pub enum ContractError {
     SlippageInvalid = 20,
 
     SwapMinReceivedBiggerThanReturn = 21,
+    NotEnoughLiquidityProvided = 22,
+    MinimumLpSharesNotProvided = 23,
 }

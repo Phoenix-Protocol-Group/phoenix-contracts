@@ -35,6 +35,7 @@ pub struct LiquidityPoolConfig {
     pub max_allowed_spread_bps: i64,
     pub max_referral_bps: i64,
     pub default_slippage_bps: i64,
+    pub minimum_lp_shares: i128,
 }
 
 #[test]
@@ -109,6 +110,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let second_lp_init_info = LiquidityPoolInitInfo {
@@ -120,6 +122,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let third_lp_init_info = LiquidityPoolInitInfo {
@@ -131,6 +134,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -318,6 +322,7 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let second_lp_init_info = LiquidityPoolInitInfo {
@@ -329,6 +334,7 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let third_lp_init_info = LiquidityPoolInitInfo {
@@ -340,6 +346,7 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -382,6 +389,7 @@ fn test_queries_by_tuple() {
         &Symbol::new(&env, "query_share_token_address"),
         Vec::new(&env),
     );
+
     let second_lp_config: LiquidityPoolConfig = env.invoke_contract(
         &second_lp_contract_addr,
         &Symbol::new(&env, "query_config"),
@@ -504,11 +512,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 150i128,
+                            amount: 22i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 200i128
+                            amount: 29i128
                         }
                     )
                 }
@@ -531,11 +539,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 150i128,
+                            amount: 22i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 200i128
+                            amount: 29i128
                         }
                     )
                 }
@@ -601,11 +609,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 200i128,
+                            amount: 36i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 250i128
+                            amount: 45i128
                         }
                     )
                 }
@@ -626,11 +634,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 200i128,
+                            amount: 36i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 250i128
+                            amount: 45i128
                         }
                     )
                 }
@@ -807,11 +815,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128
+                            amount: 499i128
                         }
                     )
                 }
@@ -926,11 +934,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         }
                     )
                 },
@@ -938,11 +946,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 999i128,
+                            amount: 666i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 3_999i128,
+                            amount: 2666i128,
                         }
                     )
                 },
@@ -977,11 +985,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128
+                            amount: 499i128
                         }
                     )
                 },
@@ -989,11 +997,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 999i128,
+                            amount: 666i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 3_999i128,
+                            amount: 2666i128,
                         }
                     )
                 },
@@ -1215,6 +1223,7 @@ fn test_query_user_portfolio_without_stake() {
         max_referral_bps: 0,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -1248,11 +1257,11 @@ fn test_query_user_portfolio_without_stake() {
                     assets: (
                         Asset {
                             address: token1.address,
-                            amount: 150i128
+                            amount: 22i128
                         },
                         Asset {
                             address: token2.address,
-                            amount: 200i128
+                            amount: 29i128
                         }
                     )
                 }

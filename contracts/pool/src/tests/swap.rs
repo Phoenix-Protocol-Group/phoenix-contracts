@@ -113,7 +113,7 @@ fn simple_swap() {
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 1_000_000i128,
+                amount: 1_001_000i128,
             },
             stake_address: result.clone().stake_address,
         }
@@ -145,7 +145,7 @@ fn simple_swap() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 1_000_000i128, // this has not changed
+                amount: 1_001_000i128, // this has not changed
             },
             stake_address: result.clone().stake_address,
         }
@@ -465,7 +465,7 @@ fn swap_with_high_fee() {
             },
             asset_lp_share: Asset {
                 address: pool.query_share_token_address(),
-                amount: 1_000_000i128,
+                amount: 1_001_000i128,
             },
             stake_address: result.clone().stake_address,
         }
