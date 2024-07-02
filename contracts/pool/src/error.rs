@@ -34,4 +34,5 @@ pub enum ContractError {
     UserDeclinesPoolFee = 24,
     SwapFeeBpsOverLimit = 25,
     NotEnoughSharesToBeMinted = 26,
+    NotEnoughLiquidityProvided = 27,
 }
