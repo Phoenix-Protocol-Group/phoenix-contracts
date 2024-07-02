@@ -491,6 +491,7 @@ fn test_query_user_portfolio_with_stake() {
         &Some(200),
         &Some(100i128),
         &None::<i64>,
+        &None::<u64>,
     );
 
     // first user portfolio after providing liquidity
@@ -589,6 +590,7 @@ fn test_query_user_portfolio_with_stake() {
         &Some(250),
         &Some(100i128),
         &None::<i64>,
+        &None::<u64>,
     );
 
     let second_portfolio = factory.query_user_portfolio(&user_2, &true);
@@ -758,6 +760,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &Some(1_000i128),
         &Some(900i128),
         &None::<i64>,
+        &None::<u64>,
     );
 
     first_lp_client.provide_liquidity(
@@ -767,6 +770,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &Some(2_000i128),
         &Some(1_900i128),
         &None::<i64>,
+        &None::<u64>,
     );
 
     // first user portfolio in first pool after providing liquidity
@@ -904,6 +908,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &Some(4_000i128),
         &Some(3_900i128),
         &None::<i64>,
+        &None::<u64>,
     );
 
     second_lp_client.provide_liquidity(
@@ -913,6 +918,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &Some(8_000i128),
         &Some(7_900i128),
         &None::<i64>,
+        &None::<u64>,
     );
 
     // first user portfolio with second pool after providing liquidity
@@ -1236,6 +1242,7 @@ fn test_query_user_portfolio_without_stake() {
         &Some(200i128),
         &Some(100i128),
         &None::<i64>,
+        &None::<u64>,
     );
 
     let result = factory.query_user_portfolio(&user_1, &false);

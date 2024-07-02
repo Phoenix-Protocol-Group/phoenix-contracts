@@ -29,4 +29,5 @@ pub enum ContractError {
     SlippageInvalid = 20,
 
     SwapMinReceivedBiggerThanReturn = 21,
+    TransactionAfterTimestampDeadline = 22,
 }

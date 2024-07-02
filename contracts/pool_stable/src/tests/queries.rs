@@ -52,9 +52,9 @@ fn query_share_valid_liquidity() {
     token2.mint(&user3, &4000);
 
     // all users provide liquidity in a 3:4 ratio
-    pool.provide_liquidity(&user1, &1500, &2000, &None);
-    pool.provide_liquidity(&user2, &1500, &2000, &None);
-    pool.provide_liquidity(&user3, &1500, &2000, &None);
+    pool.provide_liquidity(&user1, &1500, &2000, &None, &None::<u64>);
+    pool.provide_liquidity(&user2, &1500, &2000, &None, &None::<u64>);
+    pool.provide_liquidity(&user3, &1500, &2000, &None, &None::<u64>);
 
     // user1 assertions
     let lp_share_balance_user1 = token_share.balance(&user1);
@@ -97,7 +97,13 @@ fn query_share_valid_liquidity() {
     );
 
     // user1 withdraws
-    pool.withdraw_liquidity(&user1, &lp_share_balance_user1, &1000i128, &1000i128);
+    pool.withdraw_liquidity(
+        &user1,
+        &lp_share_balance_user1,
+        &1000i128,
+        &1000i128,
+        &None::<u64>,
+    );
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
         pool_info_after_withdrawal,
@@ -139,7 +145,13 @@ fn query_share_valid_liquidity() {
     );
 
     // user2 withdraws his liquidity
-    pool.withdraw_liquidity(&user2, &lp_share_balance_user2, &1500i128, &2000i128);
+    pool.withdraw_liquidity(
+        &user2,
+        &lp_share_balance_user2,
+        &1500i128,
+        &2000i128,
+        &None::<u64>,
+    );
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
         pool_info_after_withdrawal,
@@ -181,7 +193,7 @@ fn query_share_valid_liquidity() {
     );
 
     // user3 has 2499 shares, we are withdrawing 1499
-    pool.withdraw_liquidity(&user3, &1499, &1i128, &1i128);
+    pool.withdraw_liquidity(&user3, &1499, &1i128, &1i128, &None::<u64>);
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
         pool_info_after_withdrawal,

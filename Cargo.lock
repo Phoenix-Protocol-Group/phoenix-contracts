@@ -791,6 +791,7 @@ dependencies = [
 name = "phoenix-trader"
 version = "1.0.0"
 dependencies = [
+ "phoenix",
  "soroban-decimal",
  "soroban-sdk",
  "test-case",

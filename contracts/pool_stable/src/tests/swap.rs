@@ -1,6 +1,6 @@
 extern crate std;
 
-use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation, Ledger};
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
@@ -39,12 +39,19 @@ fn simple_swap() {
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
-    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None);
+    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &None::<u64>);
 
     // true means "selling A token"
     // selling just one token with 1% max spread allowed
     let spread = 100i64; // 1% maximum spread allowed
-    pool.swap(&user1, &token1.address, &1, &None, &Some(spread));
+    pool.swap(
+        &user1,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+    );
     assert_eq!(
         env.auths(),
         [(
@@ -53,7 +60,15 @@ fn simple_swap() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     symbol_short!("swap"),
-                    (&user1, token1.address.clone(), 1_i128, None::<i64>, spread).into_val(&env)
+                    (
+                        &user1,
+                        token1.address.clone(),
+                        1_i128,
+                        None::<i64>,
+                        spread,
+                        None::<u64>
+                    )
+                        .into_val(&env)
                 )),
                 sub_invocations: std::vec![
                     (AuthorizedInvocation {
@@ -94,7 +109,14 @@ fn simple_swap() {
 
     // false means selling B token
     // this time 100 units
-    let output_amount = pool.swap(&user1, &token2.address, &1_000, &None, &Some(spread));
+    let output_amount = pool.swap(
+        &user1,
+        &token2.address,
+        &1_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+    );
     let result = pool.query_pool_info();
     assert_eq!(
         result,
@@ -155,12 +177,25 @@ fn swap_with_high_fee() {
 
     token1.mint(&user1, &(initial_liquidity + 100_000));
     token2.mint(&user1, &initial_liquidity);
-    pool.provide_liquidity(&user1, &initial_liquidity, &initial_liquidity, &None);
+    pool.provide_liquidity(
+        &user1,
+        &initial_liquidity,
+        &initial_liquidity,
+        &None,
+        &None::<u64>,
+    );
 
     let spread = 1_000; // 10% maximum spread allowed
 
     // let's swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
-    pool.swap(&user1, &token1.address, &100_000, &None, &Some(spread));
+    pool.swap(
+        &user1,
+        &token1.address,
+        &100_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+    );
 
     // This is Stable swap LP with constant product formula
     let output_amount = 98_582i128; // rounding
@@ -223,7 +258,13 @@ fn swap_simulation_even_pool() {
     let initial_liquidity = 1_000_000i128;
     token1.mint(&user1, &initial_liquidity);
     token2.mint(&user1, &initial_liquidity);
-    pool.provide_liquidity(&user1, &initial_liquidity, &initial_liquidity, &None);
+    pool.provide_liquidity(
+        &user1,
+        &initial_liquidity,
+        &initial_liquidity,
+        &None,
+        &None::<u64>,
+    );
 
     // let's simulate swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
     let offer_amount = 100_000i128;
@@ -282,5 +323,160 @@ fn swap_simulation_even_pool() {
             // commission_amount: fees,
             commission_amount: fees,
         }
+    );
+}
+
+#[test]
+fn simple_swap_with_deadline_should_work() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    env.ledger().with_mut(|li| li.timestamp = 49);
+    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &Some(50));
+
+    let spread = 100i64;
+    // making the swap at the final moment
+    env.ledger().with_mut(|li| li.timestamp = 99);
+    pool.swap(
+        &user1,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+        &Some(100u64),
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 1998999i128,
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+    assert_eq!(token1.balance(&user1), 999); // -1 from the swap
+    assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
+
+    // false means selling B token
+    // this time 100 units
+    env.ledger().with_mut(|li| li.timestamp = 149);
+    let output_amount = pool.swap(
+        &user1,
+        &token2.address,
+        &1_000,
+        &None,
+        &Some(spread),
+        &Some(150u64),
+    );
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001 - 1_000, // previous balance minus 1_000
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999 + 1000,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1998999i128, // this has not changed
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+    assert_eq!(output_amount, 1000);
+    assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
+    assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
+}
+
+#[test]
+#[should_panic(expected = "Pool Stable: Swap: Transaction executed after deadline!")]
+fn simple_swap_should_panic_after_deadline() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &None::<u64>);
+
+    // true means "selling A token"
+    // selling just one token with 1% max spread allowed
+    let spread = 100i64; // 1% maximum spread allowed
+                         // making the swap after the deadline
+    env.ledger().with_mut(|li| li.timestamp = 100);
+    pool.swap(
+        &user1,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+        &Some(99u64),
     );
 }
