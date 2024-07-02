@@ -361,10 +361,8 @@ fn simple_swap_with_deadline_should_work() {
     env.ledger().with_mut(|li| li.timestamp = 49);
     pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &Some(50));
 
-    // true means "selling A token"
-    // selling just one token with 1% max spread allowed
-    let spread = 100i64; // 1% maximum spread allowed
-                         // making the swap at the final moment
+    let spread = 100i64;
+    // making the swap at the final moment
     env.ledger().with_mut(|li| li.timestamp = 99);
     pool.swap(
         &user1,

@@ -1159,7 +1159,6 @@ fn simple_swap_with_deadline_success() {
     assert_eq!(token1.balance(&user1), 999); // -1 from the swap
     assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
 
-    // this time 100 units
     env.ledger().with_mut(|li| li.timestamp = 149);
     let output_amount = pool.swap(
         &user1,
