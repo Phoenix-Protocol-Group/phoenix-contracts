@@ -818,11 +818,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 499i128,
+                            amount: 999i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 499i128,
+                            amount: 999i128,
                         }
                     )
                 }

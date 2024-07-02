@@ -567,6 +567,18 @@ impl LiquidityPoolTrait for LiquidityPool {
         let return_amount_a = pool_balance_a * share_ratio;
         let return_amount_b = pool_balance_b * share_ratio;
 
+        soroban_sdk::testutils::arbitrary::std::dbg!(
+            pool_balance_a,
+            pool_balance_b,
+            share_amount,
+            total_shares,
+            share_ratio,
+            return_amount_a,
+            return_amount_b,
+            min_a,
+            min_b
+        );
+
         if return_amount_a < min_a || return_amount_b < min_b {
             log!(
                 &env,
