@@ -176,6 +176,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         let max_referral_bps = lp_init_info.max_referral_bps;
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
+        let minimum_lp_shares = lp_init_info.minimum_lp_shares.unwrap_or_else(|| {
+            log!(
+                env,
+                "Pool: Initialize: Missing argument - minimum_lp_shares"
+            );
+            panic_with_error!(env, ContractError::MinimumLpSharesNotProvided);
+        });
 
         validate_bps!(
             swap_fee_bps,

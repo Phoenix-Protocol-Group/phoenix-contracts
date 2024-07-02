@@ -127,6 +127,7 @@ fn second_pool_deployment_should_fail() {
         max_referral_bps: 500,
         token_init_info,
         stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     pool.initialize(

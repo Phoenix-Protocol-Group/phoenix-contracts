@@ -53,6 +53,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     pool.initialize(

@@ -108,6 +108,7 @@ pub fn generate_lp_init_info(
         max_referral_bps: 5000,
         token_init_info,
         stake_init_info,
+        minimum_lp_shares: Some(100i128),
     }
 }
 

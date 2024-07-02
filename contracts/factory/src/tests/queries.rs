@@ -111,6 +111,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let second_lp_init_info = LiquidityPoolInitInfo {
@@ -123,6 +124,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let third_lp_init_info = LiquidityPoolInitInfo {
@@ -135,6 +137,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -329,6 +332,7 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let second_lp_init_info = LiquidityPoolInitInfo {
@@ -341,6 +345,7 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let third_lp_init_info = LiquidityPoolInitInfo {
@@ -353,6 +358,7 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -1250,6 +1256,7 @@ fn test_query_user_portfolio_without_stake() {
         max_referral_bps: 0,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(

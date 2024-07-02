@@ -146,11 +146,6 @@ impl FactoryTrait for Factory {
         sender.require_auth();
         validate_pool_info(&pool_type, &amp);
 
-        assert!(
-            (0..=100_000).contains(&minimum_lp_shares.unwrap_or_default()),
-            "minimum_lp_shares must be between 0 and 100,000",
-        );
-
         if !get_config(&env).whitelisted_accounts.contains(sender) {
             log!(
                 &env,
@@ -205,10 +200,6 @@ impl FactoryTrait for Factory {
 
         if let PoolType::Xyk = pool_type {
             init_fn_args.push_back(default_slippage_bps.into_val(&env));
-        }
-
-        if let Some(minimum_lp_shares) = minimum_lp_shares {
-            init_fn_args.push_back(minimum_lp_shares.into_val(&env))
         }
 
         if let PoolType::Stable = pool_type {

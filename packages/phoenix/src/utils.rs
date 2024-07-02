@@ -82,6 +82,7 @@ pub struct LiquidityPoolInitInfo {
     pub max_referral_bps: i64,
     pub token_init_info: TokenInitInfo,
     pub stake_init_info: StakeInitInfo,
+    pub minimum_lp_shares: Option<i128>,
 }
 
 #[contracttype]

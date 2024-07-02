@@ -98,7 +98,7 @@ fn factory_successfully_inits_lp() {
             token_b: token2,
             total_fee_bps: 0,
             default_slippage_bps: 100,
-            minimum_lp_shares: 10i128,
+            minimum_lp_shares: 100i128,
         }
     );
 }
@@ -493,7 +493,7 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
             token_b: token2.address,
             total_fee_bps: 0,
             default_slippage_bps: 100,
-            minimum_lp_shares: 10i128,
+            minimum_lp_shares: 100i128,
         }
     );
 }
