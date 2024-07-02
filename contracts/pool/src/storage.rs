@@ -49,6 +49,8 @@ pub struct Config {
     pub max_allowed_spread_bps: i64,
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
+    /// Default value that will be used whenever the user hasn't specified their preferred slippage
+    pub default_slippage_bps: i64,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
@@ -640,6 +642,7 @@ mod tests {
             fee_recipient: Address::generate(&env),
             max_allowed_spread_bps: 10_i64,
             max_referral_bps: 10i64,
+            default_slippage_bps: 100i64,
         };
 
         let result = config.max_allowed_slippage();

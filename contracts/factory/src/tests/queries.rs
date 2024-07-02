@@ -34,6 +34,7 @@ pub struct LiquidityPoolConfig {
     /// The maximum amount of spread (in bps) that is tolerated during swap
     pub max_allowed_spread_bps: i64,
     pub max_referral_bps: i64,
+    pub default_slippage_bps: i64,
 }
 
 #[test]
@@ -139,6 +140,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &String::from_str(&env, "PHO/BTC"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -147,6 +149,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &String::from_str(&env, "PHO/ETH"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -155,6 +158,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &String::from_str(&env, "PHO/XLM"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -345,6 +349,7 @@ fn test_queries_by_tuple() {
         &String::from_str(&env, "PHO/BTC"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -353,6 +358,7 @@ fn test_queries_by_tuple() {
         &String::from_str(&env, "PHO/ETH"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -361,6 +367,7 @@ fn test_queries_by_tuple() {
         &String::from_str(&env, "PHO/XLM"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -465,6 +472,7 @@ fn test_query_user_portfolio_with_stake() {
         &String::from_str(&env, "PHO/BTC"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -563,6 +571,7 @@ fn test_query_user_portfolio_with_stake() {
         &String::from_str(&env, "PHO/ETH"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -700,6 +709,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &String::from_str(&env, "PHO/BTC"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -727,6 +737,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &String::from_str(&env, "PHO/ETH"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -1213,6 +1224,7 @@ fn test_query_user_portfolio_without_stake() {
         &String::from_str(&env, "PHO/BTC"),
         &PoolType::Xyk,
         &None::<u64>,
+        &100i64,
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &lp_contract_addr);
