@@ -16,5 +16,5 @@ testutils = ["soroban-sdk/testutils"]
 soroban-sdk = { workspace = true }
 phoenix = { workspace = true }
 
-[dev_dependencies]
+[dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }

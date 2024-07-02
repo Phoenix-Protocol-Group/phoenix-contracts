@@ -14,6 +14,6 @@ testutils = ["soroban-sdk/testutils"]
 soroban-sdk = { workspace = true }
 soroban-decimal = { workspace = true }
 
-[dev_dependencies]
+[dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
 test-case = { workspace = true }
