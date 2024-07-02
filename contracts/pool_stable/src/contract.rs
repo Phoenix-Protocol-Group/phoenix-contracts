@@ -1,4 +1,4 @@
-use phoenix::utils::{is_tx_active, LiquidityPoolInitInfo};
+use phoenix::utils::LiquidityPoolInitInfo;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
     String,
@@ -269,7 +269,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         deadline: Option<u64>,
     ) {
         if let Some(deadline) = deadline {
-            if !is_tx_active(&env, deadline) {
+            if env.ledger().timestamp() > deadline {
                 log!(
                     env,
                     "Pool Stable: Provide Liquidity: Transaction executed after deadline!"
@@ -401,7 +401,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         deadline: Option<u64>,
     ) -> i128 {
         if let Some(deadline) = deadline {
-            if !is_tx_active(&env, deadline) {
+            if env.ledger().timestamp() > deadline {
                 log!(
                     env,
                     "Pool Stable: Swap: Transaction executed after deadline!"
@@ -433,7 +433,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         deadline: Option<u64>,
     ) -> (i128, i128) {
         if let Some(deadline) = deadline {
-            if !is_tx_active(&env, deadline) {
+            if env.ledger().timestamp() > deadline {
                 log!(
                     env,
                     "Pool Stable: Withdraw Liquidity: Transaction executed after deadline!"

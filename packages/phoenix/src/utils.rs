@@ -1,5 +1,5 @@
 use soroban_decimal::Decimal;
-use soroban_sdk::{contracttype, Address, Env};
+use soroban_sdk::{contracttype, Address};
 
 // Validate if int value is bigger then 0
 #[macro_export]
@@ -31,11 +31,6 @@ macro_rules! validate_bps {
             assert!((MIN_BPS..=MAX_BPS).contains(&$value), "The value {} is out of range. Must be between {} and {} bps.", $value, MIN_BPS, MAX_BPS);
         )+
     }
-}
-
-/// Validate if the current timestamp is within desired timestamp
-pub fn is_tx_active(env: &Env, deadline: u64) -> bool {
-    env.ledger().timestamp() < deadline
 }
 
 pub fn is_approx_ratio(a: Decimal, b: Decimal, tolerance: Decimal) -> bool {
@@ -82,8 +77,6 @@ pub enum PoolType {
 
 #[cfg(test)]
 mod tests {
-    use soroban_sdk::{testutils::Ledger, Env};
-
     use super::*;
 
     #[test]
@@ -165,19 +158,5 @@ mod tests {
     #[test]
     fn bps_valid_range() {
         validate_bps!(0, 5_000, 7_500, 10_000);
-    }
-
-    #[test]
-    fn is_tx_active_returns_false_when_after_deadline() {
-        let env = Env::default();
-        env.ledger().with_mut(|li| li.timestamp = 100);
-        assert!(!is_tx_active(&env, 99));
-    }
-
-    #[test]
-    fn is_tx_active_returns_true_when_before_deadline() {
-        let env = Env::default();
-        env.ledger().with_mut(|li| li.timestamp = 100);
-        assert!(is_tx_active(&env, 101));
     }
 }
