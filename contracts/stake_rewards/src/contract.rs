@@ -50,7 +50,7 @@ pub trait StakingRewardsTrait {
 
     fn add_user(env: Env, user: Address);
 
-    fn calculate_bond(env: Env, sender: Address);
+    fn calculate_bond(env: Env, sender: Address, staked: stake_contract::msg::StakedResponse);
 
     fn calculate_unbond(env: Env, sender: Address);
 
@@ -162,7 +162,7 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("stake_rewards", "add_user"), &user);
     }
 
-    fn calculate_bond(env: Env, sender: Address) {
+    fn calculate_bond(env: Env, sender: Address, staked: stake_contract::storage::StakedResponse) {
         sender.require_auth();
 
         let config = get_config(&env);

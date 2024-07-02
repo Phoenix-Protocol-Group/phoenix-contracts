@@ -44,6 +44,7 @@ pub trait StakingTrait {
         env: Env,
         admin: Address,
         lp_token: Address,
+        stake_rewards_contract: Address,
         min_bond: i128,
         min_reward: i128,
         manager: Address,
@@ -96,6 +97,7 @@ impl StakingTrait for Staking {
         env: Env,
         admin: Address,
         lp_token: Address,
+        stake_rewards_contract: Address,
         min_bond: i128,
         min_reward: i128,
         manager: Address,
@@ -147,6 +149,7 @@ impl StakingTrait for Staking {
 
         utils::save_admin(&env, &admin);
         utils::init_total_staked(&env);
+        set_stake_rewards(&env, &stake_rewards_contract);
     }
 
     fn bond(env: Env, sender: Address, tokens: i128) {
