@@ -81,6 +81,7 @@ pub mod utils {
         TotalStaked = 1,
         Distributions = 2,
         Initialized = 3,
+        StakeRewards = 4,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -150,5 +151,13 @@ pub mod utils {
             .persistent()
             .get(&DataKey::Distributions)
             .unwrap_or_else(|| soroban_sdk::vec![e])
+    }
+
+    pub fn get_stake_rewards(e: &Env) -> Address {
+        e.storage().instance().get(&DataKey::StakeRewards).unwrap()
+    }
+
+    pub fn set_stake_rewards(e: &Env, address: &Address) {
+        e.storage().instance().set(&DataKey::StakeRewards, &address);
     }
 }

@@ -1,7 +1,7 @@
 use soroban_decimal::Decimal;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
-    Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,
+    IntoVal, String, Symbol, Val, Vec,
 };
 
 use crate::{
@@ -18,8 +18,8 @@ use crate::{
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
-            self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
-            is_initialized, set_initialized,
+            self, add_distribution, get_admin, get_distributions, get_stake_rewards,
+            get_total_staked_counter, is_initialized, set_initialized, set_stake_rewards,
         },
         Config, Stake,
     },
@@ -193,6 +193,14 @@ impl StakingTrait for Staking {
         save_stakes(&env, &sender, &stakes);
         utils::increase_total_staked(&env, &tokens);
 
+        // Call stake_rewards contract to calculate for the rewards
+        let bond_fn_arg: Val = sender.into_val(&env);
+        env.invoke_contract::<Val>(
+            &get_stake_rewards(&env),
+            &Symbol::new(&env, "calculate_bond"),
+            vec![&env, bond_fn_arg],
+        );
+
         env.events().publish(("bond", "user"), &sender);
         env.events().publish(("bond", "token"), &config.lp_token);
         env.events().publish(("bond", "amount"), tokens);
@@ -230,6 +238,14 @@ impl StakingTrait for Staking {
                 new_power,
             );
         }
+
+        // Call stake_rewards contract to update the reward calculations
+        let bond_fn_arg: Val = sender.into_val(&env);
+        env.invoke_contract::<Val>(
+            &get_stake_rewards(&env),
+            &Symbol::new(&env, "calculate_unbond"),
+            vec![&env, bond_fn_arg],
+        );
 
         let mut stakes = get_stakes(&env, &sender);
         remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
@@ -555,9 +571,11 @@ impl StakingTrait for Staking {
 #[contractimpl]
 impl Staking {
     #[allow(dead_code)]
-    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>, staking_rewards: Address) {
         let admin = get_admin(&env);
         admin.require_auth();
+
+        set_stake_rewards(&env, &staking_rewards);
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
