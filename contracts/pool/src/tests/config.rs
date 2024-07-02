@@ -145,7 +145,7 @@ fn update_config() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 1_000,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 10i128,
+            minimum_lp_shares: 100i128,
         }
     );
 
@@ -173,7 +173,7 @@ fn update_config() {
             max_allowed_spread_bps: 5_000,
             max_referral_bps: 500,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 10i128,
+            minimum_lp_shares: 100i128,
         }
     );
 }
