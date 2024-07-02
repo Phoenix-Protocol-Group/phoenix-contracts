@@ -389,7 +389,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     env,
                     "Pool: Provide Liquidity: User shares will be below the minimum thresshold."
                 );
-                panic_with_error!(env, ContractError::NotEnoughSharesToBeMinted)
+                panic_with_error!(env, ContractError::NotEnoughLiquidityProvided)
             }
             user_shares
         } else {
@@ -408,7 +408,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     env,
                     "Pool: Provide Liquidity: User shares will be below the minimum thresshold."
                 );
-                panic_with_error!(env, ContractError::NotEnoughSharesToBeMinted)
+                panic_with_error!(env, ContractError::NotEnoughLiquidityProvided)
             }
 
             user_shares
