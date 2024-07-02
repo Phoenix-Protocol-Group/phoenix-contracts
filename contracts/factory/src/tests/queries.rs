@@ -110,6 +110,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let second_lp_init_info = LiquidityPoolInitInfo {
@@ -121,6 +122,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let third_lp_init_info = LiquidityPoolInitInfo {
@@ -132,6 +134,7 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -142,7 +145,6 @@ fn test_deploy_multiple_liquidity_pools() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -152,7 +154,6 @@ fn test_deploy_multiple_liquidity_pools() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -162,7 +163,6 @@ fn test_deploy_multiple_liquidity_pools() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -322,6 +322,7 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let second_lp_init_info = LiquidityPoolInitInfo {
@@ -333,6 +334,7 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let third_lp_init_info = LiquidityPoolInitInfo {
@@ -344,6 +346,7 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -354,7 +357,6 @@ fn test_queries_by_tuple() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -364,7 +366,6 @@ fn test_queries_by_tuple() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -374,7 +375,6 @@ fn test_queries_by_tuple() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -481,7 +481,6 @@ fn test_query_user_portfolio_with_stake() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -581,7 +580,6 @@ fn test_query_user_portfolio_with_stake() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -720,7 +718,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -749,7 +746,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -1227,6 +1223,7 @@ fn test_query_user_portfolio_without_stake() {
         max_referral_bps: 0,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -1237,7 +1234,6 @@ fn test_query_user_portfolio_without_stake() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
-        &Some(10i128),
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &lp_contract_addr);

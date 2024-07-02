@@ -30,4 +30,5 @@ pub enum ContractError {
 
     SwapMinReceivedBiggerThanReturn = 21,
     NotEnoughLiquidityProvided = 22,
+    MinimumLpSharesNotProvided = 23,
 }

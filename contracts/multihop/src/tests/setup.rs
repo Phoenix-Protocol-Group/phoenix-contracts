@@ -145,6 +145,7 @@ pub fn deploy_and_initialize_pool(
         max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,
+        minimum_lp_shares: Some(10i128),
     };
 
     let amp = match pool_type {
@@ -160,7 +161,6 @@ pub fn deploy_and_initialize_pool(
         &pool_type,
         &amp,
         &100i64,
-        &Some(10i128),
     );
 
     match pool_type {
