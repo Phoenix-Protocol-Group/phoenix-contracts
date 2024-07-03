@@ -3,7 +3,7 @@
 
 #![no_std]
 
-use soroban_sdk::{Env, String};
+use soroban_sdk::{Env, String, I256};
 
 use core::{
     cmp::{Ordering, PartialEq, PartialOrd},
@@ -18,6 +18,7 @@ extern crate alloc;
 #[derive(Debug)]
 enum Error {
     DivideByZero,
+    CannotDowncastToI128,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
@@ -208,6 +209,7 @@ impl Decimal {
         match Decimal::checked_from_ratio(numerator, denominator) {
             Ok(ratio) => ratio,
             Err(Error::DivideByZero) => panic!("Denominator must not be zero"),
+            Err(Error::CannotDowncastToI128) => panic!("Cannot downcast I256 to i128"),
         }
     }
 
@@ -221,6 +223,38 @@ impl Decimal {
 
     fn multiply_ratio(&self, numerator: Decimal, denominator: Decimal) -> Decimal {
         Decimal::from_ratio(self.atomics() * numerator.atomics(), denominator.atomics())
+    }
+
+    fn checked_from_ratio_i256(
+        env: &Env,
+        numerator: impl Into<i128>,
+        denominator: impl Into<i128>,
+    ) -> Result<Self, Error> {
+        let numerator = numerator.into();
+        let denominator = denominator.into();
+
+        // If denominator is zero, panic.
+        if denominator == 0 {
+            return Err(Error::DivideByZero);
+        }
+
+        // Convert numerator and denominator to BigInt.
+        // unwrap since i128 is always convertible to BigInt
+        // let numerator = numerator.to_bigint().unwrap();
+        // let denominator = denominator.to_bigint().unwrap();
+        // let decimal_fractional = Self::DECIMAL_FRACTIONAL.to_bigint().unwrap();
+        let numerator_i256 = I256::from_i128(env, numerator);
+        let denominator_i256 = I256::from_i128(env, denominator);
+        let decimal_fractional_i256 = I256::from_i128(env, Self::DECIMAL_FRACTIONAL);
+
+        // Compute the ratio: (numerator * DECIMAL_FRACTIONAL) / denominator
+        // let ratio = (numerator * Self::DECIMAL_FRACTIONAL) / denominator;
+        let ratio_i256 = (numerator_i256.mul(&decimal_fractional_i256)).div(&denominator_i256);
+
+        // Convert back to i128. If conversion fails, panic.
+        let ratio = ratio_i256.to_i128().ok_or(Error::CannotDowncastToI128)?;
+        // Construct and return the Decimal.
+        Ok(Decimal(ratio))
     }
 
     /// Returns the ratio (numerator / denominator) as a Decimal
@@ -262,6 +296,23 @@ impl Decimal {
 
     pub fn to_string(&self, env: &Env) -> String {
         String::from_str(env, alloc::format!("{}", self).as_str())
+    }
+
+    pub fn mul_i256(self, env: &Env, other: Self) -> Self {
+        let self_numerator_i256 = I256::from_i128(env, self.numerator());
+        let other_numerator_i256 = I256::from_i128(env, other.numerator());
+        let fractional_i256 = I256::from_i128(env, Self::DECIMAL_FRACTIONAL);
+
+        // Compute the product of the numerators and divide by DECIMAL_FRACTIONAL
+        let result_i256 = (self_numerator_i256.mul(&other_numerator_i256)).div(&fractional_i256);
+
+        // Convert the result back to i128, and panic on overflow
+        let result = result_i256
+            .to_i128()
+            .unwrap_or_else(|| panic!("Decimal: Mul_256: cannot downcast to i128"));
+
+        // Return a new Decimal
+        Decimal(result)
     }
 
     pub const fn abs_diff(self, other: Self) -> Self {
@@ -317,6 +368,7 @@ impl Div for Decimal {
         match Decimal::checked_from_ratio(self.numerator(), rhs.numerator()) {
             Ok(ratio) => ratio,
             Err(Error::DivideByZero) => panic!("Division failed - denominator must not be zero"),
+            Err(Error::CannotDowncastToI128) => panic!("Cannot downcast I256 to i128"),
         }
     }
 }
