@@ -1082,36 +1082,30 @@ pub fn compute_swap(
     commission_rate: Decimal,
     referral_fee: i64,
 ) -> ComputeSwap {
-    // soroban_sdk::testutils::arbitrary::std::dbg!("BEGIN");
+    // To avoid any overflow errors we convert the input parameters to U256;
     let offer_pool_as_u256 = U256::from_u128(env, offer_pool as u128);
     let ask_pool_as_u256 = U256::from_u128(env, ask_pool as u128);
     let offer_amount_as_u256 = U256::from_u128(env, offer_amount as u128);
-    // let commission_rate_as_u256 =
-    //     U256::from_u128(env, commission_rate.to_i128_with_precision(1) as u128);
-    // soroban_sdk::testutils::arbitrary::std::dbg!(commission_rate, &commission_rate_as_u256);
 
     // Calculate the cross product of offer_pool and ask_pool
-    // Should be safe to use `as` to cast
     let cp: U256 = offer_pool_as_u256.mul(&ask_pool_as_u256);
-    // let og_cp: i128 = offer_pool * ask_pool;
-    // soroban_sdk::testutils::arbitrary::std::dbg!(og_cp, &cp);
+
     // Calculate the resulting amount of ask assets after the swap
     // Return amount calculation based on the AMM model's invariant,
     // which ensures the product of the amounts of the two assets remains constant before and after a trade.
 
     let return_amount: U256 =
         ask_pool_as_u256.sub(&cp.div(&offer_pool_as_u256.add(&offer_amount_as_u256)));
-    // let og_return_amount: i128 = ask_pool - (og_cp / (offer_pool + offer_amount));
-    // soroban_sdk::testutils::arbitrary::std::dbg!(og_return_amount, &return_amount);
 
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
     let spread_amount: U256 = (offer_amount_as_u256
         .mul(&ask_pool_as_u256)
         .div(&offer_pool_as_u256))
     .sub(&return_amount);
-    // let og_spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - og_return_amount;
-    // soroban_sdk::testutils::arbitrary::std::dbg!(og_spread_amount, &spread_amount);
 
+    // because of issues with converting `commission_rate` to U256 and then multiplying that with
+    // `return_amount: U256` I'm converting `return_amount` back to i128, multiplying with the
+    // original value of `commission_rate` and then converting the result to `U256`
     let return_amount_as_i128 = match return_amount.to_u128() {
         Some(return_amount) => i128::try_from(return_amount).unwrap_or_else(|_| {
             log!(env, "Pool: compute swap: cannot convert value to i128");
@@ -1122,25 +1116,16 @@ pub fn compute_swap(
             panic_with_error!(env, ContractError::CannotConvertToU128);
         }
     };
-    // let commission_amount: U256 = return_amount.mul(&commission_rate_as_u256);
     let commission_amount: i128 = return_amount_as_i128 * commission_rate;
     let commission_amount = U256::from_u128(env, commission_amount as u128);
-    // let og_commission_amount: i128 = og_return_amount * commission_rate;
-    // soroban_sdk::testutils::arbitrary::std::dbg!(og_commission_amount, &commission_amount);
 
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
     let return_amount: U256 = return_amount.sub(&commission_amount);
-    // let og_return_amount: i128 = og_return_amount - og_commission_amount;
-    // soroban_sdk::testutils::arbitrary::std::dbg!(og_return_amount, &return_amount);
 
-    // let rhs: U256 = U256::from_u128(
-    //     env,
-    //     Decimal::bps(referral_fee).to_i128_with_precision(1) as u128,
-    // );
-    // let referral_fee_amount: U256 = return_amount.mul(&rhs);
-    // let og_referral_fee_amount: i128 = og_return_amount * Decimal::bps(referral_fee);
-
-    let temp_return_amount = match return_amount.to_u128() {
+    // because of issues with converting `referral_fee` to U256 and then multiplying that with
+    // `return_amount: U256` I'm converting `return_amount` back to i128, multiplying with the
+    // original value of `referral_fee` and then converting the result to `U256`
+    let return_amount_as_i128 = match return_amount.to_u128() {
         Some(return_amount) => i128::try_from(return_amount).unwrap_or_else(|_| {
             log!(env, "Pool: compute swap: cannot convert value to i128");
             panic_with_error!(env, ContractError::CannotConvertToI128);
@@ -1150,14 +1135,12 @@ pub fn compute_swap(
             panic_with_error!(env, ContractError::CannotConvertToU128);
         }
     };
-    let referral_fee_amount = temp_return_amount * Decimal::bps(referral_fee);
+    let referral_fee_amount = return_amount_as_i128 * Decimal::bps(referral_fee);
     let referral_fee_amount = U256::from_u128(env, referral_fee_amount as u128);
-    // soroban_sdk::testutils::arbitrary::std::dbg!(og_referral_fee_amount, &referral_fee_amount);
 
     let return_amount: U256 = return_amount.sub(&referral_fee_amount);
-    // let og_return_amount: i128 = og_return_amount - og_referral_fee_amount;
-    // soroban_sdk::testutils::arbitrary::std::dbg!(og_return_amount, &return_amount);
 
+    // we now convert all the results back to i128 safely
     let return_amount = match return_amount.to_u128() {
         Some(return_amount) => i128::try_from(return_amount).unwrap_or_else(|_| {
             log!(env, "Pool: compute swap: cannot convert value to i128");
@@ -1202,12 +1185,6 @@ pub fn compute_swap(
         }
     };
 
-    // ComputeSwap {
-    //     return_amount: og_return_amount,
-    //     spread_amount: og_spread_amount,
-    //     commission_amount: og_commission_amount,
-    //     referral_fee_amount: og_referral_fee_amount,
-    // }
     ComputeSwap {
         return_amount,
         spread_amount,
