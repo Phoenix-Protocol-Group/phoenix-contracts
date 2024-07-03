@@ -114,6 +114,7 @@ pub fn deploy_and_init_lp_client(
         &Some(token_b_amount),
         &None::<i128>,
         &None::<i64>,
+        &None,
     );
     lp_client
 }

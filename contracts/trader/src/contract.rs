@@ -12,8 +12,6 @@ use crate::{
     token_contract,
 };
 
-use phoenix::ensure_not_expired;
-
 contractmeta!(
     key = "Description",
     val = "Phoenix Protocol Designated Trader Contract"
@@ -108,10 +106,6 @@ impl TraderTrait for Trader {
     ) {
         sender.require_auth();
 
-        if let Some(deadline) = deadline {
-            ensure_not_expired!(env, deadline)
-        }
-
         if sender != get_admin(&env) {
             log!(&env, "Trader: Trade_token: Unauthorized trade");
             panic_with_error!(env, ContractError::Unauthorized);
@@ -154,6 +148,7 @@ impl TraderTrait for Trader {
             &amount,
             &None,
             &max_spread_bps,
+            &deadline,
         );
 
         env.events()
