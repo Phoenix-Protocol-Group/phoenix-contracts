@@ -107,18 +107,15 @@ pub fn get_output_token(env: &Env) -> Address {
         })
 }
 
-pub fn save_init_state(env: &Env) {
+pub fn set_initialized(env: &Env) {
     env.storage()
         .persistent()
         .set(&DataKey::IsInitialized, &true);
 }
 
-pub fn get_init_state(env: &Env) -> bool {
+pub fn is_initialized(env: &Env) -> bool {
     env.storage()
         .persistent()
         .get(&DataKey::IsInitialized)
-        .unwrap_or_else(|| {
-            log!(&env, "Init value not saved");
-            panic_with_error!(env, ContractError::InitValueNotFound)
-        })
+        .unwrap_or_default()
 }

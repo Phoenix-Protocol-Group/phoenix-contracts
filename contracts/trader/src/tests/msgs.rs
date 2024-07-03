@@ -58,6 +58,61 @@ fn initialize() {
 }
 
 #[test]
+#[should_panic(expected = "Trader: Initialize: Cannot initialize trader twice!")]
+fn initialize_twice_should_panic() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    let trader_client = deploy_trader_client(&env);
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &pho_token.address,
+    );
+
+    assert_eq!(trader_client.query_admin_address(), admin);
+    assert_eq!(trader_client.query_contract_name(), contract_name);
+    assert_eq!(
+        trader_client.query_trading_pairs(),
+        (xlm_token.address.clone(), usdc_token.address.clone())
+    );
+
+    // second time should fail
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &pho_token.address,
+    );
+}
+
+#[test]
 fn simple_trade_token_and_transfer_token() {
     let env = Env::default();
 
@@ -357,6 +412,7 @@ fn extended_trade_and_transfer_token() {
     // admin trades what's left of their USDC for PHO
     // pool with 3:1 ratio and %10 fee
     // we will receive ~450 PHO once again
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     trader_client.trade_token(
         &admin.clone(),
         &usdc_token.address.clone(),
@@ -365,6 +421,7 @@ fn extended_trade_and_transfer_token() {
         &None::<i64>,
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // 2_349 + 450 = 2_799
     assert_eq!(
         trader_client.query_balances(),
@@ -384,6 +441,7 @@ fn extended_trade_and_transfer_token() {
         }
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // finally we will check the balance of the rcpt before and after we transfer
     assert_eq!(output_token.balance(&rcpt), 0);
     trader_client.transfer(&admin, &rcpt, &1_000, &None);
