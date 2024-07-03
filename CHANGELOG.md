@@ -19,6 +19,7 @@ and this project adheres to
 - Trader: Adds nominated trader contract to the DEX ([#288])
 - Multihop: Allows multihop swaps for stable pool ([#303])
 - Stake rewards: Create a new contract and prepare first testcases ([#306])
+- Trader: Adds a check if the contract has been already initialized ([#329])
 
 [#288]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/288
 [#299]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/299
@@ -28,6 +29,7 @@ and this project adheres to
 [#307]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/307
 [#308]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/308
 [#322]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/322
+[#329]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/329
 
 ## [1.0.0] - 2024-05-08
 
