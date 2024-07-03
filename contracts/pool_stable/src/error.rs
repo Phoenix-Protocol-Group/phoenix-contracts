@@ -22,4 +22,5 @@ pub enum ContractError {
     ProvideLiquidityBothTokensMustBeMoreThanZero = 16,
     DivisionByZero = 17,
     InvalidAMP = 18,
+    TransactionAfterTimestampDeadline = 19,
 }

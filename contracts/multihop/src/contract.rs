@@ -35,6 +35,7 @@ pub trait MultihopTrait {
         max_spread_bps: Option<i64>,
         amount: i128,
         pool_type: PoolType,
+        deadline: Option<u64>,
     );
 
     fn simulate_swap(
@@ -82,6 +83,7 @@ impl MultihopTrait for Multihop {
         max_spread_bps: Option<i64>,
         amount: i128,
         pool_type: PoolType,
+        deadline: Option<u64>,
     ) {
         if operations.is_empty() {
             log!(&env, "Multihop: Swap: operations is empty!");
@@ -112,6 +114,7 @@ impl MultihopTrait for Multihop {
                         &next_offer_amount,
                         &op.ask_asset_min_amount,
                         &max_spread_bps,
+                        &deadline,
                     );
                 }
                 PoolType::Stable => {
@@ -122,6 +125,7 @@ impl MultihopTrait for Multihop {
                         &next_offer_amount,
                         &op.ask_asset_min_amount,
                         &max_spread_bps,
+                        &deadline,
                     );
                 }
             }

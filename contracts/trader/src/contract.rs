@@ -12,6 +12,8 @@ use crate::{
     token_contract,
 };
 
+use phoenix::ensure_not_expired;
+
 contractmeta!(
     key = "Description",
     val = "Phoenix Protocol Designated Trader Contract"
@@ -37,6 +39,7 @@ pub trait TraderTrait {
         liquidity_pool: Address,
         amount: Option<u64>,
         max_spread_bps: Option<i64>,
+        deadline: Option<u64>,
     );
 
     fn transfer(
@@ -94,8 +97,13 @@ impl TraderTrait for Trader {
         liquidity_pool: Address,
         amount: Option<u64>,
         max_spread_bps: Option<i64>,
+        deadline: Option<u64>,
     ) {
         sender.require_auth();
+
+        if let Some(deadline) = deadline {
+            ensure_not_expired!(env, deadline)
+        }
 
         if sender != get_admin(&env) {
             log!(&env, "Trader: Trade_token: Unauthorized trade");

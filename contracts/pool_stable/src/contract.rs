@@ -59,6 +59,7 @@ pub trait StableLiquidityPoolTrait {
         desired_a: i128,
         desired_b: i128,
         custom_slippage_bps: Option<i64>,
+        deadline: Option<u64>,
     );
 
     // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
@@ -72,6 +73,7 @@ pub trait StableLiquidityPoolTrait {
         offer_amount: i128,
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
+        deadline: Option<u64>,
     ) -> i128;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
@@ -83,6 +85,7 @@ pub trait StableLiquidityPoolTrait {
         share_amount: i128,
         min_a: i128,
         min_b: i128,
+        deadline: Option<u64>,
     ) -> (i128, i128);
 
     // Allows admin address set during initialization to change some parameters of the
@@ -263,7 +266,18 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         desired_a: i128,
         desired_b: i128,
         custom_slippage_bps: Option<i64>,
+        deadline: Option<u64>,
     ) {
+        if let Some(deadline) = deadline {
+            if env.ledger().timestamp() > deadline {
+                log!(
+                    env,
+                    "Pool Stable: Provide Liquidity: Transaction executed after deadline!"
+                );
+                panic_with_error!(env, ContractError::TransactionAfterTimestampDeadline)
+            }
+        }
+
         if desired_a == 0 || desired_b == 0 {
             log!(
                     &env,
@@ -384,7 +398,18 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         offer_amount: i128,
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
+        deadline: Option<u64>,
     ) -> i128 {
+        if let Some(deadline) = deadline {
+            if env.ledger().timestamp() > deadline {
+                log!(
+                    env,
+                    "Pool Stable: Swap: Transaction executed after deadline!"
+                );
+                panic_with_error!(env, ContractError::TransactionAfterTimestampDeadline)
+            }
+        }
+
         validate_int_parameters!(offer_amount);
 
         sender.require_auth();
@@ -405,7 +430,18 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         share_amount: i128,
         min_a: i128,
         min_b: i128,
+        deadline: Option<u64>,
     ) -> (i128, i128) {
+        if let Some(deadline) = deadline {
+            if env.ledger().timestamp() > deadline {
+                log!(
+                    env,
+                    "Pool Stable: Withdraw Liquidity: Transaction executed after deadline!"
+                );
+                panic_with_error!(env, ContractError::TransactionAfterTimestampDeadline)
+            }
+        }
+
         validate_int_parameters!(share_amount, min_a, min_b);
 
         sender.require_auth();

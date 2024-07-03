@@ -172,11 +172,18 @@ pub fn deploy_and_initialize_pool(
                 &Some(token_b_amount),
                 &None,
                 &None::<i64>,
+                &None::<u64>,
             );
         }
         PoolType::Stable => {
             let lp_client = stable_pool::Client::new(env, &lp);
-            lp_client.provide_liquidity(&admin.clone(), &token_a_amount, &token_b_amount, &None);
+            lp_client.provide_liquidity(
+                &admin.clone(),
+                &token_a_amount,
+                &token_b_amount,
+                &None,
+                &None::<u64>,
+            );
         }
     }
 }
