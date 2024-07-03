@@ -197,11 +197,11 @@ impl StakingTrait for Staking {
         utils::increase_total_staked(&env, &tokens);
 
         // Call stake_rewards contract to calculate for the rewards
-        let bond_fn_arg: Val = sender.into_val(&env);
+        let bond_fn_arg: Vec<Val> = (sender.clone(), stakes.clone()).into_val(&env);
         env.invoke_contract::<Val>(
             &get_stake_rewards(&env),
             &Symbol::new(&env, "calculate_bond"),
-            vec![&env, bond_fn_arg],
+            bond_fn_arg,
         );
 
         env.events().publish(("bond", "user"), &sender);
@@ -242,15 +242,16 @@ impl StakingTrait for Staking {
             );
         }
 
+        let mut stakes = get_stakes(&env, &sender);
+
         // Call stake_rewards contract to update the reward calculations
-        let bond_fn_arg: Val = sender.into_val(&env);
+        let unbond_fn_arg: Vec<Val> = (sender.clone(), stakes.clone()).into_val(&env);
         env.invoke_contract::<Val>(
             &get_stake_rewards(&env),
             &Symbol::new(&env, "calculate_unbond"),
-            vec![&env, bond_fn_arg],
+            unbond_fn_arg,
         );
 
-        let mut stakes = get_stakes(&env, &sender);
         remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
         stakes.total_stake -= stake_amount;
 
