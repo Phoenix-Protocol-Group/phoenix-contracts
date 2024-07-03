@@ -50,9 +50,9 @@ pub trait StakingRewardsTrait {
 
     fn add_user(env: Env, user: Address);
 
-    fn calculate_bond(env: Env, sender: Address, staked: stake_contract::msg::StakedResponse);
+    fn calculate_bond(env: Env, sender: Address, stakes: stake_contract::storage::BondingInfo);
 
-    fn calculate_unbond(env: Env, sender: Address);
+    fn calculate_unbond(env: Env, sender: Address, stakes: stake_contract::storage::BondingInfo);
 
     fn distribute_rewards(env: Env);
 
@@ -162,13 +162,10 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("stake_rewards", "add_user"), &user);
     }
 
-    fn calculate_bond(env: Env, sender: Address, staked: stake_contract::storage::StakedResponse) {
+    fn calculate_bond(env: Env, sender: Address, stakes: stake_contract::storage::BondingInfo) {
         sender.require_auth();
 
         let config = get_config(&env);
-
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let stakes = stake_client.query_staked(&sender);
 
         let mut distribution = get_distribution(&env, &config.reward_token);
         let last_stake = stakes.stakes.last().unwrap();
@@ -192,7 +189,7 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("calculate_bond", "user"), &sender);
     }
 
-    fn calculate_unbond(env: Env, sender: Address) {
+    fn calculate_unbond(env: Env, sender: Address, stakes: stake_contract::storage::BondingInfo) {
         sender.require_auth();
 
         let config = get_config(&env);
@@ -207,11 +204,8 @@ impl StakingRewardsTrait for StakingRewards {
 
         let mut distribution = get_distribution(&env, &config.reward_token);
 
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let stakes = stake_client.query_staked(&sender);
-
-        // TODO FIXME: This is wrong, because the last stake would be removed already
-        // maybe call calculate_unbond first?
+        // This is crucial
+        // Stake contract need to call calculate_unbond before it removes the to-be-removed staked
         let last_stake = stakes.stakes.last().unwrap();
 
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
