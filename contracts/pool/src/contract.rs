@@ -11,7 +11,7 @@ use crate::{
     storage::{
         get_config, save_config,
         utils::{self, get_admin, is_initialized, set_initialized},
-        validate_fee_bps, Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
+        Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
@@ -189,11 +189,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
         }
 
-        if !(0..=10_000).contains(&swap_fee_bps) {
-            log!(&env, "Pool: Initialize: Fees must be between 0 and 100%");
-            panic_with_error!(&env, ContractError::InvalidBps);
-        }
-
         // deploy token contract
         let share_token_address =
             utils::deploy_token_contract(&env, token_wasm_hash, &token_a, &token_b);
@@ -225,7 +220,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             share_token: share_token_address,
             stake_contract: stake_contract_address,
             pool_type: PairType::Xyk,
-            total_fee_bps: validate_fee_bps(&env, swap_fee_bps),
+            total_fee_bps: swap_fee_bps,
             fee_recipient,
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
