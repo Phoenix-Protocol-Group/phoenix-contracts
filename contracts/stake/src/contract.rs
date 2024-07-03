@@ -71,6 +71,9 @@ pub trait StakingTrait {
         token_amount: i128,
     );
 
+    // ADMIN
+    fn stake_rewards_add_users(env: Env, users: Vec<Address>);
+
     // QUERIES
 
     fn query_config(env: Env) -> ConfigResponse;
@@ -478,6 +481,19 @@ impl StakingTrait for Staking {
             .publish(("fund_reward_distribution", "start_time"), start_time);
         env.events()
             .publish(("fund_reward_distribution", "end_time"), end_time);
+    }
+
+    fn stake_rewards_add_users(env: Env, users: Vec<Address>) {
+        for user in users {
+            let stakes = get_stakes(&env, &user);
+            // Call stake_rewards contract to update the reward calculations
+            let unbond_fn_arg: Vec<Val> = (user, stakes).into_val(&env);
+            env.invoke_contract::<Val>(
+                &get_stake_rewards(&env),
+                &Symbol::new(&env, "add_user"),
+                unbond_fn_arg,
+            );
+        }
     }
 
     // QUERIES

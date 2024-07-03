@@ -137,13 +137,10 @@ impl StakingRewardsTrait for StakingRewards {
         }
     }
 
-    fn add_user(env: Env, user: Address) {
+    fn add_user(env: Env, user: Address, stakes: BondingInfo) {
         get_admin(&env).require_auth();
 
         let config = get_config(&env);
-
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let stakes = stake_client.query_staked(&user);
 
         let new_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER);
         let mut distribution = get_distribution(&env, &config.reward_token);
