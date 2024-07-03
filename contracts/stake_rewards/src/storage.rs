@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol};
+use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -65,4 +65,20 @@ pub mod utils {
     pub fn get_admin(e: &Env) -> Address {
         e.storage().persistent().get(&DataKey::Admin).unwrap()
     }
+}
+
+// Struct 1:1 from stake contract
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq, Default)]
+pub struct Stake {
+    pub stake: i128,
+    pub stake_timestamp: u64,
+}
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BondingInfo {
+    pub stakes: Vec<Stake>,
+    pub reward_debt: u128,
+    pub last_reward_time: u64,
+    pub total_stake: i128,
 }

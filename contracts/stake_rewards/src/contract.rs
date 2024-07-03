@@ -17,7 +17,7 @@ use crate::{
     storage::{
         get_config, save_config,
         utils::{self, get_admin, is_initialized, set_initialized},
-        Config,
+        BondingInfo, Config,
     },
     token_contract,
 };
@@ -50,9 +50,9 @@ pub trait StakingRewardsTrait {
 
     fn add_user(env: Env, user: Address);
 
-    fn calculate_bond(env: Env, sender: Address, stakes: stake_contract::storage::BondingInfo);
+    fn calculate_bond(env: Env, sender: Address, stakes: BondingInfo);
 
-    fn calculate_unbond(env: Env, sender: Address, stakes: stake_contract::storage::BondingInfo);
+    fn calculate_unbond(env: Env, sender: Address, stakes: BondingInfo);
 
     fn distribute_rewards(env: Env);
 
@@ -162,7 +162,7 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("stake_rewards", "add_user"), &user);
     }
 
-    fn calculate_bond(env: Env, sender: Address, stakes: stake_contract::storage::BondingInfo) {
+    fn calculate_bond(env: Env, sender: Address, stakes: BondingInfo) {
         sender.require_auth();
 
         let config = get_config(&env);
@@ -189,7 +189,7 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("calculate_bond", "user"), &sender);
     }
 
-    fn calculate_unbond(env: Env, sender: Address, stakes: stake_contract::storage::BondingInfo) {
+    fn calculate_unbond(env: Env, sender: Address, stakes: BondingInfo) {
         sender.require_auth();
 
         let config = get_config(&env);
