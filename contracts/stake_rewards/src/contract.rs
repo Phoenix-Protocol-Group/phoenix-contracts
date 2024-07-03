@@ -39,7 +39,6 @@ pub trait StakingRewardsTrait {
     fn initialize(
         env: Env,
         admin: Address,
-        staking_contract: Address,
         reward_token: Address,
         max_complexity: u32,
         min_reward: i128,
@@ -83,7 +82,6 @@ impl StakingRewardsTrait for StakingRewards {
     fn initialize(
         env: Env,
         admin: Address,
-        staking_contract: Address,
         reward_token: Address,
         max_complexity: u32,
         min_reward: i128,
@@ -105,7 +103,6 @@ impl StakingRewardsTrait for StakingRewards {
         );
 
         let config = Config {
-            staking_contract,
             reward_token: reward_token.clone(),
             max_complexity,
             min_reward,

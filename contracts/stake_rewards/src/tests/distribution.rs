@@ -27,7 +27,6 @@ fn two_users_one_starts_after_distribution_begins() {
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &10_000);
     staking.bond(&user1, &10_000);
-    staking_rewards.calculate_bond(&user1);
 
     reward_token.mint(&admin, &1_000_000);
     // therefore the distribution must take at least 60 days in this test case
@@ -54,7 +53,6 @@ fn two_users_one_starts_after_distribution_begins() {
     let user2 = Address::generate(&env);
     lp_token.mint(&user2, &10_000);
     staking.bond(&user2, &10_000);
-    staking_rewards.calculate_bond(&user2);
 
     env.ledger().with_mut(|li| {
         li.timestamp = sixty_days * 2; // distribution already goes for 2/3 of the time
@@ -114,7 +112,6 @@ fn two_users_both_bonds_after_distribution_starts() {
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &10_000);
     staking.bond(&user1, &10_000);
-    staking_rewards.calculate_bond(&user1);
 
     env.ledger().with_mut(|li| {
         li.timestamp = sixty_days; // distribution already goes for 1/3 of the time
@@ -135,7 +132,6 @@ fn two_users_both_bonds_after_distribution_starts() {
     let user2 = Address::generate(&env);
     lp_token.mint(&user2, &10_000);
     staking.bond(&user2, &10_000);
-    staking_rewards.calculate_bond(&user2);
 
     env.ledger().with_mut(|li| {
         li.timestamp = sixty_days * 2; // distribution already goes for 2/3 of the time
@@ -346,12 +342,10 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &1_000);
     staking.bond(&user1, &1_000);
-    staking_rewards.calculate_bond(&user1);
 
     let user2 = Address::generate(&env);
     lp_token.mint(&user2, &1_000);
     staking.bond(&user2, &1_000);
-    staking_rewards.calculate_bond(&user2);
 
     // we simulate full stake time
     let start_timestamp = 60 * 3600 * 24;
@@ -396,7 +390,6 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
             reward_amount: 25_000
         }
     );
-    staking_rewards.calculate_unbond(&user1);
     staking.unbond(&user1, &1_000, &0); // when he bonded
     assert_eq!(
         staking_rewards.query_withdrawable_reward(&user1),
@@ -475,7 +468,6 @@ fn add_multiple_users() {
     lp_token.mint(&user1, &10_000);
     staking.bond(&user1, &10_000);
     // do not calculate bond first
-    staking_rewards.calculate_bond(&user1);
 
     // second user bonds after distribution started
     let user2 = Address::generate(&env);

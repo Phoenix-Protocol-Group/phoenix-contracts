@@ -41,7 +41,6 @@ fn calculate_bond_one_user() {
     assert_eq!(lp_token.balance(&staking.address), 0);
     assert_eq!(staking.query_config().config.lp_token, lp_token.address);
     staking.bond(&user1, &10_000);
-    staking_rewards.calculate_bond(&user1);
 
     // we simulate full stake time
     let start_timestamp = 60 * 3600 * 24;
@@ -107,22 +106,18 @@ fn calculate_bond_multiple_users() {
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &10_000);
     staking.bond(&user1, &10_000);
-    staking_rewards.calculate_bond(&user1);
 
     let user2 = Address::generate(&env);
     lp_token.mint(&user2, &20_000);
     staking.bond(&user2, &20_000);
-    staking_rewards.calculate_bond(&user2);
 
     let user3 = Address::generate(&env);
     lp_token.mint(&user3, &30_000);
     staking.bond(&user3, &30_000);
-    staking_rewards.calculate_bond(&user3);
 
     let user4 = Address::generate(&env);
     lp_token.mint(&user4, &40_000);
     staking.bond(&user4, &40_000);
-    staking_rewards.calculate_bond(&user4);
 
     // now all users have 100% APR after 60 days of staking
     let start_timestamp = 3600 * 24 * 60;
@@ -214,8 +209,6 @@ fn calculate_unbond_one_user() {
     let reward_duration = 500;
     staking_rewards.fund_distribution(&start_timestamp, &reward_duration, &1_000_000);
 
-    staking_rewards.calculate_bond(&user1);
-
     env.ledger().with_mut(|li| {
         li.timestamp += 250; // move to a middle of distribution
     });
@@ -237,7 +230,6 @@ fn calculate_unbond_one_user() {
     // now calculate unbond and unbond tokens, which should result
     // in the rest of the reward being undistributed
 
-    staking_rewards.calculate_unbond(&user1);
     staking.unbond(&user1, &10_000, &0);
 
     env.ledger().with_mut(|li| {
@@ -277,8 +269,6 @@ fn pay_rewards_during_calculate_unbond() {
     assert_eq!(staking.query_config().config.lp_token, lp_token.address);
     staking.bond(&user1, &10_000);
 
-    staking_rewards.calculate_bond(&user1);
-
     // This simulates 100% APR for the bonded user
     let start_timestamp = 3600 * 24 * 60;
     env.ledger().with_mut(|li| {
@@ -305,7 +295,6 @@ fn pay_rewards_during_calculate_unbond() {
     );
 
     // unbonding and automatically withdraws rewards
-    staking_rewards.calculate_unbond(&user1);
     staking.unbond(&user1, &10_000, &0);
     assert_eq!(reward_token.balance(&user1), 1_000_000);
 }
@@ -326,22 +315,18 @@ fn calculate_unbond_multiple_users() {
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &10_000);
     staking.bond(&user1, &10_000);
-    staking_rewards.calculate_bond(&user1);
 
     let user2 = Address::generate(&env);
     lp_token.mint(&user2, &20_000);
     staking.bond(&user2, &20_000);
-    staking_rewards.calculate_bond(&user2);
 
     let user3 = Address::generate(&env);
     lp_token.mint(&user3, &30_000);
     staking.bond(&user3, &30_000);
-    staking_rewards.calculate_bond(&user3);
 
     let user4 = Address::generate(&env);
     lp_token.mint(&user4, &40_000);
     staking.bond(&user4, &40_000);
-    staking_rewards.calculate_bond(&user4);
 
     // 60 days of staking simulates the full APR for bonded users
     let start_timestamp = 3600 * 24 * 60;
@@ -369,7 +354,6 @@ fn calculate_unbond_multiple_users() {
     );
 
     // first user unbonds instead of withdrawing
-    staking_rewards.calculate_unbond(&user1);
     staking.unbond(&user1, &10_000, &0);
     assert_eq!(reward_token.balance(&user1), 25_000);
 
@@ -392,7 +376,6 @@ fn calculate_unbond_multiple_users() {
     // user4 250 * 40 / 90 = 111.111
 
     // first user unbonds instead of withdrawing
-    staking_rewards.calculate_unbond(&user2);
     staking.unbond(&user2, &20_000, &0);
     assert_eq!(reward_token.balance(&user2), 50_000 + 55_555);
 
@@ -412,7 +395,6 @@ fn calculate_unbond_multiple_users() {
     // user4 250 * 40 / 70 = 142.857
 
     // third user unbonds instead of withdrawing
-    staking_rewards.calculate_unbond(&user3);
     staking.unbond(&user3, &30_000, &0);
     assert_eq!(reward_token.balance(&user3), 158_333 + 107_143);
 
@@ -428,7 +410,6 @@ fn calculate_unbond_multiple_users() {
     // user4 is the only one left, so this time 250k goes to him
 
     // third user unbonds instead of withdrawing
-    staking_rewards.calculate_unbond(&user4);
     staking.unbond(&user4, &40_000, &0);
     assert_eq!(reward_token.balance(&user4), 353_968 + 250_000);
 
@@ -460,7 +441,6 @@ fn multiple_equal_users_with_different_multipliers() {
     let user1 = Address::generate(&env);
     lp_token.mint(&user1, &10_000);
     staking.bond(&user1, &10_000);
-    staking_rewards.calculate_bond(&user1);
 
     let fifteen_days = 3600 * 24 * 15;
     env.ledger().with_mut(|li| {
@@ -471,7 +451,6 @@ fn multiple_equal_users_with_different_multipliers() {
     let user2 = Address::generate(&env);
     lp_token.mint(&user2, &10_000);
     staking.bond(&user2, &10_000);
-    staking_rewards.calculate_bond(&user2);
 
     env.ledger().with_mut(|li| {
         li.timestamp = fifteen_days * 2;
@@ -481,7 +460,6 @@ fn multiple_equal_users_with_different_multipliers() {
     let user3 = Address::generate(&env);
     lp_token.mint(&user3, &10_000);
     staking.bond(&user3, &10_000);
-    staking_rewards.calculate_bond(&user3);
 
     env.ledger().with_mut(|li| {
         li.timestamp = fifteen_days * 3;
@@ -491,7 +469,6 @@ fn multiple_equal_users_with_different_multipliers() {
     let user4 = Address::generate(&env);
     lp_token.mint(&user4, &10_000);
     staking.bond(&user4, &10_000);
-    staking_rewards.calculate_bond(&user4);
 
     env.ledger().with_mut(|li| {
         li.timestamp = fifteen_days * 4;

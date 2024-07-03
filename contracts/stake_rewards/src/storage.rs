@@ -3,9 +3,6 @@ use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
-    // Address of the staking contract that this reward distribution contract is
-    // connected to. It can not be changed
-    pub staking_contract: Address,
     // Token that is being distributed through this contract
     pub reward_token: Address,
     // Maximum complexity of the reward distribution curve; the bigger, the more resources it uses
