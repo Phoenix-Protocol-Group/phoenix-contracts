@@ -1,6 +1,8 @@
+use core::u128;
+
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String, U256,
+    String, I256, U256,
 };
 
 use num_integer::Roots;
@@ -1103,40 +1105,16 @@ pub fn compute_swap(
         .div(&offer_pool_as_u256))
     .sub(&return_amount);
 
-    // because of issues with converting `commission_rate` to U256 and then multiplying that with
-    // `return_amount: U256` I'm converting `return_amount` back to i128, multiplying with the
-    // original value of `commission_rate` and then converting the result to `U256`
-    let return_amount_as_i128 = match return_amount.to_u128() {
-        Some(return_amount) => i128::try_from(return_amount).unwrap_or_else(|_| {
-            log!(env, "Pool: compute swap: cannot convert value to i128");
-            panic_with_error!(env, ContractError::CannotConvertToI128);
-        }),
-        None => {
-            log!(env, "Pool: compute swap: cannot convert value to u128");
-            panic_with_error!(env, ContractError::CannotConvertToU128);
-        }
-    };
-    let commission_amount: i128 = return_amount_as_i128 * commission_rate;
-    let commission_amount = U256::from_u128(env, commission_amount as u128);
+    let commission_amount: U256 = return_amount.mul(&U256::from_u128(
+        env,
+        (commission_rate.numerator() / commission_rate.denominator()) as u128,
+    ));
 
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
     let return_amount: U256 = return_amount.sub(&commission_amount);
 
-    // because of issues with converting `referral_fee` to U256 and then multiplying that with
-    // `return_amount: U256` I'm converting `return_amount` back to i128, multiplying with the
-    // original value of `referral_fee` and then converting the result to `U256`
-    let return_amount_as_i128 = match return_amount.to_u128() {
-        Some(return_amount) => i128::try_from(return_amount).unwrap_or_else(|_| {
-            log!(env, "Pool: compute swap: cannot convert value to i128");
-            panic_with_error!(env, ContractError::CannotConvertToI128);
-        }),
-        None => {
-            log!(env, "Pool: compute swap: cannot convert value to u128");
-            panic_with_error!(env, ContractError::CannotConvertToU128);
-        }
-    };
-    let referral_fee_amount = return_amount_as_i128 * Decimal::bps(referral_fee);
-    let referral_fee_amount = U256::from_u128(env, referral_fee_amount as u128);
+    let decimal_bps_u256 = U256::from_u128(env, (referral_fee * 100_000_000_000_000) as u128);
+    let referral_fee_amount = return_amount.mul(&decimal_bps_u256);
 
     let return_amount: U256 = return_amount.sub(&referral_fee_amount);
 

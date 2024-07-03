@@ -82,12 +82,12 @@ impl Decimal {
     }
 
     #[inline]
-    fn numerator(&self) -> i128 {
+    pub fn numerator(&self) -> i128 {
         self.0
     }
 
     #[inline]
-    fn denominator(&self) -> i128 {
+    pub fn denominator(&self) -> i128 {
         Self::DECIMAL_FRACTIONAL
     }
 
