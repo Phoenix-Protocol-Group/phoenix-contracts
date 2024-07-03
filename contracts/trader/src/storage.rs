@@ -12,6 +12,7 @@ pub enum DataKey {
     Pair,
     Token,
     MaxSpread,
+    IsInitialized,
 }
 
 #[contracttype]
@@ -103,5 +104,21 @@ pub fn get_output_token(env: &Env) -> Address {
         .unwrap_or_else(|| {
             log!(&env, "Token not set");
             panic_with_error!(env, ContractError::OutputTokenNotFound)
+        })
+}
+
+pub fn save_init_state(env: &Env) {
+    env.storage()
+        .persistent()
+        .set(&DataKey::IsInitialized, &true);
+}
+
+pub fn get_init_state(env: &Env) -> bool {
+    env.storage()
+        .persistent()
+        .get(&DataKey::IsInitialized)
+        .unwrap_or_else(|| {
+            log!(&env, "Init value not saved");
+            panic_with_error!(env, ContractError::InitValueNotFound)
         })
 }

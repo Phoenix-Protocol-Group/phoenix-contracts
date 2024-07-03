@@ -12,4 +12,6 @@ pub enum ContractError {
     Unauthorized = 6,
     SwapTokenNotInPair = 7,
     InvalidMaxSpreadBps = 8,
+    InitValueNotFound = 9,
+    AlreadyInitialized = 10,
 }

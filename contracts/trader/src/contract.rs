@@ -4,10 +4,11 @@ use soroban_sdk::{
 
 use crate::{
     error::ContractError,
-    lp_contract,
+    lp_contract::{self, ContractError},
     storage::{
-        get_admin, get_name, get_output_token, get_pair, save_admin, save_name, save_output_token,
-        save_pair, Asset, BalanceInfo, OutputTokenInfo,
+        get_admin, get_init_state, get_name, get_output_token, get_pair, save_admin,
+        save_init_state, save_name, save_output_token, save_pair, Asset, BalanceInfo,
+        OutputTokenInfo,
     },
     token_contract,
 };
@@ -72,6 +73,11 @@ impl TraderTrait for Trader {
     ) {
         admin.require_auth();
 
+        if get_init_state(&env) {
+            log!(&env, "Trader: Initialize: Cannot initialize trader twice!");
+            panic_with_error!(env, ContractError::AlreadyInitialized)
+        }
+
         save_admin(&env, &admin);
 
         save_name(&env, &contract_name);
@@ -79,6 +85,8 @@ impl TraderTrait for Trader {
         save_pair(&env, &pair_addresses);
 
         save_output_token(&env, &output_token);
+
+        save_init_state(&env);
 
         env.events()
             .publish(("Trader: Initialize", "admin: "), &admin);
