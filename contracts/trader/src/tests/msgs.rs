@@ -416,7 +416,6 @@ fn extended_trade_and_transfer_token() {
     // admin trades what's left of their USDC for PHO
     // pool with 3:1 ratio and %10 fee
     // we will receive ~450 PHO once again
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     trader_client.trade_token(
         &admin.clone(),
         &usdc_token.address.clone(),
@@ -426,7 +425,6 @@ fn extended_trade_and_transfer_token() {
         &None,
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // 2_349 + 450 = 2_799
     assert_eq!(
         trader_client.query_balances(),
@@ -446,7 +444,6 @@ fn extended_trade_and_transfer_token() {
         }
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // finally we will check the balance of the rcpt before and after we transfer
     assert_eq!(output_token.balance(&rcpt), 0);
     trader_client.transfer(&admin, &rcpt, &1_000, &None);
