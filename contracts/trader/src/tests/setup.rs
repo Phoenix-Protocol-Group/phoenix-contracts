@@ -104,6 +104,7 @@ pub fn deploy_and_init_lp_client(
         &6,
         &String::from_str(env, "staked Phoenix"),
         &String::from_str(env, "sPHO"),
+        &100i64,
     );
 
     lp_client.provide_liquidity(
@@ -113,6 +114,7 @@ pub fn deploy_and_init_lp_client(
         &Some(token_b_amount),
         &None::<i128>,
         &None::<i64>,
+        &None,
     );
     lp_client
 }

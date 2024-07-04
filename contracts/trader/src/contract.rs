@@ -6,13 +6,11 @@ use crate::{
     error::ContractError,
     lp_contract,
     storage::{
-        get_admin, get_name, get_output_token, get_pair, save_admin, save_name, save_output_token,
-        save_pair, Asset, BalanceInfo, OutputTokenInfo,
+        get_admin, get_name, get_output_token, get_pair, is_initialized, save_admin, save_name,
+        save_output_token, save_pair, set_initialized, Asset, BalanceInfo, OutputTokenInfo,
     },
     token_contract,
 };
-
-use phoenix::ensure_not_expired;
 
 contractmeta!(
     key = "Description",
@@ -72,6 +70,11 @@ impl TraderTrait for Trader {
     ) {
         admin.require_auth();
 
+        if is_initialized(&env) {
+            log!(&env, "Trader: Initialize: Cannot initialize trader twice!");
+            panic_with_error!(env, ContractError::AlreadyInitialized)
+        }
+
         save_admin(&env, &admin);
 
         save_name(&env, &contract_name);
@@ -79,6 +82,8 @@ impl TraderTrait for Trader {
         save_pair(&env, &pair_addresses);
 
         save_output_token(&env, &output_token);
+
+        set_initialized(&env);
 
         env.events()
             .publish(("Trader: Initialize", "admin: "), &admin);
@@ -100,10 +105,6 @@ impl TraderTrait for Trader {
         deadline: Option<u64>,
     ) {
         sender.require_auth();
-
-        if let Some(deadline) = deadline {
-            ensure_not_expired!(env, deadline)
-        }
 
         if sender != get_admin(&env) {
             log!(&env, "Trader: Trade_token: Unauthorized trade");
@@ -147,6 +148,7 @@ impl TraderTrait for Trader {
             &amount,
             &None,
             &max_spread_bps,
+            &deadline,
         );
 
         env.events()

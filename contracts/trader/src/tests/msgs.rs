@@ -58,6 +58,61 @@ fn initialize() {
 }
 
 #[test]
+#[should_panic(expected = "Trader: Initialize: Cannot initialize trader twice!")]
+fn initialize_twice_should_panic() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    let trader_client = deploy_trader_client(&env);
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &pho_token.address,
+    );
+
+    assert_eq!(trader_client.query_admin_address(), admin);
+    assert_eq!(trader_client.query_contract_name(), contract_name);
+    assert_eq!(
+        trader_client.query_trading_pairs(),
+        (xlm_token.address.clone(), usdc_token.address.clone())
+    );
+
+    // second time should fail
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &pho_token.address,
+    );
+}
+
+#[test]
 fn simple_trade_token_and_transfer_token() {
     let env = Env::default();
 
@@ -142,6 +197,7 @@ fn simple_trade_token_and_transfer_token() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
     );
 
     assert_eq!(
@@ -274,6 +330,7 @@ fn extended_trade_and_transfer_token() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
     );
 
     assert_eq!(
@@ -303,6 +360,7 @@ fn extended_trade_and_transfer_token() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
     );
 
     assert_eq!(
@@ -333,6 +391,7 @@ fn extended_trade_and_transfer_token() {
         &usdc_pho_client.address,
         &Some(1_500),
         &None::<i64>,
+        &None,
     );
 
     // 1899 + 450 = 2_349
@@ -363,6 +422,7 @@ fn extended_trade_and_transfer_token() {
         &usdc_pho_client.address,
         &Some(1_500),
         &None::<i64>,
+        &None,
     );
 
     // 2_349 + 450 = 2_799
@@ -451,6 +511,7 @@ fn trade_token_should_fail_when_unauthorized() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
     );
 }
 
@@ -515,6 +576,7 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
     );
 }
 
@@ -580,6 +642,7 @@ fn transfer_should_fail_when_unauthorized() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
     );
 
     trader_client.transfer(&Address::generate(&env), &rcpt, &1_000, &None);
@@ -647,5 +710,6 @@ fn transfer_should_fail_with_invalid_spread_bps(max_spread_bps: i64) {
         &xlm_pho_client.address,
         &Some(1_000),
         &Some(max_spread_bps),
+        &None,
     );
 }
