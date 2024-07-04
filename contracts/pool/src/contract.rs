@@ -1,8 +1,6 @@
-use core::u128;
-
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String, I256, U256,
+    String, U256,
 };
 
 use num_integer::Roots;
