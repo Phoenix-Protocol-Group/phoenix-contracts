@@ -45,9 +45,7 @@ pub trait StakingRewardsTrait {
         min_bond: i128,
     );
 
-    fn add_multiple_users(env: Env, users: Vec<Address>);
-
-    fn add_user(env: Env, user: Address);
+    fn add_user(env: Env, user: Address, stakes: BondingInfo);
 
     fn calculate_bond(env: Env, sender: Address, stakes: BondingInfo);
 
@@ -127,14 +125,6 @@ impl StakingRewardsTrait for StakingRewards {
             .publish(("create_distribution_flow", "asset"), &reward_token);
 
         utils::save_admin(&env, &admin);
-    }
-
-    fn add_multiple_users(env: Env, users: Vec<Address>) {
-        get_admin(&env).require_auth();
-
-        for user in users {
-            StakingRewards::add_user(env.clone(), user);
-        }
     }
 
     fn add_user(env: Env, user: Address, stakes: BondingInfo) {
