@@ -54,23 +54,6 @@ pub struct Config {
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
-const MAX_TOTAL_FEE_BPS: i64 = 10_000;
-
-/// This method is used to check fee bps.
-pub fn validate_fee_bps(env: &Env, total_fee_bps: i64) -> i64 {
-    if total_fee_bps > MAX_TOTAL_FEE_BPS {
-        log!(
-            env,
-            "Pool: Validate fee bps: Total fees cannot be greater than 100%"
-        );
-        panic_with_error!(
-            env,
-            ContractError::ValidateFeeBpsTotalFeesCantBeGreaterThan100
-        );
-    }
-    total_fee_bps
-}
-
 impl Config {
     pub fn protocol_fee_rate(&self) -> Decimal {
         Decimal::bps(self.total_fee_bps)
@@ -569,24 +552,6 @@ mod tests {
         let result =
             utils::get_deposit_amounts(&env, 1010, None, 1000, None, 1000, 1000, Decimal::bps(100));
         assert_eq!(result, (1000, 1000));
-    }
-
-    #[test]
-    fn test_validate_fee_bps() {
-        let env = Env::default();
-        let result = validate_fee_bps(&env, 0);
-        assert_eq!(result, 0);
-        let result = validate_fee_bps(&env, 9999);
-        assert_eq!(result, 9999);
-        let result = validate_fee_bps(&env, 10_000);
-        assert_eq!(result, 10_000);
-    }
-
-    #[test]
-    #[should_panic(expected = "Pool: Validate fee bps: Total fees cannot be greater than 100%")]
-    fn test_invalidate_fee_bps() {
-        let env = Env::default();
-        validate_fee_bps(&env, 10_001);
     }
 
     #[test_case(-1, 10 ; "when desired_a is negative")]

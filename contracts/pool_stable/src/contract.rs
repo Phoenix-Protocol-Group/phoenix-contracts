@@ -12,8 +12,8 @@ use crate::{
         get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
         save_greatest_precision, utils,
         utils::{get_admin, is_initialized, set_initialized},
-        validate_fee_bps, AmplifierParameters, Asset, Config, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse, StableLiquidityPoolInfo,
+        AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
+        SimulateSwapResponse, StableLiquidityPoolInfo,
     },
     token_contract, DECIMAL_PRECISION,
 };
@@ -190,14 +190,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         save_greatest_precision(&env, &token_a, &token_b);
 
-        if !(0..=10_000).contains(&swap_fee_bps) {
-            log!(
-                &env,
-                "Pool Stable: Initialize: Fees must be between 0 and 100%"
-            );
-            panic_with_error!(&env, ContractError::InvalidBps);
-        }
-
         // deploy token contract
         let share_token_address =
             utils::deploy_token_contract(&env, token_wasm_hash, &token_a, &token_b);
@@ -229,7 +221,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             share_token: share_token_address,
             stake_contract: stake_contract_address,
             pool_type: PairType::Stable,
-            total_fee_bps: validate_fee_bps(&env, swap_fee_bps),
+            total_fee_bps: swap_fee_bps,
             fee_recipient,
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
