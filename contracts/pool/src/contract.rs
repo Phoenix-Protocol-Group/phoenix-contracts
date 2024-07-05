@@ -368,9 +368,21 @@ impl LiquidityPoolTrait for LiquidityPool {
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
+        // Before the transfer
+        let initial_balance_a = token_a_client.balance(&env.current_contract_address());
+        let initial_balance_b = token_b_client.balance(&env.current_contract_address());
+
         // Move tokens from client's wallet to the contract
         token_a_client.transfer(&sender, &env.current_contract_address(), &(amounts.0));
         token_b_client.transfer(&sender, &env.current_contract_address(), &(amounts.1));
+
+        // After the transfer, get the new balances
+        let final_balance_a = token_a_client.balance(&env.current_contract_address());
+        let final_balance_b = token_b_client.balance(&env.current_contract_address());
+
+        // Calculate the actual received amounts
+        let actual_received_a = final_balance_a - initial_balance_a;
+        let actual_received_b = final_balance_b - initial_balance_b;
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
@@ -403,11 +415,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         env.events()
             .publish(("provide_liquidity", "token_a"), &config.token_a);
         env.events()
-            .publish(("provide_liquidity", "token_a-amount"), amounts.0);
+            .publish(("provide_liquidity", "token_a-amount"), actual_received_a);
         env.events()
             .publish(("provide_liquidity", "token_b"), &config.token_b);
         env.events()
-            .publish(("provide_liquidity", "token_b-amount"), amounts.1);
+            .publish(("provide_liquidity", "token_b-amount"), actual_received_b);
     }
 
     fn swap(
@@ -896,6 +908,8 @@ fn do_swap(
     env.events().publish(("swap", "sender"), sender);
     env.events().publish(("swap", "sell_token"), sell_token);
     env.events().publish(("swap", "offer_amount"), offer_amount);
+    env.events()
+        .publish(("swap", "actual received amount"), actual_received_amount);
     env.events().publish(("swap", "buy_token"), buy_token);
     env.events()
         .publish(("swap", "return_amount"), compute_swap.return_amount);
