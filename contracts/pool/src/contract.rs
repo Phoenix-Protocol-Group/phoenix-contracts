@@ -826,12 +826,23 @@ fn do_swap(
         (config.clone().token_b, config.clone().token_a)
     };
 
+    // we check the balance of the transferred token for the contract prior to the transfer
+    let balance_before_transfer =
+        token_contract::Client::new(&env, &sell_token).balance(&env.current_contract_address());
+
     // transfer tokens to swap
     token_contract::Client::new(&env, &sell_token).transfer(
         &sender,
         &env.current_contract_address(),
         &offer_amount,
     );
+
+    // get the balance after the transfer
+    let balance_after_transfer =
+        token_contract::Client::new(&env, &sell_token).balance(&env.current_contract_address());
+
+    // calculate how much did the contract actually got
+    let actual_received_amount = balance_after_transfer - balance_before_transfer;
 
     // return swapped tokens to user
     token_contract::Client::new(&env, &buy_token).transfer(
@@ -864,7 +875,7 @@ fn do_swap(
     // A balance is bigger, B balance is smaller
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
-            pool_balance_a + offer_amount,
+            pool_balance_a + actual_received_amount,
             pool_balance_b
                 - compute_swap.commission_amount
                 - compute_swap.referral_fee_amount
@@ -876,7 +887,7 @@ fn do_swap(
                 - compute_swap.commission_amount
                 - compute_swap.referral_fee_amount
                 - compute_swap.return_amount,
-            pool_balance_b + offer_amount,
+            pool_balance_b + actual_received_amount,
         )
     };
     utils::save_pool_balance_a(&env, balance_a);
