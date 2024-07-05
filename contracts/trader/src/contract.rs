@@ -30,6 +30,7 @@ pub trait TraderTrait {
         output_token: Address,
     );
 
+    #[allow(clippy::too_many_arguments)]
     fn trade_token(
         env: Env,
         sender: Address,
@@ -38,6 +39,7 @@ pub trait TraderTrait {
         amount: Option<u64>,
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
+        ask_asset_min_amount: Option<i128>,
     );
 
     fn transfer(
@@ -95,6 +97,7 @@ impl TraderTrait for Trader {
             .publish(("Trader: Initialize", "PHO token: "), output_token);
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn trade_token(
         env: Env,
         sender: Address,
@@ -103,6 +106,7 @@ impl TraderTrait for Trader {
         amount: Option<u64>,
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
+        ask_asset_min_amount: Option<i128>,
     ) {
         sender.require_auth();
 
@@ -146,7 +150,7 @@ impl TraderTrait for Trader {
             &env.current_contract_address(),
             &token_to_swap,
             &amount,
-            &None,
+            &ask_asset_min_amount,
             &max_spread_bps,
             &deadline,
         );
