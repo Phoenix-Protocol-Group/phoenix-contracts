@@ -742,3 +742,40 @@ fn withdraw_liquidity_past_deadline_should_panic() {
     env.ledger().with_mut(|li| li.timestamp = 50);
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(49));
 }
+
+#[test]
+#[should_panic(expected = "Pool Stable: Provide Liquidity: Slippage tolerance exceeded")]
+fn provide_liqudity_should_panic_when_shares_to_be_minted_below_minimum_shares() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0i64,
+        None,
+        Some(10_000),
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    token1.mint(&user1, &2000);
+    token2.mint(&user1, &2000);
+
+    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>);
+    pool.provide_liquidity(&user1, &1000, &1000, &Some(1), &None::<u64>);
+}

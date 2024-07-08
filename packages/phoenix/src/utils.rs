@@ -77,6 +77,7 @@ pub struct LiquidityPoolInitInfo {
     pub swap_fee_bps: i64,
     pub fee_recipient: Address,
     pub max_allowed_slippage_bps: i64,
+    pub default_slippage_bps: i64,
     pub max_allowed_spread_bps: i64,
     pub max_referral_bps: i64,
     pub token_init_info: TokenInitInfo,

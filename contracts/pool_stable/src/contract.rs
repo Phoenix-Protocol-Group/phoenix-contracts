@@ -160,6 +160,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let swap_fee_bps = lp_init_info.swap_fee_bps;
         let fee_recipient = lp_init_info.fee_recipient;
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
+        let default_slippage_bps = lp_init_info.default_slippage_bps;
         let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
@@ -167,7 +168,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         validate_bps!(
             swap_fee_bps,
             max_allowed_slippage_bps,
-            max_allowed_spread_bps
+            max_allowed_spread_bps,
+            default_slippage_bps
         );
         set_initialized(&env);
 
@@ -224,6 +226,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             total_fee_bps: swap_fee_bps,
             fee_recipient,
             max_allowed_slippage_bps,
+            default_slippage_bps,
             max_allowed_spread_bps,
         };
         save_config(&env, config);
@@ -281,14 +284,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let old_balance_b = utils::get_pool_balance_b(&env);
 
         // Check if custom_slippage_bps is more than max_allowed_slippage
-        if let Some(custom_slippage) = custom_slippage_bps {
-            if custom_slippage > config.max_allowed_slippage_bps {
-                log!(
+        let custom_slippage = custom_slippage_bps.unwrap_or(config.default_slippage_bps);
+        if custom_slippage > config.max_allowed_slippage_bps {
+            log!(
                     &env,
                     "Pool Stable: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage tolerance"
                 );
-                panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
-            }
+            panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
         }
 
         let amp_parameters = get_amp(&env);

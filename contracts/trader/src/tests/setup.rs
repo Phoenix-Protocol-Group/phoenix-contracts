@@ -89,6 +89,7 @@ pub fn deploy_and_init_lp_client(
         admin: admin.clone(),
         fee_recipient: admin.clone(),
         max_allowed_slippage_bps: 5000,
+        default_slippage_bps: 2_500,
         max_allowed_spread_bps: 5000,
         swap_fee_bps,
         max_referral_bps: 5_000,
