@@ -1,4 +1,4 @@
-use phoenix::utils::convert_i128_to_u128;
+use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
 use soroban_sdk::{contracttype, Address, Env};
 
 use curve::Curve;
@@ -110,7 +110,8 @@ fn apply_points_correction(
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     let shares_correction = withdraw_adjustment.shares_correction;
-    withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
+    withdraw_adjustment.shares_correction =
+        shares_correction - convert_u128_to_i128(shares_per_point) * diff;
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
@@ -172,7 +173,7 @@ pub fn withdrawable_rewards(
     let stakes: i128 = get_stakes(env, owner).total_stake;
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
-    let points = calc_power(config, stakes as i128, Decimal::one(), TOKEN_PER_POWER);
+    let points = calc_power(config, stakes, Decimal::one(), TOKEN_PER_POWER);
     let points = (ppw * convert_i128_to_u128(points)) as i128;
 
     let correction = adjustment.shares_correction;
@@ -197,7 +198,7 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
 
                         // formula: `(locked_now - locked_end)`
                         Decimal::from_atomics(
-                            (c.value(now) - c.value(now + SECONDS_PER_YEAR)) as i128,
+                            convert_u128_to_i128(c.value(now) - c.value(now + SECONDS_PER_YEAR)),
                             0,
                         )
                     } else {
@@ -211,7 +212,7 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
                         // Because of the constraints put on `c` when setting it,
                         // we know that `locked_end` is always 0, so we don't need to subtract it.
                         Decimal::from_ratio(
-                            (c.value(now) * SECONDS_PER_YEAR as u128) as i128,
+                            convert_u128_to_i128(c.value(now) * SECONDS_PER_YEAR as u128),
                             time_diff,
                         )
                     }

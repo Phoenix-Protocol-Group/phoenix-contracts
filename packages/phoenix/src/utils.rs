@@ -46,6 +46,14 @@ pub fn convert_i128_to_u128(input: i128) -> u128 {
     }
 }
 
+pub fn convert_u128_to_i128(input: u128) -> i128 {
+    if input > i128::MAX as u128 {
+        panic!("Cannot convert u128 to i128");
+    } else {
+        input as i128
+    }
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TokenInitInfo {
@@ -166,5 +174,19 @@ mod tests {
     #[test]
     fn bps_valid_range() {
         validate_bps!(0, 5_000, 7_500, 10_000);
+    }
+
+    #[test]
+    fn should_successfully_convert_u128_to_i128() {
+        let val = 10u128;
+        let result: i128 = convert_u128_to_i128(val);
+        assert_eq!(result, 10i128);
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot convert u128 to i128")]
+    fn should_panic_when_value_bigger_than_i128() {
+        let val = i128::MAX as u128 + 1u128;
+        convert_u128_to_i128(val);
     }
 }

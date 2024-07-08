@@ -5,6 +5,7 @@ use curve::Curve;
 use soroban_decimal::Decimal;
 
 use crate::{stake_contract, stake_contract::Stake, storage::Config, TOKEN_PER_POWER};
+use phoenix::utils::convert_u128_to_i128;
 
 /// How much points is the worth of single token in rewards distribution.
 /// The scaling is performed to have better precision of fixed point division.
@@ -108,7 +109,8 @@ fn apply_points_correction(
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     let shares_correction = withdraw_adjustment.shares_correction;
-    withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
+    withdraw_adjustment.shares_correction =
+        shares_correction - convert_u128_to_i128(shares_per_point) * diff;
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
@@ -172,7 +174,7 @@ pub fn withdrawable_rewards(
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
     let points = calc_power(config, stakes, Decimal::one(), TOKEN_PER_POWER);
-    let points = (ppw * convert_i128_to_u128(points)) as i128;
+    let points = convert_u128_to_i128(ppw) * points;
 
     let correction = adjustment.shares_correction;
     let points = points + correction;
@@ -196,7 +198,7 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
 
                         // formula: `(locked_now - locked_end)`
                         Decimal::from_atomics(
-                            (c.value(now) - c.value(now + SECONDS_PER_YEAR)) as i128,
+                            convert_u128_to_i128(c.value(now) - c.value(now + SECONDS_PER_YEAR)),
                             0,
                         )
                     } else {
@@ -210,7 +212,7 @@ pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Dec
                         // Because of the constraints put on `c` when setting it,
                         // we know that `locked_end` is always 0, so we don't need to subtract it.
                         Decimal::from_ratio(
-                            (c.value(now) * SECONDS_PER_YEAR as u128) as i128,
+                            convert_u128_to_i128(c.value(now) * SECONDS_PER_YEAR as u128),
                             time_diff,
                         )
                     }
@@ -267,7 +269,10 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
 
     // Calculate and return the average staking power
     if total_weight > 0 {
-        Decimal::from_ratio(weighted_sum as i128, total_weight as i128)
+        Decimal::from_ratio(
+            convert_u128_to_i128(weighted_sum),
+            convert_u128_to_i128(total_weight),
+        )
     } else {
         Decimal::zero()
     }
