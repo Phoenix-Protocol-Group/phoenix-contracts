@@ -177,7 +177,7 @@ fn update_config_update_admin() {
     let stake_token_address = pool.query_stake_contract_address();
 
     // now update succeeds
-    pool.update_config(&admin2, &None, &None, &None, &None, &Some(3_000_000));
+    pool.update_config(&admin2, &None, &None, &None, &None, &Some(3_000));
     assert_eq!(
         pool.query_config(),
         Config {
@@ -189,13 +189,13 @@ fn update_config_update_admin() {
             total_fee_bps: 0,
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
-            max_allowed_spread_bps: 3_000_000,
+            max_allowed_spread_bps: 3_000,
         }
     );
 }
 
 #[test]
-#[should_panic(expected = "Pool Stable: UpdateConfig: Invalid total_fee_bps")]
+#[should_panic(expected = "The value 10100 is out of range. Must be between 0 and 10000 bps.")]
 fn update_config_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();

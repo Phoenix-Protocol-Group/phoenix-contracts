@@ -263,7 +263,7 @@ fn update_config_update_admin() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: UpdateConfig: Invalid total_fee_bps")]
+#[should_panic(expected = "The value 10100 is out of range. Must be between 0 and 10000 bps.")]
 fn update_config_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();
