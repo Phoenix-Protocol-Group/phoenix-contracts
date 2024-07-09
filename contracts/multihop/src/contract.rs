@@ -26,6 +26,7 @@ pub struct Multihop;
 pub trait MultihopTrait {
     fn initialize(env: Env, admin: Address, factory: Address);
 
+    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         recipient: Address,
@@ -36,6 +37,7 @@ pub trait MultihopTrait {
         amount: i128,
         pool_type: PoolType,
         deadline: Option<u64>,
+        user_agreed_percentage: Option<i64>,
     );
 
     fn simulate_swap(
@@ -74,6 +76,7 @@ impl MultihopTrait for Multihop {
             .publish(("initialize", "Multihop factory with admin: "), admin);
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         recipient: Address,
@@ -84,6 +87,7 @@ impl MultihopTrait for Multihop {
         amount: i128,
         pool_type: PoolType,
         deadline: Option<u64>,
+        user_agreed_percentage: Option<i64>,
     ) {
         if operations.is_empty() {
             log!(&env, "Multihop: Swap: operations is empty!");
@@ -115,6 +119,7 @@ impl MultihopTrait for Multihop {
                         &op.ask_asset_min_amount,
                         &max_spread_bps,
                         &deadline,
+                        &user_agreed_percentage,
                     );
                 }
                 PoolType::Stable => {

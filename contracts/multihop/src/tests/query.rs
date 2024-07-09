@@ -299,11 +299,12 @@ fn simulate_swap_single_pool_with_fees() {
 
     // 1000 tokens initially
     // swap 300 from token1 to token2 with 2000 bps (20%)
-    // tokens2 will be 240
-    assert_eq!(simulated_swap.ask_amount, 240i128);
+    // the lp has a maximum allowed bps of 1_500 (15%)
+    // tokens2 will be 255
+    assert_eq!(simulated_swap.ask_amount, 255i128);
     assert_eq!(
         simulated_swap.commission_amounts,
-        vec![&env, (String::from_str(&env, "FZY"), 60i128)]
+        vec![&env, (String::from_str(&env, "FZY"), 45i128)]
     );
     assert_eq!(simulated_swap.spread_amount, vec![&env, 0i128]);
 
@@ -311,10 +312,10 @@ fn simulate_swap_single_pool_with_fees() {
     let reverse_simulated_swap =
         multihop.simulate_reverse_swap(&operation, &240i128, &PoolType::Xyk);
 
-    assert_eq!(reverse_simulated_swap.offer_amount, 300i128);
+    assert_eq!(reverse_simulated_swap.offer_amount, 282i128);
     assert_eq!(
         reverse_simulated_swap.commission_amounts,
-        vec![&env, (String::from_str(&env, "BZY"), 60i128)]
+        vec![&env, (String::from_str(&env, "BZY"), 42i128)]
     );
     assert_eq!(reverse_simulated_swap.spread_amount, vec![&env, 0i128]);
 }

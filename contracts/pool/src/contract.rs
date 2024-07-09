@@ -12,7 +12,7 @@ use crate::{
         get_config, save_config,
         utils::{self, get_admin, is_initialized, set_initialized},
         Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse,
+        SimulateReverseSwapResponse, SimulateSwapResponse, MAXIMUM_ALLOWED_TOTAL_FEE_BPS,
     },
     token_contract,
 };
@@ -67,6 +67,7 @@ pub trait LiquidityPoolTrait {
     // `offer_amount` is the amount being sold, with `max_spread_bps` being a safety to make sure you receive at least that amount.
     // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to `sender`.
     // Returns the amount of the token being bought.
+    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         sender: Address,
@@ -78,6 +79,7 @@ pub trait LiquidityPoolTrait {
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
+        user_agreed_percentage: Option<i64>,
     ) -> i128;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
@@ -161,13 +163,18 @@ impl LiquidityPoolTrait for LiquidityPool {
         }
 
         let admin = lp_init_info.admin;
-        let swap_fee_bps = lp_init_info.swap_fee_bps;
+        let mut swap_fee_bps = lp_init_info.swap_fee_bps;
         let fee_recipient = lp_init_info.fee_recipient;
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
         let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
         let max_referral_bps = lp_init_info.max_referral_bps;
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
+
+        // if the swap_fee_bps is above the threshold, we set it to the threshold value
+        if swap_fee_bps > MAXIMUM_ALLOWED_TOTAL_FEE_BPS {
+            swap_fee_bps = MAXIMUM_ALLOWED_TOTAL_FEE_BPS;
+        }
 
         validate_bps!(
             swap_fee_bps,
@@ -422,6 +429,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             .publish(("provide_liquidity", "token_b-amount"), actual_received_b);
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         sender: Address,
@@ -432,6 +440,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
+        user_agreed_percentage: Option<i64>,
     ) -> i128 {
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
@@ -452,6 +461,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             offer_amount,
             ask_asset_min_amount,
             max_spread_bps,
+            user_agreed_percentage,
         )
     }
 
@@ -765,6 +775,7 @@ fn do_swap(
     offer_amount: i128,
     ask_asset_min_amount: Option<i128>,
     max_spread: Option<i64>,
+    user_agreed_percentage: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
     // FIXM: Disable Referral struct
@@ -773,6 +784,15 @@ fn do_swap(
     //         panic!("Pool: Swap: Trying to swap with more than the allowed referral fee");
     //     }
     // }
+    if let Some(agreed_percentage) = user_agreed_percentage {
+        if agreed_percentage < config.total_fee_bps {
+            log!(
+                &env,
+                "Pool: do_swap: User agrees to swap at a lower percentage."
+            );
+            panic_with_error!(&env, ContractError::UserDeclinesPoolFee);
+        }
+    }
 
     if let Some(max_spread) = max_spread {
         if !(0..=config.max_allowed_spread_bps).contains(&max_spread) {

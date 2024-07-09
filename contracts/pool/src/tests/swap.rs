@@ -66,6 +66,313 @@ fn simple_swap() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
+    );
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    symbol_short!("swap"),
+                    (
+                        &user1,
+                        // FIXM: Disable Referral struct
+                        // None::<Referral>,
+                        token1.address.clone(),
+                        1_i128,
+                        None::<i64>,
+                        spread,
+                        None::<u64>,
+                        None::<i64>
+                    )
+                        .into_val(&env)
+                )),
+                sub_invocations: std::vec![
+                    (AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            token1.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user1, &pool.address, 1_i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    }),
+                ],
+            }
+        )]
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 1_000_000i128,
+            },
+            stake_address: result.clone().stake_address,
+        }
+    );
+    assert_eq!(token1.balance(&user1), 999); // -1 from the swap
+    assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
+
+    // this time 100 units
+    let output_amount = pool.swap(
+        &user1,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &token2.address,
+        &1_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        &None,
+    );
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001 - 1_000, // previous balance minus 1_000
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999 + 1000,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1_000_000i128, // this has not changed
+            },
+            stake_address: result.clone().stake_address,
+        }
+    );
+    assert_eq!(output_amount, 1000);
+    assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
+    assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
+}
+
+#[test]
+fn simple_swap_with_preferred_pool_fee() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    // the swap fee is set at %3
+    let swap_fees = 300;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    pool.provide_liquidity(
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+        &None::<u64>,
+    );
+
+    // selling just one token with 1% max spread allowed
+    let spread = 100i64; // 1% maximum spread allowed
+    pool.swap(
+        &user1,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        //user would swap with a pool fee at maximum %5
+        &Some(500),
+    );
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    symbol_short!("swap"),
+                    (
+                        &user1,
+                        // FIXM: Disable Referral struct
+                        // None::<Referral>,
+                        token1.address.clone(),
+                        1_i128,
+                        None::<i64>,
+                        spread,
+                        None::<u64>,
+                        Some(500i64)
+                    )
+                        .into_val(&env)
+                )),
+                sub_invocations: std::vec![
+                    (AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            token1.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user1, &pool.address, 1_i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    }),
+                ],
+            }
+        )]
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 1_000_000i128,
+            },
+            stake_address: result.clone().stake_address,
+        }
+    );
+    assert_eq!(token1.balance(&user1), 999); // -1 from the swap
+    assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
+
+    // this time 100 units
+    let output_amount = pool.swap(
+        &user1,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &token2.address,
+        &1_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        &None,
+    );
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001 - 1_000, // previous balance minus 1_000
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999 + 1000,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1_000_000i128, // this has not changed
+            },
+            stake_address: result.clone().stake_address,
+        }
+    );
+    assert_eq!(output_amount, 970);
+    assert_eq!(token1.balance(&user1), 1969); // 969 + 1_000 as a result of swap
+    assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
+}
+
+#[test]
+#[should_panic(expected = "Pool: do_swap: User agrees to swap at a lower percentage.")]
+fn simple_swap_should_panic_when_user_accepted_fee_is_less_than_pool_fee() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    // the swap fee is set at %20
+    let swap_fees = 2_000;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    pool.provide_liquidity(
+        &user1,
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &Some(1_000_000),
+        &None,
+        &None::<u64>,
+    );
+
+    let spread = 100i64;
+    pool.swap(
+        &user1,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        //user would swap with a pool fee at maximum %1
+        &Some(100),
     );
     assert_eq!(
         env.auths(),
@@ -124,8 +431,7 @@ fn simple_swap() {
     assert_eq!(token1.balance(&user1), 999); // -1 from the swap
     assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
 
-    // this time 100 units
-    let output_amount = pool.swap(
+    pool.swap(
         &user1,
         // FIXM: Disable Referral struct
         // &None::<Referral>,
@@ -134,29 +440,8 @@ fn simple_swap() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
     );
-    let result = pool.query_pool_info();
-    assert_eq!(
-        result,
-        PoolResponse {
-            asset_a: Asset {
-                address: token1.address.clone(),
-                amount: 1_000_001 - 1_000, // previous balance minus 1_000
-            },
-            asset_b: Asset {
-                address: token2.address.clone(),
-                amount: 999_999 + 1000,
-            },
-            asset_lp_share: Asset {
-                address: share_token_address,
-                amount: 1_000_000i128, // this has not changed
-            },
-            stake_address: result.clone().stake_address,
-        }
-    );
-    assert_eq!(output_amount, 1000);
-    assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
-    assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
 }
 
 // FIXM: Disable Referral struct
@@ -224,6 +509,7 @@ fn simple_swap_with_referral_fee() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
     );
 
     // zero referral fee because amount is too low
@@ -261,6 +547,7 @@ fn simple_swap_with_referral_fee() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
     );
     let result = pool.query_pool_info();
     assert_eq!(
@@ -352,6 +639,7 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
     );
 }
 
@@ -401,7 +689,15 @@ fn swap_should_panic_with_bad_max_spread() {
 
     // selling just one token with 1% max spread allowed and 50 bps max spread
     // FIXM: Disable Referral struct
-    pool.swap(&user1, &token1.address, &50, &None, &Some(50), &None::<u64>);
+    pool.swap(
+        &user1,
+        &token1.address,
+        &50,
+        &None,
+        &Some(50),
+        &None::<u64>,
+        &None,
+    );
 }
 
 #[test]
@@ -463,6 +759,7 @@ fn swap_with_high_fee() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
     );
 
     // This is XYK LP with constant product formula
@@ -838,6 +1135,7 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         &None,
         &max_spread,
         &None::<u64>,
+        &None,
     );
 }
 
@@ -881,6 +1179,7 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
         &None,
         &Some(100),
         &None::<u64>,
+        &None,
     );
 }
 
@@ -1006,6 +1305,7 @@ fn test_should_swap_with_valid_ask_asset_min_amount() {
         &Some(10),
         &None::<i64>,
         &None::<u64>,
+        &None,
     );
     assert_eq!(token1.balance(&user), 49_990);
     assert_eq!(token2.balance(&user), 50_010);
@@ -1017,6 +1317,7 @@ fn test_should_swap_with_valid_ask_asset_min_amount() {
         &Some(4_900i128),
         &Some(500i64),
         &None::<u64>,
+        &None,
     );
 
     assert_eq!(token1.balance(&user), 54_966);
@@ -1072,6 +1373,7 @@ fn test_should_fail_when_invalid_ask_asset_min_amount() {
         &Some(10),
         &Some(spread),
         &None::<u64>,
+        &None,
     );
 }
 
@@ -1134,6 +1436,7 @@ fn simple_swap_with_deadline_success() {
         &None,
         &Some(spread),
         &Some(100u64),
+        &None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -1169,6 +1472,7 @@ fn simple_swap_with_deadline_success() {
         &None,
         &Some(spread),
         &Some(150),
+        &None,
     );
     let result = pool.query_pool_info();
     assert_eq!(
@@ -1253,6 +1557,7 @@ fn simple_swap_with_should_fail_when_after_the_deadline() {
         &None,
         &Some(spread),
         &Some(99u64),
+        &None,
     );
 }
 

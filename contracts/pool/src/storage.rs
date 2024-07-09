@@ -53,6 +53,9 @@ pub struct Config {
     pub default_slippage_bps: i64,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
+/// This value is used to check if the admin isn't abusing the `total_fee_bps` value when
+/// initializing a new pool.
+pub const MAXIMUM_ALLOWED_TOTAL_FEE_BPS: i64 = 1_500;
 
 impl Config {
     pub fn protocol_fee_rate(&self) -> Decimal {
