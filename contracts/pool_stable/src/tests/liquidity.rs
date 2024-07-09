@@ -412,9 +412,7 @@ fn provide_liqudity_too_high_fees() {
 }
 
 #[test]
-#[should_panic(
-    expected = "Pool Stable: ProvideLiquidity: Both tokens must be provided and must be bigger then 0!"
-)]
+#[should_panic(expected = "value cannot be less than or equal zero")]
 fn swap_with_no_amounts() {
     let env = Env::default();
     env.mock_all_auths();

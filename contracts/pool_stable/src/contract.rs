@@ -270,16 +270,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             }
         }
 
-        if desired_a == 0 || desired_b == 0 {
-            log!(
-                    &env,
-                    "Pool Stable: ProvideLiquidity: Both tokens must be provided and must be bigger then 0!"
-                );
-            panic_with_error!(
-                env,
-                ContractError::ProvideLiquidityBothTokensMustBeMoreThanZero
-            );
-        }
+        validate_int_parameters!(desired_a, desired_b);
 
         // sender needs to authorize the deposit
         sender.require_auth();
