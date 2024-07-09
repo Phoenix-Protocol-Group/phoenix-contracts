@@ -8,8 +8,8 @@ use crate::{
     error::ContractError,
     storage::{
         get_admin, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
-        save_admin, save_max_vesting_complexity, save_token_info, save_vesting, update_vesting,
-        VestingInfo, VestingSchedule, VestingTokenInfo,
+        is_initialized, save_admin, save_max_vesting_complexity, save_token_info, save_vesting,
+        set_initialized, update_vesting, VestingInfo, VestingSchedule, VestingTokenInfo,
     },
     token_contract,
     utils::{check_duplications, validate_vesting_schedule},
@@ -83,6 +83,16 @@ impl VestingTrait for Vesting {
         vesting_token: VestingTokenInfo,
         max_vesting_complexity: u32,
     ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Stake: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        set_initialized(&env);
+
         save_admin(&env, &admin);
 
         let token_info = VestingTokenInfo {
@@ -107,6 +117,15 @@ impl VestingTrait for Vesting {
         max_vesting_complexity: u32,
         minter_info: MinterInfo,
     ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Stake: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        set_initialized(&env);
         save_admin(&env, &admin);
 
         save_minter(&env, &minter_info);
