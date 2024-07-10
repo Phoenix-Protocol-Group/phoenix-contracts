@@ -557,3 +557,90 @@ fn simple_swap_with_low_user_fee_should_panic() {
         &Some(50), // user wants to swap for %.5
     );
 }
+
+#[test]
+fn simple_swap_with_bigger_decimal_numbers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+    // 1e18
+    let high_precision_amount = 1_000_000_000_000_000_000i128;
+    token1.mint(&user1, &high_precision_amount);
+    token2.mint(&user1, &high_precision_amount);
+    pool.provide_liquidity(
+        &user1,
+        &high_precision_amount,
+        &high_precision_amount,
+        &None,
+        &None::<u64>,
+    );
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+
+    let spread = 100i64;
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    pool.swap(
+        &user1,
+        &token1.address,
+        // we swap 5e9 amount
+        &5_000_000_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+    );
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    symbol_short!("swap"),
+                    (
+                        &user1,
+                        token1.address.clone(),
+                        5_000_000_000i128,
+                        None::<i64>,
+                        spread,
+                        None::<u64>
+                    )
+                        .into_val(&env)
+                )),
+                sub_invocations: std::vec![
+                    (AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            token1.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user1, &pool.address, 5_000_000_000i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    }),
+                ],
+            }
+        )]
+    );
+}
