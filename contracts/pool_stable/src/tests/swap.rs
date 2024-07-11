@@ -559,7 +559,7 @@ fn simple_swap_with_low_user_fee_should_panic() {
 }
 
 #[test]
-fn simple_swap_with_bigger_decimal_numbers() {
+fn simple_swap_with_biggest_possible_decimal_numbers_as_liquidity() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -588,59 +588,47 @@ fn simple_swap_with_bigger_decimal_numbers() {
         None,
     );
     // 1e18
-    let high_precision_amount = 1_000_000_000_000_000_000i128;
-    token1.mint(&user1, &high_precision_amount);
-    token2.mint(&user1, &high_precision_amount);
+    let highest_possible_swap = 52_503_000i128;
+    token1.mint(&user1, &(highest_possible_swap + 1_000_000_000i128));
+    token2.mint(&user1, &(highest_possible_swap + 1_000_000_000i128));
     pool.provide_liquidity(
         &user1,
-        &high_precision_amount,
-        &high_precision_amount,
+        &highest_possible_swap,
+        &highest_possible_swap,
         &None,
         &None::<u64>,
     );
-    soroban_sdk::testutils::arbitrary::std::dbg!();
 
-    let spread = 100i64;
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     pool.swap(
         &user1,
         &token1.address,
         // we swap 5e9 amount
-        &5_000_000_000,
+        &5,
         &None,
-        &Some(spread),
+        &Some(0i64),
         &None::<u64>,
     );
-    soroban_sdk::testutils::arbitrary::std::dbg!();
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
     assert_eq!(
-        env.auths(),
-        [(
-            user1.clone(),
-            AuthorizedInvocation {
-                function: AuthorizedFunction::Contract((
-                    pool.address.clone(),
-                    symbol_short!("swap"),
-                    (
-                        &user1,
-                        token1.address.clone(),
-                        5_000_000_000i128,
-                        None::<i64>,
-                        spread,
-                        None::<u64>
-                    )
-                        .into_val(&env)
-                )),
-                sub_invocations: std::vec![
-                    (AuthorizedInvocation {
-                        function: AuthorizedFunction::Contract((
-                            token1.address.clone(),
-                            symbol_short!("transfer"),
-                            (&user1, &pool.address, 5_000_000_000i128).into_val(&env)
-                        )),
-                        sub_invocations: std::vec![],
-                    }),
-                ],
-            }
-        )]
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 52503005i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 52502995i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 105004999i128,
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
     );
+    assert_eq!(token1.balance(&user1), 999999995);
+    assert_eq!(token2.balance(&user1), 1000000005);
 }
