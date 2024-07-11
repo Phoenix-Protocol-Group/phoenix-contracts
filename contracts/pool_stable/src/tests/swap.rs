@@ -588,26 +588,18 @@ fn simple_swap_with_biggest_possible_decimal_numbers_as_liquidity() {
         None,
     );
     // 1e18
-    let highest_possible_swap = 52_503_000i128;
-    token1.mint(&user1, &(highest_possible_swap + 1_000_000_000i128));
-    token2.mint(&user1, &(highest_possible_swap + 1_000_000_000i128));
+    let highest_possible_liquidity = 52_503_000i128;
+    token1.mint(&user1, &(highest_possible_liquidity + 1_000_000_000i128));
+    token2.mint(&user1, &(highest_possible_liquidity + 1_000_000_000i128));
     pool.provide_liquidity(
         &user1,
-        &highest_possible_swap,
-        &highest_possible_swap,
+        &highest_possible_liquidity,
+        &highest_possible_liquidity,
         &None,
         &None::<u64>,
     );
 
-    pool.swap(
-        &user1,
-        &token1.address,
-        // we swap 5e9 amount
-        &5,
-        &None,
-        &Some(0i64),
-        &None::<u64>,
-    );
+    pool.swap(&user1, &token1.address, &5, &None, &None, &None::<u64>);
 
     let share_token_address = pool.query_share_token_address();
     let result = pool.query_pool_info();

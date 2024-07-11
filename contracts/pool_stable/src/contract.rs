@@ -15,7 +15,7 @@ use crate::{
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
         SimulateSwapResponse, StableLiquidityPoolInfo,
     },
-    token_contract, DECIMAL_PRECISION,
+    token_contract, DECIMAL_PRECISION, MAXIMUM_ALLOWED_PRECISION,
 };
 use phoenix::{validate_bps, validate_int_parameters};
 use soroban_decimal::Decimal;

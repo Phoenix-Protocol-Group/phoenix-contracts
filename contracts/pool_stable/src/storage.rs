@@ -1,9 +1,9 @@
 use soroban_sdk::{
-    contracttype, symbol_short, xdr::ToXdr, Address, Bytes, BytesN, ConversionError, Env, Symbol,
-    TryFromVal, Val,
+    contracttype, log, panic_with_error, symbol_short, xdr::ToXdr, Address, Bytes, BytesN,
+    ConversionError, Env, Symbol, TryFromVal, Val,
 };
 
-use crate::token_contract;
+use crate::{error::ContractError, token_contract, MAXIMUM_ALLOWED_PRECISION};
 use soroban_decimal::Decimal;
 
 #[derive(Clone, Copy)]
@@ -91,6 +91,15 @@ pub fn get_precisions(env: &Env, token: &Address) -> u32 {
 pub fn save_greatest_precision(env: &Env, token1: &Address, token2: &Address) {
     let precision1 = token_contract::Client::new(env, token1).decimals();
     let precision2 = token_contract::Client::new(env, token2).decimals();
+
+    if precision1 > MAXIMUM_ALLOWED_PRECISION || precision2 > MAXIMUM_ALLOWED_PRECISION {
+        log!(
+            &env,
+            "Pool Stable: Save Greatest Precision: precision above the limit"
+        );
+        panic_with_error!(env, ContractError::MaximumAllowedPrecisionViolated);
+    }
+
     let max_precision: u32 = if precision1 > precision2 {
         precision1
     } else {
