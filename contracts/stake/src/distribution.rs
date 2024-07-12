@@ -52,7 +52,7 @@ pub fn get_reward_curve(env: &Env, asset: &Address) -> Option<Curve> {
 #[derive(Debug, Default, Clone)]
 pub struct Distribution {
     /// How many shares is single point worth
-    pub shares_per_point: u128,
+    pub points_per_share: u128,
     /// Shares which were not fully distributed on previous distributions, and should be redistributed
     pub shares_leftover: u64,
     /// Total rewards distributed by this contract.
@@ -92,12 +92,12 @@ pub fn update_rewards(
     }
     let diff = new_rewards_power - old_rewards_power;
     // Apply the points correction with the calculated difference.
-    let ppw = distribution.shares_per_point;
+    let ppw = distribution.points_per_share;
     apply_points_correction(env, user, asset, diff, ppw);
 }
 
 /// Applies points correction for given address.
-/// `shares_per_point` is current value from `SHARES_PER_POINT` - not loaded in function, to
+/// `points_per_share` is current value from `POINTS_PER_SHARE` - not loaded in function, to
 /// avoid multiple queries on bulk updates.
 /// `diff` is the points change
 fn apply_points_correction(
@@ -166,7 +166,7 @@ pub fn withdrawable_rewards(
     adjustment: &WithdrawAdjustment,
     config: &Config,
 ) -> u128 {
-    let ppw = distribution.shares_per_point;
+    let ppw = distribution.points_per_share;
 
     let stakes: i128 = get_stakes(env, owner).total_stake;
     // Decimal::one() represents the standart multiplier per token
