@@ -63,7 +63,6 @@ pub trait StakingTrait {
 
     fn fund_distribution(
         env: Env,
-        sender: Address,
         start_time: u64,
         distribution_duration: u64,
         token_address: Address,
@@ -378,13 +377,13 @@ impl StakingTrait for Staking {
 
     fn fund_distribution(
         env: Env,
-        sender: Address,
         start_time: u64,
         distribution_duration: u64,
         token_address: Address,
         token_amount: i128,
     ) {
-        sender.require_auth();
+        let admin = get_admin(&env);
+        admin.require_auth();
 
         // Load previous reward curve; it must exist if the distribution exists
         // In case of first time funding, it will be a constant 0 curve
@@ -411,7 +410,7 @@ impl StakingTrait for Staking {
 
         // transfer tokens to fund distribution
         let reward_token_client = token_contract::Client::new(&env, &token_address);
-        reward_token_client.transfer(&sender, &env.current_contract_address(), &token_amount);
+        reward_token_client.transfer(&admin, &env.current_contract_address(), &token_amount);
 
         let end_time = current_time + distribution_duration;
         // define a distribution curve starting at start_time with token_amount of tokens
