@@ -257,7 +257,7 @@ impl StakingTrait for Staking {
         }
 
         let distribution = Distribution {
-            shares_per_point: 1u128,
+            points_per_share: 1u128,
             shares_leftover: 0u64,
             distributed_total: 0u128,
             withdrawable_total: 0u128,
@@ -321,7 +321,7 @@ impl StakingTrait for Staking {
             // Full amount is added here to total withdrawable, as it should not be considered on its own
             // on future distributions - even if because of calculation offsets it is not fully
             // distributed, the error is handled by leftover.
-            distribution.shares_per_point += points_per_share;
+            distribution.points_per_share += points_per_share;
             distribution.distributed_total += amount;
             distribution.withdrawable_total += amount;
 
@@ -506,7 +506,7 @@ impl StakingTrait for Staking {
             let curve = get_reward_curve(&env, &distribution_address);
             let annualized_payout = calculate_annualized_payout(curve, now);
             let apr = annualized_payout
-                / (total_stake_power as u128 * distribution.shares_per_point) as i128;
+                / (total_stake_power as u128 * distribution.points_per_share) as i128;
 
             aprs.push_back(AnnualizedReward {
                 asset: distribution_address.clone(),
