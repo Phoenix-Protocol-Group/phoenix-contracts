@@ -306,6 +306,8 @@ impl VestingTrait for Vesting {
 
     #[cfg(feature = "minter")]
     fn update_minter(env: Env, sender: Address, new_minter: Address) {
+        sender.require_auth();
+
         let current_minter = get_minter(&env);
 
         let is_authorized = if let Some(current_minter) = current_minter.clone() {
@@ -337,6 +339,8 @@ impl VestingTrait for Vesting {
 
     #[cfg(feature = "minter")]
     fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128) {
+        sender.require_auth();
+
         if sender != get_admin(&env) {
             log!(
                 &env,
