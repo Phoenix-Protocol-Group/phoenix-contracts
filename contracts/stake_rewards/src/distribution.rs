@@ -21,19 +21,11 @@ pub const SHARES_SHIFT: u8 = 32;
 const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
 const SECONDS_PER_YEAR: u64 = 365 * SECONDS_PER_DAY;
 
-#[derive(Clone)]
-#[contracttype]
-pub struct WithdrawAdjustmentKey {
-    user: Address,
-    asset: Address,
-}
-
-#[derive(Clone)]
 #[contracttype]
 pub enum DistributionDataKey {
     Curve(Address),
     Distribution(Address),
-    WithdrawAdjustment(WithdrawAdjustmentKey),
+    WithdrawAdjustment(Address),
 }
 
 // one reward distribution curve over one denom
@@ -83,7 +75,6 @@ pub fn get_distribution(env: &Env, asset: &Address) -> Distribution {
 pub fn update_rewards(
     env: &Env,
     user: &Address,
-    asset: &Address,
     distribution: &mut Distribution,
     old_rewards_power: i128,
     new_rewards_power: i128,
@@ -94,7 +85,7 @@ pub fn update_rewards(
     let diff = new_rewards_power - old_rewards_power;
     // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
-    apply_points_correction(env, user, asset, diff, ppw);
+    apply_points_correction(env, user, diff, ppw);
 }
 
 /// Applies points correction for given address.
@@ -104,14 +95,13 @@ pub fn update_rewards(
 fn apply_points_correction(
     env: &Env,
     user: &Address,
-    asset: &Address,
     diff: i128,
     shares_per_point: u128,
 ) {
-    let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
+    let mut withdraw_adjustment = get_withdraw_adjustment(env, user.clone());
     let shares_correction = withdraw_adjustment.shares_correction;
     withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
-    save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
+    save_withdraw_adjustment(env, user.clone(), &withdraw_adjustment);
 }
 
 #[contracttype]
@@ -131,32 +121,22 @@ pub struct WithdrawAdjustment {
 /// and asset's address as the subkey.
 pub fn save_withdraw_adjustment(
     env: &Env,
-    user: &Address,
-    distribution: &Address,
+    user: Address,
     adjustment: &WithdrawAdjustment,
 ) {
     env.storage().persistent().set(
-        &DistributionDataKey::WithdrawAdjustment(WithdrawAdjustmentKey {
-            user: user.clone(),
-            asset: distribution.clone(),
-        }),
+        &DistributionDataKey::WithdrawAdjustment(user),
         adjustment,
     );
 }
 
 pub fn get_withdraw_adjustment(
     env: &Env,
-    user: &Address,
-    distribution: &Address,
+    user: Address,
 ) -> WithdrawAdjustment {
     env.storage()
         .persistent()
-        .get(&DistributionDataKey::WithdrawAdjustment(
-            WithdrawAdjustmentKey {
-                user: user.clone(),
-                asset: distribution.clone(),
-            },
-        ))
+        .get(&DistributionDataKey::WithdrawAdjustment(user))
         .unwrap_or_default()
 }
 

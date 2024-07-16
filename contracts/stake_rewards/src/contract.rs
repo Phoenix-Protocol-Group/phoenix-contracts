@@ -140,7 +140,6 @@ impl StakingRewardsTrait for StakingRewards {
         update_rewards(
             &env,
             &user,
-            &config.reward_token,
             &mut distribution,
             0, // old_rewards power is 0 when user didn't register before
             new_power,
@@ -167,7 +166,6 @@ impl StakingRewardsTrait for StakingRewards {
         update_rewards(
             &env,
             &sender,
-            &config.reward_token,
             &mut distribution,
             old_power,
             new_power,
@@ -205,7 +203,6 @@ impl StakingRewardsTrait for StakingRewards {
         update_rewards(
             &env,
             &sender,
-            &config.reward_token,
             &mut distribution,
             old_power,
             new_power,
