@@ -198,6 +198,7 @@ fn simple_trade_token_and_transfer_token() {
         &Some(1_000),
         &None::<i64>,
         &None,
+        &None,
     );
 
     assert_eq!(
@@ -331,6 +332,7 @@ fn extended_trade_and_transfer_token() {
         &Some(1_000),
         &None::<i64>,
         &None,
+        &None,
     );
 
     assert_eq!(
@@ -360,6 +362,7 @@ fn extended_trade_and_transfer_token() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
         &None,
     );
 
@@ -392,6 +395,7 @@ fn extended_trade_and_transfer_token() {
         &Some(1_500),
         &None::<i64>,
         &None,
+        &None,
     );
 
     // 1899 + 450 = 2_349
@@ -422,6 +426,7 @@ fn extended_trade_and_transfer_token() {
         &usdc_pho_client.address,
         &Some(1_500),
         &None::<i64>,
+        &None,
         &None,
     );
 
@@ -512,6 +517,7 @@ fn trade_token_should_fail_when_unauthorized() {
         &Some(1_000),
         &None::<i64>,
         &None,
+        &None,
     );
 }
 
@@ -576,6 +582,7 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
         &None,
     );
 }
@@ -642,6 +649,7 @@ fn transfer_should_fail_when_unauthorized() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
         &None,
     );
 
@@ -711,5 +719,102 @@ fn transfer_should_fail_with_invalid_spread_bps(max_spread_bps: i64) {
         &Some(1_000),
         &Some(max_spread_bps),
         &None,
+        &None,
     );
+}
+
+#[test]
+fn simple_trade_token_and_transfer_token_with_some_ask_asset_min_amount() {
+    let env = Env::default();
+
+    env.mock_all_auths_allowing_non_root_auth();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let rcpt = Address::generate(&env);
+
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let mut xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let mut output_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    if xlm_token.address >= output_token.address {
+        std::mem::swap(&mut output_token, &mut xlm_token);
+    }
+
+    xlm_token.mint(&admin, &1_000_000);
+    output_token.mint(&admin, &2_000_000);
+
+    let trader_client = deploy_trader_client(&env);
+
+    let xlm_pho_client: crate::lp_contract::Client<'_> = deploy_and_init_lp_client(
+        &env,
+        admin.clone(),
+        xlm_token.address.clone(),
+        1_000_000,
+        output_token.address.clone(),
+        1_000_000,
+        0,
+    );
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &output_token.address,
+    );
+
+    xlm_token.mint(&trader_client.address, &1_000);
+
+    // pretty much the same test as `simple_trade_token_and_transfer` but with `Some` value for
+    // `ask_asset_min_amount`
+    trader_client.trade_token(
+        &admin.clone(),
+        &xlm_token.address.clone(),
+        &xlm_pho_client.address,
+        &Some(1_000),
+        &None::<i64>,
+        &None,
+        &Some(1_000),
+    );
+
+    assert_eq!(
+        trader_client.query_balances(),
+        BalanceInfo {
+            output_token: Asset {
+                symbol: output_token.symbol(),
+                amount: 1_000
+            },
+            token_a: Asset {
+                symbol: xlm_token.symbol(),
+                amount: 0
+            },
+            token_b: Asset {
+                symbol: usdc_token.symbol(),
+                amount: 0
+            }
+        }
+    );
+
+    assert_eq!(output_token.balance(&rcpt), 0);
+    trader_client.transfer(&admin, &rcpt, &1_000, &None);
+    assert_eq!(output_token.balance(&rcpt), 1_000);
 }
