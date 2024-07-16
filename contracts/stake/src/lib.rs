@@ -16,7 +16,5 @@ pub mod token_contract {
     );
 }
 
-pub use storage::Stake;
-
 #[cfg(test)]
 mod tests;

@@ -21,11 +21,12 @@ use crate::{
             self, add_distribution, get_admin, get_distributions, get_stake_rewards,
             get_total_staked_counter, is_initialized, set_initialized, set_stake_rewards,
         },
-        Config, Stake,
+        Config,
     },
     token_contract, TOKEN_PER_POWER,
 };
 use curve::Curve;
+use phoenix::Stake;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -56,20 +57,9 @@ pub trait StakingTrait {
 
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
 
-    fn create_distribution_flow(env: Env, sender: Address, asset: Address);
-
     fn distribute_rewards(env: Env);
 
     fn withdraw_rewards(env: Env, sender: Address);
-
-    fn fund_distribution(
-        env: Env,
-        sender: Address,
-        start_time: u64,
-        distribution_duration: u64,
-        token_address: Address,
-        token_amount: i128,
-    );
 
     // ADMIN
     fn stake_rewards_add_users(env: Env, users: Vec<Address>);
@@ -84,7 +74,7 @@ pub trait StakingTrait {
 
     fn query_total_staked(env: Env) -> i128;
 
-    fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
+    fn query_annualized_rewards(env: Env) -> Val;
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
 
@@ -269,218 +259,25 @@ impl StakingTrait for Staking {
         env.events().publish(("bond", "amount"), stake_amount);
     }
 
-    fn create_distribution_flow(env: Env, sender: Address, asset: Address) {
-        sender.require_auth();
-
-        let manager = get_config(&env).manager;
-        let owner = get_config(&env).owner;
-        if sender != manager && sender != owner {
-            log!(env, "Stake: create distribution: Non-authorized creation!");
-            panic_with_error!(&env, ContractError::Unauthorized);
-        }
-
-        let distribution = Distribution {
-            shares_per_point: 1u128,
-            shares_leftover: 0u64,
-            distributed_total: 0u128,
-            withdrawable_total: 0u128,
-            max_bonus_bps: 0u64,
-            bonus_per_day_bps: 0u64,
-        };
-
-        let reward_token_client = token_contract::Client::new(&env, &asset);
-        // add distribution to the vector of distributions
-        add_distribution(&env, &reward_token_client.address);
-        save_distribution(&env, &reward_token_client.address, &distribution);
-        // Create the default reward distribution curve which is just a flat 0 const
-        save_reward_curve(&env, asset, &Curve::Constant(0));
-
-        env.events().publish(
-            ("create_distribution_flow", "asset"),
-            &reward_token_client.address,
+    fn distribute_rewards(env: Env) {
+        let stakes = get_total_staked_counter(&env);
+        // Call stake_rewards contract to update the reward calculations
+        let distr_fn_arg: Val = stakes.into_val(&env);
+        env.invoke_contract::<Val>(
+            &get_stake_rewards(&env),
+            &Symbol::new(&env, "distribute_rewards"),
+            vec![&env, distr_fn_arg],
         );
     }
 
-    fn distribute_rewards(env: Env) {
-        let total_staked_amount = get_total_staked_counter(&env);
-        let total_rewards_power = calc_power(
-            &get_config(&env),
-            total_staked_amount,
-            Decimal::one(),
-            TOKEN_PER_POWER,
-        ) as u128;
-
-        if total_rewards_power == 0 {
-            log!(&env, "Stake: No rewards to distribute!");
-            return;
-        }
-        for distribution_address in get_distributions(&env) {
-            let mut distribution = get_distribution(&env, &distribution_address);
-            let withdrawable = distribution.withdrawable_total;
-
-            let reward_token_client = token_contract::Client::new(&env, &distribution_address);
-            // Undistributed rewards are simply all tokens left on the contract
-            let undistributed_rewards =
-                reward_token_client.balance(&env.current_contract_address()) as u128;
-
-            let curve = get_reward_curve(&env, &distribution_address).expect("Stake: Distribute reward: Not reward curve exists, probably distribution haven't been created");
-
-            // Calculate how much we have received since the last time Distributed was called,
-            // including only the reward config amount that is eligible for distribution.
-            // This is the amount we will distribute to all mem
-            let amount =
-                undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
-
-            if amount == 0 {
-                continue;
-            }
-
-            let leftover: u128 = distribution.shares_leftover.into();
-            let points = (amount << SHARES_SHIFT) + leftover;
-            let points_per_share = points / total_rewards_power;
-            distribution.shares_leftover = (points % total_rewards_power) as u64;
-
-            // Everything goes back to 128-bits/16-bytes
-            // Full amount is added here to total withdrawable, as it should not be considered on its own
-            // on future distributions - even if because of calculation offsets it is not fully
-            // distributed, the error is handled by leftover.
-            distribution.shares_per_point += points_per_share;
-            distribution.distributed_total += amount;
-            distribution.withdrawable_total += amount;
-
-            save_distribution(&env, &distribution_address, &distribution);
-
-            env.events().publish(
-                ("distribute_rewards", "asset"),
-                &reward_token_client.address,
-            );
-            env.events()
-                .publish(("distribute_rewards", "amount"), amount);
-        }
-    }
-
     fn withdraw_rewards(env: Env, sender: Address) {
-        env.events().publish(("withdraw_rewards", "user"), &sender);
-        let config = get_config(&env);
-
-        for distribution_address in get_distributions(&env) {
-            // get distribution data for the given reward
-            let mut distribution = get_distribution(&env, &distribution_address);
-            // get withdraw adjustment for the given distribution
-            let mut withdraw_adjustment =
-                get_withdraw_adjustment(&env, &sender, &distribution_address);
-            // calculate current reward amount given the distribution and subtracting withdraw
-            // adjustments
-            let reward_amount =
-                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment, &config);
-
-            if reward_amount == 0 {
-                continue;
-            }
-            withdraw_adjustment.withdrawn_rewards += reward_amount;
-            distribution.withdrawable_total -= reward_amount;
-
-            save_distribution(&env, &distribution_address, &distribution);
-            save_withdraw_adjustment(&env, &sender, &distribution_address, &withdraw_adjustment);
-
-            let reward_token_client = token_contract::Client::new(&env, &distribution_address);
-            reward_token_client.transfer(
-                &env.current_contract_address(),
-                &sender,
-                &(reward_amount as i128),
-            );
-
-            env.events().publish(
-                ("withdraw_rewards", "reward_token"),
-                &reward_token_client.address,
-            );
-            env.events()
-                .publish(("withdraw_rewards", "reward_amount"), reward_amount);
-        }
-    }
-
-    fn fund_distribution(
-        env: Env,
-        sender: Address,
-        start_time: u64,
-        distribution_duration: u64,
-        token_address: Address,
-        token_amount: i128,
-    ) {
-        sender.require_auth();
-
-        // Load previous reward curve; it must exist if the distribution exists
-        // In case of first time funding, it will be a constant 0 curve
-        let previous_reward_curve = get_reward_curve(&env, &token_address).expect("Stake: Fund distribution: Not reward curve exists, probably distribution haven't been created");
-        let max_complexity = get_config(&env).max_complexity;
-
-        let current_time = env.ledger().timestamp();
-        if start_time < current_time {
-            log!(
-                &env,
-                "Stake: Fund distribution: Fund distribution start time is too early"
-            );
-            panic_with_error!(&env, ContractError::InvalidTime);
-        }
-
-        let config = get_config(&env);
-        if config.min_reward > token_amount {
-            log!(
-                &env,
-                "Stake: Fund distribution: minimum reward amount not reached",
-            );
-            panic_with_error!(&env, ContractError::MinRewardNotEnough);
-        }
-
-        // transfer tokens to fund distribution
-        let reward_token_client = token_contract::Client::new(&env, &token_address);
-        reward_token_client.transfer(&sender, &env.current_contract_address(), &token_amount);
-
-        let end_time = current_time + distribution_duration;
-        // define a distribution curve starting at start_time with token_amount of tokens
-        // and ending at end_time with 0 tokens
-        let new_reward_distribution =
-            Curve::saturating_linear((start_time, token_amount as u128), (end_time, 0));
-
-        // Validate the the curve locks at most the amount provided and
-        // also fully unlocks all rewards sent
-        let (min, max) = new_reward_distribution.range();
-        if min != 0 || max > token_amount as u128 {
-            log!(&env, "Stake: Fund distribution: Rewards validation failed");
-            panic_with_error!(&env, ContractError::RewardsInvalid);
-        }
-
-        let new_reward_curve: Curve;
-        // if the previous reward curve has ended, we can just use the new curve
-        match previous_reward_curve.end() {
-            Some(end_distribution_timestamp) if end_distribution_timestamp < current_time => {
-                new_reward_curve = new_reward_distribution;
-            }
-            _ => {
-                // if the previous distribution is still ongoing, we need to combine the two
-                new_reward_curve = previous_reward_curve.combine(&env, &new_reward_distribution);
-                new_reward_curve
-                    .validate_complexity(max_complexity)
-                    .unwrap_or_else(|_| {
-                        log!(
-                            &env,
-                            "Stake: Fund distribution: Curve complexity validation failed"
-                        );
-                        panic_with_error!(&env, ContractError::InvalidMaxComplexity);
-                    });
-            }
-        }
-
-        save_reward_curve(&env, token_address.clone(), &new_reward_curve);
-
-        env.events()
-            .publish(("fund_reward_distribution", "asset"), &token_address);
-        env.events()
-            .publish(("fund_reward_distribution", "amount"), token_amount);
-        env.events()
-            .publish(("fund_reward_distribution", "start_time"), start_time);
-        env.events()
-            .publish(("fund_reward_distribution", "end_time"), end_time);
+        let stakes = get_stakes(&env, &sender);
+        let withdraw_fn_arg: Vec<Val> = (sender, stakes).into_val(&env);
+        env.invoke_contract::<Val>(
+            &get_stake_rewards(&env),
+            &Symbol::new(&env, "withdraw_rewards"),
+            withdraw_fn_arg,
+        );
     }
 
     fn stake_rewards_add_users(env: Env, users: Vec<Address>) {
@@ -520,37 +317,15 @@ impl StakingTrait for Staking {
         get_total_staked_counter(&env)
     }
 
-    fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
-        let now = env.ledger().timestamp();
-        let mut aprs = vec![&env];
-        let config = get_config(&env);
-        let total_stake_amount = get_total_staked_counter(&env);
-
-        for distribution_address in get_distributions(&env) {
-            let total_stake_power =
-                calc_power(&config, total_stake_amount, Decimal::one(), TOKEN_PER_POWER);
-            if total_stake_power == 0 {
-                aprs.push_back(AnnualizedReward {
-                    asset: distribution_address.clone(),
-                    amount: String::from_str(&env, "0"),
-                });
-                continue;
-            }
-
-            // get distribution data for the given reward
-            let distribution = get_distribution(&env, &distribution_address);
-            let curve = get_reward_curve(&env, &distribution_address);
-            let annualized_payout = calculate_annualized_payout(curve, now);
-            let apr = annualized_payout
-                / (total_stake_power as u128 * distribution.shares_per_point) as i128;
-
-            aprs.push_back(AnnualizedReward {
-                asset: distribution_address.clone(),
-                amount: apr.to_string(&env),
-            });
-        }
-
-        AnnualizedRewardsResponse { rewards: aprs }
+    fn query_annualized_rewards(env: Env) -> Val {
+        let stakes = get_total_staked_counter(&env);
+        let apr_fn_arg: Val = stakes.into_val(&env);
+        let ret: Val = env.invoke_contract::<Val>(
+            &get_stake_rewards(&env),
+            &Symbol::new(&env, "query_annualized_reward"),
+            vec![&env, apr_fn_arg],
+        );
+        ret
     }
 
     fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
