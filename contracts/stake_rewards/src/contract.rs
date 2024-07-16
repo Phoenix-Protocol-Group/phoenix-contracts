@@ -16,12 +16,11 @@ use crate::{
     storage::{
         get_config, save_config,
         utils::{self, get_admin, is_initialized, set_initialized},
-        Config,
+        BondingInfo, Config,
     },
     token_contract,
 };
 use curve::Curve;
-use phoenix::BondingInfo;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(

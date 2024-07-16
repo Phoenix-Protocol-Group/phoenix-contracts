@@ -21,12 +21,11 @@ use crate::{
             self, add_distribution, get_admin, get_distributions, get_stake_rewards,
             get_total_staked_counter, is_initialized, set_initialized, set_stake_rewards,
         },
-        Config,
+        Config, Stake,
     },
     token_contract, TOKEN_PER_POWER,
 };
 use curve::Curve;
-use phoenix::Stake;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(

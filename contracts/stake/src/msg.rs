@@ -1,7 +1,6 @@
 use soroban_sdk::{contracttype, Address, String, Vec};
 
-use crate::storage::Config;
-use phoenix::Stake;
+use crate::storage::{Config, Stake};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -50,6 +50,15 @@ pub struct LpPortfolio {
 }
 
 #[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq, Default)]
+pub struct Stake {
+    /// The amount of staked tokens
+    pub stake: i128,
+    /// The timestamp when the stake was made
+    pub stake_timestamp: u64,
+}
+
+#[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StakePortfolio {
     pub staking_contract: Address,
@@ -92,15 +101,6 @@ pub struct LiquidityPoolInfo {
 pub struct StakedResponse {
     pub stakes: Vec<Stake>,
     pub total_stake: i128,
-}
-
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Stake {
-    /// The amount of staked tokens
-    pub stake: i128,
-    /// The timestamp when the stake was made
-    pub stake_timestamp: u64,
 }
 
 pub fn save_config(env: &Env, config: Config) {

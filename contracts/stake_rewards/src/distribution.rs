@@ -1,10 +1,12 @@
 use soroban_sdk::{contracttype, Address, Env, Vec};
 
 use curve::Curve;
-use phoenix::Stake;
 use soroban_decimal::Decimal;
 
-use crate::{storage::Config, TOKEN_PER_POWER};
+use crate::{
+    storage::{Config, Stake},
+    TOKEN_PER_POWER,
+};
 
 /// How much points is the worth of single token in rewards distribution.
 /// The scaling is performed to have better precision of fixed point division.
