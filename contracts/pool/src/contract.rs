@@ -1084,74 +1084,65 @@ pub fn compute_swap(
     commission_rate: Decimal,
     referral_fee: i64,
 ) -> ComputeSwap {
-    // To avoid any overflow errors we convert the input parameters to U256;
+    // Step 1: Perform U256 arithmetic operations
     let offer_pool_as_u256 = U256::from_u128(env, offer_pool as u128);
     let ask_pool_as_u256 = U256::from_u128(env, ask_pool as u128);
     let offer_amount_as_u256 = U256::from_u128(env, offer_amount as u128);
 
     // Calculate the cross product of offer_pool and ask_pool
     let cp: U256 = offer_pool_as_u256.mul(&ask_pool_as_u256);
-    let og_cp = offer_pool * ask_pool;
-    soroban_sdk::testutils::arbitrary::std::dbg!(&cp, og_cp);
 
-    // Calculate the resulting amount of ask assets after the swap
-    // Return amount calculation based on the AMM model's invariant,
-    // which ensures the product of the amounts of the two assets remains constant before and after a trade.
-
-    let return_amount: U256 =
+    // Calculate the return amount
+    let return_amount_u256 =
         ask_pool_as_u256.sub(&cp.div(&offer_pool_as_u256.add(&offer_amount_as_u256)));
-    let og_return_amount = ask_pool - (og_cp / (offer_pool + offer_amount));
-    soroban_sdk::testutils::arbitrary::std::dbg!(&return_amount, og_return_amount);
-    // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: U256 = (offer_amount_as_u256
+
+    // Calculate spread amount
+    let spread_amount_u256 = offer_amount_as_u256
         .mul(&ask_pool_as_u256)
-        .div(&offer_pool_as_u256))
-    .sub(&return_amount);
-    let og_spread_amount = (offer_amount * ask_pool / offer_pool) - og_return_amount;
-    soroban_sdk::testutils::arbitrary::std::dbg!(&spread_amount, og_spread_amount);
+        .div(&offer_pool_as_u256.add(&offer_amount_as_u256))
+        .sub(&return_amount_u256);
 
-    let precision_factor = U256::from_u128(env, 10u128.pow(18));
-    let scaled_numerator =
-        U256::from_u128(env, commission_rate.numerator() as u128).mul(&precision_factor);
-    let u256_commission_rate =
-        scaled_numerator.div(&U256::from_u128(env, commission_rate.denominator() as u128));
+    // Calculate commission amount
+    let commission_rate_u256 = U256::from_u128(
+        env,
+        (commission_rate.numerator() / commission_rate.denominator()) as u128,
+    );
+    let commission_amount_u256 = return_amount_u256.mul(&commission_rate_u256);
 
-    let commission_amount: U256 = return_amount.mul(&u256_commission_rate);
-    let og_commission_amount = og_return_amount * commission_rate;
-    soroban_sdk::testutils::arbitrary::std::dbg!(
-        &precision_factor.to_u128().unwrap(),
-        &scaled_numerator.to_u128().unwrap(),
-        &commission_rate,
-        &u256_commission_rate.to_u128().unwrap(),
-        &commission_amount,
-        &og_commission_amount,
+    // Subtract commission amount from return amount
+    let return_amount_after_commission_u256 = return_amount_u256.sub(&commission_amount_u256);
+
+    // Calculate referral fee amount
+    let referral_fee_rate_u256 = U256::from_u128(env, (referral_fee * 100_000_000_000_000) as u128);
+    let referral_fee_amount_u256 = return_amount_after_commission_u256.mul(&referral_fee_rate_u256);
+
+    // Subtract referral fee amount from return amount
+    let final_return_amount_u256 =
+        return_amount_after_commission_u256.sub(&referral_fee_amount_u256);
+
+    // Convert all results back to i128 safely
+    let return_amount_i128 = u256_to_i128(
+        env,
+        final_return_amount_u256,
+    );
+    let spread_amount_i128 = u256_to_i128(
+        env,
+        spread_amount_u256,
+    );
+    let commission_amount_i128 = u256_to_i128(
+        env,
+        commission_amount_u256,
+    );
+    let referral_fee_amount_i128 = u256_to_i128(
+        env,
+        referral_fee_amount_u256,
     );
 
-    // Deduct the commission (minus the part that goes to the protocol) from the return amount
-    let return_amount: U256 = return_amount.sub(&commission_amount);
-    let og_return_amount = og_return_amount - og_commission_amount;
-    soroban_sdk::testutils::arbitrary::std::dbg!(&return_amount, og_return_amount);
-
-    let decimal_bps_u256 = U256::from_u128(env, (referral_fee * 100_000_000_000_000) as u128);
-    let referral_fee_amount = return_amount.mul(&decimal_bps_u256);
-    let og_referral_fee_amount: i128 = og_return_amount * Decimal::bps(referral_fee);
-    soroban_sdk::testutils::arbitrary::std::dbg!(&referral_fee, og_referral_fee_amount);
-
-    let return_amount: U256 = return_amount.sub(&referral_fee_amount);
-    let og_return_amount = og_return_amount - og_referral_fee_amount;
-    soroban_sdk::testutils::arbitrary::std::dbg!(&return_amount, og_return_amount);
-
-    // we now convert all the results back to i128 safely
-    let return_amount = u256_to_i128(env, return_amount);
-    let spread_amount = u256_to_i128(env, spread_amount);
-    let commission_amount = u256_to_i128(env, commission_amount);
-    let referral_fee_amount = u256_to_i128(env, referral_fee_amount);
-
     ComputeSwap {
-        return_amount,
-        spread_amount,
-        commission_amount,
-        referral_fee_amount,
+        return_amount: return_amount_i128,
+        spread_amount: spread_amount_i128,
+        commission_amount: commission_amount_i128,
+        referral_fee_amount: referral_fee_amount_i128,
     }
 }
 
@@ -1167,7 +1158,6 @@ pub fn compute_offer_amount(
     ask_amount: i128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
-    soroban_sdk::testutils::arbitrary::std::dbg!("BEGIN");
     // Calculate the cross product of offer_pool and ask_pool
     let cp: i128 = offer_pool * ask_pool;
 
