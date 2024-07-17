@@ -50,7 +50,6 @@ fn add_distribution_and_distribute_reward() {
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &admin,
         &ONE_DAY,
         &reward_duration,
         &reward_token.address,
@@ -129,14 +128,12 @@ fn two_distributions() {
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &admin,
         &ONE_DAY,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
     staking.fund_distribution(
-        &admin,
         &ONE_DAY,
         &reward_duration,
         &reward_token_2.address,
@@ -264,7 +261,6 @@ fn four_users_with_different_stakes() {
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &admin,
         &eight_days,
         &reward_duration,
         &reward_token.address,
@@ -372,7 +368,6 @@ fn two_users_one_starts_after_distribution_begins() {
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &admin,
         &ONE_DAY,
         &reward_duration,
         &reward_token.address,
@@ -470,7 +465,6 @@ fn two_users_both_bonds_after_distribution_starts() {
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &admin,
         &ONE_DAY,
         &reward_duration,
         &reward_token.address,
@@ -593,7 +587,7 @@ fn fund_rewards_without_establishing_distribution() {
 
     reward_token.mint(&admin, &1000);
 
-    staking.fund_distribution(&admin, &2_000, &600, &reward_token.address, &1000);
+    staking.fund_distribution(&2_000, &600, &reward_token.address, &1000);
 }
 
 #[test]
@@ -628,7 +622,6 @@ fn try_to_withdraw_rewards_without_bonding() {
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &admin,
         &2_000,
         &reward_duration,
         &reward_token.address,
@@ -694,7 +687,6 @@ fn fund_distribution_starting_before_current_timestamp() {
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &admin,
         &1_999,
         &reward_duration,
         &reward_token.address,
@@ -733,7 +725,7 @@ fn fund_distribution_with_reward_below_required_minimum() {
     });
 
     let reward_duration = 600;
-    staking.fund_distribution(&admin, &2_000, &reward_duration, &reward_token.address, &10);
+    staking.fund_distribution(&2_000, &reward_duration, &reward_token.address, &10);
 }
 
 #[test]
@@ -770,7 +762,6 @@ fn calculate_apr() {
     // whole year of distribution
     let reward_duration = 60 * 60 * 24 * 365;
     staking.fund_distribution(
-        &admin,
         &ONE_DAY,
         &reward_duration,
         &reward_token.address,
@@ -816,7 +807,6 @@ fn calculate_apr() {
     reward_token.mint(&admin, &(reward_amount as i128));
 
     staking.fund_distribution(
-        &admin,
         &(2 * &ONE_DAY),
         &reward_duration,
         &reward_token.address,
@@ -899,7 +889,6 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     staking.bond(&user_2, &1_000);
     let reward_duration = 10_000;
     staking.fund_distribution(
-        &admin,
         &ONE_DAY,
         &reward_duration,
         &reward_token.address,
@@ -1017,7 +1006,6 @@ fn test_bond_withdraw_unbond() {
     let reward_duration = 10_000;
 
     staking.fund_distribution(
-        &admin,
         &ONE_DAY,
         &reward_duration,
         &reward_token.address,
@@ -1115,14 +1103,8 @@ fn panic_when_funding_distribution_with_curve_too_complex() {
 
     reward_token.mint(&admin, &3000);
 
-    staking.fund_distribution(&admin, &0, &FIVE_MINUTES, &reward_token.address, &1000);
-    staking.fund_distribution(
-        &admin,
-        &FIVE_MINUTES,
-        &TEN_MINUTES,
-        &reward_token.address,
-        &1000,
-    );
+    staking.fund_distribution(&0, &FIVE_MINUTES, &reward_token.address, &1000);
+    staking.fund_distribution(&FIVE_MINUTES, &TEN_MINUTES, &reward_token.address, &1000);
 
     // assert just to prove that we have 2 successful fund distributions
     assert_eq!(
@@ -1131,11 +1113,5 @@ fn panic_when_funding_distribution_with_curve_too_complex() {
     );
 
     // uh-oh fail
-    staking.fund_distribution(
-        &admin,
-        &TEN_MINUTES,
-        &ONE_WEEK,
-        &reward_token.address,
-        &1000,
-    );
+    staking.fund_distribution(&TEN_MINUTES, &ONE_WEEK, &reward_token.address, &1000);
 }
