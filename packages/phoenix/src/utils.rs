@@ -38,6 +38,14 @@ pub fn is_approx_ratio(a: Decimal, b: Decimal, tolerance: Decimal) -> bool {
     diff <= tolerance
 }
 
+pub fn convert_i128_to_u128(input: i128) -> u128 {
+    if input < 0 {
+        panic!("Cannot convert i128 to u128");
+    } else {
+        input as u128
+    }
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TokenInitInfo {
