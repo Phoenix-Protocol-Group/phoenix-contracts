@@ -263,7 +263,7 @@ fn update_config_update_admin() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: UpdateConfig: Invalid total_fee_bps")]
+#[should_panic(expected = "The value 10100 is out of range. Must be between 0 and 10000 bps.")]
 fn update_config_too_high_fees() {
     let env = Env::default();
     env.mock_all_auths();
@@ -362,4 +362,84 @@ fn update_liquidity_pool_works() {
         }
     );
     assert_eq!(result.total_fee_bps, 0);
+}
+
+#[test]
+fn update_configs_all_bps_values_should_work() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        Some(admin1.clone()),
+        (&token1.address, &token2.address),
+        swap_fees,
+        user1.clone(),
+        500,
+        200,
+        stake_manager,
+        stake_owner,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let stake_token_address = pool.query_stake_contract_address();
+
+    assert_eq!(
+        pool.query_config(),
+        Config {
+            token_a: token1.address.clone(),
+            token_b: token2.address.clone(),
+            share_token: share_token_address.clone(),
+            stake_contract: stake_token_address.clone(),
+            pool_type: PairType::Xyk,
+            total_fee_bps: 0,
+            fee_recipient: user1,
+            max_allowed_slippage_bps: 500,
+            max_allowed_spread_bps: 200,
+            max_referral_bps: 5_000,
+            default_slippage_bps: 100i64,
+        }
+    );
+
+    // we update all the bps values to be %10
+    pool.update_config(
+        &None,
+        &Some(1000i64),
+        &Some(admin2.clone()),
+        &Some(1000i64),
+        &Some(1000i64),
+        &Some(1000i64),
+    );
+
+    // assert the changes
+    assert_eq!(
+        pool.query_config(),
+        Config {
+            token_a: token1.address.clone(),
+            token_b: token2.address.clone(),
+            share_token: share_token_address.clone(),
+            stake_contract: stake_token_address.clone(),
+            pool_type: PairType::Xyk,
+            total_fee_bps: 1000,
+            fee_recipient: admin2.clone(),
+            max_allowed_slippage_bps: 1000,
+            max_allowed_spread_bps: 1000,
+            max_referral_bps: 1000,
+            default_slippage_bps: 100i64,
+        }
+    );
 }

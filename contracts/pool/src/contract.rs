@@ -547,22 +547,22 @@ impl LiquidityPoolTrait for LiquidityPool {
             utils::save_admin(&env, new_admin);
         }
         if let Some(total_fee_bps) = total_fee_bps {
-            if !(0..=10_000).contains(&total_fee_bps) {
-                log!(&env, "Pool: UpdateConfig: Invalid total_fee_bps");
-                panic_with_error!(&env, ContractError::InvalidBps);
-            }
+            validate_bps!(total_fee_bps);
             config.total_fee_bps = total_fee_bps;
         }
         if let Some(fee_recipient) = fee_recipient {
             config.fee_recipient = fee_recipient;
         }
         if let Some(max_allowed_slippage_bps) = max_allowed_slippage_bps {
+            validate_bps!(max_allowed_slippage_bps);
             config.max_allowed_slippage_bps = max_allowed_slippage_bps;
         }
         if let Some(max_allowed_spread_bps) = max_allowed_spread_bps {
+            validate_bps!(max_allowed_spread_bps);
             config.max_allowed_spread_bps = max_allowed_spread_bps;
         }
         if let Some(max_referral_bps) = max_referral_bps {
+            validate_bps!(max_referral_bps);
             config.max_referral_bps = max_referral_bps;
         }
 
