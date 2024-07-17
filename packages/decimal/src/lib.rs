@@ -240,15 +240,11 @@ impl Decimal {
 
         // Convert numerator and denominator to BigInt.
         // unwrap since i128 is always convertible to BigInt
-        // let numerator = numerator.to_bigint().unwrap();
-        // let denominator = denominator.to_bigint().unwrap();
-        // let decimal_fractional = Self::DECIMAL_FRACTIONAL.to_bigint().unwrap();
         let numerator_i256 = I256::from_i128(env, numerator);
         let denominator_i256 = I256::from_i128(env, denominator);
         let decimal_fractional_i256 = I256::from_i128(env, Self::DECIMAL_FRACTIONAL);
 
         // Compute the ratio: (numerator * DECIMAL_FRACTIONAL) / denominator
-        // let ratio = (numerator * Self::DECIMAL_FRACTIONAL) / denominator;
         let ratio_i256 = (numerator_i256.mul(&decimal_fractional_i256)).div(&denominator_i256);
 
         // Convert back to i128. If conversion fails, panic.
@@ -272,15 +268,11 @@ impl Decimal {
 
         // Convert numerator and denominator to BigInt.
         // unwrap since i128 is always convertible to BigInt
-        // let numerator = numerator.to_bigint().unwrap();
-        // let denominator = denominator.to_bigint().unwrap();
-        // let decimal_fractional = Self::DECIMAL_FRACTIONAL.to_bigint().unwrap();
 
         // Compute the ratio: (numerator * DECIMAL_FRACTIONAL) / denominator
         let ratio = (numerator * Self::DECIMAL_FRACTIONAL) / denominator;
 
         // Convert back to i128. If conversion fails, panic.
-        // let ratio = ratio.to_i128().ok_or(Error::Overflow)?;
 
         // Construct and return the Decimal.
         Ok(Decimal(ratio))
