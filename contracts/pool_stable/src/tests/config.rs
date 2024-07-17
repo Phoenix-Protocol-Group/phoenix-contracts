@@ -269,3 +269,78 @@ fn initialize_with_incorrect_amp() {
         0, // init AMP
     );
 }
+
+#[test]
+fn update_config_all_bps_params_should_work() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        Some(admin1.clone()),
+        (&token1.address, &token2.address),
+        swap_fees,
+        user1.clone(),
+        500,
+        200,
+        stake_manager,
+        factory,
+        None,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let stake_token_address = pool.query_stake_contract_address();
+
+    assert_eq!(
+        pool.query_config(),
+        Config {
+            token_a: token1.address.clone(),
+            token_b: token2.address.clone(),
+            share_token: share_token_address.clone(),
+            stake_contract: stake_token_address.clone(),
+            pool_type: PairType::Stable,
+            total_fee_bps: 0,
+            fee_recipient: user1,
+            max_allowed_slippage_bps: 500,
+            max_allowed_spread_bps: 200,
+        }
+    );
+
+    // update all bps to 10%
+    pool.update_config(
+        &admin1,
+        &None,
+        &Some(1000i64),
+        &Some(admin2.clone()),
+        &Some(1000),
+        &Some(1000),
+    );
+    assert_eq!(
+        pool.query_config(),
+        Config {
+            token_a: token1.address.clone(),
+            token_b: token2.address.clone(),
+            share_token: share_token_address.clone(),
+            stake_contract: stake_token_address.clone(),
+            pool_type: PairType::Stable,
+            total_fee_bps: 1000,
+            fee_recipient: admin2.clone(),
+            max_allowed_slippage_bps: 1000,
+            max_allowed_spread_bps: 1000,
+        }
+    );
+}
