@@ -1,3 +1,4 @@
+use phoenix::utils::convert_i128_to_u128;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, Vec,
 };
@@ -226,7 +227,7 @@ impl VestingTrait for Vesting {
             .checked_sub(vested)
             .unwrap_or_else(|| panic_with_error!(env, ContractError::NotEnoughBalance));
 
-        if sender_liquid < available_to_claim as u128 {
+        if sender_liquid < convert_i128_to_u128(available_to_claim) {
             log!(
             &env,
             "Vesting: Verify Vesting Update Balances: Remaining amount must be at least equal to vested amount"
@@ -239,7 +240,7 @@ impl VestingTrait for Vesting {
             &sender,
             index,
             &VestingInfo {
-                balance: (sender_balance - available_to_claim as u128),
+                balance: (sender_balance - convert_i128_to_u128(available_to_claim)),
                 ..vesting_info
             },
         );
@@ -297,7 +298,7 @@ impl VestingTrait for Vesting {
         // check if minter has enough to mint
         let minter_remainder = get_minter(&env)
             .map_or(0, |m| m.mint_capacity)
-            .checked_sub(amount as u128)
+            .checked_sub(convert_i128_to_u128(amount))
             .unwrap_or_else(|| {
                 log!(
                     &env,

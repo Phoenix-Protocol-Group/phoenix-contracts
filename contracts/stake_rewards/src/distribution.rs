@@ -1,3 +1,4 @@
+use phoenix::utils::convert_i128_to_u128;
 use soroban_sdk::{contracttype, Address, Env, Vec};
 
 use curve::Curve;
@@ -171,12 +172,12 @@ pub fn withdrawable_rewards(
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
     let points = calc_power(config, stakes, Decimal::one(), TOKEN_PER_POWER);
-    let points = (ppw * points as u128) as i128;
+    let points = (ppw * convert_i128_to_u128(points)) as i128;
 
     let correction = adjustment.shares_correction;
     let points = points + correction;
     let amount = points >> SHARES_SHIFT;
-    amount as u128 - adjustment.withdrawn_rewards
+    convert_i128_to_u128(amount) - adjustment.withdrawn_rewards
 }
 
 pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {
@@ -259,13 +260,11 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
         };
 
         // Add the weighted power to the sum
-        weighted_sum += power * stake.stake as u128;
+        weighted_sum += power * convert_i128_to_u128(stake.stake);
         // Accumulate the total weight
-        total_weight += 60 * stake.stake as u128;
+        total_weight += 60 * convert_i128_to_u128(stake.stake);
     }
 
-    dbg!(weighted_sum);
-    dbg!(total_weight);
     // Calculate and return the average staking power
     if total_weight > 0 {
         Decimal::from_ratio(weighted_sum as i128, total_weight as i128)

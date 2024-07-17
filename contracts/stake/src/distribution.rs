@@ -1,3 +1,4 @@
+use phoenix::utils::convert_i128_to_u128;
 use soroban_sdk::{contracttype, Address, Env};
 
 use curve::Curve;
@@ -172,12 +173,12 @@ pub fn withdrawable_rewards(
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
     let points = calc_power(config, stakes as i128, Decimal::one(), TOKEN_PER_POWER);
-    let points = (ppw * points as u128) as i128;
+    let points = (ppw * convert_i128_to_u128(points)) as i128;
 
     let correction = adjustment.shares_correction;
     let points = points + correction;
     let amount = points >> SHARES_SHIFT;
-    amount as u128 - adjustment.withdrawn_rewards
+    convert_i128_to_u128(amount) - adjustment.withdrawn_rewards
 }
 
 pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {

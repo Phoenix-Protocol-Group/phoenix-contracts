@@ -1,3 +1,6 @@
+use std::convert;
+
+use phoenix::utils::convert_i128_to_u128;
 use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String, Vec,
@@ -238,12 +241,13 @@ impl StakingRewardsTrait for StakingRewards {
 
         let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
         let total_staked_amount = stake_client.query_total_staked();
-        let total_rewards_power = calc_power(
+        let calc_power_result = calc_power(
             &config,
             total_staked_amount,
             Decimal::one(),
             TOKEN_PER_POWER,
-        ) as u128;
+        );
+        let total_rewards_power = convert_i128_to_u128(calc_power_result);
 
         if total_rewards_power == 0 {
             log!(&env, "Stake rewards: No rewards to distribute!");
@@ -254,8 +258,9 @@ impl StakingRewardsTrait for StakingRewards {
 
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         // Undistributed rewards are simply all tokens left on the contract
-        let undistributed_rewards =
-            reward_token_client.balance(&env.current_contract_address()) as u128;
+        let undistributed_rewards_balance =
+            reward_token_client.balance(&env.current_contract_address());
+        let undistributed_rewards = convert_i128_to_u128(undistributed_rewards_balance);
 
         let curve = get_reward_curve(&env, &config.reward_token).expect("Stake: Distribute reward: Not reward curve exists, probably distribution haven't been created");
 
@@ -374,13 +379,15 @@ impl StakingRewardsTrait for StakingRewards {
         let end_time = current_time + distribution_duration;
         // define a distribution curve starting at start_time with token_amount of tokens
         // and ending at end_time with 0 tokens
-        let new_reward_distribution =
-            Curve::saturating_linear((start_time, token_amount as u128), (end_time, 0));
+        let new_reward_distribution = Curve::saturating_linear(
+            (start_time, convert_i128_to_u128(token_amount)),
+            (end_time, 0),
+        );
 
         // Validate the the curve locks at most the amount provided and
         // also fully unlocks all rewards sent
         let (min, max) = new_reward_distribution.range();
-        if min != 0 || max > token_amount as u128 {
+        if min != 0 || max > convert_i128_to_u128(token_amount) {
             log!(
                 &env,
                 "Stake rewards: Fund distribution: Rewards validation failed"
@@ -463,8 +470,8 @@ impl StakingRewardsTrait for StakingRewards {
         let distribution = get_distribution(&env, &config.reward_token);
         let curve = get_reward_curve(&env, &config.reward_token);
         let annualized_payout = calculate_annualized_payout(curve, now);
-        let apr =
-            annualized_payout / (total_stake_power as u128 * distribution.shares_per_point) as i128;
+        let apr = annualized_payout
+            / (convert_i128_to_u128(total_stake_power) * distribution.shares_per_point) as i128;
 
         AnnualizedRewardResponse {
             asset: config.reward_token.clone(),
@@ -489,7 +496,7 @@ impl StakingRewardsTrait for StakingRewards {
         let stakes = stake_client.query_staked(&user);
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
 
-        let reward_amount = dbg!((reward_amount as i128 * reward_multiplier) as u128);
+        let reward_amount = convert_i128_to_u128(reward_amount as i128 * reward_multiplier);
 
         WithdrawableRewardResponse {
             reward_address: config.reward_token,
@@ -505,8 +512,8 @@ impl StakingRewardsTrait for StakingRewards {
     fn query_undistributed_reward(env: Env, asset: Address) -> u128 {
         let distribution = get_distribution(&env, &asset);
         let reward_token_client = token_contract::Client::new(&env, &asset);
-        reward_token_client.balance(&env.current_contract_address()) as u128
-            - distribution.withdrawable_total
+        let reward_token_balance = reward_token_client.balance(&env.current_contract_address());
+        convert_i128_to_u128(reward_token_balance) - distribution.withdrawable_total
     }
 }
 
