@@ -38,6 +38,7 @@ pub enum ContractError {
 
     CurveConstant = 29,
     CurveSLNotDecreasing = 30,
+    AlreadyInitialized = 31,
 }
 
 impl From<CurveError> for ContractError {

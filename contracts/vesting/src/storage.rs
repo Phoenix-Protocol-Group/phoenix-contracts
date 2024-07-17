@@ -23,6 +23,7 @@ pub enum DataKey {
     Whitelist = 4,
     VestingTokenInfo = 5,
     MaxVestingComplexity = 6,
+    IsInitialized = 7,
 }
 
 #[contracttype]
@@ -187,4 +188,14 @@ pub fn get_max_vesting_complexity(env: &Env) -> u32 {
         .instance()
         .get(&DataKey::MaxVestingComplexity)
         .unwrap()
+}
+pub fn is_initialized(e: &Env) -> bool {
+    e.storage()
+        .instance()
+        .get(&DataKey::IsInitialized)
+        .unwrap_or(false)
+}
+
+pub fn set_initialized(e: &Env) {
+    e.storage().instance().set(&DataKey::IsInitialized, &true);
 }
