@@ -126,7 +126,7 @@ fn calculate_step(
     let l_val = leverage_mul.add(&d_p_mul).mul(initial_d);
 
     // (leverage - 1) * initial_d
-    let leverage_sub = leverage_mul.add(&leverage.sub(&U256::from_u128(env, 1)));
+    let leverage_sub = initial_d.mul(&leverage.sub(&U256::from_u128(env, 1)));
 
     // (n_coins + 1) * d_product
     let n_coins_sum = d_product.mul(&(U256::from_u128(env, 3)));

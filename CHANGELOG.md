@@ -21,6 +21,10 @@ and this project adheres to
 - Stake rewards: Create a new contract and prepare first testcases ([#306])
 - Trader: Adds a check if the contract has been already initialized ([#329])
 
+## Fixed
+
+- Pool stable: Wrong calculation of swap constant reduces stable pool's efficiency ([#366])
+
 [#288]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/288
 [#299]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/299
 [#301]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/301
@@ -30,6 +34,7 @@ and this project adheres to
 [#308]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/308
 [#322]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/322
 [#329]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/329
+[#366]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/366
 
 ## [1.0.0] - 2024-05-08
 
