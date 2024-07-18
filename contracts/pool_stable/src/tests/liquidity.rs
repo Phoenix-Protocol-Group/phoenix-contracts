@@ -86,7 +86,7 @@ fn provide_liqudity() {
         ),]
     );
 
-    assert_eq!(token_share.balance(&user1), 999);
+    assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 0);
     assert_eq!(token1.balance(&pool.address), 1000);
@@ -107,13 +107,13 @@ fn provide_liqudity() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 999i128
+                amount: 1000i128
             },
             stake_address: pool.query_stake_contract_address(),
         }
     );
 
-    assert_eq!(pool.query_total_issued_lp(), 999);
+    assert_eq!(pool.query_total_issued_lp(), 1000);
 }
 
 #[test]
@@ -154,7 +154,7 @@ fn withdraw_liquidity() {
     // tokens 1 & 2 have 7 decimal digits, meaning those values are 0.0001 of token
     pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>);
 
-    assert_eq!(token_share.balance(&user1), 999);
+    assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 0);
     assert_eq!(token1.balance(&pool.address), 1000);
@@ -187,7 +187,7 @@ fn withdraw_liquidity() {
         ),]
     );
 
-    assert_eq!(token_share.balance(&user1), 499);
+    assert_eq!(token_share.balance(&user1), 500);
     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
     assert_eq!(token1.balance(&user1), 500);
     assert_eq!(token1.balance(&pool.address), 500);
@@ -208,14 +208,14 @@ fn withdraw_liquidity() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 499i128,
+                amount: 500i128,
             },
             stake_address: pool.query_stake_contract_address(),
         }
     );
 
     // clear the pool
-    pool.withdraw_liquidity(&user1, &499, &500, &500, &None::<u64>);
+    pool.withdraw_liquidity(&user1, &500, &500, &500, &None::<u64>);
     assert_eq!(token_share.balance(&user1), 0);
     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
     assert_eq!(token1.balance(&user1), 1000);
@@ -530,7 +530,7 @@ fn provide_liqudity_with_deadline_works() {
     env.ledger().with_mut(|li| li.timestamp = 99);
     pool.provide_liquidity(&user1, &1000, &1000, &None, &Some(100));
 
-    assert_eq!(token_share.balance(&user1), 999);
+    assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 0);
     assert_eq!(token1.balance(&pool.address), 1000);
@@ -551,13 +551,13 @@ fn provide_liqudity_with_deadline_works() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 999i128
+                amount: 1000i128
             },
             stake_address: pool.query_stake_contract_address(),
         }
     );
 
-    assert_eq!(pool.query_total_issued_lp(), 999);
+    assert_eq!(pool.query_total_issued_lp(), 1000);
 }
 
 #[test]
@@ -639,7 +639,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
 
     pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>);
 
-    assert_eq!(token_share.balance(&user1), 999);
+    assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 0);
     assert_eq!(token1.balance(&pool.address), 1000);
@@ -652,7 +652,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
     env.ledger().with_mut(|li| li.timestamp = 49);
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(50));
 
-    assert_eq!(token_share.balance(&user1), 499);
+    assert_eq!(token_share.balance(&user1), 500);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 500);
     assert_eq!(token1.balance(&pool.address), 500);
@@ -673,7 +673,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 499i128,
+                amount: 500i128,
             },
             stake_address: pool.query_stake_contract_address(),
         }
@@ -681,7 +681,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
 
     // clear the pool
     env.ledger().with_mut(|li| li.timestamp = 99);
-    pool.withdraw_liquidity(&user1, &499, &500, &500, &Some(100));
+    pool.withdraw_liquidity(&user1, &500, &500, &500, &Some(100));
     assert_eq!(token_share.balance(&user1), 0);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 1000);
@@ -729,7 +729,7 @@ fn withdraw_liquidity_past_deadline_should_panic() {
 
     pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>);
 
-    assert_eq!(token_share.balance(&user1), 999);
+    assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 0);
     assert_eq!(token1.balance(&pool.address), 1000);

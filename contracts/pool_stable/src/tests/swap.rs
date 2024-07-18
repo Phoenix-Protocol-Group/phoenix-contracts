@@ -99,7 +99,7 @@ fn simple_swap() {
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 1998999i128,
+                amount: 1999000i128,
             },
             stake_address: pool.query_stake_contract_address(),
         }
@@ -131,7 +131,7 @@ fn simple_swap() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 1998999i128, // this has not changed
+                amount: 1999000i128, // this has not changed
             },
             stake_address: pool.query_stake_contract_address(),
         }
@@ -213,7 +213,7 @@ fn swap_with_high_fee() {
             },
             asset_lp_share: Asset {
                 address: pool.query_share_token_address(),
-                amount: 1998999i128,
+                amount: 1999000i128,
             },
             stake_address: pool.query_stake_contract_address(),
         }
@@ -388,7 +388,7 @@ fn simple_swap_with_deadline_should_work() {
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 1998999i128,
+                amount: 1999000i128,
             },
             stake_address: pool.query_stake_contract_address(),
         }
@@ -421,7 +421,7 @@ fn simple_swap_with_deadline_should_work() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 1998999i128, // this has not changed
+                amount: 1999000i128, // this has not changed
             },
             stake_address: pool.query_stake_contract_address(),
         }
