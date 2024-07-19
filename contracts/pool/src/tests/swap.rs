@@ -1617,6 +1617,7 @@ fn simple_swap_with_biggest_possible_decimal_precision() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
     );
 
     let share_token_address = pool.query_share_token_address();
