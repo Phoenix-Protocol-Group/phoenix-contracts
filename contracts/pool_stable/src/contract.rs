@@ -15,7 +15,7 @@ use crate::{
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
         SimulateSwapResponse, StableLiquidityPoolInfo,
     },
-    token_contract, DECIMAL_PRECISION, MAXIMUM_ALLOWED_PRECISION,
+    token_contract, DECIMAL_PRECISION,
 };
 use phoenix::{validate_bps, validate_int_parameters};
 use soroban_decimal::Decimal;
@@ -264,6 +264,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
+
+        set_initialized(&env);
 
         env.events()
             .publish(("initialize", "XYK LP token_a"), token_a);

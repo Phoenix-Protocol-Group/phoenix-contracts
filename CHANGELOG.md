@@ -22,6 +22,7 @@ and this project adheres to
 - Stake rewards: Create a new contract and prepare first testcases ([#306])
 - Trader: Adds a check if the contract has been already initialized ([#329])
 - All: Adds more test that verify the authorization during execution ([#363])
+- Pool Stable: Adds a check to prevent creating pools with tokens with unusable decimals ([#360])
 
 ## Fixed
 
@@ -36,6 +37,7 @@ and this project adheres to
 [#308]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/308
 [#322]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/322
 [#329]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/329
+[#360]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/360
 [#363]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/363
 [#365]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/365
 [#366]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/366

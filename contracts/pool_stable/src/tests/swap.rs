@@ -616,7 +616,7 @@ fn simple_swap_with_biggest_possible_decimal_numbers_as_liquidity() {
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 105004999i128,
+                amount: 105005000i128,
             },
             stake_address: pool.query_stake_contract_address(),
         }
