@@ -1255,3 +1255,87 @@ fn simple_swap_with_should_fail_when_after_the_deadline() {
         &Some(99u64),
     );
 }
+
+#[test]
+fn simple_swap_with_biggest_possible_decimal_precision() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        // allowing the maximum spread of %100
+        Some(10_000),
+        stake_manager,
+        stake_owner,
+    );
+
+    token1.mint(&user1, &999_000_000_000_001_000);
+    token2.mint(&user1, &999_000_000_000_001_000);
+    pool.provide_liquidity(
+        &user1,
+        &Some(450_000_000_000_000_000),
+        &Some(405_000_000_000_000_000),
+        &Some(450_000_000_000_000_000),
+        &Some(405_000_000_000_000_000),
+        &None,
+        &None::<u64>,
+    );
+
+    // 50% spread
+    let spread = 5000i64;
+    pool.swap(
+        &user1,
+        // FIXM: Disable Referral struct
+        // &None::<Referral>,
+        &token1.address,
+        &200_000_000_000_000_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 650_000_000_000_000_000i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 311_538_461_538_461_538i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 450_000_000_000_000_000i128,
+            },
+            stake_address: result.clone().stake_address,
+        }
+    );
+
+    assert_eq!(token1.balance(&user1), 349_000_000_000_001_000i128);
+    assert_eq!(token2.balance(&user1), 687_461_538_461_539_462i128);
+}

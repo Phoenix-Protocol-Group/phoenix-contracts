@@ -1,6 +1,8 @@
+extern crate std;
 use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    vec, Address, Env, String,
+    symbol_short,
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
+    vec, Address, Env, IntoVal, String, Symbol,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
@@ -37,6 +39,21 @@ fn add_distribution_and_distribute_reward() {
 
     staking.create_distribution_flow(&manager, &reward_token.address);
 
+    assert_eq!(
+        env.auths(),
+        [(
+            manager.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    staking.address.clone(),
+                    Symbol::new(&env, "create_distribution_flow"),
+                    (&manager.clone(), reward_token.address.clone()).into_val(&env),
+                )),
+                sub_invocations: std::vec![],
+            }
+        ),]
+    );
+
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
 
@@ -54,6 +71,37 @@ fn add_distribution_and_distribute_reward() {
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
+    );
+
+    assert_eq!(
+        env.auths(),
+        [(
+            admin.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    staking.address.clone(),
+                    Symbol::new(&env, "fund_distribution"),
+                    (
+                        ONE_DAY,
+                        reward_duration,
+                        reward_token.address.clone(),
+                        reward_amount as i128
+                    )
+                        .into_val(&env),
+                )),
+                sub_invocations: std::vec![
+                    (AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            reward_token.address.clone(),
+                            symbol_short!("transfer"),
+                            (&admin, &staking.address.clone(), reward_amount as i128)
+                                .into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    }),
+                ],
+            }
+        ),]
     );
 
     staking.distribute_rewards();

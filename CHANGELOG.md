@@ -21,6 +21,7 @@ and this project adheres to
 - Multihop: Allows multihop swaps for stable pool ([#303])
 - Stake rewards: Create a new contract and prepare first testcases ([#306])
 - Trader: Adds a check if the contract has been already initialized ([#329])
+- All: Adds more test that verify the authorization during execution ([#363])
 
 ## Fixed
 
@@ -35,6 +36,7 @@ and this project adheres to
 [#308]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/308
 [#322]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/322
 [#329]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/329
+[#363]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/363
 [#365]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/365
 [#366]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/366
 

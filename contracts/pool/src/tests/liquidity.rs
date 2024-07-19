@@ -191,23 +191,28 @@ fn withdraw_liquidity() {
     let min_a = 50;
     let min_b = 50;
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &None::<u64>);
-    // assert_eq!(
-    //     env.auths(),
-    //     [
-    //         (
-    //             user1.clone(),
-    //             pool.address.clone(),
-    //             Symbol::new(&env, "withdraw_liquidity"),
-    //             (&user1, 50_i128, 50_i128, 50_i128).into_val(&env)
-    //         ),
-    //         (
-    //             user1.clone(),
-    //             share_token_address.clone(),
-    //             Symbol::short("transfer"),
-    //             (&user1, &pool.address, 50_i128).into_val(&env)
-    //         )
-    //     ]
-    // );
+
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    Symbol::new(&env, "withdraw_liquidity"),
+                    (&user1, 50i128, 50i128, 50i128, None::<u64>).into_val(&env),
+                )),
+                sub_invocations: std::vec![AuthorizedInvocation {
+                    function: AuthorizedFunction::Contract((
+                        share_token_address.clone(),
+                        symbol_short!("transfer"),
+                        (&user1, &pool.address, 50_i128).into_val(&env)
+                    )),
+                    sub_invocations: std::vec![],
+                },],
+            }
+        ),]
+    );
 
     assert_eq!(token_share.balance(&user1), 50);
     assert_eq!(token_share.balance(&pool.address), 0); // sanity check
@@ -1182,6 +1187,46 @@ fn provide_liqudity_with_deadline_should_work() {
         &Some(100),
     );
 
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    Symbol::new(&env, "provide_liquidity"),
+                    (
+                        &user1,
+                        Some(100i128),
+                        Some(100i128),
+                        Some(100i128),
+                        Some(100i128),
+                        None::<i64>,
+                        Some(100u64)
+                    )
+                        .into_val(&env),
+                )),
+                sub_invocations: std::vec![
+                    AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            token1.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user1, &pool.address, 100_i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    },
+                    AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            token2.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user1, &pool.address, 100_i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    },
+                ],
+            }
+        ),]
+    );
     assert_eq!(token_share.balance(&user1), 100);
     assert_eq!(token_share.balance(&pool.address), 0);
     assert_eq!(token1.balance(&user1), 900);
@@ -1319,6 +1364,28 @@ fn withdraw_liquidity_with_deadline_should_work() {
     let min_b = 50;
     env.ledger().with_mut(|li| li.timestamp = 49);
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(50));
+
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    Symbol::new(&env, "withdraw_liquidity"),
+                    (&user1, 50i128, 50i128, 50i128, 50u64).into_val(&env),
+                )),
+                sub_invocations: std::vec![AuthorizedInvocation {
+                    function: AuthorizedFunction::Contract((
+                        share_token_address.clone(),
+                        symbol_short!("transfer"),
+                        (&user1, &pool.address, 50_i128).into_val(&env)
+                    )),
+                    sub_invocations: std::vec![],
+                },],
+            }
+        ),]
+    );
 
     assert_eq!(token_share.balance(&user1), 50);
     assert_eq!(token_share.balance(&pool.address), 0);
