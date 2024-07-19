@@ -3,12 +3,13 @@ extern crate std;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    Address, Env, IntoVal, Symbol,
+    Address, Env, IntoVal, String, Symbol,
 };
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::{
     storage::{Asset, PoolResponse},
+    tests::setup::install_and_deploy_token_contract,
     token_contract,
 };
 
@@ -751,10 +752,8 @@ fn withdraw_liquidity_past_deadline_should_panic() {
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(49));
 }
 
-#[ignore = "maybe not the right logic when checking if min_shares is above shares"]
 #[test]
-#[should_panic(expected = "Pool Stable: Provide Liquidity: Slippage tolerance exceeded")]
-fn provide_liqudity_should_panic_when_shares_to_be_minted_below_minimum_shares() {
+fn provide_liqudity_15_to_3() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -763,44 +762,21 @@ fn provide_liqudity_should_panic_when_shares_to_be_minted_below_minimum_shares()
     let manager = Address::generate(&env);
     let factory = Address::generate(&env);
 
-    let mut token1 = deploy_token_contract(&env, &admin);
-    let mut token2 = deploy_token_contract(&env, &admin);
-    if token2.address < token1.address {
-        std::mem::swap(&mut token1, &mut token2);
-    }
-    let user1 = Address::generate(&env);
-    let pool = deploy_stable_liquidity_pool_contract(
+    let mut token1 = install_and_deploy_token_contract(
         &env,
-        None,
-        (&token1.address, &token2.address),
-        0i64,
-        None,
-        Some(10_000),
-        None,
-        manager,
-        factory,
-        None,
+        &admin,
+        &15,
+        &String::from_str(&env, "token_one"),
+        &String::from_str(&env, "TON"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &admin,
+        &3,
+        &String::from_str(&env, "token_two"),
+        &String::from_str(&env, "TOT"),
     );
 
-    token1.mint(&user1, &2000);
-    token2.mint(&user1, &2000);
-
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &None::<u128>);
-    pool.provide_liquidity(&user1, &1000, &1000, &Some(1), &None::<u64>, &None::<u128>);
-}
-
-#[test]
-fn provide_liqudity_with_user_specified_minimum_lp_shares() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let manager = Address::generate(&env);
-    let factory = Address::generate(&env);
-
-    let mut token1 = deploy_token_contract(&env, &admin);
-    let mut token2 = deploy_token_contract(&env, &admin);
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
@@ -828,7 +804,9 @@ fn provide_liqudity_with_user_specified_minimum_lp_shares() {
     token2.mint(&user1, &1000);
     assert_eq!(token2.balance(&user1), 1000);
 
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &Some(1_000));
+    // tokens 1 has 15 decimal digits, meaning those values are 0.0000000001 of token
+    // tokens 2 has 3 decimal digits, meaning those values are 0.001 of token
+    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>);
 
     assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
@@ -858,48 +836,4 @@ fn provide_liqudity_with_user_specified_minimum_lp_shares() {
     );
 
     assert_eq!(pool.query_total_issued_lp(), 1000);
-}
-
-#[test]
-#[should_panic(
-    expected = "Pool Stable: Provide Liquidity: Issued shares are less than the user requsted"
-)]
-fn provide_liqudity_with_user_specified_minimum_lp_shares_should_panic_when_user_expected_is_more_than_issued(
-) {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let manager = Address::generate(&env);
-    let factory = Address::generate(&env);
-
-    let mut token1 = deploy_token_contract(&env, &admin);
-    let mut token2 = deploy_token_contract(&env, &admin);
-    if token2.address < token1.address {
-        std::mem::swap(&mut token1, &mut token2);
-    }
-    let user1 = Address::generate(&env);
-    let swap_fees = 0i64;
-    let pool = deploy_stable_liquidity_pool_contract(
-        &env,
-        None,
-        (&token1.address, &token2.address),
-        swap_fees,
-        None,
-        None,
-        None,
-        manager,
-        factory,
-        None,
-    );
-
-    token1.mint(&user1, &1000);
-    assert_eq!(token1.balance(&user1), 1000);
-
-    token2.mint(&user1, &1000);
-    assert_eq!(token2.balance(&user1), 1000);
-
-    // Here the user provides `1_000` of each token and expects more than the pool allocation
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &Some(1_001));
 }
