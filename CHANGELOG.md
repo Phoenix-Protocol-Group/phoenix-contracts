@@ -12,6 +12,7 @@ and this project adheres to
 - curve: try to optimize piecewise linear implementation ([#307])
 - Update soroban-sdk-rs to version 20.5.0 ([#308])
 - Pool and Pool Stable: adds verification if the current timestamp is after a desired timestamp ([#322])
+- All: adds helper function that safely casts i128 to u128 ([#365])
 
 ## Added
 
@@ -34,6 +35,7 @@ and this project adheres to
 [#308]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/308
 [#322]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/322
 [#329]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/329
+[#365]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/365
 [#366]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/366
 
 ## [1.0.0] - 2024-05-08

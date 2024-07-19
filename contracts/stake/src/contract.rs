@@ -1,3 +1,4 @@
+use phoenix::utils::convert_i128_to_u128;
 use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
@@ -279,12 +280,13 @@ impl StakingTrait for Staking {
 
     fn distribute_rewards(env: Env) {
         let total_staked_amount = get_total_staked_counter(&env);
-        let total_rewards_power = calc_power(
+        let total_rewards_power_result = calc_power(
             &get_config(&env),
             total_staked_amount,
             Decimal::one(),
             TOKEN_PER_POWER,
-        ) as u128;
+        );
+        let total_rewards_power = convert_i128_to_u128(total_rewards_power_result);
 
         if total_rewards_power == 0 {
             log!(&env, "Stake: No rewards to distribute!");
@@ -296,8 +298,9 @@ impl StakingTrait for Staking {
 
             let reward_token_client = token_contract::Client::new(&env, &distribution_address);
             // Undistributed rewards are simply all tokens left on the contract
-            let undistributed_rewards =
-                reward_token_client.balance(&env.current_contract_address()) as u128;
+            let undistributed_rewards_balance =
+                reward_token_client.balance(&env.current_contract_address());
+            let undistributed_rewards = convert_i128_to_u128(undistributed_rewards_balance);
 
             let curve = get_reward_curve(&env, &distribution_address).expect("Stake: Distribute reward: Not reward curve exists, probably distribution haven't been created");
 
@@ -415,13 +418,15 @@ impl StakingTrait for Staking {
         let end_time = current_time + distribution_duration;
         // define a distribution curve starting at start_time with token_amount of tokens
         // and ending at end_time with 0 tokens
-        let new_reward_distribution =
-            Curve::saturating_linear((start_time, token_amount as u128), (end_time, 0));
+        let new_reward_distribution = Curve::saturating_linear(
+            (start_time, convert_i128_to_u128(token_amount)),
+            (end_time, 0),
+        );
 
         // Validate the the curve locks at most the amount provided and
         // also fully unlocks all rewards sent
         let (min, max) = new_reward_distribution.range();
-        if min != 0 || max > token_amount as u128 {
+        if min != 0 || max > convert_i128_to_u128(token_amount) {
             log!(&env, "Stake: Fund distribution: Rewards validation failed");
             panic_with_error!(&env, ContractError::RewardsInvalid);
         }
@@ -505,7 +510,7 @@ impl StakingTrait for Staking {
             let curve = get_reward_curve(&env, &distribution_address);
             let annualized_payout = calculate_annualized_payout(curve, now);
             let apr = annualized_payout
-                / (total_stake_power as u128 * distribution.points_per_share) as i128;
+                / (convert_i128_to_u128(total_stake_power) * distribution.points_per_share) as i128;
 
             aprs.push_back(AnnualizedReward {
                 asset: distribution_address.clone(),
@@ -546,8 +551,8 @@ impl StakingTrait for Staking {
     fn query_undistributed_rewards(env: Env, asset: Address) -> u128 {
         let distribution = get_distribution(&env, &asset);
         let reward_token_client = token_contract::Client::new(&env, &asset);
-        reward_token_client.balance(&env.current_contract_address()) as u128
-            - distribution.withdrawable_total
+        let reward_token_balance = reward_token_client.balance(&env.current_contract_address());
+        convert_i128_to_u128(reward_token_balance) - distribution.withdrawable_total
     }
 }
 

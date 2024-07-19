@@ -1,4 +1,4 @@
-use phoenix::utils::LiquidityPoolInitInfo;
+use phoenix::utils::{convert_i128_to_u128, LiquidityPoolInitInfo};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
     String,
@@ -21,7 +21,7 @@ use phoenix::{validate_bps, validate_int_parameters};
 use soroban_decimal::Decimal;
 
 // Minimum amount of initial LP shares to mint
-const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1000;
+const MINIMUM_LIQUIDITY_AMOUNT: u128 = 1000;
 const MAX_AMP: u64 = 1_000_000;
 
 // Metadata that is added on to the WASM custom section
@@ -300,8 +300,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let token_b_decimals = token_b_client.decimals();
 
         // Invariant (D) after deposit added
-        let new_balance_a = desired_a as u128 + old_balance_a as u128;
-        let new_balance_b = desired_b as u128 + old_balance_b as u128;
+        let new_balance_a = convert_i128_to_u128(desired_a + old_balance_a);
+        let new_balance_b = convert_i128_to_u128(desired_b + old_balance_b);
 
         let new_invariant = compute_d(
             &env,
@@ -319,7 +319,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 .to_u128()
                 .expect("Pool stable: provide_liquidity: conversion to u128 failed")
                 / divisor)
-                - MINIMUM_LIQUIDITY_AMOUNT as u128;
+                - MINIMUM_LIQUIDITY_AMOUNT;
             if share == 0 {
                 log!(
                     &env,
@@ -334,8 +334,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 &env,
                 amp as u128,
                 &[
-                    scale_value(old_balance_a as u128, token_a_decimals, DECIMAL_PRECISION),
-                    scale_value(old_balance_b as u128, token_b_decimals, DECIMAL_PRECISION),
+                    scale_value(
+                        convert_i128_to_u128(old_balance_a),
+                        token_a_decimals,
+                        DECIMAL_PRECISION,
+                    ),
+                    scale_value(
+                        convert_i128_to_u128(old_balance_b),
+                        token_b_decimals,
+                        DECIMAL_PRECISION,
+                    ),
                 ],
             )
             .to_u128()
@@ -626,11 +634,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let (ask_amount, spread_amount, commission_amount) = compute_swap(
             &env,
-            pool_balance_sell as u128,
+            convert_i128_to_u128(pool_balance_sell),
             get_precisions(&env, &sell_token),
-            pool_balance_buy as u128,
+            convert_i128_to_u128(pool_balance_buy),
             get_precisions(&env, &buy_token),
-            offer_amount as u128,
+            convert_i128_to_u128(offer_amount),
             config.protocol_fee_rate(),
         );
 
@@ -675,11 +683,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
             &env,
-            pool_balance_sell as u128,
+            convert_i128_to_u128(pool_balance_sell),
             get_precisions(&env, &sell_token),
-            pool_balance_buy as u128,
+            convert_i128_to_u128(pool_balance_buy),
             get_precisions(&env, &buy_token),
-            ask_amount as u128,
+            convert_i128_to_u128(ask_amount),
             config.protocol_fee_rate(),
         );
 
@@ -783,11 +791,11 @@ fn do_swap(
 
     let (return_amount, spread_amount, commission_amount) = compute_swap(
         &env,
-        pool_balance_sell as u128,
+        convert_i128_to_u128(pool_balance_sell),
         get_precisions(&env, &sell_token),
-        pool_balance_buy as u128,
+        convert_i128_to_u128(pool_balance_buy),
         get_precisions(&env, &buy_token),
-        offer_amount as u128,
+        convert_i128_to_u128(offer_amount),
         config.protocol_fee_rate(),
     );
 
@@ -957,7 +965,7 @@ pub fn compute_offer_amount(
         env,
         amp as u128,
         scale_value(
-            ask_pool - before_commission as u128,
+            ask_pool - convert_i128_to_u128(before_commission),
             greatest_precision,
             DECIMAL_PRECISION,
         ),
