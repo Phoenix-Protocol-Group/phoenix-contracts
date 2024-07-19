@@ -82,7 +82,6 @@ fn add_distribution_and_distribute_reward() {
                     staking.address.clone(),
                     Symbol::new(&env, "fund_distribution"),
                     (
-                        &admin.clone(),
                         ONE_DAY,
                         reward_duration,
                         reward_token.address.clone(),
