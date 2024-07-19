@@ -21,7 +21,7 @@ use phoenix::{validate_bps, validate_int_parameters};
 use soroban_decimal::Decimal;
 
 // Minimum amount of initial LP shares to mint
-const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1000;
+const MINIMUM_LIQUIDITY_AMOUNT: u128 = 1000;
 const MAX_AMP: u64 = 1_000_000;
 
 // Metadata that is added on to the WASM custom section
@@ -319,7 +319,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 .to_u128()
                 .expect("Pool stable: provide_liquidity: conversion to u128 failed")
                 / divisor)
-                - convert_i128_to_u128(MINIMUM_LIQUIDITY_AMOUNT);
+                - MINIMUM_LIQUIDITY_AMOUNT;
             if share == 0 {
                 log!(
                     &env,
