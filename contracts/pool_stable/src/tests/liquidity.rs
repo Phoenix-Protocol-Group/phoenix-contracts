@@ -3,12 +3,13 @@ extern crate std;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    Address, Env, IntoVal, Symbol,
+    Address, Env, IntoVal, String, Symbol,
 };
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::{
     storage::{Asset, PoolResponse},
+    tests::setup::install_and_deploy_token_contract,
     token_contract,
 };
 
@@ -741,4 +742,90 @@ fn withdraw_liquidity_past_deadline_should_panic() {
     let min_b = 500;
     env.ledger().with_mut(|li| li.timestamp = 50);
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(49));
+}
+
+#[test]
+fn provide_liqudity_15_to_3() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &admin,
+        &15,
+        &String::from_str(&env, "token_one"),
+        &String::from_str(&env, "TON"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &admin,
+        &3,
+        &String::from_str(&env, "token_two"),
+        &String::from_str(&env, "TOT"),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let token_share = token_contract::Client::new(&env, &share_token_address);
+
+    token1.mint(&user1, &1000);
+    assert_eq!(token1.balance(&user1), 1000);
+
+    token2.mint(&user1, &1000);
+    assert_eq!(token2.balance(&user1), 1000);
+
+    // tokens 1 has 15 decimal digits, meaning those values are 0.0000000001 of token
+    // tokens 2 has 3 decimal digits, meaning those values are 0.001 of token
+    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>);
+
+    assert_eq!(token_share.balance(&user1), 1000);
+    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token1.balance(&user1), 0);
+    assert_eq!(token1.balance(&pool.address), 1000);
+    assert_eq!(token2.balance(&user1), 0);
+    assert_eq!(token2.balance(&pool.address), 1000);
+
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address,
+                amount: 1000i128
+            },
+            asset_b: Asset {
+                address: token2.address,
+                amount: 1000i128
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1000i128
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+
+    assert_eq!(pool.query_total_issued_lp(), 1000);
 }
