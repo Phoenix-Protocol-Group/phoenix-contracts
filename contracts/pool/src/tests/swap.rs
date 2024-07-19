@@ -1257,7 +1257,7 @@ fn simple_swap_with_should_fail_when_after_the_deadline() {
 }
 
 #[test]
-fn simple_swap_with_biggest_possible_decimals() {
+fn simple_swap_with_biggest_possible_decimal_precision() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
