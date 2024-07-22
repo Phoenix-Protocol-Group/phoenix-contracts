@@ -13,6 +13,7 @@ and this project adheres to
 - Update soroban-sdk-rs to version 20.5.0 ([#308])
 - Pool and Pool Stable: adds verification if the current timestamp is after a desired timestamp ([#322])
 - All: adds helper function that safely casts i128 to u128 ([#365])
+- Pool and Pool stable: improves tracked balance when using fee on swap and provide liquidity ([#332])
 
 ## Added
 
@@ -22,7 +23,7 @@ and this project adheres to
 - Stake rewards: Create a new contract and prepare first testcases ([#306])
 - Trader: Adds a check if the contract has been already initialized ([#329])
 - All: Adds more test that verify the authorization during execution ([#363])
-- Pool Stable: Adds a check to prevent creating pools with tokens with unusable decimals ([#360])
+- Pool Stable: Adds a check to prevent creating pools with tokens with too big precision ([#360])
 
 ## Fixed
 
@@ -36,6 +37,7 @@ and this project adheres to
 [#307]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/307
 [#308]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/308
 [#322]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/322
+[#332]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/332
 [#329]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/329
 [#360]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/360
 [#363]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/363
