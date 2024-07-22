@@ -193,7 +193,7 @@ fn update_config_update_admin() {
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
             default_slippage_bps: 2_500,
-            max_allowed_spread_bps: 3_000_000,
+            max_allowed_spread_bps: 3_000,
         }
     );
 }
@@ -321,6 +321,7 @@ fn update_config_all_bps_params_should_work() {
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
+            default_slippage_bps: 2_500,
         }
     );
 
@@ -345,6 +346,7 @@ fn update_config_all_bps_params_should_work() {
             fee_recipient: admin2.clone(),
             max_allowed_slippage_bps: 1000,
             max_allowed_spread_bps: 1000,
+            default_slippage_bps: 2_500,
         }
     );
 }
