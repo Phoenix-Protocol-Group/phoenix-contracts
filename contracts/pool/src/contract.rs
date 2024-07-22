@@ -852,15 +852,17 @@ fn do_swap(
     // calculate how much did the contract actually got
     let actual_received_amount = balance_after_transfer - balance_before_transfer;
 
+    let buy_token_client = token_contract::Client::new(&env, &buy_token);
+
     // return swapped tokens to user
-    token_contract::Client::new(&env, &buy_token).transfer(
+    buy_token_client.transfer(
         &env.current_contract_address(),
         &sender,
         &compute_swap.return_amount,
     );
 
     // send commission to fee recipient
-    token_contract::Client::new(&env, &buy_token).transfer(
+    buy_token_client.transfer(
         &env.current_contract_address(),
         &config.fee_recipient,
         &compute_swap.commission_amount,
