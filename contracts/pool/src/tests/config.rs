@@ -447,6 +447,7 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
             default_slippage_bps: 100i64,
+            minimum_lp_shares: 10,
         }
     );
 
@@ -458,6 +459,7 @@ fn update_configs_all_bps_values_should_work() {
         &Some(1000i64),
         &Some(1000i64),
         &Some(1000i64),
+        &None,
     );
 
     // assert the changes
@@ -475,6 +477,7 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_spread_bps: 1000,
             max_referral_bps: 1000,
             default_slippage_bps: 100i64,
+            minimum_lp_shares: 10
         }
     );
 }

@@ -359,7 +359,6 @@ impl FactoryTrait for Factory {
         let mut stake_portfolio: Vec<StakePortfolio> = Vec::new(&env);
 
         for address in initialized_pools {
-            soroban_sdk::testutils::arbitrary::std::dbg!(&address);
             let response: LiquidityPoolInfo = env.invoke_contract(
                 &address,
                 &Symbol::new(&env, "query_pool_info_for_factory"),
@@ -391,8 +390,6 @@ impl FactoryTrait for Factory {
                 &Symbol::new(&env, "query_share"),
                 vec![&env, total_lp_share_for_user.into_val(&env)],
             );
-
-            soroban_sdk::testutils::arbitrary::std::dbg!(&asset_a, &asset_b);
 
             // we add only liquidity pools that the user has staked to to his portfolio
             if total_lp_share_for_user > 0 {

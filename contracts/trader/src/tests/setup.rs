@@ -95,6 +95,7 @@ pub fn deploy_and_init_lp_client(
         max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,
+        minimum_lp_shares: None,
     };
 
     lp_client.initialize(
