@@ -168,21 +168,6 @@ impl StakingTrait for Staking {
         };
         stakes.stakes.push_back(stake);
 
-        for distribution_address in get_distributions(&env) {
-            let mut distribution = get_distribution(&env, &distribution_address);
-            let stakes: i128 = get_stakes(&env, &sender).total_stake;
-            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-            let new_power = calc_power(&config, stakes + tokens, Decimal::one(), TOKEN_PER_POWER);
-            update_rewards(
-                &env,
-                &sender,
-                &distribution_address,
-                &mut distribution,
-                old_power,
-                new_power,
-            );
-        }
-
         save_stakes(&env, &sender, &stakes);
         utils::increase_total_staked(&env, &tokens);
 

@@ -23,6 +23,7 @@ soroban contract optimize --wasm phoenix_factory.wasm
 soroban contract optimize --wasm phoenix_pool.wasm
 soroban contract optimize --wasm phoenix_pool_stable.wasm
 soroban contract optimize --wasm phoenix_stake.wasm
+soroban contract optimize --wasm phoenix_stake_rewards.wasm
 soroban contract optimize --wasm phoenix_multihop.wasm
 
 echo "Contracts optimized."
@@ -88,6 +89,11 @@ STABLE_PAIR_WASM_HASH=$(soroban contract install \
     --network $NETWORK)
 
 STAKE_WASM_HASH=$(soroban contract install \
+    --wasm phoenix_stake.optimized.wasm \
+    --source $IDENTITY_STRING \
+    --network $NETWORK)
+
+STAKE_REWARDS_WASM_HASH=$(soroban contract install \
     --wasm phoenix_stake.optimized.wasm \
     --source $IDENTITY_STRING \
     --network $NETWORK)
@@ -173,14 +179,14 @@ STAKE_ADDR=$(soroban contract invoke \
 
 echo "Bond tokens to stake contract..."
 # Bond token in stake contract
-soroban contract invoke \
-    --id $STAKE_ADDR \
-    --source $IDENTITY_STRING \
-    --network $NETWORK \
-    -- \
-    bond --sender $ADMIN_ADDRESS --tokens 70000000
-
-echo "Tokens bonded."
+# soroban contract invoke \
+#     --id $STAKE_ADDR \
+#     --source $IDENTITY_STRING \
+#     --network $NETWORK \
+#     -- \
+#     bond --sender $ADMIN_ADDRESS --tokens 70000000
+#
+# echo "Tokens bonded."
 
 echo "#############################"
 
@@ -274,14 +280,14 @@ STAKE_ADDR2=$(soroban contract invoke \
 
 echo "Bond tokens to stake contract..."
 # Bond token in stake contract
-soroban contract invoke \
-    --id $STAKE_ADDR2 \
-    --source $IDENTITY_STRING \
-    --network $NETWORK \
-    -- \
-    bond --sender $ADMIN_ADDRESS --tokens 70000000
-
-echo "Tokens bonded."
+# soroban contract invoke \
+#     --id $STAKE_ADDR2 \
+#     --source $IDENTITY_STRING \
+#     --network $NETWORK \
+#     -- \
+#     bond --sender $ADMIN_ADDRESS --tokens 70000000
+#
+# echo "Tokens bonded."
 
 echo "#############################"
 
