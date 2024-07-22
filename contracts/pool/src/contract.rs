@@ -838,20 +838,16 @@ fn do_swap(
         (config.clone().token_b, config.clone().token_a)
     };
 
+    let sell_token_client = token_contract::Client::new(&env, &sell_token);
+
     // we check the balance of the transferred token for the contract prior to the transfer
-    let balance_before_transfer =
-        token_contract::Client::new(&env, &sell_token).balance(&env.current_contract_address());
+    let balance_before_transfer = sell_token_client.balance(&env.current_contract_address());
 
     // transfer tokens to swap
-    token_contract::Client::new(&env, &sell_token).transfer(
-        &sender,
-        &env.current_contract_address(),
-        &offer_amount,
-    );
+    sell_token_client.transfer(&sender, &env.current_contract_address(), &offer_amount);
 
     // get the balance after the transfer
-    let balance_after_transfer =
-        token_contract::Client::new(&env, &sell_token).balance(&env.current_contract_address());
+    let balance_after_transfer = sell_token_client.balance(&env.current_contract_address());
 
     // calculate how much did the contract actually got
     let actual_received_amount = balance_after_transfer - balance_before_transfer;
