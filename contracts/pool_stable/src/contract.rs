@@ -299,9 +299,25 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
         let token_b_decimals = token_b_client.decimals();
 
+        // check the balance before the transfer
+        let balance_a_before = token_a_client.balance(&env.current_contract_address());
+        let balance_b_before = token_b_client.balance(&env.current_contract_address());
+
+        // transfer tokens from client's wallet to the contract
+        token_a_client.transfer(&sender, &env.current_contract_address(), &desired_a);
+        token_b_client.transfer(&sender, &env.current_contract_address(), &desired_b);
+
+        // get the balance after transfer
+        let balance_a_after = token_a_client.balance(&env.current_contract_address());
+        let balance_b_after = token_b_client.balance(&env.current_contract_address());
+
+        // calculate actual amounts received
+        let actual_received_a = balance_a_after - balance_a_before;
+        let actual_received_b = balance_b_after - balance_b_before;
+
         // Invariant (D) after deposit added
-        let new_balance_a = convert_i128_to_u128(desired_a + old_balance_a);
-        let new_balance_b = convert_i128_to_u128(desired_b + old_balance_b);
+        let new_balance_a = convert_i128_to_u128(actual_received_a + old_balance_a);
+        let new_balance_b = convert_i128_to_u128(actual_received_b + old_balance_b);
 
         let new_invariant = compute_d(
             &env,
@@ -358,10 +374,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 ) / Decimal::new(initial_invariant as i128))) as u128
         };
 
-        // Move tokens from client's wallet to the contract
-        token_a_client.transfer(&sender, &env.current_contract_address(), &(desired_a));
-        token_b_client.transfer(&sender, &env.current_contract_address(), &(desired_b));
-
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, &config.token_a);
         let balance_b = utils::get_balance(&env, &config.token_b);
@@ -375,11 +387,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env.events()
             .publish(("provide_liquidity", "token_a"), &config.token_a);
         env.events()
-            .publish(("provide_liquidity", "token_a-amount"), desired_a);
+            .publish(("provide_liquidity", "token_a-amount"), actual_received_a);
         env.events()
             .publish(("provide_liquidity", "token_b"), &config.token_b);
         env.events()
-            .publish(("provide_liquidity", "token_b-amount"), desired_b);
+            .publish(("provide_liquidity", "token_b-amount"), actual_received_b);
     }
 
     fn swap(
@@ -816,12 +828,23 @@ fn do_swap(
         spread_amount,
     );
 
+    // we check the balance of the transferred token for the contract prior to the transfer
+    let balance_before_transfer =
+        token_contract::Client::new(&env, &sell_token).balance(&env.current_contract_address());
+
     // transfer tokens to swap
     token_contract::Client::new(&env, &sell_token).transfer(
         &sender,
         &env.current_contract_address(),
         &offer_amount,
     );
+
+    // get the balance after the transfer
+    let balance_after_transfer =
+        token_contract::Client::new(&env, &sell_token).balance(&env.current_contract_address());
+
+    // calculate how much did the contract actually got
+    let actual_received_amount = balance_after_transfer - balance_before_transfer;
 
     // return swapped tokens to user
     token_contract::Client::new(&env, &buy_token).transfer(
@@ -841,13 +864,13 @@ fn do_swap(
     // A balance is bigger, B balance is smaller
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
-            pool_balance_a + offer_amount,
+            pool_balance_a + actual_received_amount,
             pool_balance_b - commission_amount - return_amount,
         )
     } else {
         (
             pool_balance_a - commission_amount - return_amount,
-            pool_balance_b + offer_amount,
+            pool_balance_b + actual_received_amount,
         )
     };
     utils::save_pool_balance_a(&env, balance_a);

@@ -368,9 +368,21 @@ impl LiquidityPoolTrait for LiquidityPool {
         let token_a_client = token_contract::Client::new(&env, &config.token_a);
         let token_b_client = token_contract::Client::new(&env, &config.token_b);
 
+        // Before the transfer
+        let initial_balance_a = token_a_client.balance(&env.current_contract_address());
+        let initial_balance_b = token_b_client.balance(&env.current_contract_address());
+
         // Move tokens from client's wallet to the contract
         token_a_client.transfer(&sender, &env.current_contract_address(), &(amounts.0));
         token_b_client.transfer(&sender, &env.current_contract_address(), &(amounts.1));
+
+        // After the transfer, get the new balances
+        let final_balance_a = token_a_client.balance(&env.current_contract_address());
+        let final_balance_b = token_b_client.balance(&env.current_contract_address());
+
+        // Calculate the actual received amounts
+        let actual_received_a = final_balance_a - initial_balance_a;
+        let actual_received_b = final_balance_b - initial_balance_b;
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
@@ -403,11 +415,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         env.events()
             .publish(("provide_liquidity", "token_a"), &config.token_a);
         env.events()
-            .publish(("provide_liquidity", "token_a-amount"), amounts.0);
+            .publish(("provide_liquidity", "token_a-amount"), actual_received_a);
         env.events()
             .publish(("provide_liquidity", "token_b"), &config.token_b);
         env.events()
-            .publish(("provide_liquidity", "token_b-amount"), amounts.1);
+            .publish(("provide_liquidity", "token_b-amount"), actual_received_b);
     }
 
     fn swap(
@@ -826,22 +838,31 @@ fn do_swap(
         (config.clone().token_b, config.clone().token_a)
     };
 
+    let sell_token_client = token_contract::Client::new(&env, &sell_token);
+
+    // we check the balance of the transferred token for the contract prior to the transfer
+    let balance_before_transfer = sell_token_client.balance(&env.current_contract_address());
+
     // transfer tokens to swap
-    token_contract::Client::new(&env, &sell_token).transfer(
-        &sender,
-        &env.current_contract_address(),
-        &offer_amount,
-    );
+    sell_token_client.transfer(&sender, &env.current_contract_address(), &offer_amount);
+
+    // get the balance after the transfer
+    let balance_after_transfer = sell_token_client.balance(&env.current_contract_address());
+
+    // calculate how much did the contract actually got
+    let actual_received_amount = balance_after_transfer - balance_before_transfer;
+
+    let buy_token_client = token_contract::Client::new(&env, &buy_token);
 
     // return swapped tokens to user
-    token_contract::Client::new(&env, &buy_token).transfer(
+    buy_token_client.transfer(
         &env.current_contract_address(),
         &sender,
         &compute_swap.return_amount,
     );
 
     // send commission to fee recipient
-    token_contract::Client::new(&env, &buy_token).transfer(
+    buy_token_client.transfer(
         &env.current_contract_address(),
         &config.fee_recipient,
         &compute_swap.commission_amount,
@@ -864,7 +885,7 @@ fn do_swap(
     // A balance is bigger, B balance is smaller
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
-            pool_balance_a + offer_amount,
+            pool_balance_a + actual_received_amount,
             pool_balance_b
                 - compute_swap.commission_amount
                 - compute_swap.referral_fee_amount
@@ -876,7 +897,7 @@ fn do_swap(
                 - compute_swap.commission_amount
                 - compute_swap.referral_fee_amount
                 - compute_swap.return_amount,
-            pool_balance_b + offer_amount,
+            pool_balance_b + actual_received_amount,
         )
     };
     utils::save_pool_balance_a(&env, balance_a);
@@ -885,6 +906,8 @@ fn do_swap(
     env.events().publish(("swap", "sender"), sender);
     env.events().publish(("swap", "sell_token"), sell_token);
     env.events().publish(("swap", "offer_amount"), offer_amount);
+    env.events()
+        .publish(("swap", "actual received amount"), actual_received_amount);
     env.events().publish(("swap", "buy_token"), buy_token);
     env.events()
         .publish(("swap", "return_amount"), compute_swap.return_amount);
