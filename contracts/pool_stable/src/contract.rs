@@ -376,8 +376,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             );
 
             let initial_invariant = convert_u128_to_i128(initial_invariant);
-            (total_shares * (Decimal::new(invariant_delta) / Decimal::new(initial_invariant)))
-                as u128
+            convert_i128_to_u128(
+                total_shares * (Decimal::new(invariant_delta) / Decimal::new(initial_invariant)),
+            )
         };
 
         // Now calculate how many new pool shares to mint
