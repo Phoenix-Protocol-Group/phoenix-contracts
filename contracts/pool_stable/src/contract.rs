@@ -1,4 +1,4 @@
-use phoenix::utils::{convert_i128_to_u128, LiquidityPoolInitInfo};
+use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
     String,
@@ -364,21 +364,26 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             )
             .to_u128()
             .expect("Pool stable: provide_liquidity: conversion to u128 failed");
+
             // Calculate the proportion of the change in invariant
-            (total_shares
-                * (Decimal::new(
-                    (new_invariant
-                        .to_u128()
-                        .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                        - initial_invariant) as i128,
-                ) / Decimal::new(initial_invariant as i128))) as u128
+            let invariant_delta = convert_u128_to_i128(
+                new_invariant
+                    .to_u128()
+                    .expect("Pool stable: provide_liquidity: conversion to u128 failed")
+                    - initial_invariant,
+            );
+
+            let initial_invariant = convert_u128_to_i128(initial_invariant);
+            (total_shares * (Decimal::new(invariant_delta) / Decimal::new(initial_invariant)))
+                as u128
         };
 
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, &config.token_a);
         let balance_b = utils::get_balance(&env, &config.token_b);
 
-        utils::mint_shares(&env, &config.share_token, &sender, shares as i128);
+        let shares = convert_u128_to_i128(shares);
+        utils::mint_shares(&env, &config.share_token, &sender, shares);
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
@@ -948,16 +953,17 @@ pub fn compute_swap(
     let return_amount = ask_pool - new_ask_pool;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = if offer_amount > return_amount {
-        offer_amount - return_amount
+        convert_u128_to_i128(offer_amount - return_amount)
     } else {
         // saturating sub equivalent
         0
     };
-    let commission_amount = return_amount as i128 * commission_rate;
+    let return_amount = convert_u128_to_i128(return_amount);
+    let commission_amount = return_amount * commission_rate;
     // Because of issue #211
-    let return_amount = return_amount as i128 - commission_amount;
+    let return_amount = return_amount - commission_amount;
 
-    (return_amount, spread_amount as i128, commission_amount)
+    (return_amount, spread_amount, commission_amount)
 }
 
 /// Returns an amount of offer assets for a specified amount of ask assets.
@@ -980,7 +986,7 @@ pub fn compute_offer_amount(
 
     let one_minus_commission = Decimal::one() - commission_rate;
     let inv_one_minus_commission = Decimal::one() / one_minus_commission;
-    let before_commission = inv_one_minus_commission * ask_amount as i128;
+    let before_commission = inv_one_minus_commission * convert_u128_to_i128(ask_amount);
 
     let greatest_precision = get_greatest_precision(env);
 
@@ -1001,7 +1007,7 @@ pub fn compute_offer_amount(
 
     let offer_amount = new_offer_pool - offer_pool;
 
-    let ask_before_commission = ask_amount as i128 * inv_one_minus_commission;
+    let ask_before_commission = convert_u128_to_i128(ask_amount) * inv_one_minus_commission;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = if offer_amount > ask_amount {
         offer_amount - ask_amount
@@ -1014,8 +1020,8 @@ pub fn compute_offer_amount(
     let commission_amount: i128 = ask_before_commission * commission_rate;
 
     (
-        offer_amount as i128,
-        spread_amount as i128,
+        convert_u128_to_i128(offer_amount),
+        convert_u128_to_i128(spread_amount),
         commission_amount,
     )
 }

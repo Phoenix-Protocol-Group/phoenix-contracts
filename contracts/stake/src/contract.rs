@@ -1,4 +1,4 @@
-use phoenix::utils::convert_i128_to_u128;
+use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
 use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
@@ -366,7 +366,7 @@ impl StakingTrait for Staking {
             reward_token_client.transfer(
                 &env.current_contract_address(),
                 &sender,
-                &(reward_amount as i128),
+                &convert_u128_to_i128(reward_amount),
             );
 
             env.events().publish(
@@ -510,7 +510,9 @@ impl StakingTrait for Staking {
             let curve = get_reward_curve(&env, &distribution_address);
             let annualized_payout = calculate_annualized_payout(curve, now);
             let apr = annualized_payout
-                / (convert_i128_to_u128(total_stake_power) * distribution.points_per_share) as i128;
+                / convert_u128_to_i128(
+                    convert_i128_to_u128(total_stake_power) * distribution.points_per_share,
+                );
 
             aprs.push_back(AnnualizedReward {
                 asset: distribution_address.clone(),

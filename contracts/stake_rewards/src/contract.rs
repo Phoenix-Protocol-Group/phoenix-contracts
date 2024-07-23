@@ -1,4 +1,4 @@
-use phoenix::utils::convert_i128_to_u128;
+use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
 use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String, Vec,
@@ -320,13 +320,12 @@ impl StakingRewardsTrait for StakingRewards {
         let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
         let stakes = stake_client.query_staked(&sender);
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
-        dbg!("multiplier ", reward_multiplier);
 
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         reward_token_client.transfer(
             &env.current_contract_address(),
             &sender,
-            &dbg!(reward_amount as i128 * reward_multiplier),
+            &convert_u128_to_i128(reward_amount) * reward_multiplier,
         );
 
         env.events().publish(
@@ -469,7 +468,9 @@ impl StakingRewardsTrait for StakingRewards {
         let curve = get_reward_curve(&env, &config.reward_token);
         let annualized_payout = calculate_annualized_payout(curve, now);
         let apr = annualized_payout
-            / (convert_i128_to_u128(total_stake_power) * distribution.shares_per_point) as i128;
+            / convert_u128_to_i128(
+                convert_i128_to_u128(total_stake_power) * distribution.shares_per_point,
+            );
 
         AnnualizedRewardResponse {
             asset: config.reward_token.clone(),
@@ -494,7 +495,8 @@ impl StakingRewardsTrait for StakingRewards {
         let stakes = stake_client.query_staked(&user);
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
 
-        let reward_amount = convert_i128_to_u128(reward_amount as i128 * reward_multiplier);
+        let reward_amount =
+            convert_i128_to_u128(convert_u128_to_i128(reward_amount) * reward_multiplier);
 
         WithdrawableRewardResponse {
             reward_address: config.reward_token,

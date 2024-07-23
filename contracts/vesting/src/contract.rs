@@ -1,4 +1,4 @@
-use phoenix::utils::convert_i128_to_u128;
+use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, Vec,
 };
@@ -192,7 +192,7 @@ impl VestingTrait for Vesting {
         let vesting_token = get_token_info(&env);
         let token_client = token_contract::Client::new(&env, &vesting_token.address);
 
-        if token_client.balance(&admin) < total_vested_amount as i128 {
+        if token_client.balance(&admin) < convert_u128_to_i128(total_vested_amount) {
             log!(
                 &env,
                 "Vesting: Create vesting account: Admin does not have enough tokens to start the vesting schedule"
@@ -203,7 +203,7 @@ impl VestingTrait for Vesting {
         token_client.transfer(
             &admin,
             &env.current_contract_address(),
-            &(total_vested_amount as i128),
+            &convert_u128_to_i128(total_vested_amount),
         );
     }
 
@@ -422,7 +422,9 @@ impl VestingTrait for Vesting {
     fn query_available_to_claim(env: Env, address: Address, index: u64) -> i128 {
         let vesting_info = get_vesting(&env, &address, index);
 
-        (vesting_info.balance - vesting_info.schedule.value(env.ledger().timestamp())) as i128
+        convert_u128_to_i128(
+            vesting_info.balance - vesting_info.schedule.value(env.ledger().timestamp()),
+        )
     }
 
     fn update(env: Env, new_wasm_hash: BytesN<32>) {
