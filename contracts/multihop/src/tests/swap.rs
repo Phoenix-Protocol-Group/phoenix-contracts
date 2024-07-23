@@ -355,7 +355,7 @@ fn swap_single_pool_with_fees() {
         1_000_000,
         token2.address.clone(),
         1_000_000,
-        Some(2000),
+        Some(1_500), // maximum cap is %15
         PoolType::Xyk,
     );
 
