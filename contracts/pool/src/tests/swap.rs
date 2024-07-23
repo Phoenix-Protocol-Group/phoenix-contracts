@@ -335,8 +335,8 @@ fn simple_swap_should_panic_when_user_accepted_fee_is_less_than_pool_fee() {
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
 
-    // the swap fee is set at %20
-    let swap_fees = 2_000;
+    // the swap fee is set at %15
+    let swap_fees = 1_500;
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,

@@ -163,7 +163,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         }
 
         let admin = lp_init_info.admin;
-        let mut swap_fee_bps = lp_init_info.swap_fee_bps;
+        let swap_fee_bps = lp_init_info.swap_fee_bps;
         let fee_recipient = lp_init_info.fee_recipient;
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
         let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
@@ -171,9 +171,13 @@ impl LiquidityPoolTrait for LiquidityPool {
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
 
-        // if the swap_fee_bps is above the threshold, we set it to the threshold value
+        // if the swap_fee_bps is above the threshold, we throw an error
         if swap_fee_bps > MAXIMUM_ALLOWED_TOTAL_FEE_BPS {
-            swap_fee_bps = MAXIMUM_ALLOWED_TOTAL_FEE_BPS;
+            log!(
+                &env,
+                "Pool: Initialize: swap fee is higher than the maximum allowed!"
+            );
+            panic_with_error!(&env, ContractError::SwapFeeBpsOverLimit);
         }
 
         validate_bps!(
