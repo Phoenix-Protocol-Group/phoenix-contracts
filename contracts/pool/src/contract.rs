@@ -79,7 +79,7 @@ pub trait LiquidityPoolTrait {
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
-        user_agreed_percentage: Option<i64>,
+        max_allowed_fee_bps: Option<i64>,
     ) -> i128;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
@@ -440,7 +440,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
-        user_agreed_percentage: Option<i64>,
+        max_allowed_fee_bps: Option<i64>,
     ) -> i128 {
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
@@ -461,7 +461,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             offer_amount,
             ask_asset_min_amount,
             max_spread_bps,
-            user_agreed_percentage,
+            max_allowed_fee_bps,
         )
     }
 
@@ -775,7 +775,7 @@ fn do_swap(
     offer_amount: i128,
     ask_asset_min_amount: Option<i128>,
     max_spread: Option<i64>,
-    user_agreed_percentage: Option<i64>,
+    max_allowed_fee_bps: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
     // FIXM: Disable Referral struct
@@ -784,7 +784,7 @@ fn do_swap(
     //         panic!("Pool: Swap: Trying to swap with more than the allowed referral fee");
     //     }
     // }
-    if let Some(agreed_percentage) = user_agreed_percentage {
+    if let Some(agreed_percentage) = max_allowed_fee_bps {
         if agreed_percentage < config.total_fee_bps {
             log!(
                 &env,

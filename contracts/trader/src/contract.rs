@@ -40,7 +40,7 @@ pub trait TraderTrait {
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
         ask_asset_min_amount: Option<i128>,
-        user_agreed_percentage: Option<i64>,
+        max_allowed_fee_bps: Option<i64>,
     );
 
     fn transfer(
@@ -108,7 +108,7 @@ impl TraderTrait for Trader {
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
         ask_asset_min_amount: Option<i128>,
-        user_agreed_percentage: Option<i64>,
+        max_allowed_fee_bps: Option<i64>,
     ) {
         sender.require_auth();
 
@@ -155,7 +155,7 @@ impl TraderTrait for Trader {
             &ask_asset_min_amount,
             &max_spread_bps,
             &deadline,
-            &user_agreed_percentage,
+            &max_allowed_fee_bps,
         );
 
         env.events()
