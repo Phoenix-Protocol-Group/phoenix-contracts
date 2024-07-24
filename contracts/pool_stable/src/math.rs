@@ -21,6 +21,12 @@ const DECIMAL_FRACTIONAL: u128 = 1_000_000_000_000_000_000;
 const TOL: u128 = 1000000000000;
 
 pub fn scale_value(atomics: u128, decimal_places: u32, target_decimal_places: u32) -> u128 {
+    soroban_sdk::testutils::arbitrary::std::dbg!(
+        atomics,
+        decimal_places,
+        target_decimal_places,
+        decimal_places < target_decimal_places
+    );
     const TEN: u128 = 10;
 
     if decimal_places < target_decimal_places {
@@ -151,6 +157,7 @@ pub(crate) fn calc_y(
     xp: &[u128],
     target_precision: u32,
 ) -> u128 {
+    soroban_sdk::testutils::arbitrary::std::dbg!(amp, new_amount, xp, target_precision);
     let n_coins = U256::from_u128(env, N_COINS);
     let new_amount = U256::from_u128(env, new_amount);
 

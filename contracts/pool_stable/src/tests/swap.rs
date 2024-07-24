@@ -560,7 +560,7 @@ fn simple_swap_with_low_user_fee_should_panic() {
 }
 
 #[test]
-fn simple_swap_with_two_tokens_both_with_18_decimals() {
+fn simple_swap_with_two_tokens_both_with_7_decimals() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -590,6 +590,98 @@ fn simple_swap_with_two_tokens_both_with_18_decimals() {
     token2.initialize(
         &admin,
         &7,
+        &"name2".into_val(&env),
+        &"symbol2".into_val(&env),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    token1.mint(&user, &1_100);
+    token2.mint(&user, &1_100);
+    pool.provide_liquidity(&user, &1_000, &1_000, &None, &None::<u64>);
+
+    let spread = 100i64; // 1% maximum spread allowed
+    pool.swap(
+        &user,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_001i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 1_000i128,
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+    assert_eq!(token1.balance(&user), 99);
+    assert_eq!(token2.balance(&user), 101);
+}
+
+#[test]
+fn simple_swap_with_tokens_with_6_8_decimals() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    let mut token1 = token_contract::Client::new(
+        &env,
+        &env.register_contract_wasm(None, token_contract::WASM),
+    );
+
+    token1.initialize(
+        &admin,
+        &6,
+        &"name1".into_val(&env),
+        &"symbol1".into_val(&env),
+    );
+
+    let mut token2 = token_contract::Client::new(
+        &env,
+        &env.register_contract_wasm(None, token_contract::WASM),
+    );
+
+    token2.initialize(
+        &admin,
+        &8,
         &"name2".into_val(&env),
         &"symbol2".into_val(&env),
     );
