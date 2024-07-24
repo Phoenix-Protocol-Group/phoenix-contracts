@@ -992,7 +992,7 @@ pub fn compute_swap(
         env,
         amp as u128,
         scale_value(
-            offer_pool + offer_amount,
+            offer_pool + convert_i128_to_u128(before_commission),
             greatest_precision,
             DECIMAL_PRECISION,
         ),
@@ -1000,14 +1000,13 @@ pub fn compute_swap(
             scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
             scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
         ],
-        ask_pool_precision,
+        greatest_precision,
     );
-    soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
 
-    soroban_sdk::testutils::arbitrary::std::dbg!("DBG", ask_pool, new_ask_pool);
+    soroban_sdk::testutils::arbitrary::std::dbg!("SWAP", ask_pool, new_ask_pool);
+
     let return_amount = ask_pool - new_ask_pool;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
-    soroban_sdk::testutils::arbitrary::std::dbg!("ALL GOOD");
     let spread_amount = if offer_amount > return_amount {
         convert_u128_to_i128(offer_amount - return_amount)
     } else {
@@ -1060,6 +1059,7 @@ pub fn compute_offer_amount(
         ],
         greatest_precision,
     );
+    soroban_sdk::testutils::arbitrary::std::dbg!("REVERSE SWAP", new_offer_pool, offer_pool);
 
     let offer_amount = new_offer_pool - offer_pool;
 
