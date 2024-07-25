@@ -170,23 +170,23 @@ fn withdraw_liquidity() {
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);
 
-    token1.mint(&user1, &100);
-    token2.mint(&user1, &100);
+    token1.mint(&user1, &10_000);
+    token2.mint(&user1, &10_000);
     pool.provide_liquidity(
         &user1,
-        &Some(100),
-        &Some(100),
-        &Some(100),
-        &Some(100),
+        &Some(10_000),
+        &Some(10_000),
+        &Some(10_000),
+        &Some(10_000),
         &None,
         &None::<u64>,
     );
 
     assert_eq!(token1.balance(&user1), 0);
-    assert_eq!(token_share.balance(&user1), 100);
-    assert_eq!(token1.balance(&pool.address), 100);
+    assert_eq!(token_share.balance(&user1), 10_000);
+    assert_eq!(token1.balance(&pool.address), 10_000);
     assert_eq!(token2.balance(&user1), 0);
-    assert_eq!(token2.balance(&pool.address), 100);
+    assert_eq!(token2.balance(&pool.address), 10_000);
 
     let share_amount = 50;
     let min_a = 50;

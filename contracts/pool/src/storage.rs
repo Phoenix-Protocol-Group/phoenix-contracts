@@ -51,8 +51,6 @@ pub struct Config {
     pub max_referral_bps: i64,
     /// Default value that will be used whenever the user hasn't specified their preferred slippage
     pub default_slippage_bps: i64,
-    /// The minimum amount of shares that the user should get upon providing liquidity
-    pub minimum_lp_shares: i128,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
@@ -610,7 +608,6 @@ mod tests {
             max_allowed_spread_bps: 10_i64,
             max_referral_bps: 10i64,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 10i128,
         };
 
         let result = config.max_allowed_slippage();

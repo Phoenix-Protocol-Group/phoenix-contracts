@@ -53,7 +53,6 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,
-        minimum_lp_shares: Some(10i128),
     };
 
     pool.initialize(
@@ -118,7 +117,6 @@ fn update_config() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 10i128,
         }
     );
 
@@ -130,7 +128,6 @@ fn update_config() {
         &None,
         &None,
         &Some(1_000i64),
-        &Some(100),
     );
     assert_eq!(
         pool.query_config(),
@@ -146,20 +143,11 @@ fn update_config() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 1_000,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 100i128,
         }
     );
 
     // update slippage and spread
-    pool.update_config(
-        &None,
-        &None,
-        &None,
-        &None,
-        &Some(5_000i64),
-        &Some(500),
-        &None,
-    );
+    pool.update_config(&None, &None, &None, &None, &Some(5_000i64), &Some(500));
     assert_eq!(
         pool.query_config(),
         Config {
@@ -174,7 +162,6 @@ fn update_config() {
             max_allowed_spread_bps: 5_000,
             max_referral_bps: 500,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 100i128,
         }
     );
 }
@@ -217,7 +204,6 @@ fn update_config_unauthorized() {
         &None,
         &None,
         &None,
-        &None,
     );
 }
 
@@ -254,29 +240,13 @@ fn update_config_update_admin() {
     );
 
     // update admin to new admin
-    pool.update_config(
-        &Some(admin2.clone()),
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-    );
+    pool.update_config(&Some(admin2.clone()), &None, &None, &None, &None, &None);
 
     let share_token_address = pool.query_share_token_address();
     let stake_token_address = pool.query_stake_contract_address();
 
     // now update succeeds
-    pool.update_config(
-        &Some(admin2.clone()),
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-    );
+    pool.update_config(&Some(admin2.clone()), &None, &None, &None, &None, &None);
     assert_eq!(
         pool.query_config(),
         Config {
@@ -291,7 +261,6 @@ fn update_config_update_admin() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 10i128,
         }
     );
 }
@@ -333,7 +302,6 @@ fn update_config_too_high_fees() {
         &None,
         &Some(10_100i64), // 101% fees
         &Some(admin2.clone()),
-        &None,
         &None,
         &None,
         &None,
@@ -447,7 +415,6 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 10,
         }
     );
 
@@ -459,7 +426,6 @@ fn update_configs_all_bps_values_should_work() {
         &Some(1000i64),
         &Some(1000i64),
         &Some(1000i64),
-        &None,
     );
 
     // assert the changes
@@ -477,7 +443,6 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_spread_bps: 1000,
             max_referral_bps: 1000,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 10
         }
     );
 }

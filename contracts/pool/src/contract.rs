@@ -22,6 +22,9 @@ use phoenix::{
 };
 use soroban_decimal::Decimal;
 
+/// Minimum initial LP share
+const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1_000i128;
+
 // Metadata that is added on to the WASM custom section
 contractmeta!(
     key = "Description",
@@ -107,7 +110,6 @@ pub trait LiquidityPoolTrait {
         max_allowed_slippage_bps: Option<i64>,
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
-        minimum_lp_shares: Option<i128>,
     );
 
     // Migration entrypoint
@@ -176,13 +178,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         let max_referral_bps = lp_init_info.max_referral_bps;
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
-        let minimum_lp_shares = lp_init_info.minimum_lp_shares.unwrap_or_else(|| {
-            log!(
-                env,
-                "Pool: Initialize: Missing argument - minimum_lp_shares"
-            );
-            panic_with_error!(env, ContractError::MinimumLpSharesNotProvided);
-        });
 
         validate_bps!(
             swap_fee_bps,
@@ -246,12 +241,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             &stake_init_info.max_complexity,
         );
 
-        assert!(
-            (0..=100_000).contains(&minimum_lp_shares),
-            "minimum_lp_shares must be between 0 and 100,000, got {}",
-            minimum_lp_shares
-        );
-
         let config = Config {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
@@ -264,7 +253,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_spread_bps,
             max_referral_bps,
             default_slippage_bps,
-            minimum_lp_shares,
         };
 
         save_config(&env, config);
@@ -425,38 +413,23 @@ impl LiquidityPoolTrait for LiquidityPool {
         let balance_b = utils::get_balance(&env, &config.token_b);
         let total_shares = utils::get_total_shares(&env);
 
-        let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
-            let shares_a = (balance_a * total_shares) / pool_balance_a;
-            let shares_b = (balance_b * total_shares) / pool_balance_b;
-            let user_shares = shares_a.min(shares_b);
-            if user_shares < config.minimum_lp_shares {
-                log!(
-                    env,
-                    "Pool: Provide Liquidity: User shares will be below the minimum thresshold."
-                );
-                panic_with_error!(env, ContractError::NotEnoughLiquidityProvided)
-            }
-            user_shares
-        } else {
+        if total_shares == 0 {
             // In case of an empty mint 1000 LP shares to a burner addr
             utils::mint_shares(
                 &env,
                 &config.share_token,
                 &env.current_contract_address(),
-                1000,
+                MINIMUM_LIQUIDITY_AMOUNT,
             );
+        }
 
-            // now calculate x*y shares to user
-            let user_shares = (balance_a * balance_b).sqrt();
-            if user_shares < config.minimum_lp_shares {
-                log!(
-                    env,
-                    "Pool: Provide Liquidity: User shares will be below the minimum thresshold."
-                );
-                panic_with_error!(env, ContractError::NotEnoughLiquidityProvided)
-            }
-
-            user_shares
+        let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
+            let shares_a = (balance_a * total_shares) / pool_balance_a;
+            let shares_b = (balance_b * total_shares) / pool_balance_b;
+            shares_a.min(shares_b)
+        } else {
+            // In case of empty pool, just produce X*Y shares
+            (balance_a * balance_b).sqrt()
         };
 
         if new_total_shares == 0 {
@@ -620,7 +593,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         max_allowed_slippage_bps: Option<i64>,
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
-        minimum_lp_shares: Option<i128>,
     ) {
         let admin: Address = utils::get_admin(&env);
         admin.require_auth();
@@ -648,10 +620,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         if let Some(max_referral_bps) = max_referral_bps {
             validate_bps!(max_referral_bps);
             config.max_referral_bps = max_referral_bps;
-        }
-
-        if let Some(minimum_lp_shares) = minimum_lp_shares {
-            config.minimum_lp_shares = minimum_lp_shares;
         }
 
         save_config(&env, config);
@@ -1452,7 +1420,6 @@ mod tests {
             max_allowed_spread_bps: 100i64,
             max_referral_bps: 1_000i64,
             default_slippage_bps: 100i64,
-            minimum_lp_shares: 10i128,
         };
         split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
     }
