@@ -992,7 +992,7 @@ pub fn compute_swap(
         env,
         amp as u128,
         scale_value(
-            offer_pool + convert_i128_to_u128(before_commission),
+            offer_pool + offer_amount,
             greatest_precision,
             DECIMAL_PRECISION,
         ),
