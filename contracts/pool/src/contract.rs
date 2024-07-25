@@ -419,7 +419,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             shares_a.min(shares_b)
         } else {
             // In case of empty pool, just produce X*Y shares
-            let shares = (balance_a * balance_b).sqrt();
+            let shares = (amounts.0 * amounts.1).sqrt();
             if MINIMUM_LIQUIDITY_AMOUNT >= shares {
                 log!(env, "Pool: Provide Liquidity: Not enough liquidity!");
                 panic_with_error!(env, ContractError::TotalSharesEqualZero);
