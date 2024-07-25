@@ -717,39 +717,39 @@ fn query_share_valid_liquidity() {
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address.clone());
 
-    token1.mint(&user1, &150);
-    token1.mint(&user2, &250);
-    token1.mint(&user3, &350);
+    token1.mint(&user1, &15000);
+    token1.mint(&user2, &25000);
+    token1.mint(&user3, &35000);
 
-    token2.mint(&user1, &200);
-    token2.mint(&user2, &300);
-    token2.mint(&user3, &400);
+    token2.mint(&user1, &20000);
+    token2.mint(&user2, &30000);
+    token2.mint(&user3, &40000);
 
     // all users provide liquidity in a 3:4 ratio
     pool.provide_liquidity(
         &user1,
-        &Some(150),
-        &Some(10),
-        &Some(200),
-        &Some(10),
+        &Some(15000),
+        &Some(1000),
+        &Some(20000),
+        &Some(1000),
         &None,
         &None::<u64>,
     );
     pool.provide_liquidity(
         &user2,
-        &Some(150),
-        &Some(50),
-        &Some(200),
-        &Some(50),
+        &Some(15000),
+        &Some(5000),
+        &Some(20000),
+        &Some(5000),
         &None,
         &None::<u64>,
     );
     pool.provide_liquidity(
         &user3,
-        &Some(150),
-        &Some(100),
-        &Some(200),
-        &Some(100),
+        &Some(15000),
+        &Some(10000),
+        &Some(20000),
+        &Some(10000),
         &None,
         &None::<u64>,
     );
@@ -762,14 +762,15 @@ fn query_share_valid_liquidity() {
         (
             Asset {
                 address: token1.address.clone(),
-                amount: 22
+                amount: 14181
             },
             Asset {
                 address: token2.address.clone(),
-                amount: 29
+                amount: 18908
             }
         )
     );
+    assert_eq!(token1.balance(&user1), 15_000);
 
     let pool_info_before_withdrawal = pool.query_pool_info();
     assert_eq!(
@@ -1196,7 +1197,7 @@ fn provide_liqudity_with_deadline_should_work() {
         ),]
     );
     assert_eq!(token_share.balance(&user1), 100);
-    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token_share.balance(&pool.address), 1_000);
     assert_eq!(token1.balance(&user1), 900);
     assert_eq!(token1.balance(&pool.address), 100);
     assert_eq!(token2.balance(&user1), 900);
@@ -1216,12 +1217,12 @@ fn provide_liqudity_with_deadline_should_work() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 100i128
+                amount: 100i128 + 1_000i128
             },
             stake_address: result.clone().stake_address,
         }
     );
-    assert_eq!(pool.query_total_issued_lp(), 100);
+    assert_eq!(pool.query_total_issued_lp(), 1_100);
 }
 
 #[test]
