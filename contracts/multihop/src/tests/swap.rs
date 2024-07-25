@@ -355,7 +355,7 @@ fn swap_single_pool_with_fees() {
         1_000_000,
         token2.address.clone(),
         1_000_000,
-        Some(1_500), // maximum cap is %15
+        Some(500), // maximum cap is %5
         PoolType::Xyk,
     );
 
@@ -386,13 +386,11 @@ fn swap_single_pool_with_fees() {
         &None,
     );
 
-    // 5. check if it goes according to plan
     // 1000 tokens initially
-    // swap 300 from token0 to token1 with 2000 bps (20%)
-    // the lp has a maximum allowed bps of 1_500 (15%)
-    // tokens1 will be 255
+    // swap 300 from token0 to token1 with 500 bps (%5)
+    // tokens1 will be 285
     assert_eq!(token1.balance(&recipient), 700i128);
-    assert_eq!(token2.balance(&recipient), 255i128);
+    assert_eq!(token2.balance(&recipient), 285i128);
 }
 
 #[test]

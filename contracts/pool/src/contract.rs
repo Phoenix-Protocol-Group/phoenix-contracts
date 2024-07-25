@@ -9,10 +9,10 @@ use crate::{
     error::ContractError,
     stake_contract,
     storage::{
-        get_config, save_config,
+        get_config, save_config, save_max_allowed_fee_bps,
         utils::{self, get_admin, is_initialized, set_initialized},
         Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse, MAXIMUM_ALLOWED_TOTAL_FEE_BPS,
+        SimulateReverseSwapResponse, SimulateSwapResponse,
     },
     token_contract,
 };
@@ -46,6 +46,7 @@ pub trait LiquidityPoolTrait {
         share_token_name: String,
         share_token_symbol: String,
         default_slippage_bps: i64,
+        max_allowed_fee_bps: i64,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -153,6 +154,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         share_token_name: String,
         share_token_symbol: String,
         default_slippage_bps: i64,
+        max_allowed_fee_bps: i64,
     ) {
         if is_initialized(&env) {
             log!(
@@ -171,22 +173,23 @@ impl LiquidityPoolTrait for LiquidityPool {
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
 
+        validate_bps!(
+            swap_fee_bps,
+            max_allowed_slippage_bps,
+            max_allowed_spread_bps,
+            max_referral_bps,
+            default_slippage_bps,
+            max_allowed_fee_bps
+        );
+
         // if the swap_fee_bps is above the threshold, we throw an error
-        if swap_fee_bps > MAXIMUM_ALLOWED_TOTAL_FEE_BPS {
+        if swap_fee_bps > max_allowed_fee_bps {
             log!(
                 &env,
                 "Pool: Initialize: swap fee is higher than the maximum allowed!"
             );
             panic_with_error!(&env, ContractError::SwapFeeBpsOverLimit);
         }
-
-        validate_bps!(
-            swap_fee_bps,
-            max_allowed_slippage_bps,
-            max_allowed_spread_bps,
-            max_referral_bps,
-            default_slippage_bps
-        );
 
         set_initialized(&env);
 
@@ -247,6 +250,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         };
 
         save_config(&env, config);
+        save_max_allowed_fee_bps(&env, max_allowed_fee_bps);
+
         utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);

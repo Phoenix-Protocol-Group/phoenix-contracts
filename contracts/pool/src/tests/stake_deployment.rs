@@ -137,6 +137,7 @@ fn second_pool_deployment_should_fail() {
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHOBTC"),
         &100i64,
+        &1_000,
     );
 
     pool.initialize(
@@ -148,5 +149,6 @@ fn second_pool_deployment_should_fail() {
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHOBTC"),
         &100i64,
+        &1_000,
     );
 }
