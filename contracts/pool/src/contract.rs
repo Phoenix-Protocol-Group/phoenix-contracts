@@ -1112,56 +1112,42 @@ pub fn compute_swap(
         U256::from_u128(env, convert_i128_to_u128(commission_rate.atomics()));
 
     // Calculate the cross product of offer_pool and ask_pool
-    // let cp: i128 = offer_pool * ask_pool;
     let cp = offer_pool_as_u256.mul(&ask_pool_as_u256);
 
     // Calculate the resulting amount of ask assets after the swap
     // Return amount calculation based on the AMM model's invariant,
     // which ensures the product of the amounts of the two assets remains constant before and after a trade.
-    // let return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount));
     let return_amount =
         ask_pool_as_u256.sub(&(cp.div(&offer_pool_as_u256.add(&offer_amount_as_u256))));
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    // let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - return_amount;
     let spread_amount = (offer_amount_as_u256
         .mul(&ask_pool_as_u256)
         .div(&offer_pool_as_u256))
     .sub(&return_amount);
 
-    // let commission_amount: i128 = return_amount * commission_rate;
-    //TODO: prbably do something with the 10^18 thing from atomics
     let decimal_fractional = U256::from_u128(env, 1_000_000_000_000_000_000u128);
     let commission_amount = return_amount
         .mul(&commmission_rate_as_u256)
         .div(&decimal_fractional);
 
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
-    // let return_amount: i128 = return_amount - commission_amount;
     let return_amount = return_amount.sub(&commission_amount);
 
     let referral_fee_as_u256_from_bps = U256::from_u128(
         env,
         convert_i128_to_u128(Decimal::bps(referral_fee).atomics()),
     );
-    // let referral_fee_amount: i128 = return_amount * Decimal::bps(referral_fee);
     let referral_fee_amount = return_amount
         .mul(&referral_fee_as_u256_from_bps)
         .div(&decimal_fractional);
 
-    // let return_amount: i128 = return_amount - referral_fee_amount;
     let return_amount = return_amount.sub(&referral_fee_amount);
 
-    // Convert all results back to i128 safely
-    let return_amount_i128 = u256_to_i128(env, return_amount);
-    let spread_amount_i128 = u256_to_i128(env, spread_amount);
-    let commission_amount_i128 = u256_to_i128(env, commission_amount);
-    let referral_fee_amount_i128 = u256_to_i128(env, referral_fee_amount);
-
     ComputeSwap {
-        return_amount: return_amount_i128,
-        spread_amount: spread_amount_i128,
-        commission_amount: commission_amount_i128,
-        referral_fee_amount: referral_fee_amount_i128,
+        return_amount: u256_to_i128(env, return_amount),
+        spread_amount: u256_to_i128(env, spread_amount),
+        commission_amount: u256_to_i128(env, commission_amount),
+        referral_fee_amount: u256_to_i128(env, referral_fee_amount),
     }
 }
 
