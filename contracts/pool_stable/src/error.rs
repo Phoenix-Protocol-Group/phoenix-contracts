@@ -24,4 +24,5 @@ pub enum ContractError {
     InvalidAMP = 18,
     TransactionAfterTimestampDeadline = 19,
     SlippageToleranceExceeded = 20,
+    IssuedSharesLessThanUserRequested = 21,
 }

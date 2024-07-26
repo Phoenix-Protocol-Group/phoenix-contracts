@@ -10,8 +10,8 @@ use crate::{
     stake_contract,
     storage::{
         get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
-        save_greatest_precision, utils,
-        utils::{get_admin, is_initialized, set_initialized},
+        save_greatest_precision,
+        utils::{self, get_admin, is_initialized, set_initialized},
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
         SimulateSwapResponse, StableLiquidityPoolInfo,
     },
@@ -60,6 +60,7 @@ pub trait StableLiquidityPoolTrait {
         desired_b: i128,
         custom_slippage_bps: Option<i64>,
         deadline: Option<u64>,
+        min_shares_to_receive: Option<u128>,
     );
 
     // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
@@ -262,6 +263,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         desired_b: i128,
         custom_slippage_bps: Option<i64>,
         deadline: Option<u64>,
+        min_shares_to_receive: Option<u128>,
     ) {
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
@@ -380,6 +382,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 total_shares * (Decimal::new(invariant_delta) / Decimal::new(initial_invariant)),
             )
         };
+
+        if let Some(min_shares) = min_shares_to_receive {
+            if shares < min_shares {
+                log!(
+                    env,
+                    "Pool Stable: Provide Liquidity: Issued shares are less than the user requsted"
+                );
+                panic_with_error!(&env, ContractError::IssuedSharesLessThanUserRequested);
+            }
+        }
 
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, &config.token_a);
