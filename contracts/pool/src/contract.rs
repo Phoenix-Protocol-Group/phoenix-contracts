@@ -1,6 +1,6 @@
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String,
+    String, U256,
 };
 
 use num_integer::Roots;
@@ -17,7 +17,7 @@ use crate::{
     token_contract,
 };
 use phoenix::{
-    utils::{is_approx_ratio, LiquidityPoolInitInfo},
+    utils::{convert_i128_to_u128, is_approx_ratio, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
 use soroban_decimal::Decimal;
@@ -663,6 +663,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         };
 
         let compute_swap: ComputeSwap = compute_swap(
+            &env,
             pool_balance_offer,
             pool_balance_ask,
             offer_amount,
@@ -803,6 +804,7 @@ fn do_swap(
 
     // 1. We calculate the referral_fee below. If none referral fee will be 0
     let compute_swap: ComputeSwap = compute_swap(
+        &env,
         pool_balance_sell,
         pool_balance_buy,
         offer_amount,
@@ -1096,35 +1098,56 @@ pub fn assert_max_spread(env: &Env, max_spread: Decimal, return_amount: i128, sp
 /// - The commission amount, representing the fees charged for the swap.
 /// - The referral comission fee.
 pub fn compute_swap(
+    env: &Env,
     offer_pool: i128,
     ask_pool: i128,
     offer_amount: i128,
     commission_rate: Decimal,
     referral_fee: i64,
 ) -> ComputeSwap {
+    let offer_pool_as_u256 = U256::from_u128(env, convert_i128_to_u128(offer_pool));
+    let ask_pool_as_u256 = U256::from_u128(env, convert_i128_to_u128(ask_pool));
+    let offer_amount_as_u256 = U256::from_u128(env, convert_i128_to_u128(offer_amount));
+    let commmission_rate_as_u256 =
+        U256::from_u128(env, convert_i128_to_u128(commission_rate.atomics()));
+
     // Calculate the cross product of offer_pool and ask_pool
-    let cp: i128 = offer_pool * ask_pool;
+    let cp = offer_pool_as_u256.mul(&ask_pool_as_u256);
 
     // Calculate the resulting amount of ask assets after the swap
     // Return amount calculation based on the AMM model's invariant,
     // which ensures the product of the amounts of the two assets remains constant before and after a trade.
-    let return_amount: i128 = ask_pool - (cp / (offer_pool + offer_amount));
+    let return_amount =
+        ask_pool_as_u256.sub(&(cp.div(&offer_pool_as_u256.add(&offer_amount_as_u256))));
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - return_amount;
+    let spread_amount = (offer_amount_as_u256
+        .mul(&ask_pool_as_u256)
+        .div(&offer_pool_as_u256))
+    .sub(&return_amount);
 
-    let commission_amount: i128 = return_amount * commission_rate;
+    let decimal_fractional = U256::from_u128(env, 1_000_000_000_000_000_000u128);
+    let commission_amount = return_amount
+        .mul(&commmission_rate_as_u256)
+        .div(&decimal_fractional);
 
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
-    let return_amount: i128 = return_amount - commission_amount;
-    let referral_fee_amount: i128 = return_amount * Decimal::bps(referral_fee);
+    let return_amount = return_amount.sub(&commission_amount);
 
-    let return_amount: i128 = return_amount - referral_fee_amount;
+    let referral_fee_as_u256_from_bps = U256::from_u128(
+        env,
+        convert_i128_to_u128(Decimal::bps(referral_fee).atomics()),
+    );
+    let referral_fee_amount = return_amount
+        .mul(&referral_fee_as_u256_from_bps)
+        .div(&decimal_fractional);
+
+    let return_amount = return_amount.sub(&referral_fee_amount);
 
     ComputeSwap {
-        return_amount,
-        spread_amount,
-        commission_amount,
-        referral_fee_amount,
+        return_amount: u256_to_i128(env, return_amount),
+        spread_amount: u256_to_i128(env, spread_amount),
+        commission_amount: u256_to_i128(env, commission_amount),
+        referral_fee_amount: u256_to_i128(env, referral_fee_amount),
     }
 }
 
@@ -1163,9 +1186,20 @@ pub fn compute_offer_amount(
     (offer_amount, spread_amount, commission_amount)
 }
 
+fn u256_to_i128(env: &Env, value: U256) -> i128 {
+    value
+        .to_u128()
+        .and_then(|v| i128::try_from(v).ok())
+        .unwrap_or_else(|| {
+            log!(env, "Pool: Compute swap: Unable to convert U256 to i128");
+            panic_with_error!(env, ContractError::CannotConvertU256ToI128);
+        })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use soroban_sdk::{testutils::Address as _, Address};
 
     #[test]
@@ -1254,7 +1288,8 @@ mod tests {
 
     #[test]
     fn test_compute_swap_pass() {
-        let result = compute_swap(1000, 2000, 100, Decimal::percent(10), 0i64); // 10% commission rate
+        let env = Env::default();
+        let result = compute_swap(&env, 1000, 2000, 100, Decimal::percent(10), 0i64); // 10% commission rate
         let expected_compute_swap = ComputeSwap {
             return_amount: 164,
             spread_amount: 18,
@@ -1270,7 +1305,8 @@ mod tests {
         // 10% commission rate + 15% referral fee
         // return_amount would be 164, but after we deduct 15% out of it we get to 139.4 rounded to
         // the closest number 140
-        let result = compute_swap(1000, 2000, 100, Decimal::percent(10), 1_500i64);
+        let env = Env::default();
+        let result = compute_swap(&env, 1000, 2000, 100, Decimal::percent(10), 1_500i64);
         let expected_compute_swap = ComputeSwap {
             return_amount: 140,
             spread_amount: 18,
@@ -1283,7 +1319,8 @@ mod tests {
 
     #[test]
     fn test_compute_swap_full_commission() {
-        let result = compute_swap(1000, 2000, 100, Decimal::one(), 0i64); // 100% commission rate should lead to return_amount being 0
+        let env = Env::default();
+        let result = compute_swap(&env, 1000, 2000, 100, Decimal::one(), 0i64); // 100% commission rate should lead to return_amount being 0
         let expected_compute_swap = ComputeSwap {
             return_amount: 0,
             spread_amount: 18,
@@ -1339,5 +1376,24 @@ mod tests {
 
         // assert slippage tolerance with None as tolerance should pass as well
         assert_slippage_tolerance(&env, None::<i64>, &[10, 20], &[30, 60], Decimal::bps(5_000));
+    }
+
+    #[test]
+    fn convert_u256_to_i128() {
+        let env = Env::default();
+        let u256_value = U256::from_u128(&env, 1_000_000_000_000_000);
+        let converted_to_i128 = u256_to_i128(&env, u256_value);
+
+        assert_eq!(converted_to_i128, 1_000_000_000_000_000i128);
+    }
+
+    #[test]
+    #[should_panic(expected = "Pool: Compute swap: Unable to convert U256 to i128")]
+    fn convert_u256_to_i128_should_panic_when_og_value_outside_the_i128_max_range() {
+        let env = Env::default();
+
+        // using `u128::MAX`, as this is larger than `i128::MAX`
+        let u256_value = U256::from_u128(&env, u128::MAX);
+        u256_to_i128(&env, u256_value);
     }
 }
