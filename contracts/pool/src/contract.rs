@@ -1213,6 +1213,7 @@ fn u256_to_i128(env: &Env, value: U256) -> i128 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use soroban_sdk::{testutils::Address as _, Address};
 
     #[test]
@@ -1389,5 +1390,24 @@ mod tests {
 
         // assert slippage tolerance with None as tolerance should pass as well
         assert_slippage_tolerance(&env, None::<i64>, &[10, 20], &[30, 60], Decimal::bps(5_000));
+    }
+
+    #[test]
+    fn convert_u256_to_i128() {
+        let env = Env::default();
+        let u256_value = U256::from_u128(&env, 1_000_000_000_000_000);
+        let converted_to_i128 = u256_to_i128(&env, u256_value);
+
+        assert_eq!(converted_to_i128, 1_000_000_000_000_000i128);
+    }
+
+    #[test]
+    #[should_panic(expected = "Pool: Compute swap: Unable to convert U256 to i128")]
+    fn convert_u256_to_i128_should_panic_when_og_value_outside_the_i128_max_range() {
+        let env = Env::default();
+
+        // using `u128::MAX`, as this is larger than `i128::MAX`
+        let u256_value = U256::from_u128(&env, u128::MAX);
+        u256_to_i128(&env, u256_value);
     }
 }
