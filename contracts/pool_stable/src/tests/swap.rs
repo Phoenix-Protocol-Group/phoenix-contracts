@@ -58,6 +58,7 @@ fn simple_swap() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
     );
     assert_eq!(
         env.auths(),
@@ -73,7 +74,8 @@ fn simple_swap() {
                         1_i128,
                         None::<i64>,
                         spread,
-                        None::<u64>
+                        None::<u64>,
+                        None::<i64>,
                     )
                         .into_val(&env)
                 )),
@@ -123,6 +125,7 @@ fn simple_swap() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
     );
     let result = pool.query_pool_info();
     assert_eq!(
@@ -203,6 +206,7 @@ fn swap_with_high_fee() {
         &None,
         &Some(spread),
         &None::<u64>,
+        &None,
     );
 
     // This is Stable swap LP with constant product formula
@@ -387,6 +391,7 @@ fn simple_swap_with_deadline_should_work() {
         &None,
         &Some(spread),
         &Some(100u64),
+        &None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -422,6 +427,7 @@ fn simple_swap_with_deadline_should_work() {
         &None,
         &Some(spread),
         &Some(150u64),
+        &None,
     );
     let result = pool.query_pool_info();
     assert_eq!(
@@ -501,5 +507,6 @@ fn simple_swap_should_panic_after_deadline() {
         &None,
         &Some(spread),
         &Some(99u64),
+        &None,
     );
 }

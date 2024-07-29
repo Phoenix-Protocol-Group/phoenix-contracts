@@ -198,12 +198,15 @@ impl FactoryTrait for Factory {
 
         if let PoolType::Xyk = pool_type {
             init_fn_args.push_back(default_slippage_bps.into_val(&env));
-            init_fn_args.push_back(max_allowed_fee_bps.into_val(&env));
         }
 
         if let PoolType::Stable = pool_type {
             init_fn_args.push_back(amp.unwrap().into_val(&env));
         }
+
+        //TODO: I don't like how this relies on providing the right sequence of input args to the
+        //array of arguments. We should try using builder here.
+        init_fn_args.push_back(max_allowed_fee_bps.into_val(&env));
 
         env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
 

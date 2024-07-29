@@ -81,6 +81,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         &String::from_str(env, "LP_SHARE_TOKEN"),
         &String::from_str(env, "PHOBTCLP"),
         &init_amp.into().unwrap_or(6u64),
+        &1_000,
     );
     pool
 }

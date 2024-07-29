@@ -131,6 +131,7 @@ impl MultihopTrait for Multihop {
                         &op.ask_asset_min_amount,
                         &max_spread_bps,
                         &deadline,
+                        &max_allowed_fee_bps,
                     );
                 }
             }
