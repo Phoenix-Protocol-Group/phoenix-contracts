@@ -544,7 +544,7 @@ fn simple_swap_with_low_user_fee_should_panic() {
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
-    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &None::<u64>);
+    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &None::<u64>, &None);
 
     let spread = 100i64; // 1% maximum spread allowed
     pool.swap(

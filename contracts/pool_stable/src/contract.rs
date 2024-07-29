@@ -174,7 +174,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             swap_fee_bps,
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
-            default_slippage_bps
+            default_slippage_bps,
             max_allowed_fee_bps
         );
         //

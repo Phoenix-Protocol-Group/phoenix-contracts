@@ -485,6 +485,7 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
         max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,
+        default_slippage_bps: 500,
     };
 
     pool.initialize(
