@@ -177,7 +177,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             default_slippage_bps,
             max_allowed_fee_bps
         );
-        //
+
         // if the swap_fee_bps is above the threshold, we throw an error
         if swap_fee_bps > max_allowed_fee_bps {
             log!(

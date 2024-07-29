@@ -9,7 +9,7 @@ use crate::{
     error::ContractError,
     stake_contract,
     storage::{
-        get_config, save_config, save_max_allowed_fee_bps,
+        get_config, save_config,
         utils::{self, get_admin, is_initialized, set_initialized},
         Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
@@ -250,7 +250,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         };
 
         save_config(&env, config);
-        save_max_allowed_fee_bps(&env, max_allowed_fee_bps);
 
         utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);

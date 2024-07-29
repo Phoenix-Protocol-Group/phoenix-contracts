@@ -75,21 +75,6 @@ pub fn save_config(env: &Env, config: Config) {
     env.storage().persistent().set(&CONFIG, &config);
 }
 
-//NOTE: I'm checking at initialization if the pools `swap_fee_bps` isn't larger than
-//`max_allowed_fee_bps`, kind of redundant, so I don't see application of this getter
-pub fn _get_max_allowed_fee_bps(env: &Env) -> i64 {
-    env.storage()
-        .persistent()
-        .get(&MAXIMUM_ALLOWED_TOTAL_FEE_BPS)
-        .unwrap()
-}
-
-pub fn save_max_allowed_fee_bps(env: &Env, max_allowed_fee_bps: i64) {
-    env.storage()
-        .persistent()
-        .set(&MAXIMUM_ALLOWED_TOTAL_FEE_BPS, &max_allowed_fee_bps);
-}
-
 #[contracttype]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Asset {
