@@ -350,3 +350,46 @@ fn update_config_all_bps_params_should_work() {
         }
     );
 }
+
+#[test]
+#[should_panic(expected = "Pool: Initialize: swap fee is higher than the maximum allowed!")]
+fn create_stable_pool_with_too_high_swap_fee_bps_should_panic() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let swap_fees = 2_000; // admin wants %20 swap fee, but maximum allowed is %10
+    let stake_manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        Some(admin1.clone()),
+        (&token1.address, &token2.address),
+        swap_fees,
+        user1,
+        500,
+        200,
+        stake_manager,
+        factory,
+        None,
+    );
+
+    // update fees and recipient
+    pool.update_config(
+        &admin1,
+        &None,
+        &Some(10_100i64), // 101% fees
+        &Some(admin2.clone()),
+        &None,
+        &None,
+    );
+}

@@ -58,7 +58,7 @@ fn simple_swap() {
         &None,
         &Some(spread),
         &None::<u64>,
-        &None,
+        &Some(150),
     );
     assert_eq!(
         env.auths(),
@@ -75,7 +75,7 @@ fn simple_swap() {
                         None::<i64>,
                         spread,
                         None::<u64>,
-                        None::<i64>,
+                        Some(150i64),
                     )
                         .into_val(&env)
                 )),
@@ -508,5 +508,52 @@ fn simple_swap_should_panic_after_deadline() {
         &Some(spread),
         &Some(99u64),
         &None,
+    );
+}
+
+#[test]
+#[should_panic(expected = "Pool: do_swap: User agrees to swap at a lower percentage.")]
+fn simple_swap_with_low_user_fee_should_panic() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 100; //swap fee is %1
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    token1.mint(&user1, &1_001_000);
+    token2.mint(&user1, &1_001_000);
+    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &None::<u64>);
+
+    let spread = 100i64; // 1% maximum spread allowed
+    pool.swap(
+        &user1,
+        &token1.address,
+        &1,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        &Some(50), // user wants to swap for %.5
     );
 }
