@@ -577,7 +577,7 @@ fn simple_swap_with_two_tokens_both_with_7_decimals() {
 
     token1.initialize(
         &admin,
-        &12,
+        &7,
         &"name1".into_val(&env),
         &"symbol1".into_val(&env),
     );
@@ -589,7 +589,7 @@ fn simple_swap_with_two_tokens_both_with_7_decimals() {
 
     token2.initialize(
         &admin,
-        &12,
+        &7,
         &"name2".into_val(&env),
         &"symbol2".into_val(&env),
     );
