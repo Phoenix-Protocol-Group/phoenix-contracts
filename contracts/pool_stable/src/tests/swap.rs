@@ -39,7 +39,14 @@ fn simple_swap() {
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
-    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &None::<u64>);
+    pool.provide_liquidity(
+        &user1,
+        &1_000_000,
+        &1_000_000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
 
     // true means "selling A token"
     // selling just one token with 1% max spread allowed
@@ -183,6 +190,7 @@ fn swap_with_high_fee() {
         &initial_liquidity,
         &None,
         &None::<u64>,
+        &None::<u128>,
     );
 
     let spread = 1_000; // 10% maximum spread allowed
@@ -264,6 +272,7 @@ fn swap_simulation_even_pool() {
         &initial_liquidity,
         &None,
         &None::<u64>,
+        &None::<u128>,
     );
 
     // let's simulate swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
@@ -359,7 +368,14 @@ fn simple_swap_with_deadline_should_work() {
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
     env.ledger().with_mut(|li| li.timestamp = 49);
-    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &Some(50));
+    pool.provide_liquidity(
+        &user1,
+        &1_000_000,
+        &1_000_000,
+        &None,
+        &Some(50),
+        &None::<u128>,
+    );
 
     let spread = 100i64;
     // making the swap at the final moment
@@ -464,7 +480,14 @@ fn simple_swap_should_panic_after_deadline() {
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
-    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &None::<u64>);
+    pool.provide_liquidity(
+        &user1,
+        &1_000_000,
+        &1_000_000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
 
     // true means "selling A token"
     // selling just one token with 1% max spread allowed

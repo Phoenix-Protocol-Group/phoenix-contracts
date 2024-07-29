@@ -52,9 +52,9 @@ fn query_share_valid_liquidity() {
     token2.mint(&user3, &4000);
 
     // all users provide liquidity in a 3:4 ratio
-    pool.provide_liquidity(&user1, &1500, &2000, &None, &None::<u64>);
-    pool.provide_liquidity(&user2, &1500, &2000, &None, &None::<u64>);
-    pool.provide_liquidity(&user3, &1500, &2000, &None, &None::<u64>);
+    pool.provide_liquidity(&user1, &1500, &2000, &None, &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(&user2, &1500, &2000, &None, &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(&user3, &1500, &2000, &None, &None::<u64>, &None::<u128>);
 
     // user1 assertions
     let lp_share_balance_user1 = token_share.balance(&user1);

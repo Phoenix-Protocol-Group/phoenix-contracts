@@ -49,6 +49,8 @@ pub struct Config {
     pub fee_recipient: Address,
     /// The maximum amount of slippage (in bps) that is tolerated during providing liquidity
     pub max_allowed_slippage_bps: i64,
+    /// Default slippage, in case the customer hasn't specified
+    pub default_slippage_bps: i64,
     /// The maximum amount of spread (in bps) that is tolerated during swap
     pub max_allowed_spread_bps: i64,
 }

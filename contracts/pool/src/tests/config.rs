@@ -48,6 +48,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         swap_fee_bps: 0,
         fee_recipient,
         max_allowed_slippage_bps: 5_000,
+        default_slippage_bps: 2_500,
         max_allowed_spread_bps: 1_000,
         max_referral_bps: 5_000,
         token_init_info,

@@ -10,8 +10,8 @@ use crate::{
     stake_contract,
     storage::{
         get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
-        save_greatest_precision, utils,
-        utils::{get_admin, is_initialized, set_initialized},
+        save_greatest_precision,
+        utils::{self, get_admin, is_initialized, set_initialized},
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
         SimulateSwapResponse, StableLiquidityPoolInfo,
     },
@@ -60,6 +60,7 @@ pub trait StableLiquidityPoolTrait {
         desired_b: i128,
         custom_slippage_bps: Option<i64>,
         deadline: Option<u64>,
+        min_shares_to_receive: Option<u128>,
     );
 
     // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
@@ -160,6 +161,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let swap_fee_bps = lp_init_info.swap_fee_bps;
         let fee_recipient = lp_init_info.fee_recipient;
         let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
+        let default_slippage_bps = lp_init_info.default_slippage_bps;
         let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
         let token_init_info = lp_init_info.token_init_info;
         let stake_init_info = lp_init_info.stake_init_info;
@@ -167,7 +169,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         validate_bps!(
             swap_fee_bps,
             max_allowed_slippage_bps,
-            max_allowed_spread_bps
+            max_allowed_spread_bps,
+            default_slippage_bps
         );
         set_initialized(&env);
 
@@ -224,6 +227,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             total_fee_bps: swap_fee_bps,
             fee_recipient,
             max_allowed_slippage_bps,
+            default_slippage_bps,
             max_allowed_spread_bps,
         };
         save_config(&env, config);
@@ -259,6 +263,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         desired_b: i128,
         custom_slippage_bps: Option<i64>,
         deadline: Option<u64>,
+        min_shares_to_receive: Option<u128>,
     ) {
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
@@ -281,14 +286,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let old_balance_b = utils::get_pool_balance_b(&env);
 
         // Check if custom_slippage_bps is more than max_allowed_slippage
-        if let Some(custom_slippage) = custom_slippage_bps {
-            if custom_slippage > config.max_allowed_slippage_bps {
-                log!(
+        let custom_slippage = custom_slippage_bps.unwrap_or(config.default_slippage_bps);
+        if custom_slippage > config.max_allowed_slippage_bps {
+            log!(
                     &env,
                     "Pool Stable: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage tolerance"
                 );
-                panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
-            }
+            panic_with_error!(env, ContractError::ProvideLiquiditySlippageToleranceTooHigh);
         }
 
         let amp_parameters = get_amp(&env);
@@ -374,9 +378,20 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             );
 
             let initial_invariant = convert_u128_to_i128(initial_invariant);
-            (total_shares * (Decimal::new(invariant_delta) / Decimal::new(initial_invariant)))
-                as u128
+            convert_i128_to_u128(
+                total_shares * (Decimal::new(invariant_delta) / Decimal::new(initial_invariant)),
+            )
         };
+
+        if let Some(min_shares) = min_shares_to_receive {
+            if shares < min_shares {
+                log!(
+                    env,
+                    "Pool Stable: Provide Liquidity: Issued shares are less than the user requsted"
+                );
+                panic_with_error!(&env, ContractError::IssuedSharesLessThanUserRequested);
+            }
+        }
 
         // Now calculate how many new pool shares to mint
         let balance_a = utils::get_balance(&env, &config.token_a);

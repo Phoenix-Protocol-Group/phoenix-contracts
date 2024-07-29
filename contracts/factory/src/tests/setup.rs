@@ -102,6 +102,7 @@ pub fn generate_lp_init_info(
         fee_recipient: fee_recipient.clone(),
         max_allowed_slippage_bps: 5000,
         max_allowed_spread_bps: 500,
+        default_slippage_bps: 2_500,
         swap_fee_bps: 0,
         max_referral_bps: 5000,
         token_init_info,

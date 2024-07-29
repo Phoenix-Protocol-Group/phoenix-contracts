@@ -56,6 +56,7 @@ fn confirm_stake_contract_deployment() {
             total_fee_bps: 0,
             fee_recipient: user1,
             max_allowed_slippage_bps: 500,
+            default_slippage_bps: 2_500,
             max_allowed_spread_bps: 200,
         }
     );
@@ -122,6 +123,7 @@ fn second_pool_stable_deployment_should_fail() {
         swap_fee_bps: 0i64,
         fee_recipient,
         max_allowed_slippage_bps: max_allowed_slippage,
+        default_slippage_bps: 2_500,
         max_allowed_spread_bps: max_allowed_spread,
         max_referral_bps: 500,
         token_init_info,
@@ -198,6 +200,7 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
         swap_fee_bps: 0i64,
         fee_recipient,
         max_allowed_slippage_bps: max_allowed_slippage,
+        default_slippage_bps: 2_500,
         max_allowed_spread_bps: max_allowed_spread,
         max_referral_bps: 500,
         token_init_info,

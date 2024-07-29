@@ -161,6 +161,7 @@ fn factory_successfully_inits_stable_pool() {
         stable_lp::Config {
             fee_recipient: user,
             max_allowed_slippage_bps: 5_000,
+            default_slippage_bps: 2_500,
             max_allowed_spread_bps: 500,
             pool_type: stable_lp::PairType::Stable,
             share_token: share_token_address,
