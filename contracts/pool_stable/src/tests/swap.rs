@@ -597,6 +597,7 @@ fn simple_swap_with_biggest_possible_decimal_numbers_as_liquidity() {
         &highest_possible_liquidity,
         &None,
         &None::<u64>,
+        &None,
     );
 
     pool.swap(&user1, &token1.address, &5, &None, &None, &None::<u64>);
