@@ -183,44 +183,44 @@ fn withdraw_liquidity() {
     );
 
     assert_eq!(token1.balance(&user1), 0);
-    assert_eq!(token_share.balance(&user1), 100_000);
+    assert_eq!(token_share.balance(&user1), 99_000);
     assert_eq!(token1.balance(&pool.address), 100_000);
     assert_eq!(token2.balance(&user1), 0);
     assert_eq!(token2.balance(&pool.address), 100_000);
 
-    let share_amount = 100_000;
+    let share_amount = 50_000;
     let min_a = 50_000;
     let min_b = 50_000;
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &None::<u64>);
 
-    // assert_eq!(
-    //     env.auths(),
-    //     [(
-    //         user1.clone(),
-    //         AuthorizedInvocation {
-    //             function: AuthorizedFunction::Contract((
-    //                 pool.address.clone(),
-    //                 Symbol::new(&env, "withdraw_liquidity"),
-    //                 (&user1, 50_000i128, 50_000i128, 50_000i128, None::<u64>).into_val(&env),
-    //             )),
-    //             sub_invocations: std::vec![AuthorizedInvocation {
-    //                 function: AuthorizedFunction::Contract((
-    //                     share_token_address.clone(),
-    //                     symbol_short!("transfer"),
-    //                     (&user1, &pool.address, 50_000_i128).into_val(&env)
-    //                 )),
-    //                 sub_invocations: std::vec![],
-    //             },],
-    //         }
-    //     ),]
-    // );
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    Symbol::new(&env, "withdraw_liquidity"),
+                    (&user1, 50_000i128, 50_000i128, 50_000i128, None::<u64>).into_val(&env),
+                )),
+                sub_invocations: std::vec![AuthorizedInvocation {
+                    function: AuthorizedFunction::Contract((
+                        share_token_address.clone(),
+                        symbol_short!("transfer"),
+                        (&user1, &pool.address, 50_000_i128).into_val(&env)
+                    )),
+                    sub_invocations: std::vec![],
+                },],
+            }
+        ),]
+    );
 
-    //assert_eq!(token_share.balance(&user1), 50_000);
+    assert_eq!(token_share.balance(&user1), 49_000);
     assert_eq!(token_share.balance(&pool.address), 1_000); // sanity check
-    assert_eq!(token1.balance(&user1), 50_000);
-    assert_eq!(token1.balance(&pool.address), 50_000);
-    assert_eq!(token2.balance(&user1), 50_000);
-    assert_eq!(token2.balance(&pool.address), 50_000);
+    assert_eq!(token1.balance(&user1), 50_505);
+    assert_eq!(token1.balance(&pool.address), 49_495);
+    assert_eq!(token2.balance(&user1), 50_505);
+    assert_eq!(token2.balance(&pool.address), 49_495);
 
     let result = pool.query_pool_info();
     assert_eq!(
@@ -228,24 +228,30 @@ fn withdraw_liquidity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 50_000i128,
+                amount: 49_495i128,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 50_000i128,
+                amount: 49_495i128,
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 150_000i128,
+                amount: 50_000i128,
             },
             stake_address: result.clone().stake_address,
         }
     );
 
     // clear the pool
-    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &None::<u64>);
+    pool.withdraw_liquidity(
+        &user1,
+        &49_000, /* leftover shares */
+        &49_495,
+        &49_495,
+        &None::<u64>,
+    );
     assert_eq!(token_share.balance(&user1), 0);
-    assert_eq!(token_share.balance(&pool.address), 100_000); // Because of the minted 100_000 lp shares
+    assert_eq!(token_share.balance(&pool.address), 1_000); // Because of the minted 1_000 lp shares
     assert_eq!(token1.balance(&user1), 100_000);
     assert_eq!(token1.balance(&pool.address), 0);
     assert_eq!(token2.balance(&user1), 100_000);
