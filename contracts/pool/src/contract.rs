@@ -479,10 +479,8 @@ impl LiquidityPoolTrait for LiquidityPool {
             log!(&env, "Pool: WithdrawLiquidity: Critical error - Total shares are equal to zero before withdrawal!");
             panic_with_error!(env, ContractError::TotalSharesEqualZero);
         }
-        // Account for the initial 1_000 shares minted
-        let effective_total_shares = total_shares - MINIMUM_LIQUIDITY_AMOUNT;
 
-        let share_ratio = Decimal::from_ratio(dbg!(share_amount), dbg!(effective_total_shares));
+        let share_ratio = Decimal::from_ratio(share_amount, total_shares);
 
         let return_amount_a = pool_balance_a * share_ratio;
         let return_amount_b = pool_balance_b * share_ratio;

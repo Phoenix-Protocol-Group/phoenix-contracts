@@ -423,7 +423,7 @@ fn simple_swap_should_panic_when_user_accepted_fee_is_less_than_pool_fee() {
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 1_001_000i128,
+                amount: 1_000_000i128,
             },
             stake_address: result.clone().stake_address,
         }
@@ -781,7 +781,7 @@ fn swap_with_high_fee() {
             },
             asset_lp_share: Asset {
                 address: pool.query_share_token_address(),
-                amount: 1_001_000i128,
+                amount: 1_000_000i128,
             },
             stake_address: result.clone().stake_address,
         }
@@ -1454,7 +1454,7 @@ fn simple_swap_with_deadline_success() {
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 1_000_000i128 + 1_000i128,
+                amount: 1_000_000i128,
             },
             stake_address: result.clone().stake_address,
         }
@@ -1488,7 +1488,7 @@ fn simple_swap_with_deadline_success() {
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 1_000_000i128 + 1_000i128, // this has not changed
+                amount: 1_000_000i128, // this has not changed
             },
             stake_address: result.clone().stake_address,
         }
@@ -1636,7 +1636,7 @@ fn simple_swap_with_biggest_possible_decimal_precision() {
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 450_000_000_000_000_000i128 + 1_000i128,
+                amount: 450_000_000_000_000_000i128,
             },
             stake_address: result.clone().stake_address,
         }
