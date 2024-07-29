@@ -324,56 +324,6 @@ impl LiquidityPoolTrait for LiquidityPool {
                     Decimal::bps(custom_slippage_bps.unwrap_or(config.default_slippage_bps)),
                 )
             }
-            // TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
-            // Providing liquidity with a single token is temporarily disabled
-            // // Only token A is provided
-            // (Some(a), None) if a > 0 => {
-            //     let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
-            //         &env,
-            //         &config,
-            //         pool_balance_a,
-            //         pool_balance_b,
-            //         a,
-            //         &config.token_a,
-            //     );
-            //     do_swap(
-            //         env.clone(),
-            //         sender.clone(),
-            //         // FIXM: Disable Referral struct
-            //         // None,
-            //         config.clone().token_a,
-            //         a_for_swap,
-            //         // expected amount of ask token from swap
-            //         Some(b_from_swap),
-            //         None,
-            //     );
-            //     // return: rest of Token A amount, simulated result of swap of portion A
-            //     (a - a_for_swap, b_from_swap)
-            // }
-            // // Only token B is provided
-            // (None, Some(b)) if b > 0 => {
-            //     let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
-            //         &env,
-            //         &config,
-            //         pool_balance_a,
-            //         pool_balance_b,
-            //         b,
-            //         &config.token_b,
-            //     );
-            //     do_swap(
-            //         env.clone(),
-            //         sender.clone(),
-            //         // FIXM: Disable Referral struct
-            //         // None,
-            //         config.clone().token_b,
-            //         b_for_swap,
-            //         // expected amount of ask token from swap
-            //         Some(a_from_swap),
-            //         None,
-            //     );
-            //     // return: simulated result of swap of portion B, rest of Token B amount
-            //     (a_from_swap, b - b_for_swap)
-            // }
             // None or invalid amounts are provided
             _ => {
                 log!(
@@ -413,24 +363,18 @@ impl LiquidityPoolTrait for LiquidityPool {
         let balance_b = utils::get_balance(&env, &config.token_b);
         let total_shares = utils::get_total_shares(&env);
 
-        let user_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
-            let shares_a = (balance_a * total_shares) / pool_balance_a;
-            let shares_b = (balance_b * total_shares) / pool_balance_b;
-            shares_a.min(shares_b)
+        let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
+            // use 10_000 multiplier to acheieve a bit bigger precision
+            let shares_a = (balance_a * total_shares) * 10_000 / pool_balance_a;
+            let shares_b = (balance_b * total_shares) * 10_000 / pool_balance_b;
+            shares_a.min(shares_b) / 10_000
         } else {
             // In case of empty pool, just produce X*Y shares
-            let shares = (amounts.0 * amounts.1)
-                .sqrt()
-                .checked_sub(MINIMUM_LIQUIDITY_AMOUNT)
-                .expect("Pool: Provide liquidity: Calculated shares cannot be less then 1000!");
+            let shares = (amounts.0 * amounts.1).sqrt();
             if MINIMUM_LIQUIDITY_AMOUNT >= shares {
                 log!(env, "Pool: Provide Liquidity: Not enough liquidity!");
                 panic_with_error!(env, ContractError::TotalSharesEqualZero);
-            }
-            shares
-        };
-
-        if total_shares == 0 {
+            };
             // In case of an empty mint 1000 LP shares to a burner addr
             utils::mint_shares(
                 &env,
@@ -438,9 +382,15 @@ impl LiquidityPoolTrait for LiquidityPool {
                 &env.current_contract_address(),
                 MINIMUM_LIQUIDITY_AMOUNT,
             );
-        }
+            shares - MINIMUM_LIQUIDITY_AMOUNT
+        };
 
-        utils::mint_shares(&env, &config.share_token, &sender, user_shares);
+        utils::mint_shares(
+            &env,
+            &config.share_token,
+            &sender,
+            new_total_shares - total_shares,
+        );
 
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
@@ -532,7 +482,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         // Account for the initial 1_000 shares minted
         let effective_total_shares = total_shares - MINIMUM_LIQUIDITY_AMOUNT;
 
-        let share_ratio = Decimal::from_ratio(share_amount, effective_total_shares);
+        let share_ratio = Decimal::from_ratio(dbg!(share_amount), dbg!(effective_total_shares));
 
         let return_amount_a = pool_balance_a * share_ratio;
         let return_amount_b = pool_balance_b * share_ratio;
@@ -764,11 +714,13 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let mut share_ratio = Decimal::zero();
         if total_share != 0 {
-            share_ratio = Decimal::from_ratio(amount, total_share);
+            share_ratio = Decimal::from_ratio(dbg!(amount) * 10_000, dbg!(total_share));
         }
 
-        let amount_a = token_a_amount * share_ratio;
-        let amount_b = token_b_amount * share_ratio;
+        let amount_a = token_a_amount * share_ratio / 10_000;
+        let amount_b = token_b_amount * share_ratio / 10_000;
+        dbg!(amount_a);
+        dbg!(amount_b);
         (
             Asset {
                 address: pool_info.asset_a.address,
