@@ -614,7 +614,7 @@ fn simple_swap_with_two_tokens_both_with_7_decimals() {
 
     token1.mint(&user, &1_100);
     token2.mint(&user, &1_100);
-    pool.provide_liquidity(&user, &1_000, &1_000, &None, &None::<u64>);
+    pool.provide_liquidity(&user, &1_000, &1_000, &None, &None::<u64>, &None);
 
     let spread = 100i64; // 1% maximum spread allowed
     pool.simulate_reverse_swap(&token1.address, &1);
@@ -707,7 +707,7 @@ fn simple_swap_with_tokens_with_6_8_decimals() {
 
     token1.mint(&user, &1_100);
     token2.mint(&user, &1_100);
-    pool.provide_liquidity(&user, &1_000, &1_000, &None, &None::<u64>);
+    pool.provide_liquidity(&user, &1_000, &1_000, &None, &None::<u64>, &None);
 
     let spread = 100i64; // 1% maximum spread allowed
     pool.swap(
