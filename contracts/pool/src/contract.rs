@@ -1133,26 +1133,32 @@ pub fn compute_swap(
     commission_rate: Decimal,
     referral_fee: i64,
 ) -> ComputeSwap {
+    soroban_sdk::testutils::arbitrary::std::dbg!("COMPUTE_SWAP");
     let offer_pool_as_u256 = U256::from_u128(env, convert_i128_to_u128(offer_pool));
     let ask_pool_as_u256 = U256::from_u128(env, convert_i128_to_u128(ask_pool));
     let offer_amount_as_u256 = U256::from_u128(env, convert_i128_to_u128(offer_amount));
     let commmission_rate_as_u256 =
         U256::from_u128(env, convert_i128_to_u128(commission_rate.atomics()));
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+
     // Calculate the cross product of offer_pool and ask_pool
     let cp = offer_pool_as_u256.mul(&ask_pool_as_u256);
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // Calculate the resulting amount of ask assets after the swap
     // Return amount calculation based on the AMM model's invariant,
     // which ensures the product of the amounts of the two assets remains constant before and after a trade.
     let return_amount =
         ask_pool_as_u256.sub(&(cp.div(&offer_pool_as_u256.add(&offer_amount_as_u256))));
+    soroban_sdk::testutils::arbitrary::std::dbg!(&return_amount);
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount = (offer_amount_as_u256
+    let spread_amount = soroban_sdk::testutils::arbitrary::std::dbg!(offer_amount_as_u256
         .mul(&ask_pool_as_u256)
         .div(&offer_pool_as_u256))
     .sub(&return_amount);
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     let decimal_fractional = U256::from_u128(env, 1_000_000_000_000_000_000u128);
     let commission_amount = return_amount
         .mul(&commmission_rate_as_u256)
@@ -1161,6 +1167,7 @@ pub fn compute_swap(
     // Deduct the commission (minus the part that goes to the protocol) from the return amount
     let return_amount = return_amount.sub(&commission_amount);
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     let referral_fee_as_u256_from_bps = U256::from_u128(
         env,
         convert_i128_to_u128(Decimal::bps(referral_fee).atomics()),
@@ -1169,6 +1176,7 @@ pub fn compute_swap(
         .mul(&referral_fee_as_u256_from_bps)
         .div(&decimal_fractional);
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     let return_amount = return_amount.sub(&referral_fee_amount);
 
     ComputeSwap {
