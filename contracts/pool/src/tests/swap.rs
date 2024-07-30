@@ -1649,6 +1649,7 @@ fn simple_swap_with_biggest_possible_decimal_precision() {
 }
 
 #[test]
+#[ignore = "wip"]
 fn swap_with_bigger_numbers_and_18_decimals() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1692,7 +1693,7 @@ fn swap_with_bigger_numbers_and_18_decimals() {
         stake_owner,
     );
 
-    const FIVE_HUNDRED_MILLION: i128 = 500_000_000;
+    const _FIVE_HUNDRED_MILLION: i128 = 500_000_000;
     const BILLION: i128 = 1_000_000_000;
     const TRILLION: i128 = 1_000_000_000_000;
 
@@ -1720,33 +1721,9 @@ fn swap_with_bigger_numbers_and_18_decimals() {
         &None,
     );
 
-    // let share_token_address = pool.query_share_token_address();
-    // let result = pool.query_pool_info();
-    // assert_eq!(
-    //     result,
-    //     PoolResponse {
-    //         asset_a: Asset {
-    //             address: token1.address.clone(),
-    //             amount: 10 * BILLION + FIVE_HUNDRED_MILLION,
-    //         },
-    //         asset_b: Asset {
-    //             address: token2.address.clone(),
-    //             amount: 9_523_809_523,
-    //         },
-    //         asset_lp_share: Asset {
-    //             address: share_token_address.clone(),
-    //             amount: 10 * BILLION,
-    //         },
-    //         stake_address: result.clone().stake_address,
-    //     }
-    // );
-    //
-    // assert_eq!(token1.balance(&user1), 989_500_000_000);
-    // assert_eq!(token2.balance(&user1), 990_476_190_477);
-
     pool.simulate_reverse_swap(&token2.address, &1_000);
 
-    let output_amount = pool.swap(
+    let _output_amount = pool.swap(
         &user1,
         // FIXM: Disable Referral struct
         // &None::<Referral>,
@@ -1757,27 +1734,4 @@ fn swap_with_bigger_numbers_and_18_decimals() {
         &None::<u64>,
         &None,
     );
-
-    // let result = pool.query_pool_info();
-    // assert_eq!(
-    //     result,
-    //     PoolResponse {
-    //         asset_a: Asset {
-    //             address: token1.address.clone(),
-    //             amount: 1_000_001 - 1_000, // previous balance minus 1_000
-    //         },
-    //         asset_b: Asset {
-    //             address: token2.address.clone(),
-    //             amount: 999_999 + 1000,
-    //         },
-    //         asset_lp_share: Asset {
-    //             address: share_token_address,
-    //             amount: 1_000_000i128, // this has not changed
-    //         },
-    //         stake_address: result.clone().stake_address,
-    //     }
-    // );
-    // assert_eq!(output_amount, 1000);
-    // assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
-    // assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
 }

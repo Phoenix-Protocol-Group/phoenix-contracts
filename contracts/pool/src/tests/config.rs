@@ -446,8 +446,8 @@ fn update_configs_all_bps_values_should_work() {
     );
 }
 
-#[should_panic(expected = "Pool: Initialize: swap fee is higher than the maximum allowed!")]
 #[test]
+#[should_panic(expected = "Pool: Initialize: swap fee is higher than the maximum allowed!")]
 fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
