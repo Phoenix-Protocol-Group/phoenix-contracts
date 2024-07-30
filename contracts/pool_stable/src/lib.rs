@@ -21,7 +21,6 @@ pub mod stake_contract {
 }
 
 const DECIMAL_PRECISION: u32 = 18;
-
 pub const MAXIMUM_ALLOWED_PRECISION: u32 = 7;
 
 #[cfg(test)]

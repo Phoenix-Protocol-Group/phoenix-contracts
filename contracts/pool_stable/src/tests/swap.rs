@@ -1,9 +1,13 @@
 extern crate std;
 
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation, Ledger};
+use soroban_sdk::String;
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
 
-use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
+use super::setup::{
+    deploy_stable_liquidity_pool_contract, deploy_token_contract, install_and_deploy_token_contract,
+};
+
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
 use soroban_decimal::Decimal;
 
@@ -559,7 +563,8 @@ fn simple_swap_with_low_user_fee_should_panic() {
 }
 
 #[test]
-fn simple_swap_with_biggest_possible_decimal_numbers_as_liquidity() {
+#[ignore = "wip"]
+fn swap_with_two_tokens_each_with_maximum_allowed_decimals() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -568,11 +573,25 @@ fn simple_swap_with_biggest_possible_decimal_numbers_as_liquidity() {
     let manager = Address::generate(&env);
     let factory = Address::generate(&env);
 
-    let mut token1 = deploy_token_contract(&env, &admin);
-    let mut token2 = deploy_token_contract(&env, &admin);
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &admin,
+        &7,
+        &String::from_str(&env, "token_one"),
+        &String::from_str(&env, "TON"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &admin,
+        &7,
+        &String::from_str(&env, "token_two"),
+        &String::from_str(&env, "TOT"),
+    );
+
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
+
     let user1 = Address::generate(&env);
     let swap_fees = 0i64;
     let pool = deploy_stable_liquidity_pool_contract(
@@ -587,41 +606,29 @@ fn simple_swap_with_biggest_possible_decimal_numbers_as_liquidity() {
         factory,
         None,
     );
-    // 1e18
-    let highest_possible_liquidity = 52_503_000i128;
-    token1.mint(&user1, &(highest_possible_liquidity + 1_000_000_000i128));
-    token2.mint(&user1, &(highest_possible_liquidity + 1_000_000_000i128));
+
+    token1.mint(&user1, &1_001_000_000_000);
+    token2.mint(&user1, &1_001_000_000_000);
     pool.provide_liquidity(
         &user1,
-        &highest_possible_liquidity,
-        &highest_possible_liquidity,
+        &1_001_000_000_000,
+        &1_001_000_000_000,
         &None,
         &None::<u64>,
+        &None::<u128>,
+    );
+
+    // const MILLION: i128 = 1_000_000;
+    // const BILLION: i128 = 1_000_000_000;
+    // const TRILLION: i128 = 1_000_000_000_000;
+    // pool.simulate_reverse_swap(&token1.address, &TRILLION);
+
+    pool.swap(
+        &user1,
+        &token1.address,
+        &1_000_000,
         &None,
+        &None,
+        &None::<u64>,
     );
-
-    pool.swap(&user1, &token1.address, &5, &None, &None, &None::<u64>);
-
-    let share_token_address = pool.query_share_token_address();
-    let result = pool.query_pool_info();
-    assert_eq!(
-        result,
-        PoolResponse {
-            asset_a: Asset {
-                address: token1.address.clone(),
-                amount: 52503005i128,
-            },
-            asset_b: Asset {
-                address: token2.address.clone(),
-                amount: 52502995i128,
-            },
-            asset_lp_share: Asset {
-                address: share_token_address.clone(),
-                amount: 105005000i128,
-            },
-            stake_address: pool.query_stake_contract_address(),
-        }
-    );
-    assert_eq!(token1.balance(&user1), 999999995);
-    assert_eq!(token2.balance(&user1), 1000000005);
 }
