@@ -783,6 +783,7 @@ version = "1.0.0"
 dependencies = [
  "curve",
  "phoenix",
+ "phoenix-stake",
  "soroban-decimal",
  "soroban-sdk",
 ]

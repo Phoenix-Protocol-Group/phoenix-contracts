@@ -315,15 +315,6 @@ fn pay_rewards_during_unbond() {
         li.timestamp = ONE_WEEK;
     });
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
-    staking.fund_distribution(
-        &admin,
-        &ONE_WEEK,
-        &10_000u64,
-        &reward_token.address,
-        &10_000,
-    );
-
     env.ledger().with_mut(|li| {
         li.timestamp = ONE_WEEK + 5_000;
     });

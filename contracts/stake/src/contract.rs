@@ -44,6 +44,7 @@ pub trait StakingTrait {
         env: Env,
         admin: Address,
         lp_token: Address,
+        stake_rewards: Address,
         min_bond: i128,
         min_reward: i128,
         manager: Address,
@@ -74,7 +75,7 @@ pub trait StakingTrait {
 
     fn query_annualized_rewards(env: Env) -> Val;
 
-    fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
+    fn query_withdrawable_rewards(env: Env, address: Address) -> Val;
 
     fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
@@ -88,6 +89,7 @@ impl StakingTrait for Staking {
         env: Env,
         admin: Address,
         lp_token: Address,
+        stake_rewards: Address,
         min_bond: i128,
         min_reward: i128,
         manager: Address,
@@ -139,7 +141,7 @@ impl StakingTrait for Staking {
 
         utils::save_admin(&env, &admin);
         utils::init_total_staked(&env);
-        set_stake_rewards(&env, &admin);
+        set_stake_rewards(&env, &stake_rewards);
     }
 
     fn bond(env: Env, sender: Address, tokens: i128) {
@@ -310,26 +312,15 @@ impl StakingTrait for Staking {
         ret
     }
 
-    fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
-        let config = get_config(&env);
-        // iterate over all distributions and calculate withdrawable rewards
-        let mut rewards = vec![&env];
-        for distribution_address in get_distributions(&env) {
-            // get distribution data for the given reward
-            let distribution = get_distribution(&env, &distribution_address);
-            // get withdraw adjustment for the given distribution
-            let withdraw_adjustment = get_withdraw_adjustment(&env, &user, &distribution_address);
-            // calculate current reward amount given the distribution and subtracting withdraw
-            // adjustments
-            let reward_amount =
-                withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
-            rewards.push_back(WithdrawableReward {
-                reward_address: distribution_address,
-                reward_amount,
-            });
-        }
-
-        WithdrawableRewardsResponse { rewards }
+    fn query_withdrawable_rewards(env: Env, user: Address) -> Val {
+        let stakes = get_stakes(&env, &user);
+        let apr_fn_arg: Val = stakes.into_val(&env);
+        let ret: Val = env.invoke_contract::<Val>(
+            &get_stake_rewards(&env),
+            &Symbol::new(&env, "query_withdrawable_reward"),
+            vec![&env, apr_fn_arg],
+        );
+        ret
     }
 
     fn query_distributed_rewards(env: Env, asset: Address) -> u128 {

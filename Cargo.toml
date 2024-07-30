@@ -12,6 +12,7 @@ repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
 curve = { path = "./packages/curve" }
 soroban-decimal = { path = "./packages/decimal" }
 phoenix = { path = "./packages/phoenix" }
+phoenix-stake = { path = "./contracts/stake" }
 num-integer = { version = "0.1.45", default-features = false, features = [
     "i128",
 ] }
