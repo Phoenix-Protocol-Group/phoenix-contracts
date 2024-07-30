@@ -56,7 +56,7 @@ fn calculate_bond_one_user() {
         li.timestamp = start_timestamp + 300; // move to a middle of distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     assert_eq!(
         staking_rewards.query_undistributed_reward(&reward_token.address),
@@ -67,14 +67,14 @@ fn calculate_bond_one_user() {
         500_000
     );
 
-    staking_rewards.withdraw_rewards(&user1);
+    staking.withdraw_rewards(&user1);
     assert_eq!(reward_token.balance(&user1), 500_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp = start_timestamp + reward_duration; // move to the end of the distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     assert_eq!(
         staking_rewards.query_undistributed_reward(&reward_token.address),
@@ -85,7 +85,7 @@ fn calculate_bond_one_user() {
         1_000_000
     );
 
-    staking_rewards.withdraw_rewards(&user1);
+    staking.withdraw_rewards(&user1);
     assert_eq!(reward_token.balance(&user1), 1_000_000);
 }
 
@@ -133,7 +133,7 @@ fn calculate_bond_multiple_users() {
         li.timestamp += 250; // move to a middle of distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     assert_eq!(
         staking_rewards.query_undistributed_reward(&reward_token.address),
@@ -144,20 +144,20 @@ fn calculate_bond_multiple_users() {
         500_000
     );
 
-    staking_rewards.withdraw_rewards(&user1);
+    staking.withdraw_rewards(&user1);
     assert_eq!(reward_token.balance(&user1), 50_000);
-    staking_rewards.withdraw_rewards(&user2);
+    staking.withdraw_rewards(&user2);
     assert_eq!(reward_token.balance(&user2), 100_000);
-    staking_rewards.withdraw_rewards(&user3);
+    staking.withdraw_rewards(&user3);
     assert_eq!(reward_token.balance(&user3), 150_000);
-    staking_rewards.withdraw_rewards(&user4);
+    staking.withdraw_rewards(&user4);
     assert_eq!(reward_token.balance(&user4), 200_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp = start_timestamp + reward_duration; // move to the end of the distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     assert_eq!(
         staking_rewards.query_undistributed_reward(&reward_token.address),
@@ -168,13 +168,13 @@ fn calculate_bond_multiple_users() {
         1_000_000
     );
 
-    staking_rewards.withdraw_rewards(&user1);
+    staking.withdraw_rewards(&user1);
     assert_eq!(reward_token.balance(&user1), 100_000);
-    staking_rewards.withdraw_rewards(&user2);
+    staking.withdraw_rewards(&user2);
     assert_eq!(reward_token.balance(&user2), 200_000);
-    staking_rewards.withdraw_rewards(&user3);
+    staking.withdraw_rewards(&user3);
     assert_eq!(reward_token.balance(&user3), 300_000);
-    staking_rewards.withdraw_rewards(&user4);
+    staking.withdraw_rewards(&user4);
     assert_eq!(reward_token.balance(&user4), 400_000);
 }
 
@@ -213,7 +213,7 @@ fn calculate_unbond_one_user() {
         li.timestamp += 250; // move to a middle of distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     assert_eq!(
         staking_rewards.query_undistributed_reward(&reward_token.address),
@@ -224,7 +224,7 @@ fn calculate_unbond_one_user() {
         500_000
     );
 
-    staking_rewards.withdraw_rewards(&user1);
+    staking.withdraw_rewards(&user1);
     assert_eq!(reward_token.balance(&user1), 500_000);
 
     // now calculate unbond and unbond tokens, which should result
@@ -236,7 +236,7 @@ fn calculate_unbond_one_user() {
         li.timestamp += reward_duration; // move to the end of the distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     assert_eq!(
         staking_rewards.query_undistributed_reward(&reward_token.address),
@@ -283,7 +283,7 @@ fn pay_rewards_during_calculate_unbond() {
         li.timestamp = start_timestamp + reward_duration; // move to the end of the distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     assert_eq!(
         staking_rewards.query_undistributed_reward(&reward_token.address),
@@ -342,7 +342,7 @@ fn calculate_unbond_multiple_users() {
         li.timestamp += 500; // move to a 1/4 of distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     assert_eq!(
         staking_rewards.query_undistributed_reward(&reward_token.address),
@@ -357,18 +357,18 @@ fn calculate_unbond_multiple_users() {
     staking.unbond(&user1, &10_000, &0);
     assert_eq!(reward_token.balance(&user1), 25_000);
 
-    staking_rewards.withdraw_rewards(&user2);
+    staking.withdraw_rewards(&user2);
     assert_eq!(reward_token.balance(&user2), 50_000);
-    staking_rewards.withdraw_rewards(&user3);
+    staking.withdraw_rewards(&user3);
     assert_eq!(reward_token.balance(&user3), 75_000);
-    staking_rewards.withdraw_rewards(&user4);
+    staking.withdraw_rewards(&user4);
     assert_eq!(reward_token.balance(&user4), 100_000);
 
     env.ledger().with_mut(|li| {
         li.timestamp += 500; // move to the half of the distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     // 250_000 reward for 90_000 total staking points
     // user2 250 * 20 / 90 = 55.555
@@ -379,16 +379,16 @@ fn calculate_unbond_multiple_users() {
     staking.unbond(&user2, &20_000, &0);
     assert_eq!(reward_token.balance(&user2), 50_000 + 55_555);
 
-    staking_rewards.withdraw_rewards(&user3);
+    staking.withdraw_rewards(&user3);
     assert_eq!(reward_token.balance(&user3), 75_000 + 83_333);
-    staking_rewards.withdraw_rewards(&user4);
+    staking.withdraw_rewards(&user4);
     assert_eq!(reward_token.balance(&user4), 100_000 + 111_111);
 
     env.ledger().with_mut(|li| {
         li.timestamp += 500; // move to the 3/4 of the distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     // 250_000 reward for 70_000 total staking points
     // user3 250 * 30 / 70 = 107.143
@@ -398,14 +398,14 @@ fn calculate_unbond_multiple_users() {
     staking.unbond(&user3, &30_000, &0);
     assert_eq!(reward_token.balance(&user3), 158_333 + 107_143);
 
-    staking_rewards.withdraw_rewards(&user4);
+    staking.withdraw_rewards(&user4);
     assert_eq!(reward_token.balance(&user4), 211_111 + 142_857);
 
     env.ledger().with_mut(|li| {
         li.timestamp += 500; // move to the end of the distribution
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     // user4 is the only one left, so this time 250k goes to him
 
@@ -483,7 +483,7 @@ fn multiple_equal_users_with_different_multipliers() {
         li.timestamp += 1;
     });
 
-    staking_rewards.distribute_rewards();
+    staking.distribute_rewards();
 
     // The way it works - contract will treat all the funds as distributed, and the amount
     // that was not sent due to low staking bonus stays on the contract
@@ -497,12 +497,12 @@ fn multiple_equal_users_with_different_multipliers() {
         1_000_000
     );
 
-    staking_rewards.withdraw_rewards(&user1);
+    staking.withdraw_rewards(&user1);
     assert_eq!(reward_token.balance(&user1), 250_000);
-    staking_rewards.withdraw_rewards(&user2);
+    staking.withdraw_rewards(&user2);
     assert_eq!(reward_token.balance(&user2), 187_500);
-    staking_rewards.withdraw_rewards(&user3);
+    staking.withdraw_rewards(&user3);
     assert_eq!(reward_token.balance(&user3), 125_000);
-    staking_rewards.withdraw_rewards(&user4);
+    staking.withdraw_rewards(&user4);
     assert_eq!(reward_token.balance(&user4), 62_500);
 }

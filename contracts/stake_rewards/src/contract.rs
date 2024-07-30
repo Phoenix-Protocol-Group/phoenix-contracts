@@ -163,13 +163,7 @@ impl StakingRewardsTrait for StakingRewards {
             Decimal::one(),
             TOKEN_PER_POWER,
         );
-        update_rewards(
-            &env,
-            &sender,
-            &mut distribution,
-            old_power,
-            new_power,
-        );
+        update_rewards(&env, &sender, &mut distribution, old_power, new_power);
 
         env.events().publish(("calculate_bond", "user"), &sender);
     }
@@ -200,13 +194,7 @@ impl StakingRewardsTrait for StakingRewards {
             Decimal::one(),
             TOKEN_PER_POWER,
         );
-        update_rewards(
-            &env,
-            &sender,
-            &mut distribution,
-            old_power,
-            new_power,
-        );
+        update_rewards(&env, &sender, &mut distribution, old_power, new_power);
 
         env.events().publish(("calculate_unbond", "user"), &sender);
     }
@@ -274,7 +262,7 @@ impl StakingRewardsTrait for StakingRewards {
         // get distribution data for the given reward
         let mut distribution = get_distribution(&env, &config.reward_token);
         // get withdraw adjustment for the given distribution
-        let mut withdraw_adjustment = get_withdraw_adjustment(&env, &sender, &config.reward_token);
+        let mut withdraw_adjustment = get_withdraw_adjustment(&env, sender.clone());
         // calculate current reward amount given the distribution and subtracting withdraw
         // adjustments
         let reward_amount = withdrawable_rewards(
@@ -291,7 +279,7 @@ impl StakingRewardsTrait for StakingRewards {
         distribution.withdrawable_total -= reward_amount;
 
         save_distribution(&env, &config.reward_token, &distribution);
-        save_withdraw_adjustment(&env, &sender, &config.reward_token, &withdraw_adjustment);
+        save_withdraw_adjustment(&env, sender.clone(), &withdraw_adjustment);
 
         // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
@@ -300,7 +288,7 @@ impl StakingRewardsTrait for StakingRewards {
         reward_token_client.transfer(
             &env.current_contract_address(),
             &sender,
-            &dbg!(reward_amount as i128 * reward_multiplier),
+            &(reward_amount as i128 * reward_multiplier),
         );
 
         env.events().publish(
@@ -457,7 +445,7 @@ impl StakingRewardsTrait for StakingRewards {
         // get distribution data for the given reward
         let distribution = get_distribution(&env, &config.reward_token);
         // get withdraw adjustment for the given distribution
-        let withdraw_adjustment = get_withdraw_adjustment(&env, &user, &config.reward_token);
+        let withdraw_adjustment = get_withdraw_adjustment(&env, user);
         // calculate current reward amount given the distribution and subtracting withdraw
         // adjustments
         let reward_amount = withdrawable_rewards(
@@ -470,7 +458,7 @@ impl StakingRewardsTrait for StakingRewards {
         // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
 
-        let reward_amount = dbg!((reward_amount as i128 * reward_multiplier) as u128);
+        let reward_amount = (reward_amount as i128 * reward_multiplier) as u128;
 
         WithdrawableRewardResponse {
             reward_address: config.reward_token,

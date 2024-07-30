@@ -92,12 +92,7 @@ pub fn update_rewards(
 /// `shares_per_point` is current value from `SHARES_PER_POINT` - not loaded in function, to
 /// avoid multiple queries on bulk updates.
 /// `diff` is the points change
-fn apply_points_correction(
-    env: &Env,
-    user: &Address,
-    diff: i128,
-    shares_per_point: u128,
-) {
+fn apply_points_correction(env: &Env, user: &Address, diff: i128, shares_per_point: u128) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user.clone());
     let shares_correction = withdraw_adjustment.shares_correction;
     withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
@@ -119,21 +114,13 @@ pub struct WithdrawAdjustment {
 
 /// Save the withdraw adjustment for a user for a given asset using the user's address as the key
 /// and asset's address as the subkey.
-pub fn save_withdraw_adjustment(
-    env: &Env,
-    user: Address,
-    adjustment: &WithdrawAdjustment,
-) {
-    env.storage().persistent().set(
-        &DistributionDataKey::WithdrawAdjustment(user),
-        adjustment,
-    );
+pub fn save_withdraw_adjustment(env: &Env, user: Address, adjustment: &WithdrawAdjustment) {
+    env.storage()
+        .persistent()
+        .set(&DistributionDataKey::WithdrawAdjustment(user), adjustment);
 }
 
-pub fn get_withdraw_adjustment(
-    env: &Env,
-    user: Address,
-) -> WithdrawAdjustment {
+pub fn get_withdraw_adjustment(env: &Env, user: Address) -> WithdrawAdjustment {
     env.storage()
         .persistent()
         .get(&DistributionDataKey::WithdrawAdjustment(user))
@@ -263,7 +250,6 @@ mod tests {
     fn update_rewards_should_return_early_if_old_power_is_same_as_new_power() {
         let env = Env::default();
         let user = Address::generate(&env);
-        let asset = Address::generate(&env);
         let mut distribution = Distribution::default();
 
         let old_rewards_power = 100;
@@ -274,7 +260,6 @@ mod tests {
         update_rewards(
             &env,
             &user,
-            &asset,
             &mut distribution,
             old_rewards_power,
             new_rewards_power,
