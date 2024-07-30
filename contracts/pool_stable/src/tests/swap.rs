@@ -630,5 +630,6 @@ fn swap_with_two_tokens_each_with_maximum_allowed_decimals() {
         &None,
         &None,
         &None::<u64>,
+        &None::<i64>,
     );
 }
