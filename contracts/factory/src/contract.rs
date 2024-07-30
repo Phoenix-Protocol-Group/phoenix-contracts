@@ -45,6 +45,7 @@ pub trait FactoryTrait {
         pool_type: PoolType,
         amp: Option<u64>,
         default_slippage_bps: i64,
+        max_allowed_fee_bps: i64,
     ) -> Address;
 
     fn update_whitelisted_accounts(
@@ -138,6 +139,7 @@ impl FactoryTrait for Factory {
         pool_type: PoolType,
         amp: Option<u64>,
         default_slippage_bps: i64,
+        max_allowed_fee_bps: i64,
     ) -> Address {
         sender.require_auth();
         validate_pool_info(&pool_type, &amp);
@@ -177,7 +179,8 @@ impl FactoryTrait for Factory {
             lp_init_info.max_allowed_slippage_bps,
             lp_init_info.max_allowed_spread_bps,
             lp_init_info.max_referral_bps,
-            default_slippage_bps
+            default_slippage_bps,
+            max_allowed_fee_bps
         );
 
         let factory_addr = env.current_contract_address();
@@ -200,6 +203,8 @@ impl FactoryTrait for Factory {
         if let PoolType::Stable = pool_type {
             init_fn_args.push_back(amp.unwrap().into_val(&env));
         }
+
+        init_fn_args.push_back(max_allowed_fee_bps.into_val(&env));
 
         env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
 

@@ -48,6 +48,7 @@ pub trait StableLiquidityPoolTrait {
         share_token_name: String,
         share_token_symbol: String,
         amp: u64,
+        max_allowed_fee_bps: i64,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -67,6 +68,7 @@ pub trait StableLiquidityPoolTrait {
     // `offer_amount` is the amount being sold, with `max_spread_bps` being a safety to make sure you receive at least that amount.
     // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to `sender`.
     // Returns the amount of the token being bought.
+    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         sender: Address,
@@ -75,6 +77,7 @@ pub trait StableLiquidityPoolTrait {
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
+        max_allowed_fee_bps: Option<i64>,
     ) -> i128;
 
     // transfers share_amount of pool share tokens to this contract, burns all pools share tokens in this contracts, and sends the
@@ -148,6 +151,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         share_token_name: String,
         share_token_symbol: String,
         amp: u64,
+        max_allowed_fee_bps: i64,
     ) {
         if is_initialized(&env) {
             log!(
@@ -170,8 +174,19 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             swap_fee_bps,
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
-            default_slippage_bps
+            default_slippage_bps,
+            max_allowed_fee_bps
         );
+
+        // if the swap_fee_bps is above the threshold, we throw an error
+        if swap_fee_bps > max_allowed_fee_bps {
+            log!(
+                &env,
+                "Pool: Initialize: swap fee is higher than the maximum allowed!"
+            );
+            panic_with_error!(&env, ContractError::SwapFeeBpsOverLimit);
+        }
+
         set_initialized(&env);
 
         // Token info
@@ -414,6 +429,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .publish(("provide_liquidity", "token_b-amount"), actual_received_b);
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         sender: Address,
@@ -422,6 +438,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         ask_asset_min_amount: Option<i128>,
         max_spread_bps: Option<i64>,
         deadline: Option<u64>,
+        max_allowed_fee_bps: Option<i64>,
     ) -> i128 {
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
@@ -444,6 +461,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             offer_amount,
             ask_asset_min_amount,
             max_spread_bps,
+            max_allowed_fee_bps,
         )
     }
 
@@ -778,8 +796,19 @@ fn do_swap(
     offer_amount: i128,
     ask_asset_min_amount: Option<i128>,
     max_spread: Option<i64>,
+    max_allowed_fee_bps: Option<i64>,
 ) -> i128 {
     let config = get_config(&env);
+
+    if let Some(agreed_percentage) = max_allowed_fee_bps {
+        if agreed_percentage < config.total_fee_bps {
+            log!(
+                &env,
+                "Pool: do_swap: User agrees to swap at a lower percentage."
+            );
+            panic_with_error!(&env, ContractError::UserDeclinesPoolFee);
+        }
+    }
 
     if offer_asset != config.token_a && offer_asset != config.token_b {
         log!(

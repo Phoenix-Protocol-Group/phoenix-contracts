@@ -199,6 +199,7 @@ fn simple_trade_token_and_transfer_token() {
         &None::<i64>,
         &None,
         &None,
+        &None,
     );
 
     assert_eq!(
@@ -333,6 +334,7 @@ fn extended_trade_and_transfer_token() {
         &None::<i64>,
         &None,
         &None,
+        &None,
     );
 
     assert_eq!(
@@ -362,6 +364,7 @@ fn extended_trade_and_transfer_token() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
         &None,
         &None,
     );
@@ -396,6 +399,7 @@ fn extended_trade_and_transfer_token() {
         &None::<i64>,
         &None,
         &None,
+        &None,
     );
 
     // 1899 + 450 = 2_349
@@ -426,6 +430,7 @@ fn extended_trade_and_transfer_token() {
         &usdc_pho_client.address,
         &Some(1_500),
         &None::<i64>,
+        &None,
         &None,
         &None,
     );
@@ -518,6 +523,7 @@ fn trade_token_should_fail_when_unauthorized() {
         &None::<i64>,
         &None,
         &None,
+        &None,
     );
 }
 
@@ -582,6 +588,7 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
         &xlm_pho_client.address,
         &Some(1_000),
         &None::<i64>,
+        &None,
         &None,
         &None,
     );
@@ -651,6 +658,7 @@ fn transfer_should_fail_when_unauthorized() {
         &None::<i64>,
         &None,
         &None,
+        &None,
     );
 
     trader_client.transfer(&Address::generate(&env), &rcpt, &1_000, &None);
@@ -718,6 +726,7 @@ fn transfer_should_fail_with_invalid_spread_bps(max_spread_bps: i64) {
         &xlm_pho_client.address,
         &Some(1_000),
         &Some(max_spread_bps),
+        &None,
         &None,
         &None,
     );
@@ -794,6 +803,7 @@ fn simple_trade_token_and_transfer_token_with_some_ask_asset_min_amount() {
         &None::<i64>,
         &None,
         &Some(1_000),
+        &None,
     );
 
     assert_eq!(

@@ -25,4 +25,6 @@ pub enum ContractError {
     TransactionAfterTimestampDeadline = 19,
     SlippageToleranceExceeded = 20,
     IssuedSharesLessThanUserRequested = 21,
+    SwapFeeBpsOverLimit = 22,
+    UserDeclinesPoolFee = 23,
 }

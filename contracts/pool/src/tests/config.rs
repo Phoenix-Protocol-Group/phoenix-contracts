@@ -64,6 +64,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHOBTC"),
         &100i64,
+        &1_000,
     );
 }
 
@@ -442,5 +443,60 @@ fn update_configs_all_bps_values_should_work() {
             max_referral_bps: 1000,
             default_slippage_bps: 100i64,
         }
+    );
+}
+
+#[should_panic(expected = "Pool: Initialize: swap fee is higher than the maximum allowed!")]
+#[test]
+fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token1.address < token2.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let pool = LiquidityPoolClient::new(&env, &env.register_contract(None, LiquidityPool {}));
+    let fee_recipient = Address::generate(&env);
+
+    let token_init_info = TokenInitInfo {
+        token_a: token1.address,
+        token_b: token2.address,
+    };
+    let stake_init_info = StakeInitInfo {
+        min_bond: 10i128,
+        min_reward: 5i128,
+        manager: Address::generate(&env),
+        max_complexity: 10u32,
+    };
+    let stake_wasm_hash = install_stake_wasm(&env);
+    let token_wasm_hash = install_token_wasm(&env);
+
+    let lp_init_info = LiquidityPoolInitInfo {
+        admin,
+        swap_fee_bps: 1_501, // we are just slightly over the cap of `1_500`, this will error
+        fee_recipient,
+        max_allowed_slippage_bps: 5_000,
+        max_allowed_spread_bps: 1_000,
+        max_referral_bps: 5_000,
+        token_init_info,
+        stake_init_info,
+        default_slippage_bps: 500,
+    };
+
+    pool.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &lp_init_info,
+        &Address::generate(&env),
+        &10u32,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHOBTC"),
+        &100i64,
+        &1_000,
     );
 }

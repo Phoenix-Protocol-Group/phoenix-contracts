@@ -139,6 +139,7 @@ fn second_pool_stable_deployment_should_fail() {
         &String::from_str(&env, "LP_SHARE_TOKEN"),
         &String::from_str(&env, "PHOBTCLP"),
         &amp,
+        &150,
     );
     pool.initialize(
         &stake_wasm_hash,
@@ -149,6 +150,7 @@ fn second_pool_stable_deployment_should_fail() {
         &String::from_str(&env, "LP_SHARE_TOKEN"),
         &String::from_str(&env, "PHOBTCLP"),
         &amp,
+        &150,
     );
 }
 
@@ -216,5 +218,6 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
         &String::from_str(&env, "LP_SHARE_TOKEN"),
         &String::from_str(&env, "PHOBTCLP"),
         &amp,
+        &150,
     );
 }

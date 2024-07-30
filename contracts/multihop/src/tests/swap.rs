@@ -102,6 +102,7 @@ fn swap_three_equal_pools_no_fees() {
         &50i128,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 
     // 5. check if it goes according to plan
@@ -208,6 +209,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
         &50i128,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 
     // 5. check if it goes according to plan
@@ -271,6 +273,7 @@ fn swap_single_pool_no_fees() {
         &1_000,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 
     // 5. check if it goes according to plan
@@ -326,6 +329,7 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
         &50,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 }
 
@@ -351,7 +355,7 @@ fn swap_single_pool_with_fees() {
         1_000_000,
         token2.address.clone(),
         1_000_000,
-        Some(2000),
+        Some(500), // maximum cap is %5
         PoolType::Xyk,
     );
 
@@ -379,14 +383,14 @@ fn swap_single_pool_with_fees() {
         &300i128,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 
-    // 5. check if it goes according to plan
     // 1000 tokens initially
-    // swap 300 from token0 to token1 with 2000 bps (20%)
-    // tokens1 will be 240
+    // swap 300 from token0 to token1 with 500 bps (%5)
+    // tokens1 will be 285
     assert_eq!(token1.balance(&recipient), 700i128);
-    assert_eq!(token2.balance(&recipient), 240i128);
+    assert_eq!(token2.balance(&recipient), 285i128);
 }
 
 #[test]
@@ -475,6 +479,7 @@ fn swap_three_different_pools_no_fees() {
         &5_000i128,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 
     // 5. check if it goes according to plan
@@ -570,6 +575,7 @@ fn swap_three_different_pools_with_fees() {
         &10_000i128,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 
     // we start swapping 10_000 tokens
@@ -622,6 +628,7 @@ fn swap_panics_with_no_operations() {
         &50i128,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 }
 
@@ -703,6 +710,7 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
         &5_000i128,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 
     assert_eq!(
@@ -764,6 +772,7 @@ fn test_swap_with_ask_asset_min_amount() {
         &1_000,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 
     assert_eq!(token1.balance(&recipient), 4_000i128);
@@ -782,6 +791,7 @@ fn test_swap_with_ask_asset_min_amount() {
         &1_000,
         &PoolType::Xyk,
         &None::<u64>,
+        &None,
     );
 }
 
@@ -869,6 +879,7 @@ fn swap_three_equal_stable_pool() {
         &50i128,
         &PoolType::Stable,
         &None::<u64>,
+        &None,
     );
 
     assert_eq!(token1.balance(&recipient), 0i128);

@@ -75,6 +75,7 @@ fn factory_successfully_inits_lp() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
+        &1_000,
     );
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
@@ -148,6 +149,7 @@ fn factory_successfully_inits_stable_pool() {
         &PoolType::Stable,
         &Some(10),
         &100i64,
+        &1_000,
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
@@ -216,6 +218,7 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
         &PoolType::Xyk,
         &None::<u64>,
         &100i64,
+        &1_000,
     );
 }
 
@@ -407,6 +410,7 @@ fn factory_stable_pool_creation_should_fail_early_without_amp() {
         &PoolType::Stable,
         &None,
         &100i64,
+        &1_000,
     );
 }
 
@@ -460,6 +464,7 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
         &PoolType::Xyk,
         &Some(10),
         &100i64,
+        &1_000,
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
