@@ -92,28 +92,36 @@ pub fn save_greatest_precision(env: &Env, token1: &Address, token2: &Address) {
     let precision1 = token_contract::Client::new(env, token1).decimals();
     let precision2 = token_contract::Client::new(env, token2).decimals();
 
-    if precision1 > MAXIMUM_ALLOWED_PRECISION || precision2 > MAXIMUM_ALLOWED_PRECISION {
-        log!(
-            &env,
-            "Pool Stable: Save Greatest Precision: precision above the limit"
-        );
-        panic_with_error!(env, ContractError::MaximumAllowedPrecisionViolated);
-    }
+    verify_precision(env, precision1, precision2);
 
-    let max_precision: u32 = if precision1 > precision2 {
-        precision1
-    } else {
-        precision2
-    };
+    // NOTE: now that we must have tokens with equal number of decimals, this isn't needed
+    // let max_precision: u32 = if precision1 > precision2 {
+    //     precision1
+    // } else {
+    //     precision2
+    // };
+
     env.storage()
         .instance()
-        .set(&DataKey::MaxPrecision, &max_precision);
+        .set(&DataKey::MaxPrecision, &precision1);
     env.storage()
         .instance()
         .set(&(DataKey::TokenPrecision, token1), &precision1);
     env.storage()
         .instance()
         .set(&(DataKey::TokenPrecision, token2), &precision2);
+}
+
+fn verify_precision(env: &Env, p1: u32, p2: u32) {
+    if p1 > MAXIMUM_ALLOWED_PRECISION || p2 > MAXIMUM_ALLOWED_PRECISION {
+        log!(&env, "Pool Stable: Initialize: precision above the limit");
+        panic_with_error!(env, ContractError::MaximumAllowedPrecisionViolated);
+    }
+
+    if p1 != p2 {
+        log!(&env, "Pool Stable: Initialize: precision missmatch");
+        panic_with_error!(env, ContractError::PresicionMissmatch);
+    }
 }
 
 #[contracttype]
@@ -302,5 +310,19 @@ mod tests {
     fn test_get_pool_balance_b_failure() {
         let env = Env::default();
         let _ = utils::get_pool_balance_b(&env);
+    }
+
+    #[test]
+    #[should_panic(expected = "Pool Stable: Initialize: precision above the limit")]
+    fn test_should_panic_when_precision_above_the_allowance_used() {
+        let env = Env::default();
+        verify_precision(&env, 8, 8);
+    }
+
+    #[test]
+    #[should_panic(expected = "Pool Stable: Initialize: precision missmatch")]
+    fn test_should_panic_when_different_precision_used() {
+        let env = Env::default();
+        verify_precision(&env, 5, 7);
     }
 }
