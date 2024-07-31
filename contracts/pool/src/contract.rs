@@ -50,7 +50,6 @@ pub trait LiquidityPoolTrait {
         share_token_symbol: String,
         default_slippage_bps: i64,
         max_allowed_fee_bps: i64,
-        minimum_lp_shares: i128,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -160,7 +159,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         share_token_symbol: String,
         default_slippage_bps: i64,
         max_allowed_fee_bps: i64,
-        minimum_lp_shares: i128,
     ) {
         if is_initialized(&env) {
             log!(

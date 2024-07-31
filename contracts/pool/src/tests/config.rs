@@ -65,7 +65,6 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         &String::from_str(&env, "PHOBTC"),
         &100i64,
         &1_000,
-        &10i128,
     );
 }
 

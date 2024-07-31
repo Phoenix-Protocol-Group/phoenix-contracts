@@ -128,7 +128,6 @@ fn second_pool_stable_deployment_should_fail() {
         max_referral_bps: 500,
         token_init_info,
         stake_init_info,
-        minimum_lp_shares: None,
     };
 
     pool.initialize(
@@ -208,7 +207,6 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
         max_referral_bps: 500,
         token_init_info,
         stake_init_info,
-        minimum_lp_shares: None,
     };
 
     pool.initialize(

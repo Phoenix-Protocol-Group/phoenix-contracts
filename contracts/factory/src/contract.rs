@@ -46,7 +46,6 @@ pub trait FactoryTrait {
         amp: Option<u64>,
         default_slippage_bps: i64,
         max_allowed_fee_bps: i64,
-        minimum_lp_shares: Option<i128>,
     ) -> Address;
 
     fn update_whitelisted_accounts(
@@ -141,7 +140,6 @@ impl FactoryTrait for Factory {
         amp: Option<u64>,
         default_slippage_bps: i64,
         max_allowed_fee_bps: i64,
-        minimum_lp_shares: Option<i128>,
     ) -> Address {
         sender.require_auth();
         validate_pool_info(&pool_type, &amp);

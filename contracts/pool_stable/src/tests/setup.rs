@@ -70,7 +70,6 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         max_referral_bps: 5_000,
         token_init_info,
         stake_init_info,
-        minimum_lp_shares: None,
     };
 
     pool.initialize(

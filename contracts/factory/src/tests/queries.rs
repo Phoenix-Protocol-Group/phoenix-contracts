@@ -35,7 +35,6 @@ pub struct LiquidityPoolConfig {
     pub max_allowed_spread_bps: i64,
     pub max_referral_bps: i64,
     pub default_slippage_bps: i64,
-    pub minimum_lp_shares: i128,
 }
 
 #[test]
@@ -111,7 +110,6 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
-        minimum_lp_shares: Some(10i128),
     };
 
     let second_lp_init_info = LiquidityPoolInitInfo {
@@ -124,7 +122,6 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
-        minimum_lp_shares: Some(10i128),
     };
 
     let third_lp_init_info = LiquidityPoolInitInfo {
@@ -137,7 +134,6 @@ fn test_deploy_multiple_liquidity_pools() {
         max_referral_bps: 5_000,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
-        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -149,7 +145,6 @@ fn test_deploy_multiple_liquidity_pools() {
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -160,7 +155,6 @@ fn test_deploy_multiple_liquidity_pools() {
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -171,7 +165,6 @@ fn test_deploy_multiple_liquidity_pools() {
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -332,7 +325,6 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
-        minimum_lp_shares: Some(10i128),
     };
 
     let second_lp_init_info = LiquidityPoolInitInfo {
@@ -345,7 +337,6 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: second_token_init_info,
         stake_init_info: second_stake_init_info,
-        minimum_lp_shares: Some(10i128),
     };
 
     let third_lp_init_info = LiquidityPoolInitInfo {
@@ -358,7 +349,6 @@ fn test_queries_by_tuple() {
         max_referral_bps: 5_000,
         token_init_info: third_token_init_info,
         stake_init_info: third_stake_init_info,
-        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -370,7 +360,6 @@ fn test_queries_by_tuple() {
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -381,7 +370,6 @@ fn test_queries_by_tuple() {
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -392,7 +380,6 @@ fn test_queries_by_tuple() {
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -500,7 +487,6 @@ fn test_query_user_portfolio_with_stake() {
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -514,9 +500,9 @@ fn test_query_user_portfolio_with_stake() {
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
-        &Some(150),
+        &Some(1_500),
         &Some(100i128),
-        &Some(200),
+        &Some(2_000),
         &Some(100i128),
         &None::<i64>,
         &None::<u64>,
@@ -602,7 +588,6 @@ fn test_query_user_portfolio_with_stake() {
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -713,9 +698,9 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         std::mem::swap(&mut token3, &mut token4);
     }
 
-    token1.mint(&user_1, &1_000i128);
+    token1.mint(&user_1, &1_100i128);
     token1.mint(&user_2, &2_000i128);
-    token2.mint(&user_1, &1_000i128);
+    token2.mint(&user_1, &1_100i128);
     token2.mint(&user_2, &2_000i128);
 
     token3.mint(&user_1, &1_000i128);
@@ -743,8 +728,8 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
+    soroban_sdk::testutils::arbitrary::std::dbg!();
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
 
@@ -753,6 +738,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         .pool_response
         .stake_address;
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     let first_stake_client = stake_contract::Client::new(&env, &first_stake_address);
 
     // second liquidity pool
@@ -764,6 +750,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         fee_recipient.clone(),
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
         &second_lp_init_info,
@@ -773,9 +760,9 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
 
     let second_stake_address = factory
@@ -785,18 +772,20 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
 
     let second_stake_client = stake_contract::Client::new(&env, &second_stake_address);
 
+    soroban_sdk::testutils::arbitrary::std::dbg!("Last");
     // providing liquidity and assertions in first pool
     // provides liquidity in 50/50 ratio
     first_lp_client.provide_liquidity(
         &user_1.clone(),
-        &Some(1_000i128),
+        &Some(1_100i128),
         &Some(900i128),
-        &Some(1_000i128),
+        &Some(1_100i128),
         &Some(900i128),
         &None::<i64>,
         &None::<u64>,
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     first_lp_client.provide_liquidity(
         &user_2.clone(),
         &Some(2_000i128),
@@ -807,6 +796,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // first user portfolio in first pool after providing liquidity
     let first_user_first_portfolio = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
@@ -834,6 +824,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
     env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     first_stake_client.bond(&user_1, &1_000i128);
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // first user portfolio in first pool after staking
     let first_user_first_portfolio = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
@@ -870,6 +861,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // second user portfolio in first pool after providing liquidity
     let second_user_first_portfolio = factory.query_user_portfolio(&user_2, &true);
     assert_eq!(
@@ -894,6 +886,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // this time we bond just 50% of the lp share token for 2nd user
     first_stake_client.bond(&user_2, &1_000i128);
 
@@ -933,6 +926,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // providing liquiditiy and assertions in second pool
     // provides liquidity in 25/75 ratio
     second_lp_client.provide_liquidity(
@@ -945,6 +939,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     second_lp_client.provide_liquidity(
         &user_2.clone(),
         &Some(2_000i128),
@@ -955,6 +950,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // first user portfolio with second pool after providing liquidity
     let first_user_with_second_portfolio = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
@@ -1003,6 +999,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // after providing liquidity to 2nd pool user1 has 2_000 lp share tokens
     second_stake_client.bond(&user_1, &2_000i128);
 
@@ -1112,9 +1109,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // this time we bond just 75% of the lp share token for 2nd user
     second_stake_client.bond(&user_2, &3_000i128);
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // second user portfolio with second pool after staking
     let second_user_second_portfolio = factory.query_user_portfolio(&user_2, &true);
     assert_eq!(
@@ -1208,6 +1207,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
             stake_portfolio: vec![&env,]
         }
     );
+    soroban_sdk::testutils::arbitrary::std::dbg!();
 }
 
 #[test]
@@ -1256,7 +1256,6 @@ fn test_query_user_portfolio_without_stake() {
         max_referral_bps: 0,
         token_init_info: first_token_init_info.clone(),
         stake_init_info: first_stake_init_info,
-        minimum_lp_shares: Some(10i128),
     };
 
     let lp_contract_addr = factory.create_liquidity_pool(
@@ -1268,16 +1267,15 @@ fn test_query_user_portfolio_without_stake() {
         &None::<u64>,
         &100i64,
         &1_000,
-        &Some(10i128),
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &lp_contract_addr);
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
-        &Some(150i128),
+        &Some(1_500i128),
         &Some(100i128),
-        &Some(200i128),
+        &Some(2_000i128),
         &Some(100i128),
         &None::<i64>,
         &None::<u64>,
