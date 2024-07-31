@@ -563,7 +563,6 @@ fn simple_swap_with_low_user_fee_should_panic() {
 }
 
 #[test]
-#[ignore = "wip"]
 fn swap_with_two_tokens_each_with_maximum_allowed_decimals() {
     let env = Env::default();
     env.mock_all_auths();

@@ -154,14 +154,29 @@ pub(crate) fn calc_y(
     let n_coins = U256::from_u128(env, N_COINS);
     let new_amount = U256::from_u128(env, new_amount);
 
+    dbg!("#1");
     let d = compute_d(env, amp, xp);
+    dbg!(d.clone().to_be_bytes());
+    dbg!(xp.clone());
+    dbg!(amp.clone());
     let leverage = U256::from_u128(env, amp * DECIMAL_FRACTIONAL * N_COINS);
     let amp_prec = U256::from_u128(env, AMP_PRECISION as u128 * DECIMAL_FRACTIONAL);
 
-    let c = d
-        .pow(3)
-        .mul(&amp_prec)
-        .div(&new_amount.mul(&n_coins.mul(&n_coins)).mul(&leverage));
+    dbg!("#2");
+    let d = d.pow(3).div(&U256::from_u128(env, 1_000_000));
+    dbg!("#2.1");
+    dbg!(d.clone().to_be_bytes());
+    dbg!(amp_prec.clone().to_be_bytes());
+    let d = d.mul(&amp_prec);
+    dbg!("#2.2");
+    let div = new_amount.mul(&n_coins.mul(&n_coins)).mul(&leverage);
+    dbg!("#2.3");
+    let c = d.div(&div).mul(&U256::from_u128(env, 1_000_000));
+    // let c = d
+    //     .pow(3)
+    //     .mul(&amp_prec)
+    //     .div(&new_amount.mul(&n_coins.mul(&n_coins)).mul(&leverage));
+    dbg!("#3");
 
     let b = new_amount.add(&d.mul(&amp_prec).div(&leverage));
 

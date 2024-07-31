@@ -80,7 +80,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         &10, // LP share decimals, unused
         &String::from_str(env, "LP_SHARE_TOKEN"),
         &String::from_str(env, "PHOBTCLP"),
-        &init_amp.into().unwrap_or(6u64),
+        &init_amp.into().unwrap_or(100u64),
         &1_000,
     );
     pool
