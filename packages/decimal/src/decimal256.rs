@@ -1,13 +1,11 @@
 // A lot of this code is taken from the cosmwasm-std crate, which is licensed under the Apache
 // License 2.0 - https://github.com/CosmWasm/cosmwasm.
 
-use soroban_sdk::{Env, String, I256};
+use soroban_sdk::{Env, I256};
 
 use core::{
     cmp::{Ordering, PartialEq, PartialOrd},
-    fmt,
     ops::{Add, Div, Mul, Sub},
-    str::FromStr,
 };
 
 extern crate alloc;
@@ -190,10 +188,6 @@ impl Decimal256 {
         }
     }
 
-    pub fn to_string(&self, env: &Env) -> String {
-        String::from_str(env, alloc::format!("{}", self).as_str())
-    }
-
     pub fn abs_diff(self, env: &Env, other: Self) -> Self {
         let diff = self
             .0
@@ -261,37 +255,9 @@ impl Decimal256 {
     }
 }
 
-impl fmt::Display for Decimal256 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let env = Env::default();
-        let whole = self
-            .0
-            .div(&I256::from_i128(&env, 1_000_000_000_000_000_000))
-            .to_i128()
-            .unwrap();
-        let fractional = self
-            .0
-            .rem_euclid(&I256::from_i128(&env, 1_000_000_000_000_000_000))
-            .to_i128()
-            .unwrap();
-
-        if fractional == 0 {
-            write!(f, "{}", whole)
-        } else {
-            let fractional_string = alloc::format!("{:0>padding$}", fractional, padding = 18);
-            f.write_fmt(format_args!(
-                "{}.{}",
-                whole,
-                fractional_string.trim_end_matches('0')
-            ))
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloc::format;
 
     #[test]
     fn decimal256_new() {
@@ -1244,7 +1210,10 @@ mod tests {
     fn test_denominator() {
         let env = Env::default();
         let decimal = Decimal256::percent(&env, 123);
-        assert_eq!(decimal.denominator(&env), Decimal256::decimal_fractional(&env));
+        assert_eq!(
+            decimal.denominator(&env),
+            Decimal256::decimal_fractional(&env)
+        );
     }
 
     #[test]
