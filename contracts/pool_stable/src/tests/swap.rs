@@ -1,9 +1,13 @@
 extern crate std;
 
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation, Ledger};
+use soroban_sdk::String;
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
 
-use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
+use super::setup::{
+    deploy_stable_liquidity_pool_contract, deploy_token_contract, install_and_deploy_token_contract,
+};
+
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
 use soroban_decimal::Decimal;
 
@@ -555,5 +559,76 @@ fn simple_swap_with_low_user_fee_should_panic() {
         &Some(spread),
         &None::<u64>,
         &Some(50), // user wants to swap for %.5
+    );
+}
+
+#[test]
+fn swap_with_two_tokens_each_with_maximum_allowed_decimals() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &admin,
+        &7,
+        &String::from_str(&env, "token_one"),
+        &String::from_str(&env, "TON"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &admin,
+        &7,
+        &String::from_str(&env, "token_two"),
+        &String::from_str(&env, "TOT"),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    token1.mint(&user1, &1_001_000_000_000);
+    token2.mint(&user1, &1_001_000_000_000);
+    pool.provide_liquidity(
+        &user1,
+        &1_001_000_000_000,
+        &1_001_000_000_000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
+
+    // const MILLION: i128 = 1_000_000;
+    // const BILLION: i128 = 1_000_000_000;
+    // const TRILLION: i128 = 1_000_000_000_000;
+    // pool.simulate_reverse_swap(&token1.address, &TRILLION);
+
+    pool.swap(
+        &user1,
+        &token1.address,
+        &1_000_000,
+        &None,
+        &None,
+        &None::<u64>,
+        &None::<i64>,
     );
 }

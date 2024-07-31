@@ -27,4 +27,6 @@ pub enum ContractError {
     IssuedSharesLessThanUserRequested = 21,
     SwapFeeBpsOverLimit = 22,
     UserDeclinesPoolFee = 23,
+    MaximumAllowedPrecisionViolated = 24,
+    PresicionMissmatch = 25,
 }

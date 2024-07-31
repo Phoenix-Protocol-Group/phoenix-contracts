@@ -265,6 +265,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
 
+        set_initialized(&env);
+
         env.events()
             .publish(("initialize", "XYK LP token_a"), token_a);
         env.events()
@@ -850,6 +852,7 @@ fn do_swap(
             panic_with_error!(env, ContractError::AssetNotInPool);
         };
 
+    dbg!("compute swap");
     let (return_amount, spread_amount, commission_amount) = compute_swap(
         &env,
         convert_i128_to_u128(pool_balance_sell),
@@ -979,6 +982,7 @@ pub fn compute_swap(
 
     let greatest_precision = get_greatest_precision(env);
 
+    dbg!("calc y");
     let new_ask_pool = calc_y(
         env,
         amp as u128,
@@ -1002,6 +1006,7 @@ pub fn compute_swap(
         // saturating sub equivalent
         0
     };
+    dbg!("some else");
     let return_amount = convert_u128_to_i128(return_amount);
     let commission_amount = return_amount * commission_rate;
     // Because of issue #211

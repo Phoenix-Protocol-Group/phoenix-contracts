@@ -1,4 +1,4 @@
-#![no_std]
+// #![no_std]
 mod contract;
 mod error;
 mod math;
@@ -21,6 +21,7 @@ pub mod stake_contract {
 }
 
 const DECIMAL_PRECISION: u32 = 18;
+pub const MAXIMUM_ALLOWED_PRECISION: u32 = 7;
 
 #[cfg(test)]
 mod tests;
