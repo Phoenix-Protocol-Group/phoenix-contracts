@@ -257,6 +257,9 @@ impl Decimal256 {
 
 #[cfg(test)]
 mod tests {
+    use alloc::borrow::ToOwned;
+    use soroban_sdk::FromVal;
+
     use super::*;
 
     #[test]
@@ -690,7 +693,7 @@ mod tests {
     #[should_panic(expected = "Error(Object, ArithDomain)")]
     fn decimal256_add_overflow_panics() {
         let env = Env::default();
-        let _value = Decimal256::max(&env) + Decimal256::percent(&env, 50);
+        let _ = Decimal256::max(&env) + Decimal256::percent(&env, 50);
     }
 
     #[test]
@@ -861,99 +864,112 @@ mod tests {
         let _value = Decimal256::max(&env).mul(&env, &Decimal256::percent(&env, 101));
     }
 
-    // #[test]
-    // // in this test the Decimal256 is on the right
-    // fn i128_decimal256_multiply() {
-    //     let env = Env::default();
+    #[test]
+    fn i128_decimal256_multiply() {
+        let env = Env::default();
 
-    //     // a*b
-    //     let left = I256::from_i128(&env, 300);
-    //     let right = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
-    //     assert_eq!(left * right, I256::from_i128(&env, 450));
+        // a*b
+        let left = Decimal256::from_str_with_env(&env, "300").unwrap();
+        let right = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
+        assert_eq!(
+            left.mul(&env, &right),
+            Decimal256::from_str_with_env(&env, "450").unwrap()
+        );
 
-    //     // a*0
-    //     let left = I256::from_i128(&env, 300);
-    //     let right = Decimal256::zero(&env);
-    //     assert_eq!(left * right, I256::from_i128(&env, 0));
+        // a*0
+        let left = Decimal256::from_str_with_env(&env, "300").unwrap();
+        let right = Decimal256::zero(&env);
+        assert_eq!(left.mul(&env, &right), Decimal256::zero(&env));
 
-    //     // 0*a
-    //     let left = I256::from_i128(&env, 0);
-    //     let right = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
-    //     assert_eq!(left * right, I256::from_i128(&env, 0));
+        //// 0*a
+        let left = Decimal256::zero(&env);
+        let right = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
+        assert_eq!(left.mul(&env, &right), Decimal256::zero(&env));
 
-    //     assert_eq!(
-    //         I256::from_i128(&env, 0) * Decimal256::one(&env),
-    //         I256::from_i128(&env, 0)
-    //     );
-    //     assert_eq!(
-    //         I256::from_i128(&env, 1) * Decimal256::one(&env),
-    //         I256::from_i128(&env, 1)
-    //     );
-    //     assert_eq!(
-    //         I256::from_i128(&env, 2) * Decimal256::one(&env),
-    //         I256::from_i128(&env, 2)
-    //     );
+        assert_eq!(
+            Decimal256::from_str_with_env(&env, "0")
+                .unwrap()
+                .mul(&env, &Decimal256::one(&env)),
+            Decimal256::zero(&env)
+        );
+        assert_eq!(
+            I256::from_i128(&env, 1) * Decimal256::one(&env),
+            I256::from_i128(&env, 1)
+        );
+        //assert_eq!(
+        //    I256::from_i128(&env, 2) * Decimal256::one(&env),
+        //    I256::from_i128(&env, 2)
+        //);
 
-    //     assert_eq!(
-    //         I256::from_i128(&env, 1) * Decimal256::percent(&env, 10),
-    //         I256::from_i128(&env, 0)
-    //     );
-    //     assert_eq!(
-    //         I256::from_i128(&env, 10) * Decimal256::percent(&env, 10),
-    //         I256::from_i128(&env, 1)
-    //     );
-    //     assert_eq!(
-    //         I256::from_i128(&env, 100) * Decimal256::percent(&env, 10),
-    //         I256::from_i128(&env, 10)
-    //     );
+        //assert_eq!(
+        //    I256::from_i128(&env, 1) * Decimal256::percent(&env, 10),
+        //    I256::from_i128(&env, 0)
+        //);
+        //assert_eq!(
+        //    I256::from_i128(&env, 10) * Decimal256::percent(&env, 10),
+        //    I256::from_i128(&env, 1)
+        //);
+        //assert_eq!(
+        //    I256::from_i128(&env, 100) * Decimal256::percent(&env, 10),
+        //    I256::from_i128(&env, 10)
+        //);
 
-    //     assert_eq!(
-    //         I256::from_i128(&env, 1) * Decimal256::percent(&env, 50),
-    //         I256::from_i128(&env, 0)
-    //     );
-    //     assert_eq!(
-    //         I256::from_i128(&env, 100) * Decimal256::percent(&env, 50),
-    //         I256::from_i128(&env, 50)
-    //     );
-    //     assert_eq!(
-    //         I256::from_i128(&env, 3200) * Decimal256::percent(&env, 50),
-    //         I256::from_i128(&env, 1600)
-    //     );
-    //     assert_eq!(
-    //         I256::from_i128(&env, 999) * Decimal256::percent(&env, 50),
-    //         I256::from_i128(&env, 499)
-    //     ); // default rounding down
+        //assert_eq!(
+        //    I256::from_i128(&env, 1) * Decimal256::percent(&env, 50),
+        //    I256::from_i128(&env, 0)
+        //);
+        //assert_eq!(
+        //    I256::from_i128(&env, 100) * Decimal256::percent(&env, 50),
+        //    I256::from_i128(&env, 50)
+        //);
+        //assert_eq!(
+        //    I256::from_i128(&env, 3200) * Decimal256::percent(&env, 50),
+        //    I256::from_i128(&env, 1600)
+        //);
+        //assert_eq!(
+        //    I256::from_i128(&env, 999) * Decimal256::percent(&env, 50),
+        //    I256::from_i128(&env, 499)
+        //); // default rounding down
 
-    //     assert_eq!(
-    //         I256::from_i128(&env, 1) * Decimal256::percent(&env, 200),
-    //         I256::from_i128(&env, 2)
-    //     );
-    //     assert_eq!(
-    //         I256::from_i128(&env, 1000) * Decimal256::percent(&env, 200),
-    //         I256::from_i128(&env, 2000)
-    //     );
-    // }
+        //assert_eq!(
+        //    I256::from_i128(&env, 1) * Decimal256::percent(&env, 200),
+        //    I256::from_i128(&env, 2)
+        //);
+        //assert_eq!(
+        //    I256::from_i128(&env, 1000) * Decimal256::percent(&env, 200),
+        //    I256::from_i128(&env, 2000)
+        //);
+    }
 
-    // #[test]
-    // // in this test the Decimal256 is on the left
-    // fn decimal256_i128_multiply() {
-    //     let env = Env::default();
+    // in this test the Decimal256 is on the left
+    #[test]
+    fn decimal256_multiplication() {
+        let env = Env::default();
 
-    //     // a*b
-    //     let left = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
-    //     let right = I256::from_i128(&env, 300);
-    //     assert_eq!(left * right, I256::from_i128(&env, 450));
+        // a*b
+        let left = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
+        let right = Decimal256::from_str_with_env(&env, "300").unwrap();
+        assert_eq!(
+            left.mul(&env, &right),
+            Decimal256::from_str_with_env(&env, "450").unwrap()
+        );
 
-    //     // 0*a
-    //     let left = Decimal256::zero(&env);
-    //     let right = I256::from_i128(&env, 300);
-    //     assert_eq!(left * right, I256::from_i128(&env, 0));
+        // 0*a
+        let left = Decimal256::zero(&env);
+        let right = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
+        assert_eq!(
+            left.mul(&env, &right),
+            Decimal256::from_str_with_env(&env, "0").unwrap()
+        );
 
-    //     // a*0
-    //     let left = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
-    //     let right = I256::from_i128(&env, 0);
-    //     assert_eq!(left * right, I256::from_i128(&env, 0));
-    // }
+        // a*0
+        let left = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
+        let right = Decimal256::zero(&env);
+        assert_eq!(
+            left.mul(&env, &right),
+            Decimal256::from_str_with_env(&env, "0").unwrap()
+        );
+    }
 
     // #[test]
     // fn decimal256_implements_div() {
