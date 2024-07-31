@@ -394,6 +394,7 @@ fn test_queries_by_tuple() {
         &Symbol::new(&env, "query_share_token_address"),
         Vec::new(&env),
     );
+
     let second_lp_config: LiquidityPoolConfig = env.invoke_contract(
         &second_lp_contract_addr,
         &Symbol::new(&env, "query_config"),
@@ -462,10 +463,10 @@ fn test_query_user_portfolio_with_stake() {
         std::mem::swap(&mut token3, &mut token4);
     }
 
-    token1.mint(&user_1, &10_000i128);
-    token2.mint(&user_1, &10_000i128);
-    token3.mint(&user_2, &20_000i128);
-    token4.mint(&user_2, &20_000i128);
+    token1.mint(&user_1, &1_000_000i128);
+    token2.mint(&user_1, &1_000_000i128);
+    token3.mint(&user_2, &2_000_000i128);
+    token4.mint(&user_2, &2_000_000i128);
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
@@ -499,10 +500,10 @@ fn test_query_user_portfolio_with_stake() {
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
-        &Some(150),
-        &Some(100i128),
-        &Some(200),
-        &Some(100i128),
+        &Some(1_000_000),
+        &Some(950_000i128),
+        &Some(1_000_000),
+        &Some(950_000i128),
         &None::<i64>,
         &None::<u64>,
     );
@@ -518,11 +519,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 150i128,
+                            amount: 999_000i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 200i128
+                            amount: 999_000i128
                         }
                     )
                 }
@@ -545,11 +546,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 150i128,
+                            amount: 999_000i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 200i128
+                            amount: 999_000i128
                         }
                     )
                 }
@@ -599,10 +600,10 @@ fn test_query_user_portfolio_with_stake() {
 
     second_lp_client.provide_liquidity(
         &user_2.clone(),
-        &Some(200),
-        &Some(100i128),
-        &Some(250),
-        &Some(100i128),
+        &Some(2_000_000),
+        &Some(1_999_999i128),
+        &Some(2_000_000),
+        &Some(1_999_999i128),
         &None::<i64>,
         &None::<u64>,
     );
@@ -617,11 +618,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 200i128,
+                            amount: 1_999_000i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 250i128
+                            amount: 1_999_000i128
                         }
                     )
                 }
@@ -642,11 +643,11 @@ fn test_query_user_portfolio_with_stake() {
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 200i128,
+                            amount: 1_999_000i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 250i128
+                            amount: 1_999_000i128
                         }
                     )
                 }
@@ -697,9 +698,9 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         std::mem::swap(&mut token3, &mut token4);
     }
 
-    token1.mint(&user_1, &1_000i128);
+    token1.mint(&user_1, &100_000i128);
     token1.mint(&user_2, &2_000i128);
-    token2.mint(&user_1, &1_000i128);
+    token2.mint(&user_1, &100_000i128);
     token2.mint(&user_2, &2_000i128);
 
     token3.mint(&user_1, &1_000i128);
@@ -771,9 +772,9 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
     // provides liquidity in 50/50 ratio
     first_lp_client.provide_liquidity(
         &user_1.clone(),
-        &Some(1_000i128),
+        &Some(50_000i128),
         &Some(900i128),
-        &Some(1_000i128),
+        &Some(50_000i128),
         &Some(900i128),
         &None::<i64>,
         &None::<u64>,
@@ -800,11 +801,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 48_999i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128,
+                            amount: 48_999i128,
                         }
                     )
                 }
@@ -827,11 +828,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 48_999i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128
+                            amount: 48_999i128
                         }
                     )
                 }
@@ -948,11 +949,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 48_999i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128,
+                            amount: 48_999i128,
                         }
                     )
                 },
@@ -960,11 +961,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 3_999i128,
+                            amount: 1_999i128,
                         }
                     )
                 },
@@ -985,8 +986,8 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
-    // after providing liquidity to 2nd pool user1 has 2_000 lp share tokens
-    second_stake_client.bond(&user_1, &2_000i128);
+    // after providing liquidity to 2nd pool user1 has 1_000 lp share tokens
+    second_stake_client.bond(&user_1, &1_000i128);
 
     // first user portfolio with second pool after staking
     let first_user_first_portfolio = factory.query_user_portfolio(&user_1, &true);
@@ -999,11 +1000,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token1.address.clone(),
-                            amount: 999i128,
+                            amount: 48_999i128,
                         },
                         Asset {
                             address: token2.address.clone(),
-                            amount: 999i128
+                            amount: 48_999i128
                         }
                     )
                 },
@@ -1011,11 +1012,11 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     assets: (
                         Asset {
                             address: token3.address.clone(),
-                            amount: 999i128,
+                            amount: 499i128,
                         },
                         Asset {
                             address: token4.address.clone(),
-                            amount: 3_999i128,
+                            amount: 1_999i128,
                         }
                     )
                 },
@@ -1037,7 +1038,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
                     stakes: vec![
                         &env,
                         Stake {
-                            stake: 2_000i128,
+                            stake: 1_000i128,
                             stake_timestamp: ONE_DAY
                         }
                     ]
@@ -1213,8 +1214,8 @@ fn test_query_user_portfolio_without_stake() {
         std::mem::swap(&mut token1, &mut token2);
     }
 
-    token1.mint(&user_1, &10_000i128);
-    token2.mint(&user_1, &10_000i128);
+    token1.mint(&user_1, &50_000i128);
+    token2.mint(&user_1, &50_000i128);
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let first_token_init_info = TokenInitInfo {
@@ -1255,10 +1256,10 @@ fn test_query_user_portfolio_without_stake() {
 
     first_lp_client.provide_liquidity(
         &user_1.clone(),
-        &Some(150i128),
-        &Some(100i128),
-        &Some(200i128),
-        &Some(100i128),
+        &Some(50_000i128),
+        &Some(40_000i128),
+        &Some(50_000i128),
+        &Some(40_000i128),
         &None::<i64>,
         &None::<u64>,
     );
@@ -1273,11 +1274,11 @@ fn test_query_user_portfolio_without_stake() {
                     assets: (
                         Asset {
                             address: token1.address,
-                            amount: 150i128
+                            amount: 49_000i128
                         },
                         Asset {
                             address: token2.address,
-                            amount: 200i128
+                            amount: 49_000i128
                         }
                     )
                 }

@@ -22,6 +22,9 @@ use phoenix::{
 };
 use soroban_decimal::Decimal;
 
+/// Minimum initial LP share
+const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1_000i128;
+
 // Metadata that is added on to the WASM custom section
 contractmeta!(
     key = "Description",
@@ -97,6 +100,7 @@ pub trait LiquidityPoolTrait {
 
     // Allows admin address set during initialization to change some parameters of the
     // configuration
+    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         new_admin: Option<Address>,
@@ -318,56 +322,6 @@ impl LiquidityPoolTrait for LiquidityPool {
                     Decimal::bps(custom_slippage_bps.unwrap_or(config.default_slippage_bps)),
                 )
             }
-            // TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
-            // Providing liquidity with a single token is temporarily disabled
-            // // Only token A is provided
-            // (Some(a), None) if a > 0 => {
-            //     let (a_for_swap, b_from_swap) = split_deposit_based_on_pool_ratio(
-            //         &env,
-            //         &config,
-            //         pool_balance_a,
-            //         pool_balance_b,
-            //         a,
-            //         &config.token_a,
-            //     );
-            //     do_swap(
-            //         env.clone(),
-            //         sender.clone(),
-            //         // FIXM: Disable Referral struct
-            //         // None,
-            //         config.clone().token_a,
-            //         a_for_swap,
-            //         // expected amount of ask token from swap
-            //         Some(b_from_swap),
-            //         None,
-            //     );
-            //     // return: rest of Token A amount, simulated result of swap of portion A
-            //     (a - a_for_swap, b_from_swap)
-            // }
-            // // Only token B is provided
-            // (None, Some(b)) if b > 0 => {
-            //     let (b_for_swap, a_from_swap) = split_deposit_based_on_pool_ratio(
-            //         &env,
-            //         &config,
-            //         pool_balance_a,
-            //         pool_balance_b,
-            //         b,
-            //         &config.token_b,
-            //     );
-            //     do_swap(
-            //         env.clone(),
-            //         sender.clone(),
-            //         // FIXM: Disable Referral struct
-            //         // None,
-            //         config.clone().token_b,
-            //         b_for_swap,
-            //         // expected amount of ask token from swap
-            //         Some(a_from_swap),
-            //         None,
-            //     );
-            //     // return: simulated result of swap of portion B, rest of Token B amount
-            //     (a_from_swap, b - b_for_swap)
-            // }
             // None or invalid amounts are provided
             _ => {
                 log!(
@@ -408,12 +362,25 @@ impl LiquidityPoolTrait for LiquidityPool {
         let total_shares = utils::get_total_shares(&env);
 
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
+            // use 10_000 multiplier to acheieve a bit bigger precision
             let shares_a = (balance_a * total_shares) / pool_balance_a;
             let shares_b = (balance_b * total_shares) / pool_balance_b;
             shares_a.min(shares_b)
         } else {
             // In case of empty pool, just produce X*Y shares
-            (balance_a * balance_b).sqrt()
+            let shares = (amounts.0 * amounts.1).sqrt();
+            if MINIMUM_LIQUIDITY_AMOUNT >= shares {
+                log!(env, "Pool: Provide Liquidity: Not enough liquidity!");
+                panic_with_error!(env, ContractError::TotalSharesEqualZero);
+            };
+            // In case of an empty mint 1000 LP shares to a burner addr
+            utils::mint_shares(
+                &env,
+                &config.share_token,
+                &env.current_contract_address(),
+                MINIMUM_LIQUIDITY_AMOUNT,
+            );
+            shares - MINIMUM_LIQUIDITY_AMOUNT
         };
 
         utils::mint_shares(
@@ -422,6 +389,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             &sender,
             new_total_shares - total_shares,
         );
+
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
@@ -559,6 +527,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         (return_amount_a, return_amount_b)
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         new_admin: Option<Address>,
