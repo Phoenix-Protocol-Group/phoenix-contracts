@@ -710,13 +710,11 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let mut share_ratio = Decimal::zero();
         if total_share != 0 {
-            share_ratio = Decimal::from_ratio(dbg!(amount) * 10_000, dbg!(total_share));
+            share_ratio = Decimal::from_ratio(amount * 10_000, total_share);
         }
 
         let amount_a = token_a_amount * share_ratio / 10_000;
         let amount_b = token_b_amount * share_ratio / 10_000;
-        dbg!(amount_a);
-        dbg!(amount_b);
         (
             Asset {
                 address: pool_info.asset_a.address,

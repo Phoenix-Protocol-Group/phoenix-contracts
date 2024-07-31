@@ -729,7 +729,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &100i64,
         &1_000,
     );
-    soroban_sdk::testutils::arbitrary::std::dbg!();
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
 
@@ -738,7 +737,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         .pool_response
         .stake_address;
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let first_stake_client = stake_contract::Client::new(&env, &first_stake_address);
 
     // second liquidity pool
@@ -750,7 +748,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         fee_recipient.clone(),
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
         &second_lp_init_info,
@@ -762,7 +759,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &1_000,
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
 
     let second_stake_address = factory
@@ -772,7 +768,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
 
     let second_stake_client = stake_contract::Client::new(&env, &second_stake_address);
 
-    soroban_sdk::testutils::arbitrary::std::dbg!("Last");
     // providing liquidity and assertions in first pool
     // provides liquidity in 50/50 ratio
     first_lp_client.provide_liquidity(
@@ -785,7 +780,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     first_lp_client.provide_liquidity(
         &user_2.clone(),
         &Some(2_000i128),
@@ -796,7 +790,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // first user portfolio in first pool after providing liquidity
     let first_user_first_portfolio = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
@@ -824,7 +817,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
     env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     first_stake_client.bond(&user_1, &1_000i128);
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // first user portfolio in first pool after staking
     let first_user_first_portfolio = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
@@ -861,7 +853,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // second user portfolio in first pool after providing liquidity
     let second_user_first_portfolio = factory.query_user_portfolio(&user_2, &true);
     assert_eq!(
@@ -886,7 +877,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // this time we bond just 50% of the lp share token for 2nd user
     first_stake_client.bond(&user_2, &1_000i128);
 
@@ -926,7 +916,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // providing liquiditiy and assertions in second pool
     // provides liquidity in 25/75 ratio
     second_lp_client.provide_liquidity(
@@ -939,7 +928,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     second_lp_client.provide_liquidity(
         &user_2.clone(),
         &Some(2_000i128),
@@ -950,7 +938,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // first user portfolio with second pool after providing liquidity
     let first_user_with_second_portfolio = factory.query_user_portfolio(&user_1, &true);
     assert_eq!(
@@ -999,7 +986,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // after providing liquidity to 2nd pool user1 has 1_000 lp share tokens
     second_stake_client.bond(&user_1, &1_000i128);
 
@@ -1109,11 +1095,9 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         }
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // this time we bond just 75% of the lp share token for 2nd user
     second_stake_client.bond(&user_2, &3_000i128);
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     // second user portfolio with second pool after staking
     let second_user_second_portfolio = factory.query_user_portfolio(&user_2, &true);
     assert_eq!(
@@ -1207,7 +1191,6 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
             stake_portfolio: vec![&env,]
         }
     );
-    soroban_sdk::testutils::arbitrary::std::dbg!();
 }
 
 #[test]

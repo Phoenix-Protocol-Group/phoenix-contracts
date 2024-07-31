@@ -491,7 +491,7 @@ fn query_share_valid_liquidity() {
     assert_eq!(token2.balance(&user3), 0);
 
     // user1 assertions
-    let lp_share_balance_user1 = dbg!(token_share.balance(&user1));
+    let lp_share_balance_user1 = token_share.balance(&user1);
     let query_share_result_user1 = pool.query_share(&lp_share_balance_user1);
     // first liquidity provided seems to be loosing a bit of tokens due to
     // initially minter 1_000 extra LP share tokens, but this difference
