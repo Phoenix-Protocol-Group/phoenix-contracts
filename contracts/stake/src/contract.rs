@@ -7,9 +7,9 @@ use soroban_sdk::{
 
 use crate::{
     distribution::{
-        calc_power, calculate_annualized_payout, get_distribution, get_reward_curve,
-        get_withdraw_adjustment, save_distribution, save_reward_curve, save_withdraw_adjustment,
-        update_rewards, withdrawable_rewards, Distribution, SHARES_SHIFT,
+        calc_power, calc_withdraw_power, calculate_annualized_payout, get_distribution,
+        get_reward_curve, get_withdraw_adjustment, save_distribution, save_reward_curve,
+        save_withdraw_adjustment, update_rewards, withdrawable_rewards, Distribution, SHARES_SHIFT,
     },
     error::ContractError,
     msg::{
@@ -342,6 +342,8 @@ impl StakingTrait for Staking {
         env.events().publish(("withdraw_rewards", "user"), &sender);
         let config = get_config(&env);
 
+        let stakes = get_stakes(&env, &sender);
+
         for distribution_address in get_distributions(&env) {
             // get distribution data for the given reward
             let mut distribution = get_distribution(&env, &distribution_address);
@@ -362,11 +364,13 @@ impl StakingTrait for Staking {
             save_distribution(&env, &distribution_address, &distribution);
             save_withdraw_adjustment(&env, &sender, &distribution_address, &withdraw_adjustment);
 
+            let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
+
             let reward_token_client = token_contract::Client::new(&env, &distribution_address);
             reward_token_client.transfer(
                 &env.current_contract_address(),
                 &sender,
-                &convert_u128_to_i128(reward_amount),
+                &(reward_amount as i128 * reward_multiplier),
             );
 
             env.events().publish(
@@ -525,6 +529,7 @@ impl StakingTrait for Staking {
 
     fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
         let config = get_config(&env);
+        let stakes = get_stakes(&env, &user);
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
         for distribution_address in get_distributions(&env) {
@@ -536,6 +541,12 @@ impl StakingTrait for Staking {
             // adjustments
             let reward_amount =
                 withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
+
+            // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
+            let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
+
+            let reward_amount = (reward_amount as i128 * reward_multiplier) as u128;
+
             rewards.push_back(WithdrawableReward {
                 reward_address: distribution_address,
                 reward_amount,

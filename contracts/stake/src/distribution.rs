@@ -1,11 +1,11 @@
 use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
-use soroban_sdk::{contracttype, Address, Env};
+use soroban_sdk::{contracttype, Address, Env, Vec};
 
 use curve::Curve;
 use soroban_decimal::Decimal;
 
 use crate::{
-    storage::{get_stakes, Config},
+    storage::{get_stakes, Config, Stake},
     TOKEN_PER_POWER,
 };
 
@@ -19,7 +19,8 @@ use crate::{
 /// calculations, but I256 is missing and it is required for this.
 pub const SHARES_SHIFT: u8 = 32;
 
-const SECONDS_PER_YEAR: u64 = 365 * 24 * 60 * 60;
+const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
+const SECONDS_PER_YEAR: u64 = 365 * SECONDS_PER_DAY;
 
 #[derive(Clone)]
 #[contracttype]
@@ -241,11 +242,45 @@ pub fn calc_power(
     }
 }
 
+pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
+    let current_date = env.ledger().timestamp();
+    let mut weighted_sum = Decimal::zero();
+    let mut total_weight = Decimal::zero();
+
+    for stake in stakes.iter() {
+        // Calculate the number of days the stake has been active
+        let days_active = (current_date - stake.stake_timestamp) / SECONDS_PER_DAY;
+
+        // If stake is younger than 60 days, calculate its power
+        let power = if days_active < 60 {
+            Decimal::from_ratio(days_active, 60)
+        } else {
+            Decimal::one()
+        };
+
+        // Add the weighted power to the sum
+        weighted_sum = weighted_sum + power * Decimal::from_ratio(stake.stake, 1);
+        // Accumulate the total weight
+        total_weight = total_weight + Decimal::from_ratio(stake.stake, 1);
+    }
+
+    // Calculate and return the average staking power
+    if total_weight > Decimal::zero() {
+        let x = weighted_sum / total_weight;
+        x
+    } else {
+        Decimal::zero()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use curve::SaturatingLinear;
-    use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::{
+        testutils::{Address as _, Ledger},
+        vec,
+    };
 
     #[test]
     fn update_rewards_should_return_early_if_old_power_is_same_as_new_power() {
