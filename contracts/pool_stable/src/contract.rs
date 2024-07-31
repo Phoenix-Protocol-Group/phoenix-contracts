@@ -1,7 +1,7 @@
 use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo};
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String,
+    contract, contractimpl, contractmeta, log, panic_with_error, token, Address, BytesN, Env,
+    IntoVal, String,
 };
 
 use crate::{
@@ -188,6 +188,14 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         }
 
         set_initialized(&env);
+
+        let token_a_decimals = token::Client::new(&env, &token_init_info.token_a).decimals();
+        let token_b_decimals = token::Client::new(&env, &token_init_info.token_b).decimals();
+
+        if token_a_decimals > 18 || token_b_decimals > 18 {
+            log!(env, "Stable Pool: Initialize: trying to initialize a stable pool with token with more than 18 decimals.");
+            panic_with_error!(&env, ContractError::InvalidNumberOfTokenDecimals);
+        }
 
         // Token info
         let token_a = token_init_info.token_a;
@@ -979,6 +987,7 @@ pub fn compute_swap(
 
     let greatest_precision = get_greatest_precision(env);
 
+    // soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
     let new_ask_pool = calc_y(
         env,
         amp as u128,
@@ -993,6 +1002,8 @@ pub fn compute_swap(
         ],
         greatest_precision,
     );
+
+    // soroban_sdk::testutils::arbitrary::std::dbg!("SWAP", ask_pool, new_ask_pool);
 
     let return_amount = ask_pool - new_ask_pool;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
@@ -1048,6 +1059,7 @@ pub fn compute_offer_amount(
         ],
         greatest_precision,
     );
+    // soroban_sdk::testutils::arbitrary::std::dbg!("REVERSE SWAP", new_offer_pool, offer_pool);
 
     let offer_amount = new_offer_pool - offer_pool;
 
