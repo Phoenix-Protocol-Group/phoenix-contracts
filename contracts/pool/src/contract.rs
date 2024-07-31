@@ -363,9 +363,9 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
             // use 10_000 multiplier to acheieve a bit bigger precision
-            let shares_a = (balance_a * total_shares) * 10_000 / pool_balance_a;
-            let shares_b = (balance_b * total_shares) * 10_000 / pool_balance_b;
-            shares_a.min(shares_b) / 10_000
+            let shares_a = (balance_a * total_shares) / pool_balance_a;
+            let shares_b = (balance_b * total_shares) / pool_balance_b;
+            shares_a.min(shares_b)
         } else {
             // In case of empty pool, just produce X*Y shares
             let shares = (amounts.0 * amounts.1).sqrt();
@@ -710,11 +710,11 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let mut share_ratio = Decimal::zero();
         if total_share != 0 {
-            share_ratio = Decimal::from_ratio(amount * 10_000, total_share);
+            share_ratio = Decimal::from_ratio(amount, total_share);
         }
 
-        let amount_a = token_a_amount * share_ratio / 10_000;
-        let amount_b = token_b_amount * share_ratio / 10_000;
+        let amount_a = token_a_amount * share_ratio;
+        let amount_b = token_b_amount * share_ratio;
         (
             Asset {
                 address: pool_info.asset_a.address,
