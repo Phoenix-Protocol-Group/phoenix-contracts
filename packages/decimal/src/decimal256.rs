@@ -1,7 +1,7 @@
 // A lot of this code is taken from the cosmwasm-std crate, which is licensed under the Apache
 // License 2.0 - https://github.com/CosmWasm/cosmwasm.
 
-use soroban_sdk::{Env, I256};
+use soroban_sdk::{Env, I256, U256};
 
 use core::{
     cmp::{Ordering, PartialEq, PartialOrd},
@@ -17,87 +17,88 @@ enum Error {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
-pub struct Decimal256(I256);
+//TODO: stays with U256
+pub struct Decimal256(U256);
 
 #[allow(dead_code)]
 impl Decimal256 {
     const DECIMAL_PLACES: i32 = 18;
 
-    pub fn new(env: &Env, value: i128) -> Self {
-        Decimal256(I256::from_i128(env, value))
+    pub fn new(env: &Env, value: u128) -> Self {
+        Decimal256(U256::from_u128(env, value))
     }
 
-    pub fn raw(env: &Env, value: i128) -> Self {
-        Self(I256::from_i128(env, value))
+    pub fn raw(env: &Env, value: u128) -> Self {
+        Self(U256::from_u128(env, value))
     }
 
-    pub fn decimal_fractional(env: &Env) -> I256 {
-        I256::from_i128(env, 1_000_000_000_000_000_000i128) // 1*10**18
+    pub fn decimal_fractional(env: &Env) -> U256 {
+        U256::from_u128(env, 1_000_000_000_000_000_000u128) // 1*10**18
     }
 
     pub fn one(env: &Env) -> Self {
-        Self(I256::from_i128(env, 1_000_000_000_000_000_000))
+        Self(U256::from_u128(env, 1_000_000_000_000_000_000))
     }
 
     pub fn zero(env: &Env) -> Self {
-        Self(I256::from_i128(env, 0))
+        Self(U256::from_u128(env, 0))
     }
 
     pub fn max(env: &Env) -> Self {
-        Decimal256(I256::from_parts(
+        Decimal256(U256::from_parts(
             env,
-            i64::MAX,
+            u64::MAX,
             u64::MAX,
             u64::MAX,
             u64::MAX,
         ))
     }
 
-    pub fn percent(env: &Env, x: i64) -> Self {
-        Self(I256::from_i128(env, (x as i128) * 10_000_000_000_000_000))
+    pub fn percent(env: &Env, x: u64) -> Self {
+        Self(U256::from_u128(env, (x as u128) * 10_000_000_000_000_000))
     }
 
-    pub fn permille(env: &Env, x: i64) -> Self {
-        Self(I256::from_i128(env, (x as i128) * 1_000_000_000_000_000))
+    pub fn permille(env: &Env, x: u64) -> Self {
+        Self(U256::from_u128(env, (x as u128) * 1_000_000_000_000_000))
     }
 
-    pub fn bps(env: &Env, x: i64) -> Self {
-        Self(I256::from_i128(env, (x as i128) * 100_000_000_000_000))
+    pub fn bps(env: &Env, x: u64) -> Self {
+        Self(U256::from_u128(env, (x as u128) * 100_000_000_000_000))
     }
 
     pub fn decimal_places(&self) -> i32 {
         Self::DECIMAL_PLACES
     }
 
-    fn numerator(&self) -> I256 {
+    fn numerator(&self) -> U256 {
         self.0.clone()
     }
 
-    fn denominator(&self, env: &Env) -> I256 {
-        I256::from_i128(env, 1_000_000_000_000_000_000)
+    fn denominator(&self, env: &Env) -> U256 {
+        U256::from_u128(env, 1_000_000_000_000_000_000)
     }
 
     pub fn is_zero(&self, env: &Env) -> bool {
-        self.0 == I256::from_i128(env, 0)
+        self.0 == U256::from_u128(env, 0)
     }
 
-    pub fn atomics(&self) -> Option<i128> {
-        self.0.to_i128()
+    pub fn atomics(&self) -> Option<u128> {
+        self.0.to_u128()
     }
 
-    pub fn from_atomics(env: &Env, atomics: i128, decimal_places: i32) -> Self {
-        const TEN: i128 = 10;
+    pub fn from_atomics(env: &Env, atomics: u128, decimal_places: i32) -> Self {
+        const TEN: u128 = 10;
         match decimal_places.cmp(&Self::DECIMAL_PLACES) {
             Ordering::Less => {
                 let digits = Self::DECIMAL_PLACES - decimal_places;
                 let factor = TEN.pow(digits as u32);
-                Self(I256::from_i128(env, atomics * factor))
+                Self(U256::from_u128(env, atomics * factor))
             }
-            Ordering::Equal => Self(I256::from_i128(env, atomics)),
+            Ordering::Equal => Self(U256::from_u128(env, atomics)),
             Ordering::Greater => {
                 let digits = decimal_places - Self::DECIMAL_PLACES;
                 let factor = TEN.pow(digits as u32);
-                Self(I256::from_i128(env, atomics / factor))
+                Self(U256::from_u128(env, atomics / factor))
             }
         }
     }
@@ -132,23 +133,23 @@ impl Decimal256 {
             None
         } else {
             let fractional_squared =
-                I256::from_i128(env, 1_000_000_000_000_000_000_000_000_000_000_000_000);
+                U256::from_u128(env, 1_000_000_000_000_000_000_000_000_000_000_000_000);
             Some(Decimal256(fractional_squared.div(&self.0)))
         }
     }
 
-    pub fn from_ratio(env: &Env, numerator: impl Into<I256>, denominator: impl Into<I256>) -> Self {
+    pub fn from_ratio(env: &Env, numerator: impl Into<U256>, denominator: impl Into<U256>) -> Self {
         match Decimal256::checked_from_ratio(env, numerator, denominator) {
             Ok(ratio) => ratio,
             Err(Error::DivideByZero) => panic!("Denominator must not be zero"),
         }
     }
 
-    pub fn to_i128_with_precision(&self, precision: impl Into<i32>) -> i128 {
+    pub fn to_i128_with_precision(&self, precision: impl Into<i32>) -> u128 {
         let value = self.atomics().unwrap();
         let precision = precision.into();
 
-        let divisor = 10i128.pow((self.decimal_places() - precision) as u32);
+        let divisor = 10u128.pow((self.decimal_places() - precision) as u32);
         value / divisor
     }
 
@@ -163,41 +164,33 @@ impl Decimal256 {
 
     fn checked_from_ratio(
         env: &Env,
-        numerator: impl Into<I256>,
-        denominator: impl Into<I256>,
+        numerator: impl Into<U256>,
+        denominator: impl Into<U256>,
     ) -> Result<Self, Error> {
         let numerator = numerator.into();
         let denominator = denominator.into();
 
-        if denominator == I256::from_i128(env, 0) {
+        if denominator == U256::from_u128(env, 0) {
             return Err(Error::DivideByZero);
         }
 
         let ratio = numerator
-            .mul(&I256::from_i128(env, 1_000_000_000_000_000_000))
+            .mul(&U256::from_u128(env, 1_000_000_000_000_000_000))
             .div(&denominator);
 
         Ok(Decimal256(ratio))
     }
 
-    pub fn abs(&self, env: &Env) -> Self {
-        if self.0.to_i128().unwrap() < 0 {
-            Decimal256(I256::from_i128(env, -self.0.to_i128().unwrap()))
-        } else {
-            self.clone()
-        }
-    }
-
     pub fn abs_diff(self, env: &Env, other: Self) -> Self {
         let diff = self
             .0
-            .to_i128()
+            .to_u128()
             .unwrap()
-            .abs_diff(other.0.to_i128().unwrap());
-        Self(I256::from_i128(env, diff as i128))
+            .abs_diff(other.0.to_u128().unwrap());
+        Self(U256::from_u128(env, diff))
     }
 
-    pub fn div_by_i256(&self, rhs: I256) -> Self {
+    pub fn div_by_i256(&self, rhs: U256) -> Self {
         Decimal256(self.0.div(&rhs))
     }
 }
@@ -233,26 +226,6 @@ impl Decimal256 {
             Err(Error::DivideByZero) => panic!("Division failed - denominator must not be zero"),
         }
     }
-
-    pub fn from_str_with_env(env: &Env, input: &str) -> Result<Self, ()> {
-        let mut parts_iter = input.split('.');
-
-        let whole_part = parts_iter.next().expect("Unexpected input format");
-        let whole: i128 = whole_part.parse().expect("Error parsing whole");
-        let mut atomics = I256::from_i128(env, whole * 1_000_000_000_000_000_000);
-
-        if let Some(fractional_part) = parts_iter.next() {
-            let fractional: i128 = fractional_part.parse().expect("Error parsing fractional");
-            let exp = 18 - fractional_part.len() as i32;
-            assert!(exp >= 0, "There must be at least one fractional digit");
-            let fractional_factor = I256::from_i128(env, 10i128.pow(exp as u32));
-            atomics = atomics.add(&I256::from_i128(env, fractional).mul(&fractional_factor));
-        }
-
-        assert!(parts_iter.next().is_none(), "Unexpected number of dots");
-
-        Ok(Decimal256(atomics))
-    }
 }
 
 #[cfg(test)]
@@ -260,14 +233,16 @@ mod tests {
     use alloc::borrow::ToOwned;
     use soroban_sdk::FromVal;
 
+    use crate::Decimal;
+
     use super::*;
 
     #[test]
     fn decimal256_new() {
         let env = Env::default();
-        let expected = 300i128;
+        let expected = 300u128;
         assert_eq!(
-            Decimal256::new(&env, expected).0.to_i128().unwrap(),
+            Decimal256::new(&env, expected).0.to_u128().unwrap(),
             expected
         );
     }
@@ -275,29 +250,29 @@ mod tests {
     #[test]
     fn decimal256_raw() {
         let env = Env::default();
-        let value = 300i128;
-        assert_eq!(Decimal256::raw(&env, value).0.to_i128().unwrap(), value);
+        let value = 300u128;
+        assert_eq!(Decimal256::raw(&env, value).0.to_u128().unwrap(), value);
     }
 
     #[test]
     fn decimal256_one() {
         let env = Env::default();
         let value = Decimal256::one(&env);
-        assert_eq!(value.0.to_i128().unwrap(), 1_000_000_000_000_000_000);
+        assert_eq!(value.0.to_u128().unwrap(), 1_000_000_000_000_000_000);
     }
 
     #[test]
     fn decimal256_zero() {
         let env = Env::default();
         let value = Decimal256::zero(&env);
-        assert_eq!(value.0.to_i128().unwrap(), 0);
+        assert_eq!(value.0.to_u128().unwrap(), 0);
     }
 
     #[test]
     fn decimal256_percent() {
         let env = Env::default();
         let value = Decimal256::percent(&env, 50);
-        assert_eq!(value.0.to_i128().unwrap(), 500_000_000_000_000_000);
+        assert_eq!(value.0.to_u128().unwrap(), 500_000_000_000_000_000);
     }
 
     #[test]
@@ -343,31 +318,60 @@ mod tests {
         // Cuts decimal digits (20 provided but only 18 can be stored)
         assert_eq!(
             Decimal256::from_atomics(&env, 4321, 20),
-            Decimal256::from_str_with_env(&env, "0.000000000000000043").unwrap()
+            Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, 43),
+                U256::from_u128(&env, 1000000000000000000)
+            ),
+            //Decimal256::from_str_with_env(&env, "0.000000000000000043").unwrap()
         );
         assert_eq!(
             Decimal256::from_atomics(&env, 6789, 20),
-            Decimal256::from_str_with_env(&env, "0.000000000000000067").unwrap()
+            Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, 67),
+                U256::from_u128(&env, 1000000000000000000)
+            ),
         );
         assert_eq!(
-            Decimal256::from_atomics(&env, i128::MAX, 38),
-            Decimal256::from_str_with_env(&env, "1.701411834604692317").unwrap()
+            Decimal256::from_atomics(&env, u128::MAX, 38),
+            Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, 67),
+                U256::from_u128(&env, 1000000000000000000)
+            ),
         );
         assert_eq!(
-            Decimal256::from_atomics(&env, i128::MAX, 39),
-            Decimal256::from_str_with_env(&env, "0.170141183460469231").unwrap()
+            Decimal256::from_atomics(&env, u128::MAX, 39),
+            Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, 67),
+                U256::from_u128(&env, 1000000000000000000)
+            ),
         );
         assert_eq!(
-            Decimal256::from_atomics(&env, i128::MAX, 45),
-            Decimal256::from_str_with_env(&env, "0.000000170141183460").unwrap()
+            Decimal256::from_atomics(&env, u128::MAX, 45),
+            Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, 67),
+                U256::from_u128(&env, 1000000000000000000)
+            ),
         );
         assert_eq!(
-            Decimal256::from_atomics(&env, i128::MAX, 51),
-            Decimal256::from_str_with_env(&env, "0.000000000000170141").unwrap()
+            Decimal256::from_atomics(&env, u128::MAX, 51),
+            Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, 67),
+                U256::from_u128(&env, 1000000000000000000)
+            ),
         );
         assert_eq!(
-            Decimal256::from_atomics(&env, i128::MAX, 56),
-            Decimal256::from_str_with_env(&env, "0.000000000000000001").unwrap()
+            Decimal256::from_atomics(&env, u128::MAX, 56),
+            Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, 67),
+                U256::from_u128(&env, 1000000000000000000)
+            ),
         );
     }
 
@@ -377,64 +381,64 @@ mod tests {
 
         // 1.0
         assert_eq!(
-            Decimal256::from_ratio(&env, I256::from_i128(&env, 1), I256::from_i128(&env, 1)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 1), U256::from_u128(&env, 1)),
             Decimal256::one(&env)
         );
         assert_eq!(
-            Decimal256::from_ratio(&env, I256::from_i128(&env, 53), I256::from_i128(&env, 53)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 53), U256::from_u128(&env, 53)),
             Decimal256::one(&env)
         );
         assert_eq!(
-            Decimal256::from_ratio(&env, I256::from_i128(&env, 125), I256::from_i128(&env, 125)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 125), U256::from_u128(&env, 125)),
             Decimal256::one(&env)
         );
 
         // 1.5
         assert_eq!(
-            Decimal256::from_ratio(&env, I256::from_i128(&env, 3), I256::from_i128(&env, 2)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 3), U256::from_u128(&env, 2)),
             Decimal256::percent(&env, 150)
         );
         assert_eq!(
-            Decimal256::from_ratio(&env, I256::from_i128(&env, 150), I256::from_i128(&env, 100)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 150), U256::from_u128(&env, 100)),
             Decimal256::percent(&env, 150)
         );
         assert_eq!(
-            Decimal256::from_ratio(&env, I256::from_i128(&env, 333), I256::from_i128(&env, 222)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 333), U256::from_u128(&env, 222)),
             Decimal256::percent(&env, 150)
         );
 
         // 0.125
         assert_eq!(
-            Decimal256::from_ratio(&env, I256::from_i128(&env, 1), I256::from_i128(&env, 8)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 1), U256::from_u128(&env, 8)),
             Decimal256::permille(&env, 125)
         );
         assert_eq!(
             Decimal256::from_ratio(
                 &env,
-                I256::from_i128(&env, 125),
-                I256::from_i128(&env, 1000)
+                U256::from_u128(&env, 125),
+                U256::from_u128(&env, 1000)
             ),
             Decimal256::permille(&env, 125)
         );
 
         // 1/3 (result floored)
         assert_eq!(
-            Decimal256::from_ratio(&env, I256::from_i128(&env, 1), I256::from_i128(&env, 3)),
-            Decimal256(I256::from_i128(&env, 333_333_333_333_333_333))
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 1), U256::from_u128(&env, 3)),
+            Decimal256(U256::from_u128(&env, 333_333_333_333_333_333))
         );
 
         // 2/3 (result floored)
         assert_eq!(
-            Decimal256::from_ratio(&env, I256::from_i128(&env, 2), I256::from_i128(&env, 3)),
-            Decimal256(I256::from_i128(&env, 666_666_666_666_666_666))
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 2), U256::from_u128(&env, 3)),
+            Decimal256(U256::from_u128(&env, 666_666_666_666_666_666))
         );
 
         // large inputs
         assert_eq!(
             Decimal256::from_ratio(
                 &env,
-                I256::from_i128(&env, 0),
-                I256::from_i128(&env, i128::MAX)
+                U256::from_u128(&env, 0),
+                U256::from_u128(&env, u128::MAX)
             ),
             Decimal256::zero(&env)
         );
@@ -446,8 +450,8 @@ mod tests {
         assert_eq!(
             Decimal256::from_ratio(
                 &env,
-                I256::from_i128(&env, 340282366920938),
-                I256::from_i128(&env, 340282366920938)
+                U256::from_u128(&env, 340282366920938),
+                U256::from_u128(&env, 340282366920938)
             ),
             Decimal256::one(&env)
         );
@@ -455,16 +459,16 @@ mod tests {
         assert_eq!(
             Decimal256::from_ratio(
                 &env,
-                I256::from_i128(&env, 34028236692093900000),
-                I256::from_i128(&env, 34028236692093900000)
+                U256::from_u128(&env, 34028236692093900000),
+                U256::from_u128(&env, 34028236692093900000)
             ),
             Decimal256::one(&env)
         );
         assert_eq!(
             Decimal256::from_ratio(
                 &env,
-                I256::from_i128(&env, 34028236692093900000),
-                I256::from_i128(&env, 1)
+                U256::from_u128(&env, 34028236692093900000),
+                U256::from_u128(&env, 1)
             ),
             Decimal256::new(&env, 34028236692093900000 * 1_000_000_000_000_000_000)
         );
@@ -474,7 +478,7 @@ mod tests {
     #[should_panic(expected = "Denominator must not be zero")]
     fn decimal256_from_ratio_panics_for_zero_denominator() {
         let env = Env::default();
-        Decimal256::from_ratio(&env, I256::from_i128(&env, 1), I256::from_i128(&env, 0));
+        Decimal256::from_ratio(&env, U256::from_u128(&env, 1), U256::from_u128(&env, 0));
     }
 
     #[ignore = "FIXME: Why is I256 not panicking?"]
@@ -484,8 +488,8 @@ mod tests {
         let env = Env::default();
         Decimal256::from_ratio(
             &env,
-            I256::from_i128(&env, i128::MAX),
-            I256::from_i128(&env, 1),
+            U256::from_u128(&env, u128::MAX),
+            U256::from_u128(&env, 1),
         );
     }
 
@@ -506,86 +510,19 @@ mod tests {
     }
 
     #[test]
-    fn decimal256_from_str_works() {
+    fn decimal256_from_fraction_compared_to_percent() {
         let env = Env::default();
 
         // Integers
+        assert_eq!(Decimal256::zero(&env), Decimal256::percent(&env, 0));
+        assert_eq!(Decimal256::one(&env), Decimal256::percent(&env, 100));
         assert_eq!(
-            Decimal256::from_str_with_env(&env, "0").unwrap(),
-            Decimal256::percent(&env, 0)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "1").unwrap(),
-            Decimal256::percent(&env, 100)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "5").unwrap(),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 5), U256::from_u128(&env, 1)),
             Decimal256::percent(&env, 500)
         );
         assert_eq!(
-            Decimal256::from_str_with_env(&env, "42").unwrap(),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 42), U256::from_u128(&env, 1)),
             Decimal256::percent(&env, 4200)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "000").unwrap(),
-            Decimal256::percent(&env, 0)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "001").unwrap(),
-            Decimal256::percent(&env, 100)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "005").unwrap(),
-            Decimal256::percent(&env, 500)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "0042").unwrap(),
-            Decimal256::percent(&env, 4200)
-        );
-
-        // Decimal256s
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "1.0").unwrap(),
-            Decimal256::percent(&env, 100)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "1.5").unwrap(),
-            Decimal256::percent(&env, 150)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "0.5").unwrap(),
-            Decimal256::percent(&env, 50)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "0.123").unwrap(),
-            Decimal256::permille(&env, 123)
-        );
-
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "40.00").unwrap(),
-            Decimal256::percent(&env, 4000)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "04.00").unwrap(),
-            Decimal256::percent(&env, 400)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "00.40").unwrap(),
-            Decimal256::percent(&env, 40)
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "00.04").unwrap(),
-            Decimal256::percent(&env, 4)
-        );
-
-        // Can handle decimal256_PLACES fractional digits
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "7.123456789012345678").unwrap(),
-            Decimal256(I256::from_i128(&env, 7123456789012345678))
-        );
-        assert_eq!(
-            Decimal256::from_str_with_env(&env, "7.999999999999999999").unwrap(),
-            Decimal256(I256::from_i128(&env, 7999999999999999999))
         );
     }
 
@@ -634,16 +571,16 @@ mod tests {
             Decimal256::percent(&env, 300).inv(&env),
             Some(Decimal256::from_ratio(
                 &env,
-                I256::from_i128(&env, 1),
-                I256::from_i128(&env, 3)
+                U256::from_u128(&env, 1),
+                U256::from_u128(&env, 3)
             ))
         );
         assert_eq!(
             Decimal256::percent(&env, 600).inv(&env),
             Some(Decimal256::from_ratio(
                 &env,
-                I256::from_i128(&env, 1),
-                I256::from_i128(&env, 6)
+                U256::from_u128(&env, 1),
+                U256::from_u128(&env, 6)
             ))
         );
 
@@ -671,7 +608,7 @@ mod tests {
         let env = Env::default();
 
         let value = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
-        assert_eq!(value.0.to_i128().unwrap(), 1_500_000_000_000_000_000);
+        assert_eq!(value.0.to_u128().unwrap(), 1_500_000_000_000_000_000);
 
         assert_eq!(
             Decimal256::percent(&env, 5) + Decimal256::percent(&env, 4),
@@ -701,7 +638,7 @@ mod tests {
         let env = Env::default();
 
         let value = Decimal256::one(&env) - Decimal256::percent(&env, 50); // 0.5
-        assert_eq!(value.0.to_i128().unwrap(), 500_000_000_000_000_000);
+        assert_eq!(value.0.to_u128().unwrap(), 500_000_000_000_000_000);
 
         assert_eq!(
             Decimal256::percent(&env, 9) - Decimal256::percent(&env, 4),
@@ -869,15 +806,17 @@ mod tests {
         let env = Env::default();
 
         // a*b
-        let left = Decimal256::from_str_with_env(&env, "300").unwrap();
+        let left =
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 300), U256::from_u128(&env, 1));
         let right = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
         assert_eq!(
             left.mul(&env, &right),
-            Decimal256::from_str_with_env(&env, "450").unwrap()
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 450), U256::from_u128(&env, 1)),
         );
 
         // a*0
-        let left = Decimal256::from_str_with_env(&env, "300").unwrap();
+        let left =
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 300), U256::from_u128(&env, 1));
         let right = Decimal256::zero(&env);
         assert_eq!(left.mul(&env, &right), Decimal256::zero(&env));
 
@@ -887,40 +826,47 @@ mod tests {
         assert_eq!(left.mul(&env, &right), Decimal256::zero(&env));
 
         assert_eq!(
-            Decimal256::from_str_with_env(&env, "0")
-                .unwrap()
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 300), U256::from_u128(&env, 0))
                 .mul(&env, &Decimal256::one(&env)),
             Decimal256::zero(&env)
         );
         assert_eq!(
-            I256::from_i128(&env, 1) * Decimal256::one(&env),
-            I256::from_i128(&env, 1)
+            Decimal256::one(&env).mul(&env, &Decimal256::one(&env)),
+            Decimal256::one(&env)
         );
-        //assert_eq!(
-        //    I256::from_i128(&env, 2) * Decimal256::one(&env),
-        //    I256::from_i128(&env, 2)
-        //);
+        assert_eq!(
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 2), U256::from_u128(&env, 1))
+                .mul(&env, &Decimal256::one(&env)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 2), U256::from_u128(&env, 1))
+        );
 
-        //assert_eq!(
-        //    I256::from_i128(&env, 1) * Decimal256::percent(&env, 10),
-        //    I256::from_i128(&env, 0)
-        //);
-        //assert_eq!(
-        //    I256::from_i128(&env, 10) * Decimal256::percent(&env, 10),
-        //    I256::from_i128(&env, 1)
-        //);
-        //assert_eq!(
-        //    I256::from_i128(&env, 100) * Decimal256::percent(&env, 10),
-        //    I256::from_i128(&env, 10)
-        //);
+        // 1 * %10
+        assert_eq!(
+            Decimal256::one(&env,).mul(&env, &Decimal256::percent(&env, 10)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 1), U256::from_u128(&env, 10))
+        );
+
+        // 10 * %10
+        assert_eq!(
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 10), U256::from_u128(&env, 1))
+                .mul(&env, &Decimal256::percent(&env, 10)),
+            Decimal256::one(&env)
+        );
+
+        // 100 * %10
+        assert_eq!(
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 100), U256::from_u128(&env, 1))
+                .mul(&env, &Decimal256::percent(&env, 10)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 10), U256::from_u128(&env, 1))
+        );
 
         //assert_eq!(
         //    I256::from_i128(&env, 1) * Decimal256::percent(&env, 50),
         //    I256::from_i128(&env, 0)
         //);
         //assert_eq!(
-        //    I256::from_i128(&env, 100) * Decimal256::percent(&env, 50),
-        //    I256::from_i128(&env, 50)
+        //    U256::from_u128(&env, 100) * Decimal256::percent(&env, 50),
+        //    U256::from_u128(&env, 50)
         //);
         //assert_eq!(
         //    I256::from_i128(&env, 3200) * Decimal256::percent(&env, 50),
@@ -948,27 +894,23 @@ mod tests {
 
         // a*b
         let left = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
-        let right = Decimal256::from_str_with_env(&env, "300").unwrap();
+        let right =
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 300), U256::from_u128(&env, 1));
+
         assert_eq!(
             left.mul(&env, &right),
-            Decimal256::from_str_with_env(&env, "450").unwrap()
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 450), U256::from_u128(&env, 1))
         );
 
         // 0*a
         let left = Decimal256::zero(&env);
         let right = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
-        assert_eq!(
-            left.mul(&env, &right),
-            Decimal256::from_str_with_env(&env, "0").unwrap()
-        );
+        assert_eq!(left.mul(&env, &right), Decimal256::zero(&env));
 
         // a*0
         let left = Decimal256::one(&env) + Decimal256::percent(&env, 50); // 1.5
         let right = Decimal256::zero(&env);
-        assert_eq!(
-            left.mul(&env, &right),
-            Decimal256::from_str_with_env(&env, "0").unwrap()
-        );
+        assert_eq!(left.mul(&env, &right), Decimal256::zero(&env));
     }
 
     // #[test]
