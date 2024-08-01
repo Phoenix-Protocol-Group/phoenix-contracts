@@ -1,7 +1,7 @@
 // A lot of this code is taken from the cosmwasm-std crate, which is licensed under the Apache
 // License 2.0 - https://github.com/CosmWasm/cosmwasm.
 
-use soroban_sdk::{Env, I256, U256};
+use soroban_sdk::{Env, U256};
 
 use core::{
     cmp::{Ordering, PartialEq, PartialOrd},
@@ -459,7 +459,14 @@ mod tests {
             ),
             Decimal256::zero(&env)
         );
-        // assert_eq!(Decimal256::from_ratio(i128::MAX, i128::MAX), Decimal256::one());
+        assert_eq!(
+            Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, u128::MAX),
+                U256::from_u128(&env, u128::MAX)
+            ),
+            Decimal256::one(&env)
+        );
 
         // due to limited possibilities - we're only allowed to use i128 as input - maximum
         // number this implementation supports without overflow is u128 / decimal256_FRACTIONAL
@@ -498,7 +505,7 @@ mod tests {
         Decimal256::from_ratio(&env, U256::from_u128(&env, 1), U256::from_u128(&env, 0));
     }
 
-    #[ignore = "FIXME: Why is I256 not panicking?"]
+    #[ignore = "FIXME: Why is U256 not panicking?"]
     #[test]
     #[should_panic(expected = "attempt to multiply with overflow")]
     fn decimal256_from_ratio_panics_for_mul_overflow() {
@@ -876,10 +883,18 @@ mod tests {
             Decimal256::from_ratio(&env, U256::from_u128(&env, 10), U256::from_u128(&env, 1))
         );
 
-        //assert_eq!(
-        //    I256::from_i128(&env, 1) * Decimal256::percent(&env, 50),
-        //    I256::from_i128(&env, 0)
-        //);
+        // 1 * %50
+        assert_eq!(
+            Decimal256::one(&env).mul(&env, &Decimal256::percent(&env, 50)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 1), U256::from_u128(&env, 2))
+        );
+
+        // 100 * %50
+        assert_eq!(
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 100), U256::from_u128(&env, 1))
+                .mul(&env, &Decimal256::percent(&env, 50)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 50), U256::from_u128(&env, 1))
+        );
         //assert_eq!(
         //    U256::from_u128(&env, 100) * Decimal256::percent(&env, 50),
         //    U256::from_u128(&env, 50)
