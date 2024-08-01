@@ -5,7 +5,7 @@ use soroban_sdk::{Env, U256};
 
 use core::{
     cmp::{Ordering, PartialEq, PartialOrd},
-    ops::{Add, Div, Mul, Sub},
+    ops::{Add, Sub},
 };
 
 extern crate alloc;
