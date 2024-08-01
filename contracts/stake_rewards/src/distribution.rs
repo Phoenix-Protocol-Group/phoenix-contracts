@@ -4,7 +4,10 @@ use soroban_sdk::{contracttype, Address, Env, Vec};
 use curve::Curve;
 use soroban_decimal::Decimal;
 
-use crate::{stake_contract, stake_contract::Stake, storage::Config, TOKEN_PER_POWER};
+use crate::{
+    storage::{Config, Stake},
+    TOKEN_PER_POWER,
+};
 use phoenix::utils::convert_u128_to_i128;
 
 /// How much points is the worth of single token in rewards distribution.
@@ -161,19 +164,17 @@ pub fn get_withdraw_adjustment(
 }
 
 pub fn withdrawable_rewards(
-    env: &Env,
-    owner: &Address,
+    // total amount of staked tokens by given user
+    total_staked: i128,
     distribution: &Distribution,
     adjustment: &WithdrawAdjustment,
     config: &Config,
 ) -> u128 {
     let ppw = distribution.shares_per_point;
 
-    let stake_client = stake_contract::Client::new(env, &config.staking_contract);
-    let stakes: i128 = stake_client.query_staked(owner).total_stake;
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
-    let points = calc_power(config, stakes, Decimal::one(), TOKEN_PER_POWER);
+    let points = calc_power(config, total_staked, Decimal::one(), TOKEN_PER_POWER);
     let points = convert_u128_to_i128(ppw) * points;
 
     let correction = adjustment.shares_correction;

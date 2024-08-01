@@ -1,7 +1,7 @@
 use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
 use soroban_decimal::Decimal;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
 };
 
 use crate::distribution::calc_power;
@@ -14,11 +14,10 @@ use crate::{
     },
     error::ContractError,
     msg::{AnnualizedRewardResponse, ConfigResponse, WithdrawableRewardResponse},
-    stake_contract,
     storage::{
         get_config, save_config,
         utils::{self, get_admin, is_initialized, set_initialized},
-        Config,
+        BondingInfo, Config,
     },
     token_contract,
 };
@@ -47,21 +46,17 @@ pub trait StakingRewardsTrait {
         min_bond: i128,
     );
 
-    fn add_multiple_users(env: Env, users: Vec<Address>);
+    fn add_user(env: Env, user: Address, stakes: BondingInfo);
 
-    fn add_user(env: Env, user: Address);
+    fn calculate_bond(env: Env, sender: Address, stakes: BondingInfo);
 
-    fn calculate_bond(env: Env, sender: Address);
+    fn calculate_unbond(env: Env, sender: Address, stakes: BondingInfo);
 
-    fn calculate_unbond(env: Env, sender: Address);
+    fn distribute_rewards(env: Env, total_staked_amount: i128);
 
-    fn distribute_rewards(env: Env);
-
-    fn withdraw_rewards(env: Env, sender: Address);
+    fn withdraw_rewards(env: Env, sender: Address, stakes: BondingInfo);
 
     fn fund_distribution(env: Env, start_time: u64, distribution_duration: u64, token_amount: i128);
-
-    fn withdraw_leftover(env: Env, amount: i128);
 
     // QUERIES
 
@@ -69,9 +64,13 @@ pub trait StakingRewardsTrait {
 
     fn query_admin(env: Env) -> Address;
 
-    fn query_annualized_reward(env: Env) -> AnnualizedRewardResponse;
+    fn query_annualized_reward(env: Env, total_stake_amount: i128) -> AnnualizedRewardResponse;
 
-    fn query_withdrawable_reward(env: Env, address: Address) -> WithdrawableRewardResponse;
+    fn query_withdrawable_reward(
+        env: Env,
+        address: Address,
+        stakes: BondingInfo,
+    ) -> WithdrawableRewardResponse;
 
     fn query_distributed_reward(env: Env, asset: Address) -> u128;
 
@@ -133,21 +132,10 @@ impl StakingRewardsTrait for StakingRewards {
         utils::save_admin(&env, &admin);
     }
 
-    fn add_multiple_users(env: Env, users: Vec<Address>) {
-        get_admin(&env).require_auth();
-
-        for user in users {
-            StakingRewards::add_user(env.clone(), user);
-        }
-    }
-
-    fn add_user(env: Env, user: Address) {
+    fn add_user(env: Env, user: Address, stakes: BondingInfo) {
         get_admin(&env).require_auth();
 
         let config = get_config(&env);
-
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let stakes = stake_client.query_staked(&user);
 
         let new_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER);
         let mut distribution = get_distribution(&env, &config.reward_token);
@@ -163,13 +151,10 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("stake_rewards", "add_user"), &user);
     }
 
-    fn calculate_bond(env: Env, sender: Address) {
+    fn calculate_bond(env: Env, sender: Address, stakes: BondingInfo) {
         sender.require_auth();
 
         let config = get_config(&env);
-
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let stakes = stake_client.query_staked(&sender);
 
         let mut distribution = get_distribution(&env, &config.reward_token);
         let last_stake = stakes.stakes.last().unwrap();
@@ -193,26 +178,22 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("calculate_bond", "user"), &sender);
     }
 
-    fn calculate_unbond(env: Env, sender: Address) {
+    fn calculate_unbond(env: Env, sender: Address, stakes: BondingInfo) {
         sender.require_auth();
 
         let config = get_config(&env);
 
         // check for rewards and withdraw them
         let found_rewards: WithdrawableRewardResponse =
-            Self::query_withdrawable_reward(env.clone(), sender.clone());
+            Self::query_withdrawable_reward(env.clone(), sender.clone(), stakes.clone());
 
         if found_rewards.reward_amount != 0 {
-            Self::withdraw_rewards(env.clone(), sender.clone());
+            Self::withdraw_rewards(env.clone(), sender.clone(), stakes.clone());
         }
 
         let mut distribution = get_distribution(&env, &config.reward_token);
 
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let stakes = stake_client.query_staked(&sender);
-
-        // TODO FIXME: This is wrong, because the last stake would be removed already
-        // maybe call calculate_unbond first?
+        // Stake contract need to call calculate_unbond before it removes the to-be-removed staked
         let last_stake = stakes.stakes.last().unwrap();
 
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
@@ -234,11 +215,9 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("calculate_unbond", "user"), &sender);
     }
 
-    fn distribute_rewards(env: Env) {
+    fn distribute_rewards(env: Env, total_staked_amount: i128) {
         let config = get_config(&env);
 
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let total_staked_amount = stake_client.query_total_staked();
         let calc_power_result = calc_power(
             &config,
             total_staked_amount,
@@ -294,7 +273,7 @@ impl StakingRewardsTrait for StakingRewards {
             .publish(("distribute_rewards", "amount"), amount);
     }
 
-    fn withdraw_rewards(env: Env, sender: Address) {
+    fn withdraw_rewards(env: Env, sender: Address, stakes: BondingInfo) {
         env.events().publish(("withdraw_rewards", "user"), &sender);
         let config = get_config(&env);
 
@@ -304,8 +283,12 @@ impl StakingRewardsTrait for StakingRewards {
         let mut withdraw_adjustment = get_withdraw_adjustment(&env, &sender, &config.reward_token);
         // calculate current reward amount given the distribution and subtracting withdraw
         // adjustments
-        let reward_amount =
-            withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment, &config);
+        let reward_amount = withdrawable_rewards(
+            stakes.total_stake,
+            &distribution,
+            &withdraw_adjustment,
+            &config,
+        );
 
         if reward_amount == 0 {
             return;
@@ -317,15 +300,13 @@ impl StakingRewardsTrait for StakingRewards {
         save_withdraw_adjustment(&env, &sender, &config.reward_token, &withdraw_adjustment);
 
         // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let stakes = stake_client.query_staked(&sender);
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
 
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         reward_token_client.transfer(
             &env.current_contract_address(),
             &sender,
-            &convert_u128_to_i128(reward_amount) * reward_multiplier,
+            &(convert_u128_to_i128(reward_amount) * reward_multiplier),
         );
 
         env.events().publish(
@@ -425,17 +406,6 @@ impl StakingRewardsTrait for StakingRewards {
             .publish(("fund_reward_distribution", "end_time"), end_time);
     }
 
-    // In case there are leftover tokens due to insufficient APR bonus, admin can clean up tokens
-    fn withdraw_leftover(env: Env, amount: i128) {
-        let admin = get_admin(&env);
-        admin.require_auth();
-        token_contract::Client::new(&env, &get_config(&env).reward_token).transfer(
-            &env.current_contract_address(),
-            &admin,
-            &amount,
-        );
-    }
-
     // QUERIES
 
     fn query_config(env: Env) -> ConfigResponse {
@@ -448,14 +418,16 @@ impl StakingRewardsTrait for StakingRewards {
         get_admin(&env)
     }
 
-    fn query_annualized_reward(env: Env) -> AnnualizedRewardResponse {
+    fn query_annualized_reward(env: Env, total_staked_amount: i128) -> AnnualizedRewardResponse {
         let now = env.ledger().timestamp();
         let config = get_config(&env);
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let total_stake_amount = stake_client.query_total_staked();
 
-        let total_stake_power =
-            calc_power(&config, total_stake_amount, Decimal::one(), TOKEN_PER_POWER);
+        let total_stake_power = calc_power(
+            &config,
+            total_staked_amount,
+            Decimal::one(),
+            TOKEN_PER_POWER,
+        );
         if total_stake_power == 0 {
             return AnnualizedRewardResponse {
                 asset: config.reward_token.clone(),
@@ -478,7 +450,11 @@ impl StakingRewardsTrait for StakingRewards {
         }
     }
 
-    fn query_withdrawable_reward(env: Env, user: Address) -> WithdrawableRewardResponse {
+    fn query_withdrawable_reward(
+        env: Env,
+        user: Address,
+        stakes: BondingInfo,
+    ) -> WithdrawableRewardResponse {
         let config = get_config(&env);
         // iterate over all distributions and calculate withdrawable rewards
         // get distribution data for the given reward
@@ -487,12 +463,14 @@ impl StakingRewardsTrait for StakingRewards {
         let withdraw_adjustment = get_withdraw_adjustment(&env, &user, &config.reward_token);
         // calculate current reward amount given the distribution and subtracting withdraw
         // adjustments
-        let reward_amount =
-            withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
+        let reward_amount = withdrawable_rewards(
+            stakes.total_stake,
+            &distribution,
+            &withdraw_adjustment,
+            &config,
+        );
 
         // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
-        let stake_client = stake_contract::Client::new(&env, &config.staking_contract);
-        let stakes = stake_client.query_staked(&user);
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
 
         let reward_amount =

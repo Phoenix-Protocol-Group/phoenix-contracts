@@ -339,7 +339,7 @@ impl StakingTrait for Staking {
         admin.require_auth();
 
         let fund_distr_fn_arg: Vec<Val> =
-            (start_time, distribution_duration, token_address.clone()).into_val(&env);
+            (start_time, distribution_duration, token_amount.clone()).into_val(&env);
         env.invoke_contract::<Val>(
             &find_stake_rewards_by_asset(&env, &token_address).unwrap(),
             &Symbol::new(&env, "fund_distribution"),
