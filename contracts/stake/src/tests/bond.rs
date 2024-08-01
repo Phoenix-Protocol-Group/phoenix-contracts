@@ -4,7 +4,7 @@ use pretty_assertions::assert_eq;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    vec, Address, Env, IntoVal, Symbol,
+    vec, Address, BytesN, Env, IntoVal, Symbol,
 };
 
 use super::setup::{
@@ -329,65 +329,84 @@ fn unbond_wrong_user_stake_not_found() {
     staking.unbond(&user2, &10_000, &non_existing_timestamp);
 }
 
-// #[test]
-// fn pay_rewards_during_unbond() {
-//     const STAKED_AMOUNT: i128 = 1_000;
-//     let env = Env::default();
-//     env.mock_all_auths();
-//
-//     let admin = Address::generate(&env);
-//     let user = Address::generate(&env);
-//     let manager = Address::generate(&env);
-//     let owner = Address::generate(&env);
-//
-//     let lp_token = deploy_token_contract(&env, &admin);
-//     let reward_token = deploy_token_contract(&env, &admin);
-//     let staking = deploy_staking_contract(
-//         &env,
-//         admin.clone(),
-//         &lp_token.address,
-//         &manager,
-//         &owner,
-//         &DEFAULT_COMPLEXITY,
-//     );
-//
-//     lp_token.mint(&user, &10_000);
-//     reward_token.mint(&admin, &10_000);
-//
-//     env.ledger().with_mut(|li| {
-//         li.timestamp = ONE_WEEK;
-//     });
-//
-//     staking.create_distribution_flow(&manager, &reward_token.address);
-//     staking.fund_distribution(&ONE_WEEK, &10_000u64, &reward_token.address, &10_000);
-//
-//     env.ledger().with_mut(|li| {
-//         li.timestamp = ONE_WEEK + 5_000;
-//     });
-//     staking.bond(&user, &STAKED_AMOUNT);
-//
-//     staking.distribute_rewards();
-//
-//     // user has bonded for 5_000 time, initial rewards are 10_000
-//     // so user should have 5_000 rewards
-//     // 5_000 rewards are still undistributed
-//     assert_eq!(
-//         staking.query_undistributed_rewards(&reward_token.address),
-//         5_000
-//     );
-//     assert_eq!(
-//         staking
-//             .query_withdrawable_rewards(&user)
-//             .rewards
-//             .iter()
-//             .map(|reward| reward.reward_amount)
-//             .sum::<u128>(),
-//         5_000
-//     );
-//     assert_eq!(reward_token.balance(&user), 0);
-//     staking.unbond(&user, &STAKED_AMOUNT, &(ONE_WEEK + 5_000));
-//     assert_eq!(reward_token.balance(&user), 5_000);
-// }
+#[test]
+fn pay_rewards_during_unbond() {
+    const STAKED_AMOUNT: i128 = 1_000;
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let full_bonding_multiplier = ONE_DAY * 60;
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &admin,
+        &DEFAULT_COMPLEXITY,
+    );
+
+    lp_token.mint(&user, &10_000);
+    reward_token.mint(&admin, &10_000);
+
+    staking.bond(&user, &STAKED_AMOUNT);
+
+    // Move so that user would have 100% APR from bonding after 60 days
+    env.ledger().with_mut(|li| {
+        li.timestamp = full_bonding_multiplier;
+    });
+
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
+
+    // distribution starts at 6 weeks and lasts for 100 seconds
+    staking.fund_distribution(
+        &full_bonding_multiplier,
+        &100,
+        &reward_token.address,
+        &10_000,
+    );
+
+    // move to the half time
+    env.ledger().with_mut(|li| {
+        li.timestamp = full_bonding_multiplier + 50;
+    });
+
+    staking.distribute_rewards();
+
+    // user should have 5_000 rewards
+    // 5_000 rewards are still undistributed
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        5_000
+    );
+    assert_eq!(
+        staking
+            .query_withdrawable_rewards(&user)
+            .rewards
+            .iter()
+            .map(|reward| reward.reward_amount)
+            .sum::<u128>(),
+        5_000
+    );
+    assert_eq!(reward_token.balance(&user), 0);
+    // user bonded at timestamp 0
+    staking.unbond(&user, &STAKED_AMOUNT, &0);
+    assert_eq!(reward_token.balance(&user), 5_000);
+}
 
 #[should_panic(
     expected = "Stake: initialize: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"

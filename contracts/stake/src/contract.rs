@@ -16,6 +16,7 @@ use crate::{
         AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
         WithdrawableReward, WithdrawableRewardsResponse,
     },
+    stake_rewards_contract,
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
@@ -64,8 +65,8 @@ pub trait StakingTrait {
         asset: Address,
         salt: BytesN<32>,
         max_complexity: u32,
-        min_reward: u128,
-        min_bond: u128,
+        min_reward: i128,
+        min_bond: i128,
     );
 
     fn distribute_rewards(env: Env);
@@ -253,8 +254,8 @@ impl StakingTrait for Staking {
         asset: Address,
         salt: BytesN<32>,
         max_complexity: u32,
-        min_reward: u128,
-        min_bond: u128,
+        min_reward: i128,
+        min_bond: i128,
     ) {
         sender.require_auth();
 
@@ -266,13 +267,28 @@ impl StakingTrait for Staking {
         }
         let deployed_stake_rewards = env
             .deployer()
-            .with_address(sender, salt)
+            .with_address(env.current_contract_address(), salt)
             .deploy(get_stake_rewards(&env));
 
-        let init_fn = Symbol::new(&env, "initialize");
-        let init_fn_args: Vec<Val> =
-            (owner, asset.clone(), max_complexity, min_reward, min_bond).into_val(&env);
-        let _: Val = env.invoke_contract(&deployed_stake_rewards, &init_fn, init_fn_args);
+        stake_rewards_contract::Client::new(&env, &deployed_stake_rewards).initialize(
+            &owner,
+            &env.current_contract_address(),
+            &asset.clone(),
+            &max_complexity,
+            &min_reward,
+            &min_bond,
+        );
+        // let init_fn = Symbol::new(&env, "initialize");
+        // let init_fn_args: Vec<Val> = (
+        //     owner,
+        //     env.current_contract_address(),
+        //     asset.clone(),
+        //     max_complexity,
+        //     min_reward,
+        //     min_bond,
+        // )
+        //     .into_val(&env);
+        // let _: Val = env.invoke_contract(&deployed_stake_rewards, &init_fn, init_fn_args);
 
         add_distribution(&env, &asset, &deployed_stake_rewards);
 
@@ -407,13 +423,15 @@ impl StakingTrait for Staking {
         let stakes = get_stakes(&env, &user);
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
+        // let apr_fn_arg: Val = (user.clone(), stakes.clone()).into_val(&env);
         for (_asset, distribution_address) in get_distributions(&env) {
-            let apr_fn_arg: Val = stakes.into_val(&env);
-            let ret: WithdrawableReward = env.invoke_contract(
-                &distribution_address,
-                &Symbol::new(&env, "query_withdrawable_reward"),
-                vec![&env, apr_fn_arg],
-            );
+            let ret = stake_rewards_contract::Client::new(&env, &distribution_address)
+                .query_withdrawable_reward(&user.clone(), &stakes.clone().into());
+            // let ret: WithdrawableReward = env.invoke_contract(
+            //     &distribution_address,
+            //     &Symbol::new(&env, "query_withdrawable_reward"),
+            //     vec![&env, apr_fn_arg],
+            // );
 
             rewards.push_back(WithdrawableReward {
                 reward_address: distribution_address,
@@ -425,15 +443,25 @@ impl StakingTrait for Staking {
     }
 
     fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
-        let distribution = get_distribution(&env, &asset);
-        distribution.distributed_total
+        let staking_rewards = find_stake_rewards_by_asset(&env, &asset).unwrap();
+        let unds_rew_fn_arg: Val = asset.into_val(&env);
+        let ret: u128 = env.invoke_contract(
+            &staking_rewards,
+            &Symbol::new(&env, "query_distributed_reward"),
+            vec![&env, unds_rew_fn_arg],
+        );
+        ret
     }
 
     fn query_undistributed_rewards(env: Env, asset: Address) -> u128 {
-        let distribution = get_distribution(&env, &asset);
-        let reward_token_client = token_contract::Client::new(&env, &asset);
-        let reward_token_balance = reward_token_client.balance(&env.current_contract_address());
-        convert_i128_to_u128(reward_token_balance) - distribution.withdrawable_total
+        let staking_rewards = find_stake_rewards_by_asset(&env, &asset).unwrap();
+        let unds_rew_fn_arg: Val = asset.into_val(&env);
+        let ret: u128 = env.invoke_contract(
+            &staking_rewards,
+            &Symbol::new(&env, "query_undistributed_reward"),
+            vec![&env, unds_rew_fn_arg],
+        );
+        ret
     }
 
     fn stake_rewards_add_users(env: Env, staking_contract: Address, users: Vec<Address>) {

@@ -3,6 +3,8 @@ use soroban_sdk::{
     Env, IntoVal, String, Symbol, Val, Vec,
 };
 
+use crate::stake_rewards_contract;
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
@@ -177,5 +179,55 @@ pub mod utils {
             }
         }
         None
+    }
+}
+
+// Implement `From` trait for conversion between `BondingInfo` structs
+impl From<BondingInfo> for stake_rewards_contract::BondingInfo {
+    fn from(info: BondingInfo) -> Self {
+        let mut stakes = Vec::new(info.stakes.env());
+        for stake in info.stakes.iter() {
+            stakes.push_back(stake.into());
+        }
+        stake_rewards_contract::BondingInfo {
+            stakes,
+            reward_debt: info.reward_debt,
+            last_reward_time: info.last_reward_time,
+            total_stake: info.total_stake,
+        }
+    }
+}
+
+impl From<stake_rewards_contract::BondingInfo> for BondingInfo {
+    fn from(info: stake_rewards_contract::BondingInfo) -> Self {
+        let mut stakes = Vec::new(info.stakes.env());
+        for stake in info.stakes.iter() {
+            stakes.push_back(stake.into());
+        }
+        BondingInfo {
+            stakes,
+            reward_debt: info.reward_debt,
+            last_reward_time: info.last_reward_time,
+            total_stake: info.total_stake,
+        }
+    }
+}
+
+// Implement `From` trait for conversion between `Stake` structs
+impl From<Stake> for stake_rewards_contract::Stake {
+    fn from(stake: Stake) -> Self {
+        stake_rewards_contract::Stake {
+            stake: stake.stake,
+            stake_timestamp: stake.stake_timestamp,
+        }
+    }
+}
+
+impl From<stake_rewards_contract::Stake> for Stake {
+    fn from(stake: stake_rewards_contract::Stake) -> Self {
+        Stake {
+            stake: stake.stake,
+            stake_timestamp: stake.stake_timestamp,
+        }
     }
 }
