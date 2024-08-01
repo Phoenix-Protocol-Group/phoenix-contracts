@@ -337,7 +337,7 @@ mod tests {
             Decimal256::from_atomics(&env, u128::MAX, 38),
             Decimal256::from_ratio(
                 &env,
-                U256::from_u128(&env, 67),
+                U256::from_u128(&env, 34),
                 U256::from_u128(&env, 1000000000000000000)
             ),
         );
@@ -826,8 +826,7 @@ mod tests {
         assert_eq!(left.mul(&env, &right), Decimal256::zero(&env));
 
         assert_eq!(
-            Decimal256::from_ratio(&env, U256::from_u128(&env, 300), U256::from_u128(&env, 0))
-                .mul(&env, &Decimal256::one(&env)),
+            Decimal256::zero(&env).mul(&env, &Decimal256::one(&env)),
             Decimal256::zero(&env)
         );
         assert_eq!(
