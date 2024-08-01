@@ -895,27 +895,33 @@ mod tests {
                 .mul(&env, &Decimal256::percent(&env, 50)),
             Decimal256::from_ratio(&env, U256::from_u128(&env, 50), U256::from_u128(&env, 1))
         );
-        //assert_eq!(
-        //    U256::from_u128(&env, 100) * Decimal256::percent(&env, 50),
-        //    U256::from_u128(&env, 50)
-        //);
-        //assert_eq!(
-        //    I256::from_i128(&env, 3200) * Decimal256::percent(&env, 50),
-        //    I256::from_i128(&env, 1600)
-        //);
-        //assert_eq!(
-        //    I256::from_i128(&env, 999) * Decimal256::percent(&env, 50),
-        //    I256::from_i128(&env, 499)
-        //); // default rounding down
 
-        //assert_eq!(
-        //    I256::from_i128(&env, 1) * Decimal256::percent(&env, 200),
-        //    I256::from_i128(&env, 2)
-        //);
-        //assert_eq!(
-        //    I256::from_i128(&env, 1000) * Decimal256::percent(&env, 200),
-        //    I256::from_i128(&env, 2000)
-        //);
+        // 3200 * %50
+        assert_eq!(
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 3_200), U256::from_u128(&env, 1))
+                .mul(&env, &Decimal256::percent(&env, 50)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 1_600), U256::from_u128(&env, 1))
+        );
+
+        // 999 * %50
+        assert_eq!(
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 999), U256::from_u128(&env, 1))
+                .mul(&env, &Decimal256::percent(&env, 50)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 4995), U256::from_u128(&env, 10))
+        );
+
+        // 1 * %200
+        assert_eq!(
+            Decimal256::one(&env).mul(&env, &Decimal256::percent(&env, 200)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 2), U256::from_u128(&env, 1))
+        );
+
+        // 1_000 * %200
+        assert_eq!(
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 1_000), U256::from_u128(&env, 1))
+                .mul(&env, &Decimal256::percent(&env, 200)),
+            Decimal256::from_ratio(&env, U256::from_u128(&env, 2_000), U256::from_u128(&env, 1))
+        );
     }
 
     // in this test the Decimal256 is on the left
