@@ -13,6 +13,7 @@ curve = { path = "./packages/curve" }
 soroban-decimal = { path = "./packages/decimal" }
 phoenix = { path = "./packages/phoenix" }
 phoenix-stake = { path = "./contracts/stake" }
+phoenix-stake-rewards = { path = "./contracts/stake_rewards" }
 num-integer = { version = "0.1.45", default-features = false, features = [
     "i128",
 ] }

@@ -1,31 +1,22 @@
-use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,
-    IntoVal, String, Symbol, Val, Vec,
+    IntoVal, Symbol, Val, Vec,
 };
 
 use crate::{
-    distribution::{
-        calc_power, calculate_annualized_payout, get_distribution, get_reward_curve,
-        get_withdraw_adjustment, save_distribution, save_reward_curve, save_withdraw_adjustment,
-        update_rewards, withdrawable_rewards, Distribution, SHARES_SHIFT,
-    },
+    distribution::get_distribution,
     error::ContractError,
-    msg::{
-        AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
-        WithdrawableReward, WithdrawableRewardsResponse,
-    },
+    msg::{ConfigResponse, StakedResponse, WithdrawableRewardResponse},
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
-            self, add_distribution, get_admin, get_distributions, get_stake_rewards,
-            get_total_staked_counter, is_initialized, set_initialized, set_stake_rewards,
+            self, get_admin, get_stake_rewards, get_total_staked_counter, is_initialized,
+            set_initialized, set_stake_rewards,
         },
         Config, Stake,
     },
-    token_contract, TOKEN_PER_POWER,
+    token_contract,
 };
-use curve::Curve;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -75,7 +66,7 @@ pub trait StakingTrait {
 
     fn query_annualized_rewards(env: Env) -> Val;
 
-    fn query_withdrawable_rewards(env: Env, address: Address) -> Val;
+    fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardResponse;
 
     fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
@@ -192,31 +183,11 @@ impl StakingTrait for Staking {
         let config = get_config(&env);
 
         // check for rewards and withdraw them
-        let found_rewards: WithdrawableRewardsResponse =
+        let found_rewards: WithdrawableRewardResponse =
             Self::query_withdrawable_rewards(env.clone(), sender.clone());
 
-        if !found_rewards.rewards.is_empty() {
+        if !found_rewards.reward_amount == 0 {
             Self::withdraw_rewards(env.clone(), sender.clone());
-        }
-
-        for distribution_address in get_distributions(&env) {
-            let mut distribution = get_distribution(&env, &distribution_address);
-            let stakes = get_stakes(&env, &sender).total_stake;
-            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-            let new_power = calc_power(
-                &config,
-                stakes - stake_amount,
-                Decimal::one(),
-                TOKEN_PER_POWER,
-            );
-            update_rewards(
-                &env,
-                &sender,
-                &distribution_address,
-                &mut distribution,
-                old_power,
-                new_power,
-            );
         }
 
         let mut stakes = get_stakes(&env, &sender);
@@ -312,10 +283,10 @@ impl StakingTrait for Staking {
         ret
     }
 
-    fn query_withdrawable_rewards(env: Env, user: Address) -> Val {
+    fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardResponse {
         let stakes = get_stakes(&env, &user);
         let apr_fn_arg: Val = stakes.into_val(&env);
-        let ret: Val = env.invoke_contract::<Val>(
+        let ret: WithdrawableRewardResponse = env.invoke_contract(
             &get_stake_rewards(&env),
             &Symbol::new(&env, "query_withdrawable_reward"),
             vec![&env, apr_fn_arg],

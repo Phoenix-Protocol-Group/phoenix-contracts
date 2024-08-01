@@ -36,7 +36,7 @@ pub struct WithdrawableReward {
 
 #[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct WithdrawableRewardsResponse {
-    /// Amount of rewards assigned for withdrawal from the given address.
-    pub rewards: Vec<WithdrawableReward>,
+pub struct WithdrawableRewardResponse {
+    pub reward_address: Address,
+    pub reward_amount: u128,
 }
