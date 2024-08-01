@@ -950,128 +950,178 @@ mod tests {
         assert_eq!(left.mul(&env, &right), Decimal256::zero(&env));
     }
 
-    // #[test]
-    // fn decimal256_implements_div() {
-    //     let env = Env::default();
-    //     let one = Decimal256::one(&env);
-    //     let two = Decimal256::new(&env, 2 * 1_000_000_000_000_000_000);
-    //     let half = Decimal256::percent(&env, 50);
+    #[test]
+    fn decimal256_implements_div() {
+        let env = Env::default();
+        let one = Decimal256::one(&env);
+        let two = Decimal256::new(&env, 2 * 1_000_000_000_000_000_000);
+        let half = Decimal256::percent(&env, 50);
 
-    //     // 1/x and x/1
-    //     assert_eq!(
-    //         one.div(&env, Decimal256::percent(&env, 1)),
-    //         Decimal256::percent(&env, 10_000)
-    //     );
-    //     assert_eq!(
-    //         one.div(&env, Decimal256::percent(&env, 10)),
-    //         Decimal256::percent(&env, 1_000)
-    //     );
-    //     assert_eq!(
-    //         one.div(&env, Decimal256::percent(&env, 100)),
-    //         Decimal256::percent(&env, 100)
-    //     );
-    //     assert_eq!(
-    //         one.div(&env, Decimal256::percent(&env, 1000)),
-    //         Decimal256::percent(&env, 10)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 0).div(&env, one),
-    //         Decimal256::percent(&env, 0)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 1).div(&env, one),
-    //         Decimal256::percent(&env, 1)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 10).div(&env, one),
-    //         Decimal256::percent(&env, 10)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 100).div(&env, one),
-    //         Decimal256::percent(&env, 100)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 1000).div(&env, one),
-    //         Decimal256::percent(&env, 1000)
-    //     );
+        // 1/x and x/1
+        // 1 / %1
+        assert_eq!(
+            one.div(&env, Decimal256::percent(&env, 1)),
+            Decimal256::percent(&env, 10_000)
+        );
 
-    //     // double
-    //     assert_eq!(
-    //         two.div(&env, Decimal256::percent(&env, 1)),
-    //         Decimal256::percent(&env, 20_000)
-    //     );
-    //     assert_eq!(
-    //         two.div(&env, Decimal256::percent(&env, 10)),
-    //         Decimal256::percent(&env, 2_000)
-    //     );
-    //     assert_eq!(
-    //         two.div(&env, Decimal256::percent(&env, 100)),
-    //         Decimal256::percent(&env, 200)
-    //     );
-    //     assert_eq!(
-    //         two.div(&env, Decimal256::percent(&env, 1000)),
-    //         Decimal256::percent(&env, 20)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 0).div(&env, two),
-    //         Decimal256::percent(&env, 0)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 10).div(&env, two),
-    //         Decimal256::percent(&env, 5)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 100).div(&env, two),
-    //         Decimal256::percent(&env, 50)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 1000).div(&env, two),
-    //         Decimal256::percent(&env, 500)
-    //     );
+        // 1 / %10
+        assert_eq!(
+            one.div(&env, Decimal256::percent(&env, 10)),
+            Decimal256::percent(&env, 1_000)
+        );
 
-    //     // half
-    //     assert_eq!(
-    //         half.div(&env, Decimal256::percent(&env, 1)),
-    //         Decimal256::percent(&env, 5_000)
-    //     );
-    //     assert_eq!(
-    //         half.div(&env, Decimal256::percent(&env, 10)),
-    //         Decimal256::percent(&env, 500)
-    //     );
-    //     assert_eq!(
-    //         half.div(&env, Decimal256::percent(&env, 100)),
-    //         Decimal256::percent(&env, 50)
-    //     );
-    //     assert_eq!(
-    //         half.div(&env, Decimal256::percent(&env, 1000)),
-    //         Decimal256::percent(&env, 5)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 0).div(&env, half),
-    //         Decimal256::percent(&env, 0)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 1).div(&env, half),
-    //         Decimal256::percent(&env, 2)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 10).div(&env, half),
-    //         Decimal256::percent(&env, 20)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 100).div(&env, half),
-    //         Decimal256::percent(&env, 200)
-    //     );
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 1000).div(&env, half),
-    //         Decimal256::percent(&env, 2000)
-    //     );
+        // 1 / %100
+        assert_eq!(
+            one.div(&env, Decimal256::percent(&env, 100)),
+            Decimal256::one(&env)
+        );
 
-    //     assert_eq!(
-    //         Decimal256::percent(&env, 15).div(&env, Decimal256::percent(&env, 60)),
-    //         Decimal256::percent(&env, 25)
-    //     );
-    // }
+        // 1 / %1_000
+        assert_eq!(
+            one.div(&env, Decimal256::percent(&env, 1_000)),
+            Decimal256::percent(&env, 10)
+        );
+
+        // %0 / 1
+        assert_eq!(
+            Decimal256::percent(&env, 0).div(&env, one.clone()),
+            Decimal256::percent(&env, 0)
+        );
+
+        // %1 / 1
+        assert_eq!(
+            Decimal256::percent(&env, 1).div(&env, one.clone()),
+            Decimal256::percent(&env, 1)
+        );
+
+        // %10 / 1
+        assert_eq!(
+            Decimal256::percent(&env, 10).div(&env, one.clone()),
+            Decimal256::percent(&env, 10)
+        );
+
+        // %100 / 1
+        assert_eq!(
+            Decimal256::percent(&env, 100).div(&env, one.clone()),
+            Decimal256::percent(&env, 100)
+        );
+
+        // %1_000 / 1
+        assert_eq!(
+            Decimal256::percent(&env, 1_000).div(&env, one.clone()),
+            Decimal256::percent(&env, 1_000)
+        );
+
+        // 2/x and x/2
+        // 2 / %1
+        assert_eq!(
+            two.div(&env, Decimal256::percent(&env, 1)),
+            Decimal256::percent(&env, 20_000)
+        );
+
+        // 2 / %10
+        assert_eq!(
+            two.div(&env, Decimal256::percent(&env, 10)),
+            Decimal256::percent(&env, 2_000)
+        );
+
+        // 2 / %100
+        assert_eq!(
+            two.div(&env, Decimal256::percent(&env, 100)),
+            Decimal256::percent(&env, 200)
+        );
+
+        // 2 / %1_000
+        assert_eq!(
+            two.div(&env, Decimal256::percent(&env, 1_000)),
+            Decimal256::percent(&env, 20)
+        );
+
+        // %0 / 2
+        assert_eq!(
+            Decimal256::percent(&env, 0).div(&env, two.clone()),
+            Decimal256::percent(&env, 0)
+        );
+
+        // %10 / 2
+        assert_eq!(
+            Decimal256::percent(&env, 10).div(&env, two.clone()),
+            Decimal256::percent(&env, 5)
+        );
+
+        // %100 / 2
+        assert_eq!(
+            Decimal256::percent(&env, 100).div(&env, two.clone()),
+            Decimal256::percent(&env, 50)
+        );
+
+        // %1_000 / 2
+        assert_eq!(
+            Decimal256::percent(&env, 1_000).div(&env, two.clone()),
+            Decimal256::percent(&env, 500)
+        );
+
+        // half/x and x/half
+        // half / %1
+        assert_eq!(
+            half.div(&env, Decimal256::percent(&env, 1)),
+            Decimal256::percent(&env, 5_000)
+        );
+
+        // half / %10
+        assert_eq!(
+            half.div(&env, Decimal256::percent(&env, 10)),
+            Decimal256::percent(&env, 500)
+        );
+
+        // half / %100
+        assert_eq!(
+            half.div(&env, Decimal256::percent(&env, 100)),
+            Decimal256::percent(&env, 50)
+        );
+
+        // half / %1_000
+        assert_eq!(
+            half.div(&env, Decimal256::percent(&env, 1_000)),
+            Decimal256::percent(&env, 5)
+        );
+
+        // %0 / half
+        assert_eq!(
+            Decimal256::percent(&env, 0).div(&env, half.clone()),
+            Decimal256::percent(&env, 0)
+        );
+
+        // %1 / half
+        assert_eq!(
+            Decimal256::percent(&env, 1).div(&env, half.clone()),
+            Decimal256::percent(&env, 2)
+        );
+
+        // %10 / half
+        assert_eq!(
+            Decimal256::percent(&env, 10).div(&env, half.clone()),
+            Decimal256::percent(&env, 20)
+        );
+
+        // %100 / half
+        assert_eq!(
+            Decimal256::percent(&env, 100).div(&env, half.clone()),
+            Decimal256::percent(&env, 200)
+        );
+
+        // %1_000 / half
+        assert_eq!(
+            Decimal256::percent(&env, 1_000).div(&env, half.clone()),
+            Decimal256::percent(&env, 2_000)
+        );
+
+        // %15 / half
+        assert_eq!(
+            Decimal256::percent(&env, 15).div(&env, Decimal256::percent(&env, 60)),
+            Decimal256::percent(&env, 25)
+        );
+    }
 
     // #[test]
     // #[should_panic(expected = "attempt to multiply with overflow")]
