@@ -1,11 +1,13 @@
 extern crate std;
 
+use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation, Ledger};
+use soroban_sdk::U256;
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
-use soroban_decimal::Decimal;
+use soroban_decimal::Decimal256;
 
 #[test]
 fn simple_swap() {
@@ -231,7 +233,14 @@ fn swap_with_high_fee() {
         }
     );
     // 10% fees are deducted from the swap result and sent to fee recipient address
-    let fees = Decimal::percent(10) * output_amount;
+    let fees = convert_u128_to_i128(
+        Decimal256::percent(&env, 10)
+            .mul(
+                &env,
+                &Decimal256::new(&env, convert_i128_to_u128(output_amount)),
+            )
+            .to_u128_with_precision(token1.decimals() as i32),
+    );
     assert_eq!(token2.balance(&user1), output_amount - fees);
     assert_eq!(token2.balance(&fee_recipient), fees);
 }
@@ -285,7 +294,14 @@ fn swap_simulation_even_pool() {
 
     // This is Stable Swap LP with constant product formula
     let output_amount = 98_582i128;
-    let fees = Decimal::percent(10) * output_amount;
+    let fees = convert_u128_to_i128(
+        Decimal256::percent(&env, 10)
+            .mul(
+                &env,
+                &Decimal256::new(&env, convert_i128_to_u128(output_amount)),
+            )
+            .to_u128_with_precision(token1.decimals() as i32),
+    );
     assert_eq!(
         result,
         SimulateSwapResponse {
