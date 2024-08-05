@@ -87,18 +87,19 @@ impl Decimal256 {
 
     // TODO: Allow for `decimal_places` larger than 38
     pub fn from_atomics(env: &Env, atomics: u128, decimal_places: i32) -> Self {
-        const TEN: u128 = 10;
+        let ten: U256 = U256::from_u128(env, 10u128);
+        let atomics = U256::from_u128(env, atomics);
         match decimal_places.cmp(&Self::DECIMAL_PLACES) {
             Ordering::Less => {
                 let digits = Self::DECIMAL_PLACES - decimal_places;
-                let factor = TEN.pow(digits as u32);
-                Self(U256::from_u128(env, atomics * factor))
+                let factor = ten.pow(digits as u32);
+                Self(atomics.mul(&factor))
             }
-            Ordering::Equal => Self(U256::from_u128(env, atomics)),
+            Ordering::Equal => Self(atomics),
             Ordering::Greater => {
                 let digits = decimal_places - Self::DECIMAL_PLACES;
-                let factor = TEN.pow(digits as u32);
-                Self(U256::from_u128(env, atomics / factor))
+                let factor = ten.pow(digits as u32);
+                Self(atomics.div(&factor))
             }
         }
     }
@@ -215,7 +216,7 @@ impl Decimal256 {
         let result = self
             .numerator()
             .mul(&other.numerator())
-            .div(&other.denominator(env));
+            .div(&U256::from_u128(env, 1_000_000_000_000_000_000));
         Decimal256(result)
     }
 
@@ -816,7 +817,7 @@ mod tests {
     }
 
     #[test]
-    fn i128_decimal256_multiply() {
+    fn u128_decimal256_multiply() {
         let env = Env::default();
 
         // a*b
