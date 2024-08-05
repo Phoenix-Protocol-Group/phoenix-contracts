@@ -8,4 +8,7 @@ license = { workspace = true }
 description = "A precise decimal arithmetic package for Soroban contracts"
 
 [dependencies]
-soroban-sdk = { workspace = true, features = ["alloc"]}
+soroban-sdk = { workspace = true, features = ["alloc"] }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
