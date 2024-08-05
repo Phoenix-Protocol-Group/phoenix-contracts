@@ -267,6 +267,15 @@ impl StakingTrait for Staking {
             log!(env, "Stake: create distribution: Non-authorized creation!");
             panic_with_error!(&env, ContractError::Unauthorized);
         }
+
+        if let Some(address) = find_stake_rewards_by_asset(&env, &asset) {
+            log!(
+                env,
+                "Stake: Create distribution flow: Distribution for this reward token exists!"
+            );
+            panic_with_error!(&env, ContractError::DistributionExists);
+        };
+
         let deployed_stake_rewards = env
             .deployer()
             .with_address(env.current_contract_address(), salt)
@@ -416,7 +425,7 @@ impl StakingTrait for Staking {
         let total_stake_amount = get_total_staked_counter(&env);
         let apr_fn_arg: Val = total_stake_amount.into_val(&env);
 
-        for (_asset, distribution_address) in get_distributions(&env) {
+        for (asset, distribution_address) in get_distributions(&env) {
             let apr: AnnualizedReward = env.invoke_contract(
                 &distribution_address,
                 &Symbol::new(&env, "query_annualized_reward"),
@@ -424,7 +433,7 @@ impl StakingTrait for Staking {
             );
 
             aprs.push_back(AnnualizedReward {
-                asset: distribution_address.clone(),
+                asset,
                 amount: apr.amount,
             });
         }
