@@ -13,7 +13,7 @@ use crate::{
         AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward,
         WithdrawableRewardsResponse,
     },
-    tests::setup::{ONE_DAY, ONE_WEEK, SIXTY_DAYS},
+    tests::setup::{ONE_DAY, SIXTY_DAYS},
 };
 
 #[test]
@@ -434,7 +434,6 @@ fn two_users_one_starts_after_distribution_begins() {
     let user = Address::generate(&env);
     let user2 = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);

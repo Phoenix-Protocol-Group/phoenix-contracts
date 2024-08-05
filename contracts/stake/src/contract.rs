@@ -1,16 +1,12 @@
-use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
+use phoenix::utils::convert_i128_to_u128;
 use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,
-    IntoVal, String, Symbol, Val, Vec,
+    IntoVal, Symbol, Val, Vec,
 };
 
 use crate::{
-    distribution::{
-        calc_power, calculate_annualized_payout, get_distribution, get_reward_curve,
-        get_withdraw_adjustment, save_distribution, save_reward_curve, save_withdraw_adjustment,
-        update_rewards, withdrawable_rewards, Distribution, SHARES_SHIFT,
-    },
+    distribution::calc_power,
     error::ContractError,
     msg::{
         AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
@@ -28,7 +24,6 @@ use crate::{
     },
     token_contract, TOKEN_PER_POWER,
 };
-use curve::Curve;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -268,7 +263,7 @@ impl StakingTrait for Staking {
             panic_with_error!(&env, ContractError::Unauthorized);
         }
 
-        if let Some(address) = find_stake_rewards_by_asset(&env, &asset) {
+        if find_stake_rewards_by_asset(&env, &asset).is_some() {
             log!(
                 env,
                 "Stake: Create distribution flow: Distribution for this reward token exists!"
@@ -377,7 +372,7 @@ impl StakingTrait for Staking {
         };
 
         let fund_distr_fn_arg: Vec<Val> =
-            (start_time, distribution_duration, token_amount.clone()).into_val(&env);
+            (start_time, distribution_duration, token_amount).into_val(&env);
         env.invoke_contract::<Val>(
             &stake_rewards,
             &Symbol::new(&env, "fund_distribution"),
