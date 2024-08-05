@@ -21,6 +21,7 @@ const MIN_BOND: i128 = 1000;
 const MIN_REWARD: i128 = 1000;
 pub const ONE_WEEK: u64 = 604800;
 pub const ONE_DAY: u64 = 86400;
+pub const SIXTY_DAYS: u64 = 60 * ONE_DAY;
 
 pub fn deploy_staking_contract<'a>(
     env: &Env,

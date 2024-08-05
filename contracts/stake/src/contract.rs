@@ -426,7 +426,7 @@ impl StakingTrait for Staking {
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
         // let apr_fn_arg: Val = (user.clone(), stakes.clone()).into_val(&env);
-        for (_asset, distribution_address) in get_distributions(&env) {
+        for (asset, distribution_address) in get_distributions(&env) {
             let ret = stake_rewards_contract::Client::new(&env, &distribution_address)
                 .query_withdrawable_reward(&user.clone(), &stakes.clone().into());
             // let ret: WithdrawableReward = env.invoke_contract(
@@ -436,7 +436,7 @@ impl StakingTrait for Staking {
             // );
 
             rewards.push_back(WithdrawableReward {
-                reward_address: distribution_address,
+                reward_address: asset,
                 reward_amount: ret.reward_amount,
             });
         }
