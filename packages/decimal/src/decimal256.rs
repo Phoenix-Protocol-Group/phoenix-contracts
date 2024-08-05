@@ -220,6 +220,7 @@ impl Decimal256 {
         Decimal256(result)
     }
 
+    #[allow(dead_code)]
     pub fn div(&self, env: &Env, rhs: Self) -> Self {
         match Decimal256::checked_from_ratio(env, self.numerator(), rhs.numerator()) {
             Ok(ratio) => ratio,
