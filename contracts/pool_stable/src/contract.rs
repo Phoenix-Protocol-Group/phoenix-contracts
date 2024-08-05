@@ -489,10 +489,12 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             }
         }
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         validate_int_parameters!(share_amount, min_a, min_b);
 
         sender.require_auth();
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         let config = get_config(&env);
 
         let share_token_client = token_contract::Client::new(&env, &config.share_token);
@@ -500,9 +502,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         let total_shares = utils::get_total_shares(&env);
 
         if total_shares == 0i128 {
@@ -510,24 +514,28 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             panic_with_error!(env, ContractError::TotalSharesEqualZero);
         }
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         let share_ratio = Decimal256::from_ratio(
             &env,
             U256::from_u128(&env, convert_i128_to_u128(share_amount)),
             U256::from_u128(&env, convert_i128_to_u128(total_shares)),
         );
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         let return_amount_a = convert_u128_to_i128(
             Decimal256::new(&env, convert_i128_to_u128(pool_balance_a))
                 .mul(&env, &share_ratio)
                 .to_u128_with_precision(precision as i32),
         );
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         let return_amount_b = convert_u128_to_i128(
             Decimal256::new(&env, convert_i128_to_u128(pool_balance_b))
                 .mul(&env, &share_ratio)
                 .to_u128_with_precision(precision as i32),
         );
 
+        //FIXME: we panic here
         if return_amount_a < min_a || return_amount_b < min_b {
             log!(
                 &env,
@@ -543,6 +551,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             );
         }
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         // burn shares
         utils::burn_shares(&env, &config.share_token, share_amount);
         // transfer tokens from sender to contract
@@ -551,6 +560,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &sender,
             &return_amount_a,
         );
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         token_contract::Client::new(&env, &config.token_b).transfer(
             &env.current_contract_address(),
             &sender,
@@ -560,6 +570,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         utils::save_pool_balance_a(&env, pool_balance_a - return_amount_a);
         utils::save_pool_balance_b(&env, pool_balance_b - return_amount_b);
 
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         env.events()
             .publish(("withdraw_liquidity", "sender"), sender);
         env.events()
@@ -783,6 +794,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let mut share_ratio = Decimal256::zero(&env);
         if total_share != 0 {
+            soroban_sdk::testutils::arbitrary::std::dbg!("INSIDE, ");
             share_ratio = Decimal256::from_ratio(
                 &env,
                 U256::from_u128(&env, convert_i128_to_u128(amount)),
@@ -790,6 +802,12 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             );
         }
 
+        soroban_sdk::testutils::arbitrary::std::dbg!(
+            token_a_amount,
+            token_b_amount,
+            &share_ratio.to_u128_with_precision(token_a_precision as i32)
+        );
+        //FIXME: issue might be with the way we multiply two decimals
         let amount_a = convert_u128_to_i128(
             Decimal256::new(&env, convert_i128_to_u128(token_a_amount))
                 .mul(&env, &share_ratio)
@@ -801,6 +819,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 .mul(&env, &share_ratio)
                 .to_u128_with_precision(token_b_precision as i32),
         );
+        soroban_sdk::testutils::arbitrary::std::dbg!(amount_a, amount_b);
         (
             Asset {
                 address: token_a_address,
@@ -1118,6 +1137,7 @@ pub fn compute_offer_amount(
             .to_u128_with_precision(ask_pool_precision as i32),
     );
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
+    //soroban_sdk::testutils::arbitrary::std::dbg!(offer_amount, ask_amount);
     let spread_amount = if offer_amount > ask_amount {
         offer_amount - ask_amount
     } else {

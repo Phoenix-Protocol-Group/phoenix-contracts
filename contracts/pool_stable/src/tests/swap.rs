@@ -2,7 +2,6 @@ extern crate std;
 
 use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation, Ledger};
-use soroban_sdk::U256;
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
@@ -246,6 +245,7 @@ fn swap_with_high_fee() {
 }
 
 #[test]
+//FIXME: fails because of precision
 fn swap_simulation_even_pool() {
     let env = Env::default();
     env.mock_all_auths();
