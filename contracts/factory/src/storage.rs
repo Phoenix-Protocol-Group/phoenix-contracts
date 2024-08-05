@@ -32,6 +32,7 @@ pub struct Config {
     pub stable_wasm_hash: BytesN<32>,
     pub stake_wasm_hash: BytesN<32>,
     pub token_wasm_hash: BytesN<32>,
+    pub stake_rewards_wasm_hash: BytesN<32>,
     pub whitelisted_accounts: Vec<Address>,
     pub lp_token_decimals: u32,
 }

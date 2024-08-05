@@ -42,6 +42,7 @@ pub trait StableLiquidityPoolTrait {
         env: Env,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
+        stake_rewards_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimal: u32,
@@ -145,6 +146,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env: Env,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
+        stake_rewards_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         _share_token_decimal: u32,
@@ -226,6 +228,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         stake_contract::Client::new(&env, &stake_contract_address).initialize(
             &admin,
             &share_token_address,
+            &stake_rewards_wasm_hash,
             &min_bond,
             &min_reward,
             &manager,

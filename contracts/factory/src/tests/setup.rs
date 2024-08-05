@@ -55,6 +55,13 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+pub fn install_stake_rewards_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake_rewards.wasm"
+    );
+    env.deployer().upload_contract_wasm(WASM)
+}
+
 pub fn deploy_factory_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,
@@ -67,6 +74,7 @@ pub fn deploy_factory_contract<'a>(
     let lp_wasm_hash = install_lp_contract(env);
     let stable_wasm_hash = install_stable_lp(env);
     let stake_wasm_hash = install_stake_wasm(env);
+    let stake_rewards_wasm_hash = install_stake_rewards_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
 
     factory.initialize(
@@ -75,6 +83,7 @@ pub fn deploy_factory_contract<'a>(
         &lp_wasm_hash,
         &stable_wasm_hash,
         &stake_wasm_hash,
+        &stake_rewards_wasm_hash,
         &token_wasm_hash,
         &whitelisted_accounts,
         &10u32,

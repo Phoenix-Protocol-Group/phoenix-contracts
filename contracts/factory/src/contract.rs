@@ -30,6 +30,7 @@ pub trait FactoryTrait {
         lp_wasm_hash: BytesN<32>,
         stable_wasm_hash: BytesN<32>,
         stake_wasm_hash: BytesN<32>,
+        stake_rewards_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
         lp_token_decimals: u32,
@@ -87,6 +88,7 @@ impl FactoryTrait for Factory {
         lp_wasm_hash: BytesN<32>,
         stable_wasm_hash: BytesN<32>,
         stake_wasm_hash: BytesN<32>,
+        stake_rewards_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
         lp_token_decimals: u32,
@@ -117,6 +119,7 @@ impl FactoryTrait for Factory {
                 lp_wasm_hash,
                 stable_wasm_hash,
                 stake_wasm_hash,
+                stake_rewards_wasm_hash,
                 token_wasm_hash,
                 whitelisted_accounts,
                 lp_token_decimals,
@@ -161,6 +164,7 @@ impl FactoryTrait for Factory {
         let config = get_config(&env);
         let stake_wasm_hash = config.stake_wasm_hash;
         let token_wasm_hash = config.token_wasm_hash;
+        let stake_rewards_wasm_hash = config.stake_rewards_wasm_hash;
 
         let pool_hash = match pool_type {
             PoolType::Xyk => config.lp_wasm_hash,
@@ -188,6 +192,7 @@ impl FactoryTrait for Factory {
         let mut init_fn_args: Vec<Val> = (
             stake_wasm_hash,
             token_wasm_hash,
+            stake_rewards_wasm_hash,
             lp_init_info.clone(),
             factory_addr,
             config.lp_token_decimals,
