@@ -99,6 +99,8 @@ pub trait StakingTrait {
 
     fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
 
+    fn query_distribution(env: Env, asset: Address) -> Option<Address>;
+
     // ADMIN
     fn stake_rewards_add_users(env: Env, staking_rewards: Address, users: Vec<Address>);
 }
@@ -462,6 +464,10 @@ impl StakingTrait for Staking {
             vec![&env, unds_rew_fn_arg],
         );
         ret
+    }
+
+    fn query_distribution(env: Env, asset: Address) -> Option<Address> {
+        find_stake_rewards_by_asset(&env, &asset)
     }
 
     fn stake_rewards_add_users(env: Env, staking_contract: Address, users: Vec<Address>) {
