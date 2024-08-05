@@ -356,10 +356,21 @@ impl StakingTrait for Staking {
         let admin = get_admin(&env);
         admin.require_auth();
 
+        let stake_rewards = if let Some(address) = find_stake_rewards_by_asset(&env, &token_address)
+        {
+            address
+        } else {
+            log!(
+                env,
+                "Stake: Fund distribution: No distribution for this reward token exists!"
+            );
+            panic_with_error!(&env, ContractError::DistributionNotFound);
+        };
+
         let fund_distr_fn_arg: Vec<Val> =
             (start_time, distribution_duration, token_amount.clone()).into_val(&env);
         env.invoke_contract::<Val>(
-            &find_stake_rewards_by_asset(&env, &token_address).unwrap(),
+            &stake_rewards,
             &Symbol::new(&env, "fund_distribution"),
             fund_distr_fn_arg,
         );
