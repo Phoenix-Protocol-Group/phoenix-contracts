@@ -1,4 +1,6 @@
-use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, Symbol, Vec};
+
+use crate::stake_rewards_contract;
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -81,6 +83,7 @@ pub mod utils {
         TotalStaked = 1,
         Distributions = 2,
         Initialized = 3,
+        StakeRewards = 4,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -133,22 +136,95 @@ pub mod utils {
     }
 
     // Keep track of all distributions to be able to iterate over them
-    pub fn add_distribution(e: &Env, asset: &Address) {
+    pub fn add_distribution(e: &Env, asset: &Address, stake_rewards: &Address) {
         let mut distributions = get_distributions(e);
-        if distributions.contains(asset) {
-            log!(&e, "Stake: Add distribution: Distribution already added");
-            panic_with_error!(&e, ContractError::DistributionExists);
+        for (old_asset, _) in distributions.clone() {
+            if &old_asset == asset {
+                log!(&e, "Stake: Add distribution: Distribution already added");
+                panic_with_error!(&e, ContractError::DistributionExists);
+            }
         }
-        distributions.push_back(asset.clone());
+        distributions.push_back((asset.clone(), stake_rewards.clone()));
         e.storage()
             .persistent()
             .set(&DataKey::Distributions, &distributions);
     }
 
-    pub fn get_distributions(e: &Env) -> Vec<Address> {
+    pub fn get_distributions(e: &Env) -> Vec<(Address, Address)> {
         e.storage()
             .persistent()
             .get(&DataKey::Distributions)
             .unwrap_or_else(|| soroban_sdk::vec![e])
+    }
+
+    pub fn get_stake_rewards(e: &Env) -> BytesN<32> {
+        e.storage()
+            .persistent()
+            .get(&DataKey::StakeRewards)
+            .unwrap()
+    }
+
+    pub fn set_stake_rewards(e: &Env, hash: &BytesN<32>) {
+        e.storage().persistent().set(&DataKey::StakeRewards, hash);
+    }
+
+    pub fn find_stake_rewards_by_asset(e: &Env, asset: &Address) -> Option<Address> {
+        let distributions = get_distributions(e);
+        for (stored_asset, stake_rewards) in distributions.iter() {
+            if &stored_asset == asset {
+                return Some(stake_rewards);
+            }
+        }
+        None
+    }
+}
+
+// Implement `From` trait for conversion between `BondingInfo` structs
+impl From<BondingInfo> for stake_rewards_contract::BondingInfo {
+    fn from(info: BondingInfo) -> Self {
+        let mut stakes = Vec::new(info.stakes.env());
+        for stake in info.stakes.iter() {
+            stakes.push_back(stake.into());
+        }
+        stake_rewards_contract::BondingInfo {
+            stakes,
+            reward_debt: info.reward_debt,
+            last_reward_time: info.last_reward_time,
+            total_stake: info.total_stake,
+        }
+    }
+}
+
+impl From<stake_rewards_contract::BondingInfo> for BondingInfo {
+    fn from(info: stake_rewards_contract::BondingInfo) -> Self {
+        let mut stakes = Vec::new(info.stakes.env());
+        for stake in info.stakes.iter() {
+            stakes.push_back(stake.into());
+        }
+        BondingInfo {
+            stakes,
+            reward_debt: info.reward_debt,
+            last_reward_time: info.last_reward_time,
+            total_stake: info.total_stake,
+        }
+    }
+}
+
+// Implement `From` trait for conversion between `Stake` structs
+impl From<Stake> for stake_rewards_contract::Stake {
+    fn from(stake: Stake) -> Self {
+        stake_rewards_contract::Stake {
+            stake: stake.stake,
+            stake_timestamp: stake.stake_timestamp,
+        }
+    }
+}
+
+impl From<stake_rewards_contract::Stake> for Stake {
+    fn from(stake: stake_rewards_contract::Stake) -> Self {
+        Stake {
+            stake: stake.stake,
+            stake_timestamp: stake.stake_timestamp,
+        }
     }
 }

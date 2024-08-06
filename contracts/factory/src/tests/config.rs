@@ -1,6 +1,6 @@
 use super::setup::{
     deploy_factory_contract, install_lp_contract, install_multihop_wasm, install_stable_lp,
-    install_stake_wasm, install_token_wasm, lp_contract,
+    install_stake_rewards_wasm, install_stake_wasm, install_token_wasm, lp_contract,
 };
 use crate::{
     contract::{Factory, FactoryClient},
@@ -240,6 +240,7 @@ fn factory_fails_to_init_lp_when_no_whitelisted_accounts() {
     let lp_wasm_hash = install_lp_contract(&env);
     let stable_wasm_hash = install_stable_lp(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
+    let stake_rewards_wasm_hash = install_stake_rewards_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
 
     factory.initialize(
@@ -248,6 +249,7 @@ fn factory_fails_to_init_lp_when_no_whitelisted_accounts() {
         &lp_wasm_hash,
         &stable_wasm_hash,
         &stake_wasm_hash,
+        &stake_rewards_wasm_hash,
         &token_wasm_hash,
         &whitelisted_accounts,
         &10u32,

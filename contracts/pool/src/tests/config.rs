@@ -3,8 +3,8 @@ use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 use super::setup::{
-    deploy_liquidity_pool_contract, deploy_token_contract, install_new_lp_wasm, install_stake_wasm,
-    install_token_wasm,
+    deploy_liquidity_pool_contract, deploy_token_contract, install_new_lp_wasm,
+    install_stake_rewards_wasm, install_stake_wasm, install_token_wasm,
 };
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
@@ -42,6 +42,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
     };
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
+    let stake_reward_wasm_hash = install_stake_rewards_wasm(&env);
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin,
@@ -58,6 +59,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
     pool.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
+        &stake_reward_wasm_hash,
         &lp_init_info,
         &Address::generate(&env),
         &10u32,
@@ -475,6 +477,7 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
     };
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
+    let stake_reward_wasm_hash = install_stake_rewards_wasm(&env);
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin,
@@ -491,6 +494,7 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
     pool.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
+        &stake_reward_wasm_hash,
         &lp_init_info,
         &Address::generate(&env),
         &10u32,

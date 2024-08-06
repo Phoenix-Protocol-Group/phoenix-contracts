@@ -2,7 +2,7 @@ extern crate std;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    vec, Address, Env, IntoVal, String, Symbol,
+    vec, Address, BytesN, Env, IntoVal, String, Symbol,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
@@ -13,18 +13,18 @@ use crate::{
         AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward,
         WithdrawableRewardsResponse,
     },
-    tests::setup::{ONE_DAY, ONE_WEEK},
+    tests::setup::{ONE_DAY, SIXTY_DAYS},
 };
 
 #[test]
 fn add_distribution_and_distribute_reward() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -33,21 +33,36 @@ fn add_distribution_and_distribute_reward() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     assert_eq!(
         env.auths(),
         [(
-            manager.clone(),
+            admin.clone(),
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     staking.address.clone(),
                     Symbol::new(&env, "create_distribution_flow"),
-                    (&manager.clone(), reward_token.address.clone()).into_val(&env),
+                    (
+                        &admin.clone(),
+                        reward_token.address.clone(),
+                        BytesN::from_array(&env, &[1; 32]),
+                        10u32,
+                        100i128,
+                        1i128
+                    )
+                        .into_val(&env),
                 )),
                 sub_invocations: std::vec![],
             }
@@ -59,15 +74,18 @@ fn add_distribution_and_distribute_reward() {
 
     // bond tokens for user to enable distribution for him
     lp_token.mint(&user, &1000);
+    staking.bond(&user, &1000);
+
+    // simulate moving forward 60 days for the full APR multiplier
     env.ledger().with_mut(|li| {
-        li.timestamp = ONE_DAY;
+        li.timestamp = SIXTY_DAYS;
     });
 
-    staking.bond(&user, &1000);
+    let staking_rewards = staking.query_distribution(&reward_token.address).unwrap();
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &ONE_DAY,
+        &SIXTY_DAYS,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
@@ -82,24 +100,29 @@ fn add_distribution_and_distribute_reward() {
                     staking.address.clone(),
                     Symbol::new(&env, "fund_distribution"),
                     (
-                        ONE_DAY,
+                        SIXTY_DAYS,
                         reward_duration,
                         reward_token.address.clone(),
                         reward_amount as i128
                     )
                         .into_val(&env),
                 )),
-                sub_invocations: std::vec![
-                    (AuthorizedInvocation {
+                sub_invocations: std::vec![AuthorizedInvocation {
+                    function: AuthorizedFunction::Contract((
+                        staking_rewards.clone(), // Repeat the fund_distribution call
+                        Symbol::new(&env, "fund_distribution"),
+                        (SIXTY_DAYS, reward_duration, reward_amount as i128).into_val(&env),
+                    )),
+                    sub_invocations: std::vec![AuthorizedInvocation {
                         function: AuthorizedFunction::Contract((
                             reward_token.address.clone(),
                             symbol_short!("transfer"),
-                            (&admin, &staking.address.clone(), reward_amount as i128)
+                            (&admin, &staking_rewards.clone(), reward_amount as i128)
                                 .into_val(&env)
                         )),
                         sub_invocations: std::vec![],
-                    }),
-                ],
+                    },],
+                },],
             }
         ),]
     );
@@ -111,7 +134,7 @@ fn add_distribution_and_distribute_reward() {
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = ONE_DAY + reward_duration;
+        li.timestamp = SIXTY_DAYS + reward_duration;
     });
     staking.distribute_rewards();
     assert_eq!(
@@ -144,11 +167,11 @@ fn add_distribution_and_distribute_reward() {
 fn two_distributions() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
     let reward_token_2 = deploy_token_contract(&env, &admin);
@@ -158,12 +181,26 @@ fn two_distributions() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
-    staking.create_distribution_flow(&manager, &reward_token_2.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token_2.address,
+        &BytesN::from_array(&env, &[2; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -171,18 +208,19 @@ fn two_distributions() {
 
     // bond tokens for user to enable distribution for him
     lp_token.mint(&user, &1000);
-    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     staking.bond(&user, &1000);
+    // simulate moving forward 60 days for the full APR multiplier
+    env.ledger().with_mut(|li| li.timestamp = SIXTY_DAYS);
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &ONE_DAY,
+        &SIXTY_DAYS,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
     staking.fund_distribution(
-        &ONE_DAY,
+        &SIXTY_DAYS,
         &reward_duration,
         &reward_token_2.address,
         &((reward_amount * 2) as i128),
@@ -264,6 +302,7 @@ fn two_distributions() {
 fn four_users_with_different_stakes() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
@@ -271,7 +310,6 @@ fn four_users_with_different_stakes() {
     let user3 = Address::generate(&env);
     let user4 = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -281,20 +319,23 @@ fn four_users_with_different_stakes() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
 
     // bond tokens for users; each user has a different amount staked
-    env.ledger().with_mut(|li| {
-        li.timestamp = ONE_WEEK;
-    });
-
     lp_token.mint(&user, &1000);
     staking.bond(&user, &1000);
     lp_token.mint(&user2, &2000);
@@ -304,19 +345,21 @@ fn four_users_with_different_stakes() {
     lp_token.mint(&user4, &4000);
     staking.bond(&user4, &4000);
 
-    let eight_days = ONE_WEEK + ONE_DAY;
-    env.ledger().with_mut(|li| li.timestamp = eight_days);
+    // simulate moving forward 60 days for the full APR multiplier
+    env.ledger().with_mut(|li| {
+        li.timestamp = SIXTY_DAYS;
+    });
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &eight_days,
+        &SIXTY_DAYS,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = eight_days + 600;
+        li.timestamp += 600;
     });
     staking.distribute_rewards();
 
@@ -385,12 +428,12 @@ fn four_users_with_different_stakes() {
 fn two_users_one_starts_after_distribution_begins() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let user2 = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -400,23 +443,31 @@ fn two_users_one_starts_after_distribution_begins() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
 
     // first user bonds before distribution started
     lp_token.mint(&user, &1000);
-    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     staking.bond(&user, &1000);
+    // simulate moving forward 60 days for the full APR multiplier
+    env.ledger().with_mut(|li| li.timestamp = SIXTY_DAYS);
 
     let reward_duration = 600;
     staking.fund_distribution(
-        &ONE_DAY,
+        &SIXTY_DAYS,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
@@ -445,8 +496,9 @@ fn two_users_one_starts_after_distribution_begins() {
     lp_token.mint(&user2, &1000);
     staking.bond(&user2, &1000);
 
+    // Second user bonded later; we again simulate moving his stakes up to 60 days
     env.ledger().with_mut(|li| {
-        li.timestamp += 300;
+        li.timestamp += SIXTY_DAYS;
     });
     staking.distribute_rewards();
 
@@ -486,12 +538,12 @@ fn two_users_one_starts_after_distribution_begins() {
 fn two_users_both_bonds_after_distribution_starts() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let user2 = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -500,30 +552,35 @@ fn two_users_both_bonds_after_distribution_starts() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
 
-    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
-
-    let reward_duration = 600;
+    let reward_duration = SIXTY_DAYS * 2;
     staking.fund_distribution(
-        &ONE_DAY,
+        &0,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
 
-    env.ledger().with_mut(|li| {
-        li.timestamp += 200;
-    });
     lp_token.mint(&user, &1000);
     staking.bond(&user, &1000);
+    env.ledger().with_mut(|li| {
+        li.timestamp = SIXTY_DAYS;
+    });
 
     staking.distribute_rewards();
 
@@ -535,51 +592,23 @@ fn two_users_both_bonds_after_distribution_starts() {
                 &env,
                 WithdrawableReward {
                     reward_address: reward_token.address.clone(),
-                    reward_amount: 33_333
+                    reward_amount: 50_000
                 }
             ]
         }
     );
 
     // user2 starts staking after the distribution has begun
-    env.ledger().with_mut(|li| {
-        li.timestamp += 200;
-    });
     lp_token.mint(&user2, &1000);
     staking.bond(&user2, &1000);
-
-    staking.distribute_rewards();
-    assert_eq!(
-        staking.query_withdrawable_rewards(&user),
-        WithdrawableRewardsResponse {
-            rewards: vec![
-                &env,
-                WithdrawableReward {
-                    reward_address: reward_token.address.clone(),
-                    reward_amount: 49_999
-                }
-            ]
-        }
-    );
-    assert_eq!(
-        staking.query_withdrawable_rewards(&user2),
-        WithdrawableRewardsResponse {
-            rewards: vec![
-                &env,
-                WithdrawableReward {
-                    reward_address: reward_token.address.clone(),
-                    reward_amount: 16_666
-                }
-            ]
-        }
-    );
-
+    // we move time to the end of the distribution
     env.ledger().with_mut(|li| {
-        li.timestamp += 200;
+        li.timestamp = SIXTY_DAYS * 2;
     });
-    staking.distribute_rewards();
 
-    // first user should get 75_000, second user 25_000 since he joined at the half time
+    staking.distribute_rewards();
+    // user 1 was the only who bonded for the first half time
+    // and then he had 50% for the second half
     assert_eq!(
         staking.query_withdrawable_rewards(&user),
         WithdrawableRewardsResponse {
@@ -587,7 +616,7 @@ fn two_users_both_bonds_after_distribution_starts() {
                 &env,
                 WithdrawableReward {
                     reward_address: reward_token.address.clone(),
-                    reward_amount: 66_666
+                    reward_amount: 75_000
                 }
             ]
         }
@@ -599,27 +628,26 @@ fn two_users_both_bonds_after_distribution_starts() {
                 &env,
                 WithdrawableReward {
                     reward_address: reward_token.address.clone(),
-                    reward_amount: 33_333
+                    reward_amount: 25_000
                 }
             ]
         }
     );
 
     staking.withdraw_rewards(&user);
-    assert_eq!(reward_token.balance(&user), 66_666);
+    assert_eq!(reward_token.balance(&user), 75_000);
     staking.withdraw_rewards(&user2);
-    assert_eq!(reward_token.balance(&user2), 33_333);
+    assert_eq!(reward_token.balance(&user2), 25_000);
 }
 
 #[test]
-#[should_panic(expected = "Stake: Fund distribution: Not reward curve exists")]
+#[should_panic(expected = "Stake: Fund distribution: No distribution for this reward token exists")]
 fn fund_rewards_without_establishing_distribution() {
     let env = Env::default();
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -629,7 +657,7 @@ fn fund_rewards_without_establishing_distribution() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
@@ -642,11 +670,11 @@ fn fund_rewards_without_establishing_distribution() {
 fn try_to_withdraw_rewards_without_bonding() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -655,11 +683,18 @@ fn try_to_withdraw_rewards_without_bonding() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -704,14 +739,15 @@ fn try_to_withdraw_rewards_without_bonding() {
 }
 
 #[test]
-#[should_panic(expected = "Stake: Fund distribution: Fund distribution start time is too early")]
+// Error #9 at stake_rewards: InvalidTime = 9
+#[should_panic(expected = "Error(Contract, #9)")]
 fn fund_distribution_starting_before_current_timestamp() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -720,11 +756,18 @@ fn fund_distribution_starting_before_current_timestamp() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -743,14 +786,15 @@ fn fund_distribution_starting_before_current_timestamp() {
 }
 
 #[test]
-#[should_panic(expected = "Stake: Fund distribution: minimum reward amount not reached")]
+// Error #6 at stake_rewards: MinRewardNotEnough = 6
+#[should_panic(expected = "Error(Contract, #6)")]
 fn fund_distribution_with_reward_below_required_minimum() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -760,11 +804,18 @@ fn fund_distribution_with_reward_below_required_minimum() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     reward_token.mint(&admin, &10);
 
@@ -780,11 +831,11 @@ fn fund_distribution_with_reward_below_required_minimum() {
 fn calculate_apr() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -794,23 +845,26 @@ fn calculate_apr() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = ONE_DAY;
-    });
-
     // whole year of distribution
     let reward_duration = 60 * 60 * 24 * 365;
     staking.fund_distribution(
-        &ONE_DAY,
+        &SIXTY_DAYS,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
@@ -836,8 +890,12 @@ fn calculate_apr() {
         li.timestamp += ONE_DAY;
     });
     staking.bond(&user, &1000);
+    // simulate moving forward 60 days for the full APR multiplier
+    env.ledger().with_mut(|li| {
+        li.timestamp = SIXTY_DAYS;
+    });
 
-    // 100k rewards distributed for the whole year gives 100% APR
+    // 100k rewards distributed for the 10 months gives ~120% APR
     assert_eq!(
         staking.query_annualized_rewards(),
         AnnualizedRewardsResponse {
@@ -845,7 +903,7 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_str(&env, "100000.975274725274725274")
+                    amount: String::from_str(&env, "119672.131147540983606557")
                 }
             ]
         }
@@ -855,7 +913,7 @@ fn calculate_apr() {
     reward_token.mint(&admin, &(reward_amount as i128));
 
     staking.fund_distribution(
-        &(2 * &ONE_DAY),
+        &(2 * &SIXTY_DAYS),
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
@@ -869,7 +927,7 @@ fn calculate_apr() {
                 &env,
                 AnnualizedReward {
                     asset: reward_token.address.clone(),
-                    amount: String::from_str(&env, "149727")
+                    amount: String::from_str(&env, "150000")
                 }
             ]
         }
@@ -898,19 +956,26 @@ fn add_distribution_should_fail_when_not_authorized() {
         &50u32,
     );
 
-    staking.create_distribution_flow(&Address::generate(&env), &reward_token.address);
+    staking.create_distribution_flow(
+        &Address::generate(&env),
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 }
 
 #[test]
 fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user_1 = Address::generate(&env);
     let user_2 = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -919,11 +984,18 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
@@ -932,12 +1004,15 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
     lp_token.mint(&user_1, &1_000);
     lp_token.mint(&user_2, &1_000);
 
-    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     staking.bond(&user_1, &1_000);
     staking.bond(&user_2, &1_000);
+
+    // simulate moving forward 60 days for the full APR multiplier
+    env.ledger().with_mut(|li| li.timestamp = SIXTY_DAYS);
+
     let reward_duration = 10_000;
     staking.fund_distribution(
-        &ONE_DAY,
+        &SIXTY_DAYS,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
@@ -976,7 +1051,7 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
             ]
         }
     );
-    staking.unbond(&user_1, &1_000, &ONE_DAY);
+    staking.unbond(&user_1, &1_000, &0);
     assert_eq!(
         staking.query_withdrawable_rewards(&user_1),
         WithdrawableRewardsResponse {
@@ -1025,11 +1100,11 @@ fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
 fn test_bond_withdraw_unbond() {
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -1038,35 +1113,46 @@ fn test_bond_withdraw_unbond() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
     let reward_amount: u128 = 100_000;
     reward_token.mint(&admin, &(reward_amount as i128));
 
     lp_token.mint(&user, &1_000);
-    env.ledger().with_mut(|li| li.timestamp = ONE_DAY);
     staking.bond(&user, &1_000);
+
+    // simulate moving forward 60 days for the full APR multiplier
+    env.ledger().with_mut(|li| {
+        li.timestamp = SIXTY_DAYS;
+    });
 
     let reward_duration = 10_000;
 
     staking.fund_distribution(
-        &ONE_DAY,
+        &SIXTY_DAYS,
         &reward_duration,
         &reward_token.address,
         &(reward_amount as i128),
     );
 
     env.ledger().with_mut(|li| {
-        li.timestamp = ONE_DAY + reward_duration;
+        li.timestamp += reward_duration;
     });
 
     staking.distribute_rewards();
 
-    staking.unbond(&user, &1_000, &ONE_DAY);
+    staking.unbond(&user, &1_000, &0);
 
     assert_eq!(
         staking.query_withdrawable_rewards(&user),
@@ -1096,7 +1182,9 @@ fn test_bond_withdraw_unbond() {
     );
 }
 
-#[should_panic(expected = "Stake: Add distribution: Distribution already added")]
+#[should_panic(
+    expected = "Stake: Create distribution flow: Distribution for this reward token exists!"
+)]
 #[test]
 fn panic_when_adding_same_distribution_twice() {
     let env = Env::default();
@@ -1104,7 +1192,6 @@ fn panic_when_adding_same_distribution_twice() {
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -1113,15 +1200,30 @@ fn panic_when_adding_same_distribution_twice() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &50u32,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 }
 
-#[should_panic(expected = "Stake: Fund distribution: Curve complexity validation failed")]
+// Error #12 at stake_rewards: InvalidMaxComplexity = 12
+#[should_panic(expected = "Error(Contract, #12)")]
 #[test]
 fn panic_when_funding_distribution_with_curve_too_complex() {
     const DISTRIBUTION_MAX_COMPLEXITY: u32 = 3;
@@ -1131,10 +1233,10 @@ fn panic_when_funding_distribution_with_curve_too_complex() {
 
     let env = Env::default();
     env.mock_all_auths();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
 
@@ -1143,23 +1245,145 @@ fn panic_when_funding_distribution_with_curve_too_complex() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &owner,
+        &admin,
         &DISTRIBUTION_MAX_COMPLEXITY,
     );
 
-    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
+    );
 
-    reward_token.mint(&admin, &3000);
+    reward_token.mint(&admin, &10000);
 
     staking.fund_distribution(&0, &FIVE_MINUTES, &reward_token.address, &1000);
     staking.fund_distribution(&FIVE_MINUTES, &TEN_MINUTES, &reward_token.address, &1000);
+    staking.fund_distribution(&TEN_MINUTES, &ONE_WEEK, &reward_token.address, &1000);
+    staking.fund_distribution(
+        &(ONE_WEEK + 1),
+        &(ONE_WEEK + 3),
+        &reward_token.address,
+        &1000,
+    );
+    staking.fund_distribution(
+        &(ONE_WEEK + 3),
+        &(ONE_WEEK + 5),
+        &reward_token.address,
+        &1000,
+    );
+    staking.fund_distribution(
+        &(ONE_WEEK + 6),
+        &(ONE_WEEK + 7),
+        &reward_token.address,
+        &1000,
+    );
+    staking.fund_distribution(
+        &(ONE_WEEK + 8),
+        &(ONE_WEEK + 9),
+        &reward_token.address,
+        &1000,
+    );
+}
 
-    // assert just to prove that we have 2 successful fund distributions
-    assert_eq!(
-        staking.query_undistributed_rewards(&reward_token.address),
-        2000
+#[test]
+fn multiple_equal_users_with_different_multipliers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &admin,
+        &50u32,
+    );
+    staking.create_distribution_flow(
+        &admin,
+        &reward_token.address,
+        &BytesN::from_array(&env, &[1; 32]),
+        &10,
+        &100,
+        &1,
     );
 
-    // uh-oh fail
-    staking.fund_distribution(&TEN_MINUTES, &ONE_WEEK, &reward_token.address, &1000);
+    // first user bonds at timestamp 0
+    // he will get 100% of his rewards
+    let user1 = Address::generate(&env);
+    lp_token.mint(&user1, &10_000);
+    staking.bond(&user1, &10_000);
+
+    let fifteen_days = 3600 * 24 * 15;
+    env.ledger().with_mut(|li| {
+        li.timestamp = fifteen_days;
+    });
+
+    // user2 will receive 75% of his reward
+    let user2 = Address::generate(&env);
+    lp_token.mint(&user2, &10_000);
+    staking.bond(&user2, &10_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = fifteen_days * 2;
+    });
+
+    // user3 will receive 50% of his reward
+    let user3 = Address::generate(&env);
+    lp_token.mint(&user3, &10_000);
+    staking.bond(&user3, &10_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = fifteen_days * 3;
+    });
+
+    // user4 will receive 25% of his reward
+    let user4 = Address::generate(&env);
+    lp_token.mint(&user4, &10_000);
+    staking.bond(&user4, &10_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = fifteen_days * 4;
+    });
+
+    reward_token.mint(&admin, &1_000_000);
+    // reward distribution starts at the latest timestamp and lasts just 1 second
+    // the point is to prove that the multiplier works correctly
+    staking.fund_distribution(&(fifteen_days * 4), &1, &reward_token.address, &1_000_000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp += 1;
+    });
+
+    staking.distribute_rewards();
+
+    // The way it works - contract will treat all the funds as distributed, and the amount
+    // that was not sent due to low staking bonus stays on the contract
+
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        0
+    );
+    assert_eq!(
+        staking.query_distributed_rewards(&reward_token.address),
+        1_000_000
+    );
+
+    staking.withdraw_rewards(&user1);
+    assert_eq!(reward_token.balance(&user1), 250_000);
+    staking.withdraw_rewards(&user2);
+    assert_eq!(reward_token.balance(&user2), 187_500);
+    staking.withdraw_rewards(&user3);
+    assert_eq!(reward_token.balance(&user3), 125_000);
+    staking.withdraw_rewards(&user4);
+    assert_eq!(reward_token.balance(&user4), 62_500);
 }
