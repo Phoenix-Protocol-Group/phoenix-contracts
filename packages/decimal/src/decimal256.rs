@@ -220,12 +220,12 @@ impl Decimal256 {
         Decimal256(result)
     }
 
-    pub fn mul_u128(&self, env: &Env, other: u128) -> Self {
+    pub fn mul_u128(&self, env: &Env, other: u128) -> U256 {
         if self == &Decimal256::zero(&env) || other == 0u128 {
-            return Decimal256::zero(&env)
+            return U256::from_u128(&env, 0u128)
         }
         let other = U256::from_u128(&env, other);
-        Decimal256::raw(other.mul(&self.0).div(&U256::from_u128(env, 1_000_000_000_000_000_000)))
+        other.mul(&self.0).div(&U256::from_u128(env, 1_000_000_000_000_000_000))
     }
 
     #[allow(dead_code)]
