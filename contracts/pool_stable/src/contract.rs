@@ -1110,11 +1110,11 @@ pub fn compute_offer_amount(
 
     let offer_amount = new_offer_pool - offer_pool;
 
-    let ask_before_commission = convert_u128_to_i128(
-        Decimal256::new(env, ask_amount)
-            .mul(env, &inv_one_minus_commission)
-            .to_u128_with_precision(ask_pool_precision as i32),
-    );
+    let ask_before_commission = inv_one_minus_commission
+        .mul_u128(env, ask_amount)
+        .to_u128()
+        .expect("cannot convert to u128");
+
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = if offer_amount > ask_amount {
         offer_amount - ask_amount
@@ -1125,7 +1125,7 @@ pub fn compute_offer_amount(
 
     let commission_amount = convert_u128_to_i128(
         commission_rate
-            .mul_u128(env, convert_i128_to_u128(ask_before_commission))
+            .mul_u128(env, ask_before_commission)
             .to_u128()
             .expect("cannot convert to u128"),
     );
