@@ -364,6 +364,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 panic_with_error!(&env, ContractError::LowLiquidity);
             }
 
+            soroban_sdk::testutils::arbitrary::std::dbg!(share);
             share
         } else {
             let initial_invariant = compute_d(
@@ -391,12 +392,21 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 .expect("Pool stable: provide_liquidity: conversion to u128 failed")
                 - initial_invariant;
 
-            convert_i128_to_u128(total_shares)
-                * (Decimal256::new(&env, invariant_delta).mul_u128(&env, initial_invariant))
-                    .to_u128()
-                    .expect("Pool stable: provide_liquidity: conversion to u128 failed")
+            (Decimal256::raw(U256::from_u128(&env, invariant_delta)).div(
+                &env,
+                Decimal256::raw(U256::from_u128(&env, initial_invariant)),
+            ))
+            .mul_u128(&env, convert_i128_to_u128(total_shares))
+            .to_u128()
+            .expect("cannot convert to u128")
+            // the above is like this below, but first we do the Decimal division and then we
+            // multiply by total shares, I hope it's okay
+            //convert_i128_to_u128(
+            //    total_shares * (Decimal::new(invariant_delta) / Decimal::new(initial_invariant)),
+            //)
         };
 
+        soroban_sdk::testutils::arbitrary::std::dbg!("PROVIDING LIQUIDITY", shares);
         if let Some(min_shares) = min_shares_to_receive {
             if shares < min_shares {
                 log!(
