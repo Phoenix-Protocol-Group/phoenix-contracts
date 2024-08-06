@@ -155,6 +155,8 @@ impl StakingRewardsTrait for StakingRewards {
         sender.require_auth();
 
         let config = get_config(&env);
+        // only Staking contract which deployed this one can call this method
+        config.staking_contract.require_auth();
 
         let mut distribution = get_distribution(&env, &config.reward_token);
         let last_stake = stakes.stakes.last().unwrap();
@@ -182,6 +184,8 @@ impl StakingRewardsTrait for StakingRewards {
         sender.require_auth();
 
         let config = get_config(&env);
+        // only Staking contract which deployed this one can call this method
+        config.staking_contract.require_auth();
 
         // check for rewards and withdraw them
         let found_rewards: WithdrawableRewardResponse =
@@ -217,6 +221,8 @@ impl StakingRewardsTrait for StakingRewards {
 
     fn distribute_rewards(env: Env, total_staked_amount: i128) {
         let config = get_config(&env);
+        // only Staking contract which deployed this one can call this method
+        config.staking_contract.require_auth();
 
         let calc_power_result = calc_power(
             &config,
@@ -276,6 +282,8 @@ impl StakingRewardsTrait for StakingRewards {
     fn withdraw_rewards(env: Env, sender: Address, stakes: BondingInfo) {
         env.events().publish(("withdraw_rewards", "user"), &sender);
         let config = get_config(&env);
+        // only Staking contract which deployed this one can call this method
+        config.staking_contract.require_auth();
 
         // get distribution data for the given reward
         let mut distribution = get_distribution(&env, &config.reward_token);
@@ -327,6 +335,8 @@ impl StakingRewardsTrait for StakingRewards {
         admin.require_auth();
 
         let config = get_config(&env);
+        // only Staking contract which deployed this one can call this method
+        config.staking_contract.require_auth();
 
         // Load previous reward curve; it must exist if the distribution exists
         // In case of first time funding, it will be a constant 0 curve
