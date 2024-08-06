@@ -221,11 +221,13 @@ impl Decimal256 {
     }
 
     pub fn mul_u128(&self, env: &Env, other: u128) -> U256 {
-        if self == &Decimal256::zero(&env) || other == 0u128 {
-            return U256::from_u128(&env, 0u128)
+        if self == &Decimal256::zero(env) || other == 0u128 {
+            return U256::from_u128(env, 0u128);
         }
-        let other = U256::from_u128(&env, other);
-        other.mul(&self.0).div(&U256::from_u128(env, 1_000_000_000_000_000_000))
+        let other = U256::from_u128(env, other);
+        other
+            .mul(&self.0)
+            .div(&U256::from_u128(env, 1_000_000_000_000_000_000))
     }
 
     #[allow(dead_code)]
@@ -255,7 +257,13 @@ mod tests {
     fn decimal256_raw() {
         let env = Env::default();
         let value = 300u128;
-        assert_eq!(Decimal256::raw(&env, value).0.to_u128().unwrap(), value);
+        assert_eq!(
+            Decimal256::raw(U256::from_u128(&env, value))
+                .0
+                .to_u128()
+                .unwrap(),
+            value
+        );
     }
 
     #[test]
@@ -1248,5 +1256,39 @@ mod tests {
         let a = Decimal256::percent(&env, 50);
 
         assert_eq!(a.decimal_places(), 18);
+    }
+
+    #[test]
+    fn multiply_decimal256_with_u128() {
+        let env = Env::default();
+
+        let decimal256 = Decimal256::new(&env, 100 * 1_000_000_000_000_000_000u128);
+        let result = decimal256.mul_u128(&env, 10);
+        assert_eq!(U256::from_u128(&env, 1_000), result);
+
+        // `u128::MAX` is 340_282_366_920_938_463_463_374_607_431_768_211_455
+        // leaving `big_decimal256` to be the exact same value
+        // multiplying that number by `1_000_000` it becomes
+        // `340_282_366_920_938_463_463_374_607_431_768_211_455_000_000` and then
+        // dividing by `1_000_000_000_000_000_000` making it look like the expected
+        let big_decimal256 = Decimal256::new(&env, u128::MAX);
+        let result = big_decimal256.mul_u128(&env, 1_000_000);
+        assert_eq!(
+            U256::from_u128(&env, 340_282_366_920_938_463_463_374_607),
+            result
+        );
+    }
+
+    #[test]
+    fn multiply_decimal256_with_zero_values() {
+        let env = Env::default();
+
+        let decimal256 = Decimal256::new(&env, 1_000_000_000_000_000_000u128);
+        let result = decimal256.mul_u128(&env, 0);
+        assert_eq!(U256::from_u128(&env, 0), result);
+
+        let zero_decimal = Decimal256::new(&env, 0u128);
+        let result = zero_decimal.mul_u128(&env, 1_000);
+        assert_eq!(U256::from_u128(&env, 0), result);
     }
 }
