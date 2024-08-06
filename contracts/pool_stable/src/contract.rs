@@ -386,22 +386,15 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .expect("Pool stable: provide_liquidity: conversion to u128 failed");
 
             // Calculate the proportion of the change in invariant
-            let invariant_delta = convert_u128_to_i128(
-                new_invariant
-                    .to_u128()
-                    .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                    - initial_invariant,
-            );
-
-            let initial_invariant = convert_u128_to_i128(initial_invariant);
+            let invariant_delta = new_invariant
+                .to_u128()
+                .expect("Pool stable: provide_liquidity: conversion to u128 failed")
+                - initial_invariant;
 
             convert_i128_to_u128(total_shares)
-                * (Decimal256::new(&env, convert_i128_to_u128(invariant_delta))
-                    .mul(
-                        &env,
-                        &Decimal256::new(&env, convert_i128_to_u128(initial_invariant)),
-                    )
-                    .to_u128_with_precision(token_a_decimals as i32))
+                * (Decimal256::new(&env, invariant_delta).mul_u128(&env, initial_invariant))
+                    .to_u128()
+                    .expect("Pool stable: provide_liquidity: conversion to u128 failed")
         };
 
         if let Some(min_shares) = min_shares_to_receive {
@@ -521,18 +514,18 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             U256::from_u128(&env, convert_i128_to_u128(total_shares)),
         );
 
-        soroban_sdk::testutils::arbitrary::std::dbg!();
         let return_amount_a = convert_u128_to_i128(
-            Decimal256::new(&env, convert_i128_to_u128(pool_balance_a))
-                .mul(&env, &share_ratio)
-                .to_u128_with_precision(precision as i32),
+            share_ratio
+                .mul_u128(&env, convert_i128_to_u128(pool_balance_a))
+                .to_u128()
+                .expect("cannot convert to u128"),
         );
 
-        soroban_sdk::testutils::arbitrary::std::dbg!();
         let return_amount_b = convert_u128_to_i128(
-            Decimal256::new(&env, convert_i128_to_u128(pool_balance_b))
-                .mul(&env, &share_ratio)
-                .to_u128_with_precision(precision as i32),
+            share_ratio
+                .mul_u128(&env, convert_i128_to_u128(pool_balance_b))
+                .to_u128()
+                .expect("cannot convert to u128"),
         );
 
         //FIXME: we panic here
@@ -789,9 +782,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let token_a_address = pool_info.asset_a.address;
         let token_b_address = pool_info.asset_b.address;
 
-        let token_a_precision = token_contract::Client::new(&env, &token_a_address).decimals();
-        let token_b_precision = token_contract::Client::new(&env, &token_b_address).decimals();
-
         let mut share_ratio = Decimal256::zero(&env);
         if total_share != 0 {
             soroban_sdk::testutils::arbitrary::std::dbg!("INSIDE, ");
@@ -802,32 +792,25 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             );
         }
 
-        soroban_sdk::testutils::arbitrary::std::dbg!(
-            token_a_amount,
-            token_b_amount,
-            &share_ratio.to_u128_with_precision(token_a_precision as i32)
-        );
-        //FIXME: issue might be with the way we multiply two decimals
-        let amount_a = convert_u128_to_i128(
-            Decimal256::new(&env, convert_i128_to_u128(token_a_amount))
-                .mul(&env, &share_ratio)
-                .to_u128_with_precision(token_a_precision as i32),
-        );
+        let amount_a = share_ratio
+            .mul_u128(&env, convert_i128_to_u128(token_a_amount))
+            .to_u128()
+            .expect("cannot convert to u128");
 
-        let amount_b = convert_u128_to_i128(
-            Decimal256::new(&env, convert_i128_to_u128(token_b_amount))
-                .mul(&env, &share_ratio)
-                .to_u128_with_precision(token_b_precision as i32),
-        );
+        let amount_b = share_ratio
+            .mul_u128(&env, convert_i128_to_u128(token_b_amount))
+            .to_u128()
+            .expect("cannot convert to u128");
+
         soroban_sdk::testutils::arbitrary::std::dbg!(amount_a, amount_b);
         (
             Asset {
                 address: token_a_address,
-                amount: amount_a,
+                amount: convert_u128_to_i128(amount_a),
             },
             Asset {
                 address: token_b_address,
-                amount: amount_b,
+                amount: convert_u128_to_i128(amount_b),
             },
         )
     }
@@ -1075,11 +1058,18 @@ pub fn compute_swap(
     };
     let return_amount = convert_u128_to_i128(return_amount);
     let commission_amount = convert_u128_to_i128(
-        Decimal256::new(env, convert_i128_to_u128(return_amount))
-            .mul(env, &commission_rate)
-            .to_u128_with_precision(greatest_precision as i32),
+        commission_rate
+            .mul_u128(env, convert_i128_to_u128(return_amount))
+            .to_u128()
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Compute Swap: cannot convert U256 to u128"
+                );
+                panic_with_error!(&env, ContractError::CannotConvertToU128)
+            }),
     );
-    // Because of issue #211
+
     let return_amount = return_amount - commission_amount;
 
     (return_amount, spread_amount, commission_amount)

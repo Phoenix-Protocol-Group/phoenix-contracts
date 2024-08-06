@@ -1,7 +1,7 @@
 extern crate std;
 
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation, Ledger};
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, U256};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
