@@ -1,10 +1,9 @@
-extern crate std;
-
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation, Ledger};
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, String};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Asset, PoolResponse, SimulateReverseSwapResponse, SimulateSwapResponse};
+use crate::tests::setup::install_and_deploy_token_contract;
 use soroban_decimal::Decimal256;
 
 #[test]
@@ -563,4 +562,118 @@ fn simple_swap_with_low_user_fee_should_panic() {
         &None::<u64>,
         &Some(50), // user wants to swap for %.5
     );
+}
+
+#[test]
+fn simple_swap_with_big_numbers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &admin.clone(),
+        &18,
+        &String::from_str(&env, "EURO Coin"),
+        &String::from_str(&env, "EURC"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &admin.clone(),
+        &18,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    token1.mint(&user1, &1_001_000_000_000_000_000);
+    token2.mint(&user1, &1_001_000_000_000_000_000);
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    pool.provide_liquidity(
+        &user1,
+        &1_000_000_000_000_000_000,
+        &1_000_000_000_000_000_000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
+
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    // true means "selling A token"
+    // selling just one token with 1% max spread allowed
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    let spread = 100i64; // 1% maximum spread allowed
+    pool.swap(
+        &user1,
+        &token1.address,
+        &1_000_000_000_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        &Some(150),
+    );
+
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1_000_001i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999_999i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 1999000i128,
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+    assert_eq!(token1.balance(&user1), 999); // -1 from the swap
+    assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
+
+    // false means selling B token
+    // this time 100 units
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    let output_amount = pool.swap(
+        &user1,
+        &token2.address,
+        &1_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        &None,
+    );
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    let result = pool.query_pool_info();
+    assert_eq!(output_amount, 1000);
+    assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
+    assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
 }
