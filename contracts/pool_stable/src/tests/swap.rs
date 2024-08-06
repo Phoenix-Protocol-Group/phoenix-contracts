@@ -1,6 +1,5 @@
 extern crate std;
 
-use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation, Ledger};
 use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, IntoVal, U256};
 
@@ -232,14 +231,10 @@ fn swap_with_high_fee() {
         }
     );
     // 10% fees are deducted from the swap result and sent to fee recipient address
-    let fees = convert_u128_to_i128(
-        Decimal256::percent(&env, 10)
-            .mul(
-                &env,
-                &Decimal256::new(&env, convert_i128_to_u128(output_amount)),
-            )
-            .to_u128_with_precision(token1.decimals() as i32),
-    );
+    let fees = Decimal256::percent(&env, 10)
+        .mul_u128(&env, output_amount as u128)
+        .to_u128()
+        .unwrap() as i128;
     assert_eq!(token2.balance(&user1), output_amount - fees);
     assert_eq!(token2.balance(&fee_recipient), fees);
 }
@@ -296,14 +291,9 @@ fn swap_simulation_even_pool() {
     let output_amount = 98_582i128;
     let fees = dbg!(Decimal256::percent(&env, 10).mul_u128(&env, output_amount as u128));
 
-    let fees = dbg!(convert_u128_to_i128(
-        Decimal256::percent(&env, 10)
-            .mul(
-                &env,
-                &Decimal256::new(&env, convert_i128_to_u128(output_amount)),
-            )
-            .to_u128_with_precision(token1.decimals() as i32),
-    ));
+    let fees = Decimal256::percent(&env, 10)
+        .mul(&env, &Decimal256::new(&env, output_amount as u128))
+        .to_u128_with_precision(token1.decimals() as i32) as i128;
     // assert_eq!(
     //     dbg!(result),
     //     dbg!(SimulateSwapResponse {
