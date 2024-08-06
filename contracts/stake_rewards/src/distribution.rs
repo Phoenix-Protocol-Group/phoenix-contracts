@@ -252,7 +252,7 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
 
     for stake in stakes.iter() {
         // Calculate the number of days the stake has been active
-        let days_active = (dbg!(current_date) - dbg!(stake.stake_timestamp)) / SECONDS_PER_DAY;
+        let days_active = (current_date - stake.stake_timestamp) / SECONDS_PER_DAY;
 
         // If stake is younger than 60 days, calculate its power
         let power = if days_active < 60 {

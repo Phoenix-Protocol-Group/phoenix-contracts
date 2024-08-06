@@ -289,62 +289,62 @@ fn swap_simulation_even_pool() {
 
     // This is Stable Swap LP with constant product formula
     let output_amount = 98_582i128;
-    let fees = dbg!(Decimal256::percent(&env, 10).mul_u128(&env, output_amount as u128));
+    let fees = Decimal256::percent(&env, 10).mul_u128(&env, output_amount as u128);
 
     let fees = Decimal256::percent(&env, 10)
         .mul(&env, &Decimal256::new(&env, output_amount as u128))
         .to_u128_with_precision(token1.decimals() as i32) as i128;
-    // assert_eq!(
-    //     dbg!(result),
-    //     dbg!(SimulateSwapResponse {
-    //         ask_amount: output_amount - fees,
-    //         // spread_amount: any difference between the offer and return amounts since it's 1:1
-    //         spread_amount: offer_amount - output_amount,
-    //         commission_amount: fees,
-    //         total_return: offer_amount,
-    //     })
-    // );
+    assert_eq!(
+        result,
+        SimulateSwapResponse {
+            ask_amount: output_amount - fees,
+            // spread_amount: any difference between the offer and return amounts since it's 1:1
+            spread_amount: offer_amount - output_amount,
+            commission_amount: fees,
+            total_return: offer_amount,
+        }
+    );
 
-    // // now reverse swap querie should give us similar results
-    // // User wants to buy output_amount of tokens
-    // let result = pool.simulate_reverse_swap(&token1.address, &(output_amount - fees));
-    // assert_eq!(
-    //     result,
-    //     SimulateReverseSwapResponse {
-    //         // offer_amount,
-    //         offer_amount: 100_000i128,
-    //         // spread_amount: any difference between the offer and return amounts since it's 1:1
-    //         spread_amount: offer_amount + fees - output_amount,
-    //         // spread_amount: 11276,
-    //         // commission_amount: fees,
-    //         commission_amount: 9858,
-    //     }
-    // );
+    // now reverse swap querie should give us similar results
+    // User wants to buy output_amount of tokens
+    let result = pool.simulate_reverse_swap(&token1.address, &(output_amount - fees));
+    assert_eq!(
+        result,
+        SimulateReverseSwapResponse {
+            // offer_amount,
+            offer_amount: 100_000i128,
+            // spread_amount: any difference between the offer and return amounts since it's 1:1
+            spread_amount: offer_amount + fees - output_amount,
+            // spread_amount: 11276,
+            // commission_amount: fees,
+            commission_amount: 9858,
+        }
+    );
 
-    // // false indicates selling the other asset - transaction goes the same
-    // let result = pool.simulate_swap(&token2.address, &offer_amount);
-    // assert_eq!(
-    //     result,
-    //     SimulateSwapResponse {
-    //         ask_amount: output_amount - fees,
-    //         spread_amount: offer_amount - output_amount,
-    //         commission_amount: fees,
-    //         total_return: offer_amount,
-    //     }
-    // );
+    // false indicates selling the other asset - transaction goes the same
+    let result = pool.simulate_swap(&token2.address, &offer_amount);
+    assert_eq!(
+        result,
+        SimulateSwapResponse {
+            ask_amount: output_amount - fees,
+            spread_amount: offer_amount - output_amount,
+            commission_amount: fees,
+            total_return: offer_amount,
+        }
+    );
 
-    // // again reverse swap should show the same values
-    // let result = pool.simulate_reverse_swap(&token2.address, &(output_amount - fees));
-    // assert_eq!(
-    //     result,
-    //     SimulateReverseSwapResponse {
-    //         // offer_amount,
-    //         offer_amount: 100_000i128,
-    //         spread_amount: offer_amount + fees - output_amount,
-    //         // commission_amount: fees,
-    //         commission_amount: fees,
-    //     }
-    // );
+    // again reverse swap should show the same values
+    let result = pool.simulate_reverse_swap(&token2.address, &(output_amount - fees));
+    assert_eq!(
+        result,
+        SimulateReverseSwapResponse {
+            // offer_amount,
+            offer_amount: 100_000i128,
+            spread_amount: offer_amount + fees - output_amount,
+            // commission_amount: fees,
+            commission_amount: fees,
+        }
+    );
 }
 
 #[test]
