@@ -240,7 +240,6 @@ fn swap_with_high_fee() {
 }
 
 #[test]
-//FIXME: fails because of precision
 fn swap_simulation_even_pool() {
     let env = Env::default();
     env.mock_all_auths();
@@ -289,11 +288,11 @@ fn swap_simulation_even_pool() {
 
     // This is Stable Swap LP with constant product formula
     let output_amount = 98_582i128;
-    let fees = Decimal256::percent(&env, 10).mul_u128(&env, output_amount as u128);
-
     let fees = Decimal256::percent(&env, 10)
-        .mul(&env, &Decimal256::new(&env, output_amount as u128))
-        .to_u128_with_precision(token1.decimals() as i32) as i128;
+        .mul_u128(&env, output_amount as u128)
+        .to_u128()
+        .unwrap() as i128;
+
     assert_eq!(
         result,
         SimulateSwapResponse {

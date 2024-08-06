@@ -1085,12 +1085,11 @@ pub fn compute_offer_amount(
 
     let one_minus_commission = Decimal256::one(env) - commission_rate.clone();
     let inv_one_minus_commission = Decimal256::one(env).div(env, one_minus_commission);
-    //let before_commission = inv_one_minus_commission * convert_u128_to_i128(ask_amount);
-    let before_commission = convert_u128_to_i128(
-        inv_one_minus_commission
-            .mul(env, &Decimal256::new(env, ask_amount))
-            .to_u128_with_precision(ask_pool_precision as i32),
-    );
+
+    let before_commission = inv_one_minus_commission
+        .mul_u128(env, ask_amount)
+        .to_u128()
+        .expect("cannot convert to u128");
 
     let greatest_precision = get_greatest_precision(env);
 
@@ -1098,7 +1097,7 @@ pub fn compute_offer_amount(
         env,
         amp as u128,
         scale_value(
-            ask_pool - convert_i128_to_u128(before_commission),
+            ask_pool - before_commission,
             greatest_precision,
             DECIMAL_PRECISION,
         ),
@@ -1124,11 +1123,11 @@ pub fn compute_offer_amount(
         0
     };
 
-    // Calculate the commission amount
-    let commission_amount: i128 = convert_u128_to_i128(
-        Decimal256::new(env, convert_i128_to_u128(ask_before_commission))
-            .mul(env, &commission_rate)
-            .to_u128_with_precision(ask_pool_precision as i32),
+    let commission_amount = convert_u128_to_i128(
+        commission_rate
+            .mul_u128(env, convert_i128_to_u128(ask_before_commission))
+            .to_u128()
+            .expect("cannot convert to u128"),
     );
 
     (
