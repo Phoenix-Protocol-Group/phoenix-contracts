@@ -27,8 +27,8 @@ impl Decimal256 {
         Decimal256(U256::from_u128(env, value))
     }
 
-    pub fn raw(env: &Env, value: u128) -> Self {
-        Self(U256::from_u128(env, value))
+    pub fn raw(value: U256) -> Self {
+        Self(value)
     }
 
     pub fn decimal_fractional(env: &Env) -> U256 {
@@ -218,6 +218,14 @@ impl Decimal256 {
             .mul(&other.numerator())
             .div(&U256::from_u128(env, 1_000_000_000_000_000_000));
         Decimal256(result)
+    }
+
+    pub fn mul_u128(&self, env: &Env, other: u128) -> Self {
+        if self == &Decimal256::zero(&env) || other == 0u128 {
+            return Decimal256::zero(&env)
+        }
+        let other = U256::from_u128(&env, other);
+        Decimal256::raw(other.mul(&self.0).div(&U256::from_u128(env, 1_000_000_000_000_000_000)))
     }
 
     #[allow(dead_code)]
