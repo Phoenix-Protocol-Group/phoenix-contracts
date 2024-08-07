@@ -561,7 +561,7 @@ fn simple_swap_with_low_user_fee_should_panic() {
 }
 
 #[test]
-fn simple_swap_with_big_numbers() {
+fn simple_swap_with_18_decimal() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -662,4 +662,76 @@ fn simple_swap_with_big_numbers() {
     assert_eq!(output_amount, 1_000_000_000_001);
     assert_eq!(token1.balance(&user1), 1_000_000_000_000_001);
     assert_eq!(token2.balance(&user1), 999_999_999_857_143);
+}
+
+#[test]
+#[allow(clippy::inconsistent_digit_grouping)]
+fn couple_users_simple_swap_with_18_decimals_and_big_numbers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &admin.clone(),
+        &18,
+        &String::from_str(&env, "EURO Coin"),
+        &String::from_str(&env, "EURC"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &admin.clone(),
+        &18,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let user1 = Address::generate(&env);
+    let user2 = Address::generate(&env);
+
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    token1.mint(&user1, &10_000_000_001000000000000000);
+    token2.mint(&user1, &10_000_000_001000000000000000);
+    token1.mint(&user2, &10_000_000_001000000000000000);
+    token2.mint(&user2, &10_000_000_001000000000000000);
+
+    pool.provide_liquidity(
+        &user1,
+        &10_000_000_000000000000000000,
+        &10_000_000_000000000000000000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
+
+    let spread = 100i64;
+    pool.swap(
+        &user1,
+        &token1.address,
+        &1_000_000_000000000000000000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        &Some(150),
+    );
 }
