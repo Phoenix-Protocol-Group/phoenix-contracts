@@ -88,10 +88,11 @@ pub fn compute_d(env: &Env, amp: u128, pools: &[u128]) -> U256 {
 
     // Newton's method to approximate D
     for _ in 0..ITERATIONS {
-        let d_product = d.pow(3).div(&U256::from_u128(
-            env,
-            amount_a_times_coins * amount_b_times_coins,
-        ));
+        let d_product = d.pow(3).div(
+            &(U256::from_u128(env, amount_a_times_coins)
+                .mul(&U256::from_u128(env, amount_b_times_coins))),
+        );
+        soroban_sdk::testutils::arbitrary::std::dbg!();
         d_previous = d.clone();
         d = calculate_step(env, &d, &leverage, &sum_x, &d_product);
         // Equality with the precision of 1e-6
