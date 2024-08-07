@@ -907,6 +907,7 @@ fn provide_liqudity_with_user_specified_minimum_lp_shares_should_panic_when_user
 }
 
 #[test]
+#[allow(clippy::inconsistent_digit_grouping)]
 fn provide_and_withdraw_liquidity_with_18_decimal_tokens_and_large_numbers() {
     let env = Env::default();
     env.mock_all_auths();
