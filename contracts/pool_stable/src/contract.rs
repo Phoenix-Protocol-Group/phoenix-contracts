@@ -530,7 +530,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 .expect("cannot convert to u128"),
         );
 
-        //FIXME: we panic here
         if return_amount_a < min_a || return_amount_b < min_b {
             log!(
                 &env,

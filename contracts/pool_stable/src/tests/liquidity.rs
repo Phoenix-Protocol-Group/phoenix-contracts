@@ -3,10 +3,12 @@ extern crate std;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    Address, Env, IntoVal, Symbol,
+    Address, Env, IntoVal, String, Symbol,
 };
 
-use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
+use super::setup::{
+    deploy_stable_liquidity_pool_contract, deploy_token_contract, install_and_deploy_token_contract,
+};
 use crate::{
     storage::{Asset, PoolResponse},
     token_contract,
@@ -902,4 +904,121 @@ fn provide_liqudity_with_user_specified_minimum_lp_shares_should_panic_when_user
 
     // Here the user provides `1_000` of each token and expects more than the pool allocation
     pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &Some(1_001));
+}
+
+#[test]
+fn provide_and_withdraw_liquidity_with_18_decimal_tokens_and_large_numbers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let user1 = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &admin.clone(),
+        &18,
+        &String::from_str(&env, "EURO Coin"),
+        &String::from_str(&env, "EURC"),
+    );
+
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &admin.clone(),
+        &18,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let token_share = token_contract::Client::new(&env, &share_token_address);
+
+    token1.mint(&user1, &11_000_000_000000000000000000);
+    token2.mint(&user1, &11_000_000_000000000000000000);
+    // tokens 1 & 2 have 18 decimal digits, meaning we provide liquidity of 10_000_000
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    pool.provide_liquidity(
+        &user1,
+        &10_000_000_000000000000000000,
+        &10_000_000_000000000000000000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+
+    assert_eq!(token_share.balance(&user1), 19_999_999_999999999999999000);
+    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token1.balance(&user1), 1_000_000_000000000000000000);
+    assert_eq!(token1.balance(&pool.address), 10_000_000_000000000000000000);
+    assert_eq!(token2.balance(&user1), 1_000_000_000000000000000000);
+    assert_eq!(token2.balance(&pool.address), 10_000_000_000000000000000000);
+
+    let share_amount = 500_000_000000000000000000; // half of the shares
+    let min_a = 200_000_000000000000000000;
+    let min_b = 200_000_000000000000000000;
+    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &None::<u64>);
+
+    assert_eq!(token_share.balance(&user1), 19_499_999_999999999999999000);
+    assert_eq!(token_share.balance(&pool.address), 0); // sanity check
+    assert_eq!(token1.balance(&user1), 1_250_000_000000000000000000);
+    assert_eq!(token1.balance(&pool.address), 9_750_000_000000000000000000);
+    assert_eq!(token2.balance(&user1), 1_250_000_000000000000000000);
+    assert_eq!(token2.balance(&pool.address), 9_750_000_000000000000000000);
+
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 9750000000000000000000000i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 9750000000000000000000000i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 19499999999999999999999000i128,
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+
+    // clear the pool
+    pool.withdraw_liquidity(
+        &user1,
+        &19_499_999_999999999999999000,
+        &5_000_000_000000000000000000,
+        &5_000_000_000000000000000000,
+        &None::<u64>,
+    );
+
+    assert_eq!(token_share.balance(&user1), 0);
+    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token1.balance(&user1), 11_000_000_000000000000000000);
+    assert_eq!(token1.balance(&pool.address), 0);
+    assert_eq!(token2.balance(&user1), 11_000_000_000000000000000000);
+    assert_eq!(token2.balance(&pool.address), 0);
 }
