@@ -343,19 +343,22 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &env,
             amp as u128,
             &[
-                scale_value(new_balance_a, token_a_decimals, DECIMAL_PRECISION),
-                scale_value(new_balance_b, token_b_decimals, DECIMAL_PRECISION),
+                Decimal256::raw(U256::from_u128(
+                    &env,
+                    scale_value(new_balance_a, token_a_decimals, DECIMAL_PRECISION),
+                )),
+                Decimal256::raw(U256::from_u128(
+                    &env,
+                    scale_value(new_balance_b, token_b_decimals, DECIMAL_PRECISION),
+                )),
             ],
-        );
+        )
+        .to_u128_with_precision(greatest_precision as i32);
 
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
             let divisor = 10u128.pow(DECIMAL_PRECISION - greatest_precision);
-            let share = (new_invariant
-                .to_u128()
-                .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                / divisor)
-                - MINIMUM_LIQUIDITY_AMOUNT;
+            let share = (new_invariant / divisor) - MINIMUM_LIQUIDITY_AMOUNT;
             if share == 0 {
                 log!(
                     &env,
@@ -370,26 +373,28 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 &env,
                 amp as u128,
                 &[
-                    scale_value(
-                        convert_i128_to_u128(old_balance_a),
-                        token_a_decimals,
-                        DECIMAL_PRECISION,
-                    ),
-                    scale_value(
-                        convert_i128_to_u128(old_balance_b),
-                        token_b_decimals,
-                        DECIMAL_PRECISION,
-                    ),
+                    Decimal256::raw(U256::from_u128(
+                        &env,
+                        scale_value(
+                            convert_i128_to_u128(old_balance_a),
+                            token_a_decimals,
+                            DECIMAL_PRECISION,
+                        ),
+                    )),
+                    Decimal256::raw(U256::from_u128(
+                        &env,
+                        scale_value(
+                            convert_i128_to_u128(old_balance_b),
+                            token_b_decimals,
+                            DECIMAL_PRECISION,
+                        ),
+                    )),
                 ],
             )
-            .to_u128()
-            .expect("Pool stable: provide_liquidity: conversion to u128 failed");
+            .to_u128_with_precision(greatest_precision as i32);
 
             // Calculate the proportion of the change in invariant
-            let invariant_delta = new_invariant
-                .to_u128()
-                .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                - initial_invariant;
+            let invariant_delta = new_invariant - initial_invariant;
 
             (Decimal256::raw(U256::from_u128(&env, invariant_delta)).div(
                 &env,
@@ -1032,14 +1037,23 @@ pub fn compute_swap(
     let new_ask_pool = calc_y(
         env,
         amp as u128,
-        scale_value(
-            offer_pool + offer_amount,
-            greatest_precision,
-            DECIMAL_PRECISION,
-        ),
+        Decimal256::raw(U256::from_u128(
+            env,
+            scale_value(
+                offer_pool + offer_amount,
+                greatest_precision,
+                DECIMAL_PRECISION,
+            ),
+        )),
         &[
-            scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
-            scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
+            Decimal256::raw(U256::from_u128(
+                env,
+                scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
+            )),
+            Decimal256::raw(U256::from_u128(
+                env,
+                scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
+            )),
         ],
         greatest_precision,
     );
@@ -1102,14 +1116,23 @@ pub fn compute_offer_amount(
     let new_offer_pool = calc_y(
         env,
         amp as u128,
-        scale_value(
-            ask_pool - before_commission,
-            greatest_precision,
-            DECIMAL_PRECISION,
-        ),
+        Decimal256::raw(U256::from_u128(
+            env,
+            scale_value(
+                ask_pool - before_commission,
+                greatest_precision,
+                DECIMAL_PRECISION,
+            ),
+        )),
         &[
-            scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
-            scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
+            Decimal256::raw(U256::from_u128(
+                env,
+                scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
+            )),
+            Decimal256::raw(U256::from_u128(
+                env,
+                scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
+            )),
         ],
         greatest_precision,
     );
