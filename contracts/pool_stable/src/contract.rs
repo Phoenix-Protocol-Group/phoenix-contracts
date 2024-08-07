@@ -364,7 +364,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 panic_with_error!(&env, ContractError::LowLiquidity);
             }
 
-            soroban_sdk::testutils::arbitrary::std::dbg!(share);
             share
         } else {
             let initial_invariant = compute_d(
@@ -406,7 +405,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             //)
         };
 
-        soroban_sdk::testutils::arbitrary::std::dbg!("PROVIDING LIQUIDITY", shares);
         if let Some(min_shares) = min_shares_to_receive {
             if shares < min_shares {
                 log!(
@@ -499,7 +497,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let config = get_config(&env);
 
         let share_token_client = token_contract::Client::new(&env, &config.share_token);
-        let precision = share_token_client.decimals();
 
         share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
 
