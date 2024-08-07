@@ -956,8 +956,8 @@ fn provide_and_withdraw_liquidity_with_18_decimal_tokens_and_large_numbers() {
 
     token1.mint(&user1, &11_000_000_000000000000000000);
     token2.mint(&user1, &11_000_000_000000000000000000);
+
     // tokens 1 & 2 have 18 decimal digits, meaning we provide liquidity of 10_000_000
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     pool.provide_liquidity(
         &user1,
         &10_000_000_000000000000000000,
@@ -966,7 +966,6 @@ fn provide_and_withdraw_liquidity_with_18_decimal_tokens_and_large_numbers() {
         &None::<u64>,
         &None::<u128>,
     );
-    soroban_sdk::testutils::arbitrary::std::dbg!();
 
     assert_eq!(token_share.balance(&user1), 19_999_999_999999999999999000);
     assert_eq!(token_share.balance(&pool.address), 0);
@@ -1022,4 +1021,188 @@ fn provide_and_withdraw_liquidity_with_18_decimal_tokens_and_large_numbers() {
     assert_eq!(token1.balance(&pool.address), 0);
     assert_eq!(token2.balance(&user1), 11_000_000_000000000000000000);
     assert_eq!(token2.balance(&pool.address), 0);
+}
+
+#[test]
+#[allow(clippy::inconsistent_digit_grouping)]
+fn multiple_users_provide_and_withdraw_liquidity_with_18_decimal_tokens_and_large_numbers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let user1 = Address::generate(&env);
+    let user2 = Address::generate(&env);
+    let user3 = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        &admin.clone(),
+        &18,
+        &String::from_str(&env, "EURO Coin"),
+        &String::from_str(&env, "EURC"),
+    );
+
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        &admin.clone(),
+        &18,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let token_share = token_contract::Client::new(&env, &share_token_address);
+
+    token1.mint(&user1, &10_000_000_000000000000000000);
+    token2.mint(&user1, &10_000_000_000000000000000000);
+    token1.mint(&user2, &10_000_000_000000000000000000);
+    token2.mint(&user2, &10_000_000_000000000000000000);
+    token1.mint(&user3, &10_000_000_000000000000000000);
+    token2.mint(&user3, &10_000_000_000000000000000000);
+
+    // tokens 1 & 2 have 18 decimal digits, meaning we provide liquidity of 10_000_000
+    // user1 provides liquidity
+    pool.provide_liquidity(
+        &user1,
+        &10_000_000_000000000000000000,
+        &10_000_000_000000000000000000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
+
+    assert_eq!(token_share.balance(&user1), 19_999_999_999999999999999000);
+    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token1.balance(&user1), 0);
+    assert_eq!(token1.balance(&pool.address), 10_000_000_000000000000000000);
+    assert_eq!(token2.balance(&user1), 0);
+    assert_eq!(token2.balance(&pool.address), 10_000_000_000000000000000000);
+
+    // user2 provides liquidity
+    pool.provide_liquidity(
+        &user2,
+        &10_000_000_000000000000000000,
+        &10_000_000_000000000000000000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
+
+    assert_eq!(token_share.balance(&user2), 19_999_999_999999999999999000);
+    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token1.balance(&user2), 0);
+    assert_eq!(token1.balance(&pool.address), 20_000_000_000000000000000000);
+    assert_eq!(token2.balance(&user2), 0);
+    assert_eq!(token2.balance(&pool.address), 20_000_000_000000000000000000);
+
+    // user1 withdraws ~1/4 the shares
+    let share_amount = 5_000_000_000000000000000000;
+    let min_a = 2_500_000_000000000000000000;
+    let min_b = 2_500_000_000000000000000000;
+    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &None::<u64>);
+
+    assert_eq!(token_share.balance(&user1), 14_999_999_999999999999999000);
+    assert_eq!(token_share.balance(&pool.address), 0); // sanity check
+    assert_eq!(token1.balance(&user1), 2_500_000_000000000000000000);
+    assert_eq!(token1.balance(&pool.address), 17_500_000_000000000000000000);
+    assert_eq!(token2.balance(&user1), 2_500_000_000000000000000000);
+    assert_eq!(token2.balance(&pool.address), 17_500_000_000000000000000000);
+
+    // user3 provides liquidity
+    pool.provide_liquidity(
+        &user3,
+        &5_000_000_000000000000000000,
+        &5_000_000_000000000000000000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
+
+    assert_eq!(token_share.balance(&user3), 9_999_999_999999999989999428);
+    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token1.balance(&user3), 5_000_000_000000000000000000);
+    assert_eq!(token1.balance(&pool.address), 22_500_000_000000000000000000);
+    assert_eq!(token2.balance(&user3), 5_000_000_000000000000000000);
+    assert_eq!(token2.balance(&pool.address), 22_500_000_000000000000000000);
+
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 22_500_000_000000000000000000,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 22_500_000_000000000000000000,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 44_999_999_999999999989997428,
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+
+    // users start withdrawing shares
+    pool.withdraw_liquidity(
+        &user1,
+        &14_999_999_999999999999999000,
+        &5_000_000_000000000000000000,
+        &5_000_000_000000000000000000,
+        &None::<u64>,
+    );
+
+    pool.withdraw_liquidity(
+        &user2,
+        &19_999_999_999999999999999000,
+        &9_000_000_000000000000000000,
+        &9_000_000_000000000000000000,
+        &None::<u64>,
+    );
+
+    pool.withdraw_liquidity(
+        &user3,
+        &9_999_999_999999999989999428,
+        &4_900_000_000000000000000000,
+        &4_900_000_000000000000000000,
+        &None::<u64>,
+    );
+
+    assert_eq!(token_share.balance(&pool.address), 0);
+
+    assert_eq!(token_share.balance(&user1), 0);
+    assert_eq!(token_share.balance(&user2), 0);
+    assert_eq!(token_share.balance(&user3), 0);
+
+    assert_eq!(token1.balance(&pool.address), 0);
+    assert_eq!(token2.balance(&pool.address), 0);
+
+    assert_eq!(token1.balance(&user1), 9_999_999_999999999992500000);
+    assert_eq!(token2.balance(&user1), 9_999_999_999999999992500000);
+    assert_eq!(token1.balance(&user2), 9_999_999_999999999994999999);
+    assert_eq!(token2.balance(&user2), 9_999_999_999999999994999999);
+    assert_eq!(token1.balance(&user3), 10_000_000_000000000012500001);
+    assert_eq!(token2.balance(&user3), 10_000_000_000000000012500001);
 }
