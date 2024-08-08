@@ -12,19 +12,6 @@ pub const AMP_PRECISION: u64 = 100;
 /// The maximum number of calculation steps for Newton's method.
 const ITERATIONS: u8 = 64;
 
-pub fn scale_value(atomics: u128, decimal_places: u32, target_decimal_places: u32) -> u128 {
-    const TEN: u128 = 10;
-    if decimal_places < target_decimal_places {
-        let factor = TEN.pow(target_decimal_places - decimal_places);
-        atomics
-            .checked_mul(factor)
-            .expect("Multiplication overflow")
-    } else {
-        let factor = TEN.pow(decimal_places - target_decimal_places);
-        atomics.checked_div(factor).expect("Division overflow")
-    }
-}
-
 fn abs_diff(a: &Decimal256, b: &Decimal256) -> Decimal256 {
     if a < b {
         b.clone() - a.clone()
@@ -148,6 +135,7 @@ pub(crate) fn calc_y(
     xp: &[Decimal256],
     target_precision: u32,
 ) -> u128 {
+    soroban_sdk::testutils::arbitrary::std::dbg!("START CALC_Y");
     let n_coins = Decimal256::raw(U256::from_u128(env, 2000000000000000000));
     let tol = Decimal256::raw(U256::from_u128(env, 1000000000000));
 
@@ -175,14 +163,23 @@ pub(crate) fn calc_y(
     let mut y = d.clone();
     for _ in 0..ITERATIONS {
         y_prev = y.clone();
-        y = y.clone().pow(env, 2) + c.div(env, y.mul(env, &n_coins) + b.clone() - d.clone());
+        y = (y.clone().pow(env, 2) + c.clone())
+            .div(env, y.mul(env, &n_coins) + b.clone() - d.clone());
 
+        soroban_sdk::testutils::arbitrary::std::dbg!(
+            y.clone().to_u128_with_precision(DECIMAL_PRECISION as i32),
+            y_prev
+                .clone()
+                .to_u128_with_precision(DECIMAL_PRECISION as i32),
+            tol.to_u128_with_precision(DECIMAL_PRECISION as i32),
+        );
         if abs_diff(&y, &y_prev) <= tol {
             let divisor = 10u128.pow(DECIMAL_PRECISION - target_precision);
             return y.to_u128_with_precision(target_precision as i32) / divisor;
         }
     }
 
+    soroban_sdk::testutils::arbitrary::std::dbg!();
     // Should definitely converge in 64 iterations.
     log!(&env, "Pool Stable: calc_y: y is not converging");
     panic_with_error!(&env, ContractError::CalcYErr);

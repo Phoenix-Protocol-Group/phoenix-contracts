@@ -6,7 +6,7 @@ use soroban_sdk::{
 
 use crate::{
     error::ContractError,
-    math::{calc_y, compute_current_amp, compute_d, scale_value, AMP_PRECISION},
+    math::{calc_y, compute_current_amp, compute_d, AMP_PRECISION},
     stake_contract,
     storage::{
         get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
@@ -343,17 +343,11 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &env,
             amp as u128,
             &[
-                Decimal256::raw(U256::from_u128(
-                    &env,
-                    scale_value(new_balance_a, token_a_decimals, DECIMAL_PRECISION),
-                )),
-                Decimal256::raw(U256::from_u128(
-                    &env,
-                    scale_value(new_balance_b, token_b_decimals, DECIMAL_PRECISION),
-                )),
+                Decimal256::from_atomics(&env, new_balance_a, token_a_decimals as i32),
+                Decimal256::from_atomics(&env, new_balance_b, token_b_decimals as i32),
             ],
         )
-        .to_u128_with_precision(greatest_precision as i32);
+        .to_u128_with_precision(DECIMAL_PRECISION as i32);
 
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
@@ -373,25 +367,19 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 &env,
                 amp as u128,
                 &[
-                    Decimal256::raw(U256::from_u128(
+                    Decimal256::from_atomics(
                         &env,
-                        scale_value(
-                            convert_i128_to_u128(old_balance_a),
-                            token_a_decimals,
-                            DECIMAL_PRECISION,
-                        ),
-                    )),
-                    Decimal256::raw(U256::from_u128(
+                        convert_i128_to_u128(old_balance_a),
+                        token_a_decimals as i32,
+                    ),
+                    Decimal256::from_atomics(
                         &env,
-                        scale_value(
-                            convert_i128_to_u128(old_balance_b),
-                            token_b_decimals,
-                            DECIMAL_PRECISION,
-                        ),
-                    )),
+                        convert_i128_to_u128(old_balance_b),
+                        token_b_decimals as i32,
+                    ),
                 ],
             )
-            .to_u128_with_precision(greatest_precision as i32);
+            .to_u128_with_precision(DECIMAL_PRECISION as i32);
 
             // Calculate the proportion of the change in invariant
             let invariant_delta = new_invariant - initial_invariant;
@@ -852,7 +840,6 @@ fn do_swap(
             panic_with_error!(&env, ContractError::UserDeclinesPoolFee);
         }
     }
-
     if offer_asset != config.token_a && offer_asset != config.token_b {
         log!(
             &env,
@@ -1037,23 +1024,10 @@ pub fn compute_swap(
     let new_ask_pool = calc_y(
         env,
         amp as u128,
-        Decimal256::raw(U256::from_u128(
-            env,
-            scale_value(
-                offer_pool + offer_amount,
-                greatest_precision,
-                DECIMAL_PRECISION,
-            ),
-        )),
+        Decimal256::from_atomics(env, offer_pool + offer_amount, greatest_precision as i32),
         &[
-            Decimal256::raw(U256::from_u128(
-                env,
-                scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
-            )),
-            Decimal256::raw(U256::from_u128(
-                env,
-                scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
-            )),
+            Decimal256::from_atomics(env, offer_pool, offer_pool_precision as i32),
+            Decimal256::from_atomics(env, ask_pool, ask_pool_precision as i32),
         ],
         greatest_precision,
     );
@@ -1116,23 +1090,10 @@ pub fn compute_offer_amount(
     let new_offer_pool = calc_y(
         env,
         amp as u128,
-        Decimal256::raw(U256::from_u128(
-            env,
-            scale_value(
-                ask_pool - before_commission,
-                greatest_precision,
-                DECIMAL_PRECISION,
-            ),
-        )),
+        Decimal256::from_atomics(env, ask_pool - before_commission, greatest_precision as i32),
         &[
-            Decimal256::raw(U256::from_u128(
-                env,
-                scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
-            )),
-            Decimal256::raw(U256::from_u128(
-                env,
-                scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
-            )),
+            Decimal256::from_atomics(env, offer_pool, offer_pool_precision as i32),
+            Decimal256::from_atomics(env, ask_pool, ask_pool_precision as i32),
         ],
         greatest_precision,
     );
