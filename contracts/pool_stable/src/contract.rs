@@ -1032,6 +1032,7 @@ pub fn compute_swap(
         greatest_precision,
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!(ask_pool, new_ask_pool);
     let return_amount = ask_pool - new_ask_pool;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = if offer_amount > return_amount {

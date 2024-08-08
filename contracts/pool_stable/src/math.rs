@@ -1,6 +1,6 @@
 use soroban_sdk::{log, panic_with_error, Env, U256};
 
-use crate::{error::ContractError, storage::AmplifierParameters};
+use crate::{error::ContractError, storage::AmplifierParameters, DECIMAL_PRECISION};
 
 use soroban_decimal::Decimal256;
 
@@ -114,7 +114,6 @@ fn calculate_step(
 
     let leverage_mul = leverage.mul(env, sum_x);
     let d_p_mul = d_product.mul(env, &n_coins);
-
     //let l_val = leverage_mul + d_p_mul * initial_d;
     //FIXME: maybe not the right order of the mathematical operations
     let l_val = leverage_mul + (d_p_mul.mul(env, initial_d));
@@ -155,15 +154,15 @@ pub(crate) fn calc_y(
 
     //FIXME: might not be the correct order
     //let c = d.pow(3) * amp_prec / (new_amount * N_COINS * N_COINS * leverage);
-    let c = (d.clone().pow(env, 3).mul(env, &amp_prec)).div(
+    let c = d.clone().pow(env, 3).mul(env, &amp_prec).div(
         env,
-        new_amount
+        (new_amount
             .mul(env, &n_coins)
             .mul(env, &n_coins)
-            .mul(env, &leverage),
+            .mul(env, &leverage)),
     );
     //let b = new_amount + d * amp_prec / leverage;
-    let b = new_amount + (d.mul(env, &amp_prec.div(env, leverage)));
+    let b = new_amount + d.mul(env, &amp_prec.div(env, leverage));
 
     // Solve for y by approximating: y**2 + b*y = c
     let mut y_prev;
@@ -173,10 +172,12 @@ pub(crate) fn calc_y(
 
         //y = (y.pow(2) + c) / (y * N_COINS + b - d);
         y = (y.clone().pow(env, 2) + (c.clone()))
-            .div(env, y.mul(env, &n_coins) + (b.clone()) - (d.clone()));
+            .div(env, y.mul(env, &n_coins) + b.clone() - d.clone());
 
         if abs_diff(&y, &y_prev) <= tol {
-            return y.to_u128_with_precision(target_precision as i32);
+            //FIXME: `divisor` might not be necessary
+            let divisor = 10u128.pow(DECIMAL_PRECISION - target_precision);
+            return y.to_u128_with_precision(target_precision as i32) / divisor;
         }
     }
 
