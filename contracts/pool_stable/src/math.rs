@@ -1,9 +1,15 @@
+
+use std::ops::{Add, Sub};
+
 use soroban_sdk::{log, panic_with_error, Env, U256};
 
-use crate::{error::ContractError, storage::AmplifierParameters, DECIMAL_PRECISION};
+use crate::{error::ContractError, storage::AmplifierParameters};
+
 use soroban_decimal::Decimal256;
 
 // TODO: Those parameters will be used for updating AMP function later
+#[allow(dead_code)]
+pub const MAX_AMP: u64 = 1_000_000;
 #[allow(dead_code)]
 pub const MAX_AMP_CHANGE: u64 = 10;
 #[allow(dead_code)]
@@ -19,6 +25,12 @@ fn abs_diff(a: &Decimal256, b: &Decimal256) -> Decimal256 {
         a.clone() - b.clone()
     }
 }
+
+/// N = 2
+//pub const N_COINS: Decimal = Decimal::raw(2000000000000000000);
+/// 1e-6
+//pub const TOL: Decimal = Decimal::raw(1000000000000);
+
 /// Compute the current pool amplification coefficient (AMP).
 pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -> u64 {
     let block_time = env.ledger().timestamp();
@@ -48,44 +60,31 @@ pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -
 ///
 /// A * sum(x_i) * n**n + D = A * D * n**n + D**(n+1) / (n**n * prod(x_i))
 pub fn compute_d(env: &Env, amp: u128, pools: &[Decimal256]) -> Decimal256 {
-    let tol = Decimal256::raw(U256::from_u128(env, 1000000000000));
+    let n_coins = Decimal256::raw(U256::from_u128(&env, 2000000000000000000));
+    let tol = Decimal256::raw(U256::from_u128(&env, 1000000000000));
 
-    let n_coins = Decimal256::raw(U256::from_u128(env, 2000000000000000000));
-    let leverage = Decimal256::from_ratio(
-        env,
-        U256::from_u128(env, amp),
-        U256::from_u128(env, AMP_PRECISION as u128),
-    )
-    .mul(env, &n_coins);
-    // let leverage = U256::from_u128(env, (amp / AMP_PRECISION as u128) * N_COINS_PRECISION);
-    let amount_a_times_coins = pools[0].mul(env, &n_coins);
-    let amount_b_times_coins = pools[1].mul(env, &n_coins);
+    let leverage = Decimal256::from_ratio(&env, U256::from_u128(&env, amp), U256::from_u128(&env, AMP_PRECISION as u128)).mul(&env, &n_coins);
+    let amount_a_times_coins = pools[0].mul(&env, &n_coins);
+    let amount_b_times_coins = pools[1].mul(&env, &n_coins);
 
-    // because of copy trait
-    let pool_idx_zero = pools[0].clone();
-    let pool_idx_one = pools[1].clone();
-    let sum_x = pool_idx_zero + pool_idx_one; // sum(x_i), a.k.a S
-    if sum_x.eq(&Decimal256::zero(env)) {
-        return Decimal256::zero(env);
+    let sum_x = pools[0] + pools[1]; // sum(x_i), a.k.a S
+    if sum_x == Decimal256::zero(&env) {
+        return Decimal256::zero(&env);
     }
 
     let mut d_previous: Decimal256;
-    let mut d: Decimal256 = sum_x.clone();
+    let mut d: Decimal256 = sum_x;
 
     // Newton's method to approximate D
     for _ in 0..ITERATIONS {
-        let d_product = d
-            .clone()
-            .pow(env, 3)
-            .div(env, amount_a_times_coins.mul(env, &amount_b_times_coins));
-        d_previous = d.clone();
-        d = calculate_step(env, &d, &leverage, &sum_x, &d_product);
+        let d_product = d.pow(&env, 3).div(&env, amount_a_times_coins.mul(&env, &amount_b_times_coins));
+        d_previous = d;
+        d = calculate_step(d, leverage, sum_x, d_product);
         // Equality with the precision of 1e-6
         if abs_diff(&d, &d_previous) <= tol {
             return d;
         }
     }
-
     log!(
         &env,
         "Pool Stable: compute_d: Newton method for D failed to converge"
@@ -104,23 +103,22 @@ fn calculate_step(
     sum_x: &Decimal256,
     d_product: &Decimal256,
 ) -> Decimal256 {
-    // (leverage * sum_x + d_product * n_coins)
-    let leverage_mul = leverage.mul(env, sum_x);
-    let n_coins = Decimal256::raw(U256::from_u128(env, 2000000000000000000));
-    let d_p_mul = d_product.mul(env, &n_coins);
+    let n_coins = Decimal256::raw(U256::from_u128(&env, 2000000000000000000));
 
-    let l_val = leverage_mul + (d_p_mul).mul(env, initial_d);
+    let leverage_mul = leverage.mul(&env, sum_x);
+    let d_p_mul = d_product.mul(&env, &n_coins);
 
-    // initial_d * (leverage - 1)
-    let leverage_sub = initial_d.mul(env, &(leverage.clone() - (Decimal256::one(env))));
+    //let l_val = leverage_mul + d_p_mul * initial_d;
+    //FIXME: maybe not the right order of the mathematical operations
+    let l_val = leverage_mul.add(d_p_mul.mul(&env, initial_d));
+    let leverage_sub = initial_d.mul(&env, &(leverage.clone().sub(Decimal256::one(&env))));
+    let n_coins_sum = d_product.mul(&env, &(n_coins.add(Decimal256::one(&env))));
 
-    // d_product * (n_coins + 1)
-    let n_coins_sum = d_product.mul(env, &(n_coins + Decimal256::one(env)));
+    let r_val = leverage_sub.add(n_coins_sum);
 
-    // Calculate the final step value
-    let r_val = leverage_sub + n_coins_sum;
-    l_val.div(env, r_val)
+    l_val.div(&env, r_val)
 }
+
 /// Compute the swap amount `y` in proportion to `x`.
 ///
 /// * **Solve for y**
@@ -131,56 +129,25 @@ fn calculate_step(
 pub(crate) fn calc_y(
     env: &Env,
     amp: u128,
-    new_amount: Decimal256,
-    xp: &[Decimal256],
-    target_precision: u32,
-) -> u128 {
-    soroban_sdk::testutils::arbitrary::std::dbg!("START CALC_Y");
-    let n_coins = Decimal256::raw(U256::from_u128(env, 2000000000000000000));
-    let tol = Decimal256::raw(U256::from_u128(env, 1000000000000));
-
+    new_amount: Decimal,
+    xp: &[Decimal],
+    target_precision: u8,
+) -> i128 {
     let d = compute_d(env, amp, xp);
-    let leverage =
-        Decimal256::from_ratio(env, U256::from_u128(env, amp), U256::from_u128(env, 1u128))
-            .mul(env, &n_coins);
-    let amp_prec = Decimal256::from_ratio(
-        env,
-        U256::from_u128(env, AMP_PRECISION as u128),
-        U256::from_u128(env, 1u128),
-    );
+    let leverage = Decimal::from_ratio(amp as i128, 1u8) * N_COINS;
+    let amp_prec = Decimal::from_ratio(AMP_PRECISION, 1u8);
 
-    let c = d.clone().pow(env, 3).mul(env, &amp_prec).div(
-        env,
-        new_amount
-            .mul(env, &(n_coins.mul(env, &n_coins)))
-            .mul(env, &leverage),
-    );
-
-    let b = new_amount + (d.mul(env, &amp_prec).div(env, leverage));
+    let c = d.pow(3) * amp_prec / (new_amount * N_COINS * N_COINS * leverage);
+    let b = new_amount + d * amp_prec / leverage;
 
     // Solve for y by approximating: y**2 + b*y = c
     let mut y_prev;
-    let mut y = d.clone();
+    let mut y = d;
     for _ in 0..ITERATIONS {
-        y_prev = y.clone();
-        y = (y.clone().pow(env, 2) + c.clone())
-            .div(env, y.mul(env, &n_coins) + b.clone() - d.clone());
-
-        soroban_sdk::testutils::arbitrary::std::dbg!(
-            y.clone().to_u128_with_precision(DECIMAL_PRECISION as i32),
-            y_prev
-                .clone()
-                .to_u128_with_precision(DECIMAL_PRECISION as i32),
-            tol.to_u128_with_precision(DECIMAL_PRECISION as i32),
-        );
-        if abs_diff(&y, &y_prev) <= tol {
-            let divisor = 10u128.pow(DECIMAL_PRECISION - target_precision);
-            return y.to_u128_with_precision(target_precision as i32) / divisor;
+        y_prev = y;
+        y = (y.pow(2) + c) / (y * N_COINS + b - d);
+        if (y - y_prev).abs() <= TOL {
+            return y.to_i128_with_precision(target_precision);
         }
     }
-
-    soroban_sdk::testutils::arbitrary::std::dbg!();
-    // Should definitely converge in 64 iterations.
-    log!(&env, "Pool Stable: calc_y: y is not converging");
-    panic_with_error!(&env, ContractError::CalcYErr);
 }
