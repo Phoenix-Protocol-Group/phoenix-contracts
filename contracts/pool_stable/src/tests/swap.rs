@@ -190,11 +190,9 @@ fn swap_with_high_fee() {
         &None::<u64>,
         &None::<u128>,
     );
-    soroban_sdk::testutils::arbitrary::std::dbg!("PROVIDED");
     let spread = 1_000; // 10% maximum spread allowed
 
     // let's swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
-    soroban_sdk::testutils::arbitrary::std::dbg!("try to swap");
     pool.swap(
         &user1,
         &token1.address,
@@ -204,7 +202,6 @@ fn swap_with_high_fee() {
         &None::<u64>,
         &None,
     );
-    soroban_sdk::testutils::arbitrary::std::dbg!("swapped");
     // This is Stable swap LP with constant product formula
     let output_amount = 98_582i128; // rounding
     let result = pool.query_pool_info();

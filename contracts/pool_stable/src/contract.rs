@@ -1,3 +1,5 @@
+use std::ops::Sub;
+
 use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
@@ -15,10 +17,9 @@ use crate::{
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
         SimulateSwapResponse, StableLiquidityPoolInfo,
     },
-    token_contract, DECIMAL_PRECISION,
+    token_contract,
 };
 use phoenix::{validate_bps, validate_int_parameters};
-//use soroban_decimal::Decimal;
 use soroban_decimal::Decimal256;
 
 // Minimum amount of initial LP shares to mint
@@ -346,14 +347,16 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 Decimal256::from_atomics(&env, new_balance_a, token_a_decimals as i32),
                 Decimal256::from_atomics(&env, new_balance_b, token_b_decimals as i32),
             ],
-        )
-        .to_u128_with_precision(DECIMAL_PRECISION as i32);
+        );
 
         let total_shares = utils::get_total_shares(&env);
+
         let shares = if total_shares == 0 {
-            let divisor = 10u128.pow(DECIMAL_PRECISION - greatest_precision);
-            let share = (new_invariant / divisor) - MINIMUM_LIQUIDITY_AMOUNT;
-            if share == 0 {
+            let share = new_invariant.sub(Decimal256::raw(U256::from_u128(
+                &env,
+                MINIMUM_LIQUIDITY_AMOUNT,
+            )));
+            if share == Decimal256::zero(&env) {
                 log!(
                     &env,
                     "Pool Stable: ProvideLiquidity: Liquidity amount is too low"
@@ -378,25 +381,18 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                         token_b_decimals as i32,
                     ),
                 ],
-            )
-            .to_u128_with_precision(DECIMAL_PRECISION as i32);
+            );
 
             // Calculate the proportion of the change in invariant
-            let invariant_delta = new_invariant - initial_invariant;
+            let invariant_delta = new_invariant - initial_invariant.clone();
 
-            (Decimal256::raw(U256::from_u128(&env, invariant_delta)).div(
+            invariant_delta.div(&env, initial_invariant).mul(
                 &env,
-                Decimal256::raw(U256::from_u128(&env, initial_invariant)),
-            ))
-            .mul_u128(&env, convert_i128_to_u128(total_shares))
-            .to_u128()
-            .expect("cannot convert to u128")
-            // the above is like this below, but first we do the Decimal division and then we
-            // multiply by total shares, I hope it's okay
-            //convert_i128_to_u128(
-            //    total_shares * (Decimal::new(invariant_delta) / Decimal::new(initial_invariant)),
-            //)
+                &Decimal256::raw(U256::from_u128(&env, convert_i128_to_u128(total_shares))),
+            )
         };
+
+        let shares = shares.to_u128_with_precision(greatest_precision as i32);
 
         if let Some(min_shares) = min_shares_to_receive {
             if shares < min_shares {

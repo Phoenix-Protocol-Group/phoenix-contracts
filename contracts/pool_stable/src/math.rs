@@ -1,6 +1,6 @@
 use soroban_sdk::{log, panic_with_error, Env, U256};
 
-use crate::{error::ContractError, storage::AmplifierParameters, DECIMAL_PRECISION};
+use crate::{error::ContractError, storage::AmplifierParameters};
 
 use soroban_decimal::Decimal256;
 
@@ -14,6 +14,8 @@ pub const MIN_AMP_CHANGING_TIME: u64 = 86400;
 pub const AMP_PRECISION: u64 = 100;
 /// The maximum number of calculation steps for Newton's method.
 const ITERATIONS: u8 = 64;
+const N_COINS: u128 = 2_000000000000000000;
+const TOL: u128 = 1_000_000_000_000;
 
 fn abs_diff(a: &Decimal256, b: &Decimal256) -> Decimal256 {
     if a < b {
@@ -57,8 +59,8 @@ pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -
 ///
 /// A * sum(x_i) * n**n + D = A * D * n**n + D**(n+1) / (n**n * prod(x_i))
 pub fn compute_d(env: &Env, amp: u128, pools: &[Decimal256]) -> Decimal256 {
-    let n_coins = Decimal256::raw(U256::from_u128(env, 2000000000000000000));
-    let tol = Decimal256::raw(U256::from_u128(env, 1000000000000));
+    let n_coins = Decimal256::raw(U256::from_u128(env, N_COINS));
+    let tol = Decimal256::raw(U256::from_u128(env, TOL));
 
     let leverage = Decimal256::from_ratio(
         env,
@@ -110,12 +112,11 @@ fn calculate_step(
     sum_x: &Decimal256,
     d_product: &Decimal256,
 ) -> Decimal256 {
-    let n_coins = Decimal256::raw(U256::from_u128(env, 2000000000000000000));
+    let n_coins = Decimal256::raw(U256::from_u128(env, N_COINS));
 
     let leverage_mul = leverage.mul(env, sum_x);
     let d_p_mul = d_product.mul(env, &n_coins);
     //let l_val = leverage_mul + d_p_mul * initial_d;
-    //FIXME: maybe not the right order of the mathematical operations
     let l_val = leverage_mul + (d_p_mul.mul(env, initial_d));
     let leverage_sub = initial_d.mul(env, &(leverage.clone() - (Decimal256::one(env))));
     let n_coins_sum = d_product.mul(env, &(n_coins + Decimal256::one(env)));
@@ -139,8 +140,8 @@ pub(crate) fn calc_y(
     xp: &[Decimal256],
     target_precision: u32,
 ) -> u128 {
-    let n_coins = Decimal256::raw(U256::from_u128(env, 2000000000000000000));
-    let tol = Decimal256::raw(U256::from_u128(env, 1000000000000));
+    let n_coins = Decimal256::raw(U256::from_u128(env, N_COINS));
+    let tol = Decimal256::raw(U256::from_u128(env, TOL));
 
     let d = compute_d(env, amp, xp);
     let leverage =
@@ -152,14 +153,13 @@ pub(crate) fn calc_y(
         U256::from_u128(env, 1u128),
     );
 
-    //FIXME: might not be the correct order
     //let c = d.pow(3) * amp_prec / (new_amount * N_COINS * N_COINS * leverage);
     let c = d.clone().pow(env, 3).mul(env, &amp_prec).div(
         env,
-        (new_amount
+        new_amount
             .mul(env, &n_coins)
             .mul(env, &n_coins)
-            .mul(env, &leverage)),
+            .mul(env, &leverage),
     );
     //let b = new_amount + d * amp_prec / leverage;
     let b = new_amount + d.mul(env, &amp_prec.div(env, leverage));
@@ -175,9 +175,7 @@ pub(crate) fn calc_y(
             .div(env, y.mul(env, &n_coins) + b.clone() - d.clone());
 
         if abs_diff(&y, &y_prev) <= tol {
-            //FIXME: `divisor` might not be necessary
-            let divisor = 10u128.pow(DECIMAL_PRECISION - target_precision);
-            return y.to_u128_with_precision(target_precision as i32) / divisor;
+            return y.to_u128_with_precision(target_precision as i32);
         }
     }
 
