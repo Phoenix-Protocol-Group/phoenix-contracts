@@ -364,7 +364,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 panic_with_error!(&env, ContractError::LowLiquidity);
             }
 
-            share
+            share.to_u128_with_precision(greatest_precision as i32)
         } else {
             let initial_invariant = compute_d(
                 &env,
@@ -386,13 +386,18 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             // Calculate the proportion of the change in invariant
             let invariant_delta = new_invariant - initial_invariant.clone();
 
-            invariant_delta.div(&env, initial_invariant).mul(
-                &env,
-                &Decimal256::raw(U256::from_u128(&env, convert_i128_to_u128(total_shares))),
-            )
+            invariant_delta
+                .div(&env, initial_invariant)
+                .mul(
+                    &env,
+                    &Decimal256::from_atomics(
+                        &env,
+                        convert_i128_to_u128(total_shares),
+                        greatest_precision as i32,
+                    ),
+                )
+                .to_u128_with_precision(greatest_precision as i32)
         };
-
-        let shares = shares.to_u128_with_precision(greatest_precision as i32);
 
         if let Some(min_shares) = min_shares_to_receive {
             if shares < min_shares {
