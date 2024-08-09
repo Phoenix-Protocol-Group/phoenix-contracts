@@ -352,10 +352,12 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let total_shares = utils::get_total_shares(&env);
 
         let shares = if total_shares == 0 {
-            let share = new_invariant.sub(Decimal256::raw(U256::from_u128(
+            let share = new_invariant.sub(Decimal256::from_ratio(
                 &env,
-                MINIMUM_LIQUIDITY_AMOUNT,
-            )));
+                U256::from_u128(&env, MINIMUM_LIQUIDITY_AMOUNT),
+                U256::from_u128(&env, 1u128),
+            ));
+
             if share == Decimal256::zero(&env) {
                 log!(
                     &env,
