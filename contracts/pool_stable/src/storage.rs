@@ -4,7 +4,7 @@ use soroban_sdk::{
 };
 
 use crate::token_contract;
-use soroban_decimal::Decimal;
+use soroban_decimal::Decimal256;
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -57,12 +57,12 @@ pub struct Config {
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
 impl Config {
-    pub fn protocol_fee_rate(&self) -> Decimal {
-        Decimal::bps(self.total_fee_bps)
+    pub fn protocol_fee_rate(&self, env: &Env) -> Decimal256 {
+        Decimal256::bps(env, self.total_fee_bps as u64)
     }
 
-    pub fn max_allowed_slippage(&self) -> Decimal {
-        Decimal::bps(self.max_allowed_slippage_bps)
+    pub fn max_allowed_slippage(&self, env: &Env) -> Decimal256 {
+        Decimal256::bps(env, self.max_allowed_slippage_bps as u64)
     }
 }
 

@@ -1,12 +1,14 @@
+use std::ops::Sub;
+
 use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String,
+    String, U256,
 };
 
 use crate::{
     error::ContractError,
-    math::{calc_y, compute_current_amp, compute_d, scale_value, AMP_PRECISION},
+    math::{calc_y, compute_current_amp, compute_d, AMP_PRECISION},
     stake_contract,
     storage::{
         get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
@@ -15,10 +17,10 @@ use crate::{
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
         SimulateSwapResponse, StableLiquidityPoolInfo,
     },
-    token_contract, DECIMAL_PRECISION,
+    token_contract,
 };
 use phoenix::{validate_bps, validate_int_parameters};
-use soroban_decimal::Decimal;
+use soroban_decimal::Decimal256;
 
 // Minimum amount of initial LP shares to mint
 const MINIMUM_LIQUIDITY_AMOUNT: u128 = 1000;
@@ -345,20 +347,21 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &env,
             amp as u128,
             &[
-                scale_value(new_balance_a, token_a_decimals, DECIMAL_PRECISION),
-                scale_value(new_balance_b, token_b_decimals, DECIMAL_PRECISION),
+                Decimal256::from_atomics(&env, new_balance_a, token_a_decimals as i32),
+                Decimal256::from_atomics(&env, new_balance_b, token_b_decimals as i32),
             ],
         );
 
         let total_shares = utils::get_total_shares(&env);
+
         let shares = if total_shares == 0 {
-            let divisor = 10u128.pow(DECIMAL_PRECISION - greatest_precision);
-            let share = (new_invariant
-                .to_u128()
-                .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                / divisor)
-                - MINIMUM_LIQUIDITY_AMOUNT;
-            if share == 0 {
+            let share = new_invariant.sub(Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, MINIMUM_LIQUIDITY_AMOUNT),
+                U256::from_u128(&env, 1u128),
+            ));
+
+            if share == Decimal256::zero(&env) {
                 log!(
                     &env,
                     "Pool Stable: ProvideLiquidity: Liquidity amount is too low"
@@ -366,39 +369,39 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 panic_with_error!(&env, ContractError::LowLiquidity);
             }
 
-            share
+            share.to_u128_with_precision(greatest_precision as i32)
         } else {
             let initial_invariant = compute_d(
                 &env,
                 amp as u128,
                 &[
-                    scale_value(
+                    Decimal256::from_atomics(
+                        &env,
                         convert_i128_to_u128(old_balance_a),
-                        token_a_decimals,
-                        DECIMAL_PRECISION,
+                        token_a_decimals as i32,
                     ),
-                    scale_value(
+                    Decimal256::from_atomics(
+                        &env,
                         convert_i128_to_u128(old_balance_b),
-                        token_b_decimals,
-                        DECIMAL_PRECISION,
+                        token_b_decimals as i32,
                     ),
                 ],
-            )
-            .to_u128()
-            .expect("Pool stable: provide_liquidity: conversion to u128 failed");
-
-            // Calculate the proportion of the change in invariant
-            let invariant_delta = convert_u128_to_i128(
-                new_invariant
-                    .to_u128()
-                    .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                    - initial_invariant,
             );
 
-            let initial_invariant = convert_u128_to_i128(initial_invariant);
-            convert_i128_to_u128(
-                total_shares * (Decimal::new(invariant_delta) / Decimal::new(initial_invariant)),
-            )
+            // Calculate the proportion of the change in invariant
+            let invariant_delta = new_invariant - initial_invariant.clone();
+
+            invariant_delta
+                .div(&env, initial_invariant)
+                .mul(
+                    &env,
+                    &Decimal256::from_atomics(
+                        &env,
+                        convert_i128_to_u128(total_shares),
+                        greatest_precision as i32,
+                    ),
+                )
+                .to_u128_with_precision(greatest_precision as i32)
         };
 
         if let Some(min_shares) = min_shares_to_receive {
@@ -493,6 +496,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let config = get_config(&env);
 
         let share_token_client = token_contract::Client::new(&env, &config.share_token);
+
         share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
@@ -505,10 +509,25 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             panic_with_error!(env, ContractError::TotalSharesEqualZero);
         }
 
-        let share_ratio = Decimal::from_ratio(share_amount, total_shares);
+        let share_ratio = Decimal256::from_ratio(
+            &env,
+            U256::from_u128(&env, convert_i128_to_u128(share_amount)),
+            U256::from_u128(&env, convert_i128_to_u128(total_shares)),
+        );
 
-        let return_amount_a = pool_balance_a * share_ratio;
-        let return_amount_b = pool_balance_b * share_ratio;
+        let return_amount_a = convert_u128_to_i128(
+            share_ratio
+                .mul_u128(&env, convert_i128_to_u128(pool_balance_a))
+                .to_u128()
+                .expect("cannot convert to u128"),
+        );
+
+        let return_amount_b = convert_u128_to_i128(
+            share_ratio
+                .mul_u128(&env, convert_i128_to_u128(pool_balance_b))
+                .to_u128()
+                .expect("cannot convert to u128"),
+        );
 
         if return_amount_a < min_a || return_amount_b < min_b {
             log!(
@@ -692,7 +711,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             convert_i128_to_u128(pool_balance_buy),
             get_precisions(&env, &buy_token),
             convert_i128_to_u128(offer_amount),
-            config.protocol_fee_rate(),
+            config.protocol_fee_rate(&env),
         );
 
         let total_return = ask_amount + commission_amount + spread_amount;
@@ -741,7 +760,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             convert_i128_to_u128(pool_balance_buy),
             get_precisions(&env, &buy_token),
             convert_i128_to_u128(ask_amount),
-            config.protocol_fee_rate(),
+            config.protocol_fee_rate(&env),
         );
 
         SimulateReverseSwapResponse {
@@ -752,26 +771,41 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     }
 
     fn query_share(env: Env, amount: i128) -> (Asset, Asset) {
-        let pool_info = Self::query_pool_info(env);
+        let pool_info = Self::query_pool_info(env.clone());
         let total_share = pool_info.asset_lp_share.amount;
         let token_a_amount = pool_info.asset_a.amount;
         let token_b_amount = pool_info.asset_b.amount;
 
-        let mut share_ratio = Decimal::zero();
+        let token_a_address = pool_info.asset_a.address;
+        let token_b_address = pool_info.asset_b.address;
+
+        let mut share_ratio = Decimal256::zero(&env);
         if total_share != 0 {
-            share_ratio = Decimal::from_ratio(amount, total_share);
+            share_ratio = Decimal256::from_ratio(
+                &env,
+                U256::from_u128(&env, convert_i128_to_u128(amount)),
+                U256::from_u128(&env, convert_i128_to_u128(total_share)),
+            );
         }
 
-        let amount_a = token_a_amount * share_ratio;
-        let amount_b = token_b_amount * share_ratio;
+        let amount_a = share_ratio
+            .mul_u128(&env, convert_i128_to_u128(token_a_amount))
+            .to_u128()
+            .expect("cannot convert to u128");
+
+        let amount_b = share_ratio
+            .mul_u128(&env, convert_i128_to_u128(token_b_amount))
+            .to_u128()
+            .expect("cannot convert to u128");
+
         (
             Asset {
-                address: pool_info.asset_a.address,
-                amount: amount_a,
+                address: token_a_address,
+                amount: convert_u128_to_i128(amount_a),
             },
             Asset {
-                address: pool_info.asset_b.address,
-                amount: amount_b,
+                address: token_b_address,
+                amount: convert_u128_to_i128(amount_b),
             },
         )
     }
@@ -812,7 +846,6 @@ fn do_swap(
             panic_with_error!(&env, ContractError::UserDeclinesPoolFee);
         }
     }
-
     if offer_asset != config.token_a && offer_asset != config.token_b {
         log!(
             &env,
@@ -828,7 +861,10 @@ fn do_swap(
         }
     }
 
-    let max_spread = Decimal::bps(max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x));
+    let max_spread = Decimal256::bps(
+        &env,
+        max_spread.map_or_else(|| config.max_allowed_spread_bps, |x| x) as u64,
+    );
 
     let pool_balance_a = utils::get_pool_balance_a(&env);
     let pool_balance_b = utils::get_pool_balance_b(&env);
@@ -860,7 +896,7 @@ fn do_swap(
         convert_i128_to_u128(pool_balance_buy),
         get_precisions(&env, &buy_token),
         convert_i128_to_u128(offer_amount),
-        config.protocol_fee_rate(),
+        config.protocol_fee_rate(&env),
     );
 
     if let Some(ask_asset_min_amount) = ask_asset_min_amount {
@@ -946,9 +982,18 @@ fn do_swap(
 /// * `spread_amount` - The spread (slippage) amount, i.e., the difference between the expected and actual return.
 /// # Returns
 /// * An error if the spread exceeds the maximum allowed, otherwise Ok.
-pub fn assert_max_spread(env: &Env, max_spread: Decimal, return_amount: i128, spread_amount: i128) {
+pub fn assert_max_spread(
+    env: &Env,
+    max_spread: Decimal256,
+    return_amount: i128,
+    spread_amount: i128,
+) {
     // Calculate the spread ratio, the fraction of the return that is due to spread
-    let spread_ratio = Decimal::from_ratio(spread_amount, return_amount);
+    let spread_ratio = Decimal256::from_ratio(
+        env,
+        U256::from_u128(env, convert_i128_to_u128(spread_amount)),
+        U256::from_u128(env, convert_i128_to_u128(return_amount)),
+    );
 
     if spread_ratio > max_spread {
         log!(env, "Pool Stable: Spread exceeds maximum allowed");
@@ -975,7 +1020,7 @@ pub fn compute_swap(
     ask_pool: u128,
     ask_pool_precision: u32,
     offer_amount: u128,
-    commission_rate: Decimal,
+    commission_rate: Decimal256,
 ) -> (i128, i128, i128) {
     let amp_parameters = get_amp(env);
     let amp = compute_current_amp(env, &amp_parameters);
@@ -985,18 +1030,15 @@ pub fn compute_swap(
     let new_ask_pool = calc_y(
         env,
         amp as u128,
-        scale_value(
-            offer_pool + offer_amount,
-            greatest_precision,
-            DECIMAL_PRECISION,
-        ),
+        Decimal256::from_atomics(env, offer_pool + offer_amount, greatest_precision as i32),
         &[
-            scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
-            scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
+            Decimal256::from_atomics(env, offer_pool, offer_pool_precision as i32),
+            Decimal256::from_atomics(env, ask_pool, ask_pool_precision as i32),
         ],
         greatest_precision,
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!(ask_pool, new_ask_pool);
     let return_amount = ask_pool - new_ask_pool;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = if offer_amount > return_amount {
@@ -1006,8 +1048,19 @@ pub fn compute_swap(
         0
     };
     let return_amount = convert_u128_to_i128(return_amount);
-    let commission_amount = return_amount * commission_rate;
-    // Because of issue #211
+    let commission_amount = convert_u128_to_i128(
+        commission_rate
+            .mul_u128(env, convert_i128_to_u128(return_amount))
+            .to_u128()
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Compute Swap: cannot convert U256 to u128"
+                );
+                panic_with_error!(&env, ContractError::CannotConvertToU128)
+            }),
+    );
+
     let return_amount = return_amount - commission_amount;
 
     (return_amount, spread_amount, commission_amount)
@@ -1026,35 +1079,39 @@ pub fn compute_offer_amount(
     ask_pool: u128,
     ask_pool_precision: u32,
     ask_amount: u128,
-    commission_rate: Decimal,
+    commission_rate: Decimal256,
 ) -> (i128, i128, i128) {
     let amp_parameters = get_amp(env);
     let amp = compute_current_amp(env, &amp_parameters);
 
-    let one_minus_commission = Decimal::one() - commission_rate;
-    let inv_one_minus_commission = Decimal::one() / one_minus_commission;
-    let before_commission = inv_one_minus_commission * convert_u128_to_i128(ask_amount);
+    let one_minus_commission = Decimal256::one(env) - commission_rate.clone();
+    let inv_one_minus_commission = Decimal256::one(env).div(env, one_minus_commission);
+
+    let before_commission = inv_one_minus_commission
+        .mul_u128(env, ask_amount)
+        .to_u128()
+        .expect("cannot convert to u128");
 
     let greatest_precision = get_greatest_precision(env);
 
     let new_offer_pool = calc_y(
         env,
         amp as u128,
-        scale_value(
-            ask_pool - convert_i128_to_u128(before_commission),
-            greatest_precision,
-            DECIMAL_PRECISION,
-        ),
+        Decimal256::from_atomics(env, ask_pool - before_commission, greatest_precision as i32),
         &[
-            scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
-            scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
+            Decimal256::from_atomics(env, offer_pool, offer_pool_precision as i32),
+            Decimal256::from_atomics(env, ask_pool, ask_pool_precision as i32),
         ],
         greatest_precision,
     );
 
     let offer_amount = new_offer_pool - offer_pool;
 
-    let ask_before_commission = convert_u128_to_i128(ask_amount) * inv_one_minus_commission;
+    let ask_before_commission = inv_one_minus_commission
+        .mul_u128(env, ask_amount)
+        .to_u128()
+        .expect("cannot convert to u128");
+
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = if offer_amount > ask_amount {
         offer_amount - ask_amount
@@ -1063,8 +1120,12 @@ pub fn compute_offer_amount(
         0
     };
 
-    // Calculate the commission amount
-    let commission_amount: i128 = ask_before_commission * commission_rate;
+    let commission_amount = convert_u128_to_i128(
+        commission_rate
+            .mul_u128(env, ask_before_commission)
+            .to_u128()
+            .expect("cannot convert to u128"),
+    );
 
     (
         convert_u128_to_i128(offer_amount),
@@ -1083,7 +1144,7 @@ mod tests {
         // Test case that should pass:
         // max spread of 10%, offer amount of 100k, return amount of 100k and 1 unit, spread amount of 1
         // The spread ratio is 10% which is equal to the max spread
-        assert_max_spread(&env, Decimal::percent(10), 100_001, 1);
+        assert_max_spread(&env, Decimal256::percent(&env, 10), 100_001, 1);
     }
 
     #[test]
@@ -1091,7 +1152,7 @@ mod tests {
     fn test_assert_max_spread_fail_max_spread_exceeded() {
         let env = Env::default();
 
-        let max_spread = Decimal::percent(10); // 10% is the maximum allowed spread
+        let max_spread = Decimal256::percent(&env, 10); // 10% is the maximum allowed spread
         let return_amount = 100; // These values are chosen such that the spread ratio will be more than 10%
         let spread_amount = 35;
 
@@ -1103,7 +1164,7 @@ mod tests {
         let env = Env::default();
         // max spread of 100 (0.1 or 10%), return amount of 10, spread amount of 1
         // The spread ratio is 10% which is equal to the max spread
-        assert_max_spread(&env, Decimal::percent(10), 10, 1);
+        assert_max_spread(&env, Decimal256::percent(&env, 10), 10, 1);
     }
 
     #[test]
@@ -1112,6 +1173,6 @@ mod tests {
         let env = Env::default();
         // max spread of 10%, return amount of 10, spread amount of 2
         // The spread ratio is 20% which is greater than the max spread
-        assert_max_spread(&env, Decimal::percent(10), 10, 2);
+        assert_max_spread(&env, Decimal256::percent(&env, 10), 10, 2);
     }
 }
