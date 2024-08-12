@@ -50,7 +50,7 @@ pub trait StakingRewardsTrait {
 
     fn calculate_bond(env: Env, sender: Address, stakes: BondingInfo);
 
-    fn calculate_unbond(env: Env, sender: Address, stakes: BondingInfo);
+    fn calculate_unbond(env: Env, sender: Address, stakes: BondingInfo, removed_stake: i128);
 
     fn distribute_rewards(env: Env, total_staked_amount: i128);
 
@@ -133,9 +133,9 @@ impl StakingRewardsTrait for StakingRewards {
     }
 
     fn add_user(env: Env, user: Address, stakes: BondingInfo) {
-        get_admin(&env).require_auth();
-
         let config = get_config(&env);
+        // only Staking contract which deployed this one can call this method
+        config.staking_contract.require_auth();
 
         let new_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER);
         let mut distribution = get_distribution(&env, &config.reward_token);
@@ -152,8 +152,6 @@ impl StakingRewardsTrait for StakingRewards {
     }
 
     fn calculate_bond(env: Env, sender: Address, stakes: BondingInfo) {
-        sender.require_auth();
-
         let config = get_config(&env);
         // only Staking contract which deployed this one can call this method
         config.staking_contract.require_auth();
@@ -180,7 +178,7 @@ impl StakingRewardsTrait for StakingRewards {
         env.events().publish(("calculate_bond", "user"), &sender);
     }
 
-    fn calculate_unbond(env: Env, sender: Address, stakes: BondingInfo) {
+    fn calculate_unbond(env: Env, sender: Address, stakes: BondingInfo, removed_stake: i128) {
         sender.require_auth();
 
         let config = get_config(&env);
@@ -197,13 +195,10 @@ impl StakingRewardsTrait for StakingRewards {
 
         let mut distribution = get_distribution(&env, &config.reward_token);
 
-        // Stake contract need to call calculate_unbond before it removes the to-be-removed staked
-        let last_stake = stakes.stakes.last().unwrap();
-
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
         let new_power = calc_power(
             &config,
-            stakes.total_stake - last_stake.stake,
+            stakes.total_stake - removed_stake,
             Decimal::one(),
             TOKEN_PER_POWER,
         );
@@ -298,24 +293,21 @@ impl StakingRewardsTrait for StakingRewards {
             &config,
         );
 
+        // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
+        let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
+        let reward_amount = convert_u128_to_i128(reward_amount) * reward_multiplier;
+
         if reward_amount == 0 {
             return;
         }
-        withdraw_adjustment.withdrawn_rewards += reward_amount;
-        distribution.withdrawable_total -= reward_amount;
+        withdraw_adjustment.withdrawn_rewards += reward_amount as u128;
+        distribution.withdrawable_total -= reward_amount as u128;
 
         save_distribution(&env, &config.reward_token, &distribution);
         save_withdraw_adjustment(&env, &sender, &config.reward_token, &withdraw_adjustment);
 
-        // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
-        let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
-
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
-        reward_token_client.transfer(
-            &env.current_contract_address(),
-            &sender,
-            &(convert_u128_to_i128(reward_amount) * reward_multiplier),
-        );
+        reward_token_client.transfer(&env.current_contract_address(), &sender, &reward_amount);
 
         env.events().publish(
             ("withdraw_rewards", "reward_token"),

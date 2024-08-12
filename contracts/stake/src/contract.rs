@@ -223,7 +223,8 @@ impl StakingTrait for Staking {
 
         for (_asset, distribution_address) in get_distributions(&env) {
             // Call stake_rewards contract to update the reward calculations
-            let unbond_fn_arg: Vec<Val> = (sender.clone(), stakes.clone()).into_val(&env);
+            let unbond_fn_arg: Vec<Val> =
+                (sender.clone(), stakes.clone(), stake_amount).into_val(&env);
             env.invoke_contract::<Val>(
                 &distribution_address,
                 &Symbol::new(&env, "calculate_unbond"),
@@ -486,6 +487,9 @@ impl StakingTrait for Staking {
     }
 
     fn stake_rewards_add_users(env: Env, staking_contract: Address, users: Vec<Address>) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
         for user in users {
             let stakes = get_stakes(&env, &user);
             // Call stake_rewards contract to update the reward calculations
