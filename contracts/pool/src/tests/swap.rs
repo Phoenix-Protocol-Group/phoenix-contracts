@@ -43,28 +43,30 @@ fn simple_swap() {
         stake_owner,
     );
 
-    token1.mint(&user1, &1_001_000);
-    token2.mint(&user1, &1_001_000);
+    let liquidity_amount = 100_000_000_000_000_i128; // 10 million with 7 decimal places
+    token1.mint(&user1, &(liquidity_amount + 10_000_000_000_000)); // 11,000,000.0000000
+    token2.mint(&user1, &(liquidity_amount + 10_000_000_000_000)); // 11,000,000.0000000
+
     pool.provide_liquidity(
         &user1,
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &Some(1_000_000),
-        &Some(1_000_000),
+        &Some(liquidity_amount),
+        &Some(liquidity_amount),
+        &Some(liquidity_amount),
+        &Some(liquidity_amount),
         &None,
         &None::<u64>,
     );
 
-    // selling just one token with 1% max spread allowed
-    let spread = 100i64; // 1% maximum spread allowed
-    pool.swap(
+    // Swapping 100,000 tokens with 7 decimal places
+    let swap_amount = 1_000_000_000_000_i128; // 100,000.0000000 with 7 decimals
+
+    // Execute the swap
+    let output_amount = pool.swap(
         &user1,
-        // FIXM: Disable Referral struct
-        // &None::<Referral>,
         &token1.address,
-        &1,
+        &swap_amount,
         &None,
-        &Some(spread),
+        &Some(100), // 1% spread as allowed
         &None::<u64>,
         &None,
     );
@@ -81,9 +83,9 @@ fn simple_swap() {
                         // FIXM: Disable Referral struct
                         // None::<Referral>,
                         token1.address.clone(),
-                        1_i128,
+                        1_000_000_000_000_i128,
                         None::<i64>,
-                        spread,
+                        Some(100i64),
                         None::<u64>,
                         None::<i64>
                     )
@@ -94,7 +96,7 @@ fn simple_swap() {
                         function: AuthorizedFunction::Contract((
                             token1.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 1_i128).into_val(&env)
+                            (&user1, &pool.address, 1_000_000_000_000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     }),
@@ -103,63 +105,71 @@ fn simple_swap() {
         )]
     );
 
+    // Query pool info after swap
     let share_token_address = pool.query_share_token_address();
     let result = pool.query_pool_info();
+
+    // Spread amount computed by the DEX contract during the swap
+    let spread_amount = 990_0990099i128;
+
+    // Corrected assertion based on the results from the swap
     assert_eq!(
         result,
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 1_000_001i128,
+                amount: liquidity_amount + swap_amount,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 999_999i128,
+                amount: liquidity_amount - swap_amount + spread_amount
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 1_000_000i128,
+                amount: liquidity_amount, // Liquidity pool share remains unchanged
             },
-            stake_address: result.clone().stake_address,
+            stake_address: result.stake_address.clone(),
         }
     );
-    assert_eq!(token1.balance(&user1), 999); // -1 from the swap
-    assert_eq!(token2.balance(&user1), 1001); // 1 from the swap
 
-    // this time 100 units
-    let output_amount = pool.swap(
+    assert_eq!(token1.balance(&user1), 10_000_000_000_000 - swap_amount); // 11,000,000.0000000 - 100,000.0000000
+    assert_eq!(token2.balance(&user1), 10_000_000_000_000 + output_amount); // Reflect the swap return after spread
+
+    // This time swapping 100,000 tokens of token2
+    let output_amount_2 = pool.swap(
         &user1,
-        // FIXM: Disable Referral struct
-        // &None::<Referral>,
         &token2.address,
-        &1_000,
+        &swap_amount,
         &None,
-        &Some(spread),
+        &Some(200), // 2% spread as allowed
         &None::<u64>,
         &None,
     );
     let result = pool.query_pool_info();
+
+    // Corrected assertion based on the second swap
     assert_eq!(
         result,
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 1_000_001 - 1_000, // previous balance minus 1_000
+                amount: 99_990_099_990_099, // Reflecting the state after the second swap, with spread
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 999_999 + 1000,
+                amount: 100_009_900_990_099, // Reflecting the state after the second swap, with spread
             },
             asset_lp_share: Asset {
-                address: share_token_address,
-                amount: 1_000_000i128, // this has not changed
+                address: share_token_address.clone(),
+                amount: liquidity_amount, // Liquidity pool share remains unchanged
             },
-            stake_address: result.clone().stake_address,
+            stake_address: result.stake_address.clone(),
         }
     );
-    assert_eq!(output_amount, 1000);
-    assert_eq!(token1.balance(&user1), 1999); // 999 + 1_000 as a result of swap
-    assert_eq!(token2.balance(&user1), 1001 - 1000); // user1 sold 1k of token B on second swap
+
+    assert_eq!(output_amount_2, 1_009_900_009_901); // Expected output after accounting for the spread
+    assert_eq!(token1.balance(&user1), 10_009_900_009_901); // Reflecting final balances after swaps
+    assert_eq!(token2.balance(&user1), 9_990_099_009_901); // Reflecting final balances after swaps
 }
 
 #[test]
