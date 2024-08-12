@@ -24,7 +24,7 @@ pub fn deploy_staking_rewards_contract<'a>(
 
     staking_rewards.initialize(
         admin,
-        &staking_contract,
+        staking_contract,
         reward_token,
         &MAX_COMPLEXITY,
         &MIN_REWARD,

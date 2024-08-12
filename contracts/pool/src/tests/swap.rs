@@ -43,9 +43,9 @@ fn simple_swap() {
         stake_owner,
     );
 
-    let liquidity_amount = 10_000_000_0000000i128; // 10 million with 7 decimal places
-    token1.mint(&user1, &(liquidity_amount + 1_000_000_0000000)); // 11,000,000.0000000
-    token2.mint(&user1, &(liquidity_amount + 1_000_000_0000000)); // 11,000,000.0000000
+    let liquidity_amount = 100_000_000_000_000_i128; // 10 million with 7 decimal places
+    token1.mint(&user1, &(liquidity_amount + 10_000_000_000_000)); // 11,000,000.0000000
+    token2.mint(&user1, &(liquidity_amount + 10_000_000_000_000)); // 11,000,000.0000000
 
     pool.provide_liquidity(
         &user1,
@@ -58,7 +58,7 @@ fn simple_swap() {
     );
 
     // Swapping 100,000 tokens with 7 decimal places
-    let swap_amount = 100_000_0000000i128; // 100,000.0000000 with 7 decimals
+    let swap_amount = 1_000_000_000_000_i128; // 100,000.0000000 with 7 decimals
 
     // Execute the swap
     let output_amount = pool.swap(
@@ -83,7 +83,7 @@ fn simple_swap() {
                         // FIXM: Disable Referral struct
                         // None::<Referral>,
                         token1.address.clone(),
-                        100_000_0000000_i128,
+                        1_000_000_000_000_i128,
                         None::<i64>,
                         Some(100i64),
                         None::<u64>,
@@ -96,7 +96,7 @@ fn simple_swap() {
                         function: AuthorizedFunction::Contract((
                             token1.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 100_000_0000000_i128).into_val(&env)
+                            (&user1, &pool.address, 1_000_000_000_000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     }),
@@ -132,8 +132,8 @@ fn simple_swap() {
         }
     );
 
-    assert_eq!(token1.balance(&user1), 1_000_000_0000000 - swap_amount); // 11,000,000.0000000 - 100,000.0000000
-    assert_eq!(token2.balance(&user1), 1_000_000_0000000 + output_amount); // Reflect the swap return after spread
+    assert_eq!(token1.balance(&user1), 10_000_000_000_000 - swap_amount); // 11,000,000.0000000 - 100,000.0000000
+    assert_eq!(token2.balance(&user1), 10_000_000_000_000 + output_amount); // Reflect the swap return after spread
 
     // This time swapping 100,000 tokens of token2
     let output_amount_2 = pool.swap(
@@ -153,11 +153,11 @@ fn simple_swap() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 9_999_009_9990099, // Reflecting the state after the second swap, with spread
+                amount: 99_990_099_990_099, // Reflecting the state after the second swap, with spread
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 10_000_990_0990099, // Reflecting the state after the second swap, with spread
+                amount: 100_009_900_990_099, // Reflecting the state after the second swap, with spread
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
@@ -167,9 +167,9 @@ fn simple_swap() {
         }
     );
 
-    assert_eq!(output_amount_2, 100_990_0009901); // Expected output after accounting for the spread
-    assert_eq!(token1.balance(&user1), 1_000_990_0009901); // Reflecting final balances after swaps
-    assert_eq!(token2.balance(&user1), 999_009_9009901); // Reflecting final balances after swaps
+    assert_eq!(output_amount_2, 1_009_900_009_901); // Expected output after accounting for the spread
+    assert_eq!(token1.balance(&user1), 10_009_900_009_901); // Reflecting final balances after swaps
+    assert_eq!(token2.balance(&user1), 9_990_099_009_901); // Reflecting final balances after swaps
 }
 
 #[test]

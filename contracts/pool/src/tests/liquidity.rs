@@ -49,18 +49,18 @@ fn provide_liquidity() {
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);
 
-    token1.mint(&user1, &100_000_000_0000000);
-    assert_eq!(token1.balance(&user1), 100_000_000_0000000);
+    token1.mint(&user1, &1_000_000_000_000_000);
+    assert_eq!(token1.balance(&user1), 1_000_000_000_000_000);
 
-    token2.mint(&user1, &100_000_000_0000000);
-    assert_eq!(token2.balance(&user1), 100_000_000_0000000);
+    token2.mint(&user1, &1_000_000_000_000_000);
+    assert_eq!(token2.balance(&user1), 1_000_000_000_000_000);
 
     pool.provide_liquidity(
         &user1,
-        &Some(100_000_000_0000000),
-        &Some(100_000_000_0000000),
-        &Some(100_000_000_0000000),
-        &Some(100_000_000_0000000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
         &None,
         &None::<u64>,
     );
@@ -75,10 +75,10 @@ fn provide_liquidity() {
                     Symbol::new(&env, "provide_liquidity"),
                     (
                         &user1,
-                        Some(100_000_000_0000000i128),
-                        Some(100_000_000_0000000i128),
-                        Some(100_000_000_0000000i128),
-                        Some(100_000_000_0000000i128),
+                        Some(1_000_000_000_000_000_i128),
+                        Some(1_000_000_000_000_000_i128),
+                        Some(1_000_000_000_000_000_i128),
+                        Some(1_000_000_000_000_000_i128),
                         None::<i64>,
                         None::<u64>
                     )
@@ -89,7 +89,7 @@ fn provide_liquidity() {
                         function: AuthorizedFunction::Contract((
                             token1.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 100_000_000_0000000_i128).into_val(&env)
+                            (&user1, &pool.address, 1_000_000_000_000_000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     },
@@ -97,7 +97,7 @@ fn provide_liquidity() {
                         function: AuthorizedFunction::Contract((
                             token2.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 100_000_000_0000000_i128).into_val(&env)
+                            (&user1, &pool.address, 1_000_000_000_000_000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     },
@@ -109,9 +109,9 @@ fn provide_liquidity() {
     assert_eq!(token_share.balance(&user1), 999999999999000);
     assert_eq!(token_share.balance(&pool.address), 1_000);
     assert_eq!(token1.balance(&user1), 0);
-    assert_eq!(token1.balance(&pool.address), 100_000_000_0000000);
+    assert_eq!(token1.balance(&pool.address), 1_000_000_000_000_000);
     assert_eq!(token2.balance(&user1), 0);
-    assert_eq!(token2.balance(&pool.address), 100_000_000_0000000);
+    assert_eq!(token2.balance(&pool.address), 1_000_000_000_000_000);
 
     let result = pool.query_pool_info();
     assert_eq!(
@@ -119,20 +119,20 @@ fn provide_liquidity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address,
-                amount: 100_000_000_0000000i128
+                amount: 1_000_000_000_000_000_i128
             },
             asset_b: Asset {
                 address: token2.address,
-                amount: 100_000_000_0000000i128
+                amount: 1_000_000_000_000_000_i128
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 100_000_000_0000000i128
+                amount: 1_000_000_000_000_000_i128
             },
             stake_address: result.clone().stake_address,
         }
     );
-    assert_eq!(pool.query_total_issued_lp(), 100_000_000_0000000);
+    assert_eq!(pool.query_total_issued_lp(), 1_000_000_000_000_000);
 }
 
 #[test]
@@ -170,27 +170,27 @@ fn withdraw_liquidity() {
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);
 
-    token1.mint(&user1, &100_000_000_0000000);
-    token2.mint(&user1, &100_000_000_0000000);
+    token1.mint(&user1, &1_000_000_000_000_000);
+    token2.mint(&user1, &1_000_000_000_000_000);
     pool.provide_liquidity(
         &user1,
-        &Some(100_000_000_0000000),
-        &Some(100_000_000_0000000),
-        &Some(100_000_000_0000000),
-        &Some(100_000_000_0000000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
         &None,
         &None::<u64>,
     );
 
     assert_eq!(token1.balance(&user1), 0);
-    assert_eq!(token_share.balance(&user1), 99_999_999_9999000);
-    assert_eq!(token1.balance(&pool.address), 100_000_000_0000000);
+    assert_eq!(token_share.balance(&user1), 999_999_999_999_000);
+    assert_eq!(token1.balance(&pool.address), 1_000_000_000_000_000);
     assert_eq!(token2.balance(&user1), 0);
-    assert_eq!(token2.balance(&pool.address), 100_000_000_0000000);
+    assert_eq!(token2.balance(&pool.address), 1_000_000_000_000_000);
 
-    let share_amount = 50_000_000_0000000;
-    let min_a = 50_000_000_0000000;
-    let min_b = 50_000_000_0000000;
+    let share_amount = 500_000_000_000_000;
+    let min_a = 500_000_000_000_000;
+    let min_b = 500_000_000_000_000;
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &None::<u64>);
 
     assert_eq!(
@@ -203,9 +203,9 @@ fn withdraw_liquidity() {
                     Symbol::new(&env, "withdraw_liquidity"),
                     (
                         &user1,
-                        50_000_000_0000000i128,
-                        50_000_000_0000000i128,
-                        50_000_000_0000000i128,
+                        500_000_000_000_000_i128,
+                        500_000_000_000_000_i128,
+                        500_000_000_000_000_i128,
                         None::<u64>
                     )
                         .into_val(&env),
@@ -214,7 +214,7 @@ fn withdraw_liquidity() {
                     function: AuthorizedFunction::Contract((
                         share_token_address.clone(),
                         symbol_short!("transfer"),
-                        (&user1, &pool.address, 50_000_000_0000000_i128).into_val(&env)
+                        (&user1, &pool.address, 500_000_000_000_000_i128).into_val(&env)
                     )),
                     sub_invocations: std::vec![],
                 },],
@@ -222,12 +222,12 @@ fn withdraw_liquidity() {
         ),]
     );
 
-    assert_eq!(token_share.balance(&user1), 49_999_999_9999000);
+    assert_eq!(token_share.balance(&user1), 499_999_999_999_000);
     assert_eq!(token_share.balance(&pool.address), 1_000); // sanity check
-    assert_eq!(token1.balance(&user1), 50_000_000_0000000);
-    assert_eq!(token1.balance(&pool.address), 50_000_000_0000000);
-    assert_eq!(token2.balance(&user1), 50_000_000_0000000);
-    assert_eq!(token2.balance(&pool.address), 50_000_000_0000000);
+    assert_eq!(token1.balance(&user1), 500_000_000_000_000);
+    assert_eq!(token1.balance(&pool.address), 500_000_000_000_000);
+    assert_eq!(token2.balance(&user1), 500_000_000_000_000);
+    assert_eq!(token2.balance(&pool.address), 500_000_000_000_000);
 
     let result = pool.query_pool_info();
     assert_eq!(
@@ -235,15 +235,15 @@ fn withdraw_liquidity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 50_000_000_0000000i128,
+                amount: 500_000_000_000_000_i128,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 50_000_000_0000000i128,
+                amount: 500_000_000_000_000_i128,
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 50_000_000_0000000i128,
+                amount: 500_000_000_000_000_i128,
             },
             stake_address: result.clone().stake_address,
         }
@@ -252,15 +252,15 @@ fn withdraw_liquidity() {
     // clear the pool
     pool.withdraw_liquidity(
         &user1,
-        &49_999_999_9999000, /* leftover shares */
-        &49_999_999_9999000,
-        &49_999_999_9999000,
+        &499_999_999_999_000, /* leftover shares */
+        &499_999_999_999_000,
+        &499_999_999_999_000,
         &None::<u64>,
     );
     assert_eq!(token_share.balance(&user1), 0);
     assert_eq!(token_share.balance(&pool.address), 1_000); // Because of the minted 1_000 lp shares
-    assert_eq!(token1.balance(&user1), 99_999_999_9999000);
-    assert_eq!(token2.balance(&user1), 99_999_999_9999000);
+    assert_eq!(token1.balance(&user1), 999_999_999_999_000);
+    assert_eq!(token2.balance(&user1), 999_999_999_999_000);
     // those tokens are locked because of the initial amount of LP shared tokens that are locked
     // Thanks to that all the subsequent users will be having a proper fair share
     assert_eq!(token1.balance(&pool.address), 1_000);
