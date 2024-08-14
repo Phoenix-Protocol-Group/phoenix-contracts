@@ -1,7 +1,7 @@
 # Dex Stable Pool
 
 ## Main functionality
-This contract is being used for managing stable coins within the Phoenix DEX. It offers liquidity provision, trading assets and pool management functionalities.
+This contract is being used for managing stable coins (with up to 18 decimals of precision) within the Phoenix DEX. It offers liquidity provision, trading assets and pool management functionalities.
 
 ## Messages:
 `initialize`
@@ -20,7 +20,8 @@ Return type:
 void
 
 Description:
-Used for the initialization of the stable liquidity pool contract - this sets the admin in Config, initializes both token contracts, that will be in the pool and also initializes the staking contract needed for providing liquidity.
+Used for the initialization of the stable liquidity pool contract - this sets the admin in Config, initializes both token contracts, that will be in the pool and also initializes the staking contract needed for providing liquidity. 
+N.B.: The stable pool supports tokens with up to 18 decimals
 
 <hr>
 
