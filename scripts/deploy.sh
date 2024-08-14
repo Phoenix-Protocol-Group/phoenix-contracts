@@ -23,6 +23,7 @@ soroban contract optimize --wasm phoenix_factory.wasm
 soroban contract optimize --wasm phoenix_pool.wasm
 soroban contract optimize --wasm phoenix_pool_stable.wasm
 soroban contract optimize --wasm phoenix_stake.wasm
+soroban contract optimize --wasm phoenix_stake_rewards.wasm
 soroban contract optimize --wasm phoenix_multihop.wasm
 
 echo "Contracts optimized."
@@ -35,6 +36,7 @@ echo "Deploy the soroban_token_contract and capture its contract ID hash..."
 XLM="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
 
 TOKEN_ADDR1=$XLM
+
 TOKEN_ADDR2=$(soroban contract deploy \
     --wasm soroban_token_contract.optimized.wasm \
     --source $IDENTITY_STRING \
@@ -92,6 +94,11 @@ STAKE_WASM_HASH=$(soroban contract install \
     --source $IDENTITY_STRING \
     --network $NETWORK)
 
+STAKE_REWARDS_WASM_HASH=$(soroban contract install \
+    --wasm phoenix_stake_rewards.optimized.wasm \
+    --source $IDENTITY_STRING \
+    --network $NETWORK)
+
 echo "Token, pair and stake contracts deployed."
 
 echo "Initialize factory..."
@@ -112,6 +119,7 @@ soroban contract invoke \
     --lp_wasm_hash $PAIR_WASM_HASH \
     --stable_wasm_hash $STABLE_PAIR_WASM_HASH \
     --stake_wasm_hash $STAKE_WASM_HASH \
+    --stake_rewards_wasm_hash $STAKE_REWARDS_WASM_HASH \
     --token_wasm_hash $TOKEN_WASM_HASH \
     --whitelisted_accounts "[ \"${ADMIN_ADDRESS}\" ]" \
     --lp_token_decimals 7
@@ -127,7 +135,9 @@ soroban contract invoke \
     -- \
     create_liquidity_pool \
     --sender $ADMIN_ADDRESS \
-    --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3, \"manager\": \"${ADMIN_ADDRESS}\", \"max_complexity\": 7 } }" \
+    --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"default_slippage_bps\": 3000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3, \"manager\": \"${ADMIN_ADDRESS}\", \"max_complexity\": 7 } }" \
+    --default_slippage_bps 3000 \
+    --max_allowed_fee_bps 10000 \
     --share_token_name "XLMPHOST" \
     --share_token_symbol "XPST" \
     --pool_type 0
@@ -221,7 +231,9 @@ soroban contract invoke \
     -- \
     create_liquidity_pool \
     --sender $ADMIN_ADDRESS \
-    --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3, \"manager\": \"${ADMIN_ADDRESS}\", \"max_complexity\": 7 } }" \
+    --lp_init_info "{ \"admin\": \"${ADMIN_ADDRESS}\", \"swap_fee_bps\": 1000, \"fee_recipient\": \"${ADMIN_ADDRESS}\", \"max_allowed_slippage_bps\": 10000, \"default_slippage_bps\": 3000, \"max_allowed_spread_bps\": 10000, \"max_referral_bps\": 5000, \"token_init_info\": { \"token_a\": \"${TOKEN_ID1}\", \"token_b\": \"${TOKEN_ID2}\" }, \"stake_init_info\": { \"min_bond\": \"100\", \"min_reward\": \"100\", \"max_distributions\": 3, \"manager\": \"${ADMIN_ADDRESS}\", \"max_complexity\": 7 } }" \
+    --default_slippage_bps 3000 \
+    --max_allowed_fee_bps 10000 \
     --share_token_name "XLMPHOST" \
     --share_token_symbol "XPST" \
     --pool_type 0
