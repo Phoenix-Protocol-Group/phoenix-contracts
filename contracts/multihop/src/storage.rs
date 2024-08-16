@@ -1,3 +1,4 @@
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{contracttype, log, panic_with_error, Address, Env, String, Vec};
 
 use crate::error::ContractError;
@@ -67,32 +68,77 @@ pub struct PoolResponse {
 
 pub fn save_factory(env: &Env, factory: Address) {
     env.storage().instance().set(&DataKey::FactoryKey, &factory);
+    env.storage().persistent().extend_ttl(
+        &DataKey::FactoryKey,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_factory(env: &Env) -> Address {
-    env.storage().instance().get(&DataKey::FactoryKey).unwrap()
+    let address = env
+        .storage()
+        .instance()
+        .get(&DataKey::FactoryKey)
+        .expect("No address found.");
+
+    env.storage().persistent().extend_ttl(
+        &DataKey::FactoryKey,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    address
 }
 
 pub fn save_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, admin);
+    env.storage().persistent().extend_ttl(
+        &DataKey::Admin,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_admin(env: &Env) -> Address {
-    env.storage()
+    let address = env
+        .storage()
         .instance()
         .get(&DataKey::Admin)
         .unwrap_or_else(|| {
             log!(env, "Admin not set");
             panic_with_error!(&env, ContractError::AdminNotSet)
-        })
+        });
+
+    env.storage().persistent().extend_ttl(
+        &DataKey::Admin,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    address
 }
 pub fn is_initialized(e: &Env) -> bool {
-    e.storage()
+    let is_initialized = e
+        .storage()
         .persistent()
         .get(&DataKey::Initialized)
-        .unwrap_or(false)
+        .unwrap_or(false);
+
+    e.storage().persistent().extend_ttl(
+        &DataKey::Initialized,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    is_initialized
 }
 
 pub fn set_initialized(e: &Env) {
     e.storage().persistent().set(&DataKey::Initialized, &true);
+    e.storage().persistent().extend_ttl(
+        &DataKey::Initialized,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
