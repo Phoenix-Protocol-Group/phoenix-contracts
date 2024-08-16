@@ -1,3 +1,4 @@
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{contracttype, Address, BytesN, ConversionError, Env, TryFromVal, Val, Vec};
 
 #[derive(Clone, Copy)]
@@ -106,24 +107,52 @@ pub struct Stake {
 
 pub fn save_config(env: &Env, config: Config) {
     env.storage().persistent().set(&DataKey::Config, &config);
+    env.storage().persistent().extend_ttl(
+        &DataKey::Config,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    )
 }
 
 pub fn get_config(env: &Env) -> Config {
-    env.storage()
+    let config = env
+        .storage()
         .persistent()
         .get(&DataKey::Config)
-        .expect("Config not set")
+        .expect("Config not set");
+
+    env.storage().persistent().extend_ttl(
+        &DataKey::Config,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    config
 }
 
 pub fn get_lp_vec(env: &Env) -> Vec<Address> {
-    env.storage()
+    let lp_vec = env
+        .storage()
         .persistent()
         .get(&DataKey::LpVec)
-        .expect("Factory: get_lp_vec: Liquidity Pool vector not found")
+        .expect("Factory: get_lp_vec: Liquidity Pool vector not found");
+
+    env.storage().persistent().extend_ttl(
+        &DataKey::LpVec,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    lp_vec
 }
 
 pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
     env.storage().persistent().set(&DataKey::LpVec, &lp_info);
+    env.storage().persistent().extend_ttl(
+        &DataKey::LpVec,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn save_lp_vec_with_tuple_as_key(
@@ -137,16 +166,40 @@ pub fn save_lp_vec_with_tuple_as_key(
             token_b: tuple_pool.1.clone(),
         },
         &lp_address,
-    )
+    );
+
+    env.storage().persistent().extend_ttl(
+        &PairTupleKey {
+            token_a: tuple_pool.0.clone(),
+            token_b: tuple_pool.1.clone(),
+        },
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn is_initialized(e: &Env) -> bool {
-    e.storage()
+    let is_initialized = e
+        .storage()
         .persistent()
         .get(&DataKey::Initialized)
-        .unwrap_or(false)
+        .unwrap_or(false);
+
+    e.storage().persistent().extend_ttl(
+        &DataKey::Initialized,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    is_initialized
 }
 
 pub fn set_initialized(e: &Env) {
     e.storage().persistent().set(&DataKey::Initialized, &true);
+
+    e.storage().persistent().extend_ttl(
+        &DataKey::Initialized,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
