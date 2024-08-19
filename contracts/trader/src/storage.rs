@@ -1,5 +1,7 @@
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{
-    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
+    contracttype, log, panic_with_error, token, Address, ConversionError, Env, String, TryFromVal,
+    Val,
 };
 
 use crate::error::ContractError;
@@ -50,72 +52,137 @@ impl TryFromVal<Env, DataKey> for Val {
 }
 
 pub fn save_admin(env: &Env, address: &Address) {
-    env.storage().persistent().set(&DataKey::Admin, address)
+    env.storage().persistent().set(&DataKey::Admin, address);
+    env.storage().persistent().extend_ttl(
+        &DataKey::Admin,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_admin(env: &Env) -> Address {
-    env.storage()
+    let admin = env
+        .storage()
         .persistent()
         .get(&DataKey::Admin)
         .unwrap_or_else(|| {
             log!(&env, "Admin not set");
             panic_with_error!(&env, ContractError::AdminNotFound)
-        })
+        });
+    env.storage().persistent().extend_ttl(
+        &DataKey::Admin,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    admin
 }
 
 pub fn save_name(env: &Env, contract_id: &String) {
     env.storage()
         .persistent()
-        .set(&DataKey::ContractId, contract_id)
+        .set(&DataKey::ContractId, contract_id);
+    env.storage().persistent().extend_ttl(
+        &DataKey::ContractId,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_name(env: &Env) -> String {
-    env.storage()
+    let name = env
+        .storage()
         .persistent()
         .get(&DataKey::ContractId)
         .unwrap_or_else(|| {
             log!(&env, "Contract ID not set");
             panic_with_error!(&env, ContractError::ContractIdNotFound)
-        })
+        });
+    env.storage().persistent().extend_ttl(
+        &DataKey::ContractId,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    name
 }
 
 pub fn save_pair(env: &Env, pair: &(Address, Address)) {
-    env.storage().persistent().set(&DataKey::Pair, pair)
+    env.storage().persistent().set(&DataKey::Pair, pair);
+    env.storage().persistent().extend_ttl(
+        &DataKey::Pair,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_pair(env: &Env) -> (Address, Address) {
-    env.storage()
+    let pair = env
+        .storage()
         .persistent()
         .get(&DataKey::Pair)
         .unwrap_or_else(|| {
             log!(&env, "Pair not set");
             panic_with_error!(env, ContractError::PairNotFound)
-        })
+        });
+    env.storage().persistent().extend_ttl(
+        &DataKey::Pair,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    pair
 }
 
 pub fn save_output_token(env: &Env, token: &Address) {
-    env.storage().persistent().set(&DataKey::Token, token)
+    env.storage().persistent().set(&DataKey::Token, token);
+    env.storage().persistent().extend_ttl(
+        &DataKey::Token,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_output_token(env: &Env) -> Address {
-    env.storage()
+    let token_addr = env
+        .storage()
         .persistent()
         .get(&DataKey::Token)
         .unwrap_or_else(|| {
             log!(&env, "Token not set");
             panic_with_error!(env, ContractError::OutputTokenNotFound)
-        })
+        });
+    env.storage().persistent().extend_ttl(
+        &DataKey::Token,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    token_addr
 }
 
 pub fn set_initialized(env: &Env) {
     env.storage()
         .persistent()
         .set(&DataKey::IsInitialized, &true);
+    env.storage().persistent().extend_ttl(
+        &DataKey::IsInitialized,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn is_initialized(env: &Env) -> bool {
-    env.storage()
+    let is_initialized = env
+        .storage()
         .persistent()
         .get(&DataKey::IsInitialized)
-        .unwrap_or_default()
+        .unwrap_or_default();
+    env.storage().persistent().extend_ttl(
+        &DataKey::IsInitialized,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    is_initialized
 }
