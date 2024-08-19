@@ -157,6 +157,8 @@ pub struct SimulateReverseSwapResponse {
 }
 
 pub mod utils {
+    use phoenix::ttl::{BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
+
     use super::*;
 
     pub fn deploy_token_contract(
@@ -196,8 +198,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::TotalShares, &amount);
         e.storage().persistent().extend_ttl(
             &DataKey::TotalShares,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
         );
     }
 
@@ -205,8 +207,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::ReserveA, &amount);
         e.storage().persistent().extend_ttl(
             &DataKey::ReserveA,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
         );
     }
 
@@ -214,8 +216,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::ReserveB, &amount);
         e.storage().persistent().extend_ttl(
             &DataKey::ReserveB,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
         );
     }
 
@@ -251,8 +253,8 @@ pub mod utils {
         let total_shares = e.storage().persistent().get(&DataKey::TotalShares).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::TotalShares,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
         );
 
         total_shares
@@ -261,8 +263,8 @@ pub mod utils {
         let balance_a = e.storage().persistent().get(&DataKey::ReserveA).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::ReserveA,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
         );
 
         balance_a
@@ -272,8 +274,8 @@ pub mod utils {
         let balance_b = e.storage().persistent().get(&DataKey::ReserveB).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::ReserveB,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
         );
 
         balance_b
