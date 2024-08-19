@@ -68,11 +68,9 @@ pub struct PoolResponse {
 
 pub fn save_factory(env: &Env, factory: Address) {
     env.storage().instance().set(&DataKey::FactoryKey, &factory);
-    env.storage().persistent().extend_ttl(
-        &DataKey::FactoryKey,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
-    );
+    env.storage()
+        .instance()
+        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
 }
 
 pub fn get_factory(env: &Env) -> Address {
@@ -82,22 +80,18 @@ pub fn get_factory(env: &Env) -> Address {
         .get(&DataKey::FactoryKey)
         .expect("No address found.");
 
-    env.storage().persistent().extend_ttl(
-        &DataKey::FactoryKey,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
-    );
+    env.storage()
+        .instance()
+        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
 
     address
 }
 
 pub fn save_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, admin);
-    env.storage().persistent().extend_ttl(
-        &DataKey::Admin,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
-    );
+    env.storage()
+        .instance()
+        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
 }
 
 pub fn get_admin(env: &Env) -> Address {
@@ -110,11 +104,9 @@ pub fn get_admin(env: &Env) -> Address {
             panic_with_error!(&env, ContractError::AdminNotSet)
         });
 
-    env.storage().persistent().extend_ttl(
-        &DataKey::Admin,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
-    );
+    env.storage()
+        .instance()
+        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
 
     address
 }
