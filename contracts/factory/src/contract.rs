@@ -2,7 +2,7 @@ use crate::{
     error::ContractError,
     storage::{
         get_config, get_lp_vec, is_initialized, save_config, save_lp_vec,
-        save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, DataKey, LiquidityPoolInfo,
+        save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, LiquidityPoolInfo,
         LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
