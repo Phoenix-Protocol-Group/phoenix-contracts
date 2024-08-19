@@ -1,3 +1,4 @@
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contracttype, log, panic_with_error, symbol_short, xdr::ToXdr, Address, Bytes, BytesN,
     ConversionError, Env, Symbol, TryFromVal, Val,
@@ -65,11 +66,22 @@ impl Config {
 }
 
 pub fn get_config(env: &Env) -> Config {
-    env.storage().persistent().get(&CONFIG).unwrap()
+    let config = env.storage().persistent().get(&CONFIG).unwrap();
+    env.storage().persistent().extend_ttl(
+        &CONFIG,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+    config
 }
 
 pub fn save_config(env: &Env, config: Config) {
     env.storage().persistent().set(&CONFIG, &config);
+    env.storage().persistent().extend_ttl(
+        &CONFIG,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 #[contracttype]
@@ -172,19 +184,39 @@ pub mod utils {
     }
 
     pub fn save_admin(e: &Env, address: Address) {
-        e.storage().persistent().set(&DataKey::Admin, &address)
+        e.storage().persistent().set(&DataKey::Admin, &address);
+        e.storage().persistent().extend_ttl(
+            &DataKey::Admin,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn save_total_shares(e: &Env, amount: i128) {
-        e.storage().persistent().set(&DataKey::TotalShares, &amount)
+        e.storage().persistent().set(&DataKey::TotalShares, &amount);
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalShares,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn save_pool_balance_a(e: &Env, amount: i128) {
-        e.storage().persistent().set(&DataKey::ReserveA, &amount)
+        e.storage().persistent().set(&DataKey::ReserveA, &amount);
+        e.storage().persistent().extend_ttl(
+            &DataKey::ReserveA,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn save_pool_balance_b(e: &Env, amount: i128) {
-        e.storage().persistent().set(&DataKey::ReserveB, &amount)
+        e.storage().persistent().set(&DataKey::ReserveB, &amount);
+        e.storage().persistent().extend_ttl(
+            &DataKey::ReserveB,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn mint_shares(e: &Env, share_token: &Address, to: &Address, amount: i128) {
@@ -205,18 +237,46 @@ pub mod utils {
 
     // queries
     pub fn get_admin(e: &Env) -> Address {
-        e.storage().persistent().get(&DataKey::Admin).unwrap()
+        let admin = e.storage().persistent().get(&DataKey::Admin).unwrap();
+        e.storage().persistent().extend_ttl(
+            &DataKey::Admin,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+
+        admin
     }
 
     pub fn get_total_shares(e: &Env) -> i128 {
-        e.storage().persistent().get(&DataKey::TotalShares).unwrap()
+        let total_shares = e.storage().persistent().get(&DataKey::TotalShares).unwrap();
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalShares,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+
+        total_shares
     }
     pub fn get_pool_balance_a(e: &Env) -> i128 {
-        e.storage().persistent().get(&DataKey::ReserveA).unwrap()
+        let balance_a = e.storage().persistent().get(&DataKey::ReserveA).unwrap();
+        e.storage().persistent().extend_ttl(
+            &DataKey::ReserveA,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+
+        balance_a
     }
 
     pub fn get_pool_balance_b(e: &Env) -> i128 {
-        e.storage().persistent().get(&DataKey::ReserveB).unwrap()
+        let balance_b = e.storage().persistent().get(&DataKey::ReserveB).unwrap();
+        e.storage().persistent().extend_ttl(
+            &DataKey::ReserveB,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+
+        balance_b
     }
 
     pub fn get_balance(e: &Env, contract: &Address) -> i128 {
@@ -347,14 +407,27 @@ pub mod utils {
     }
 
     pub fn is_initialized(e: &Env) -> bool {
-        e.storage()
+        let is_initialized = e
+            .storage()
             .persistent()
             .get(&DataKey::Initialized)
-            .unwrap_or(false)
+            .unwrap_or(false);
+        e.storage().persistent().extend_ttl(
+            &DataKey::Initialized,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+
+        is_initialized
     }
 
     pub fn set_initialized(e: &Env) {
         e.storage().persistent().set(&DataKey::Initialized, &true);
+        e.storage().persistent().extend_ttl(
+            &DataKey::Initialized,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 }
 
