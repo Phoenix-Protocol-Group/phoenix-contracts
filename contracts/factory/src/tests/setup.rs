@@ -88,6 +88,7 @@ pub fn deploy_factory_contract<'a>(
         &whitelisted_accounts,
         &10u32,
     );
+
     factory
 }
 

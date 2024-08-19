@@ -80,9 +80,13 @@ pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
             total_stake: 0i128,
         },
     };
-    env.storage()
-        .persistent()
-        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+    env.storage().persistent().has(&key).then(|| {
+        env.storage().persistent().extend_ttl(
+            &key,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
+    });
 
     bonding_info
 }
@@ -120,16 +124,10 @@ pub mod utils {
     }
 
     pub fn is_initialized(e: &Env) -> bool {
-        let is_initialized = e
-            .storage()
-            .instance()
-            .get(&DataKey::Initialized)
-            .unwrap_or(false);
         e.storage()
             .instance()
-            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
-
-        is_initialized
+            .get(&DataKey::Initialized)
+            .unwrap_or(false)
     }
 
     pub fn set_initialized(e: &Env) {
@@ -219,11 +217,16 @@ pub mod utils {
             .persistent()
             .get(&DataKey::Distributions)
             .unwrap_or_else(|| soroban_sdk::vec![e]);
-        e.storage().persistent().extend_ttl(
-            &DataKey::Distributions,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
-        );
+        e.storage()
+            .persistent()
+            .has(&DataKey::Distributions)
+            .then(|| {
+                e.storage().persistent().extend_ttl(
+                    &DataKey::Distributions,
+                    PERSISTENT_LIFETIME_THRESHOLD,
+                    PERSISTENT_BUMP_AMOUNT,
+                )
+            });
 
         distributions
     }

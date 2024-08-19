@@ -179,19 +179,10 @@ pub fn save_lp_vec_with_tuple_as_key(
 }
 
 pub fn is_initialized(e: &Env) -> bool {
-    let is_initialized = e
-        .storage()
+    e.storage()
         .persistent()
         .get(&DataKey::Initialized)
-        .unwrap_or(false);
-
-    e.storage().persistent().extend_ttl(
-        &DataKey::Initialized,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
-    );
-
-    is_initialized
+        .unwrap_or(false)
 }
 
 pub fn set_initialized(e: &Env) {

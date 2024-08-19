@@ -328,34 +328,50 @@ impl FactoryTrait for Factory {
             token_b: token_b.clone(),
         });
 
-        env.storage().persistent().extend_ttl(
-            &PairTupleKey {
+        env.storage()
+            .persistent()
+            .has(&PairTupleKey {
                 token_a: token_a.clone(),
                 token_b: token_b.clone(),
-            },
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
-        );
+            })
+            .then(|| {
+                env.storage().persistent().extend_ttl(
+                    &PairTupleKey {
+                        token_a: token_a.clone(),
+                        token_b: token_b.clone(),
+                    },
+                    PERSISTENT_LIFETIME_THRESHOLD,
+                    PERSISTENT_BUMP_AMOUNT,
+                );
+            });
 
         if let Some(addr) = pool_result {
             return addr;
         }
 
-        let reverted_pool_resul: Option<Address> = env.storage().persistent().get(&PairTupleKey {
+        let reverted_pool_result: Option<Address> = env.storage().persistent().get(&PairTupleKey {
             token_a: token_b.clone(),
             token_b: token_a.clone(),
         });
 
-        env.storage().persistent().extend_ttl(
-            &PairTupleKey {
-                token_a: token_b,
-                token_b: token_a,
-            },
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
-        );
+        env.storage()
+            .persistent()
+            .has(&PairTupleKey {
+                token_a: token_b.clone(),
+                token_b: token_a.clone(),
+            })
+            .then(|| {
+                env.storage().persistent().extend_ttl(
+                    &PairTupleKey {
+                        token_a: token_b,
+                        token_b: token_a,
+                    },
+                    PERSISTENT_LIFETIME_THRESHOLD,
+                    PERSISTENT_BUMP_AMOUNT,
+                );
+            });
 
-        if let Some(addr) = reverted_pool_resul {
+        if let Some(addr) = reverted_pool_result {
             return addr;
         }
 

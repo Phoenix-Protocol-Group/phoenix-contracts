@@ -173,16 +173,8 @@ pub fn set_initialized(env: &Env) {
 }
 
 pub fn is_initialized(env: &Env) -> bool {
-    let is_initialized = env
-        .storage()
+    env.storage()
         .persistent()
         .get(&DataKey::IsInitialized)
-        .unwrap_or_default();
-    env.storage().persistent().extend_ttl(
-        &DataKey::IsInitialized,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
-    );
-
-    is_initialized
+        .unwrap_or_default()
 }

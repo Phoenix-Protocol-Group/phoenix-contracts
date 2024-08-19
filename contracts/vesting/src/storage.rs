@@ -256,16 +256,10 @@ pub fn get_max_vesting_complexity(env: &Env) -> u32 {
 }
 
 pub fn is_initialized(e: &Env) -> bool {
-    let is_initialized = e
-        .storage()
-        .instance()
-        .get(&DataKey::IsInitialized)
-        .unwrap_or(false);
     e.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
-
-    is_initialized
+        .get(&DataKey::IsInitialized)
+        .unwrap_or(false)
 }
 
 pub fn set_initialized(e: &Env) {
