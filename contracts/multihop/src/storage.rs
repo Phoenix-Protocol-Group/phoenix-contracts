@@ -1,3 +1,4 @@
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{contracttype, log, panic_with_error, Address, Env, String, Vec};
 
 use crate::error::ContractError;
@@ -67,24 +68,47 @@ pub struct PoolResponse {
 
 pub fn save_factory(env: &Env, factory: Address) {
     env.storage().instance().set(&DataKey::FactoryKey, &factory);
+    env.storage()
+        .instance()
+        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
 }
 
 pub fn get_factory(env: &Env) -> Address {
-    env.storage().instance().get(&DataKey::FactoryKey).unwrap()
+    let address = env
+        .storage()
+        .instance()
+        .get(&DataKey::FactoryKey)
+        .expect("No address found.");
+
+    env.storage()
+        .instance()
+        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+
+    address
 }
 
 pub fn save_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, admin);
+    env.storage()
+        .instance()
+        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
 }
 
 pub fn get_admin(env: &Env) -> Address {
-    env.storage()
+    let address = env
+        .storage()
         .instance()
         .get(&DataKey::Admin)
         .unwrap_or_else(|| {
             log!(env, "Admin not set");
             panic_with_error!(&env, ContractError::AdminNotSet)
-        })
+        });
+
+    env.storage()
+        .instance()
+        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+
+    address
 }
 pub fn is_initialized(e: &Env) -> bool {
     e.storage()
@@ -95,4 +119,9 @@ pub fn is_initialized(e: &Env) -> bool {
 
 pub fn set_initialized(e: &Env) {
     e.storage().persistent().set(&DataKey::Initialized, &true);
+    e.storage().persistent().extend_ttl(
+        &DataKey::Initialized,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }

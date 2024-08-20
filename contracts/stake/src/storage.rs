@@ -1,3 +1,7 @@
+use phoenix::ttl::{
+    BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
+    PERSISTENT_LIFETIME_THRESHOLD,
+};
 use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, Symbol, Vec};
 
 use crate::stake_rewards_contract;
@@ -18,14 +22,27 @@ pub struct Config {
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
 pub fn get_config(env: &Env) -> Config {
-    env.storage()
+    let config = env
+        .storage()
         .persistent()
         .get(&CONFIG)
-        .expect("Stake: Config not set")
+        .expect("Stake: Config not set");
+    env.storage().persistent().extend_ttl(
+        &CONFIG,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    config
 }
 
 pub fn save_config(env: &Env, config: Config) {
     env.storage().persistent().set(&CONFIG, &config);
+    env.storage().persistent().extend_ttl(
+        &CONFIG,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 #[contracttype]
@@ -54,7 +71,7 @@ pub struct BondingInfo {
 }
 
 pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
-    match env.storage().persistent().get::<_, BondingInfo>(key) {
+    let bonding_info = match env.storage().persistent().get::<_, BondingInfo>(key) {
         Some(stake) => stake,
         None => BondingInfo {
             stakes: Vec::new(env),
@@ -62,11 +79,23 @@ pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
             last_reward_time: 0u64,
             total_stake: 0i128,
         },
-    }
+    };
+    env.storage().persistent().has(&key).then(|| {
+        env.storage().persistent().extend_ttl(
+            &key,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
+    });
+
+    bonding_info
 }
 
 pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
     env.storage().persistent().set(key, bonding_info);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
 pub mod utils {
@@ -103,18 +132,32 @@ pub mod utils {
 
     pub fn set_initialized(e: &Env) {
         e.storage().instance().set(&DataKey::Initialized, &true);
+        e.storage()
+            .instance()
+            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
     }
 
     pub fn save_admin(e: &Env, address: &Address) {
-        e.storage().instance().set(&DataKey::Admin, address)
+        e.storage().instance().set(&DataKey::Admin, address);
+        e.storage()
+            .instance()
+            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
     }
 
     pub fn get_admin(e: &Env) -> Address {
-        e.storage().instance().get(&DataKey::Admin).unwrap()
+        let admin = e.storage().instance().get(&DataKey::Admin).unwrap();
+        e.storage()
+            .instance()
+            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+
+        admin
     }
 
     pub fn init_total_staked(e: &Env) {
         e.storage().instance().set(&DataKey::TotalStaked, &0i128);
+        e.storage()
+            .instance()
+            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
     }
 
     pub fn increase_total_staked(e: &Env, amount: &i128) {
@@ -122,6 +165,10 @@ pub mod utils {
         e.storage()
             .instance()
             .set(&DataKey::TotalStaked, &(count + amount));
+
+        e.storage()
+            .instance()
+            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
     }
 
     pub fn decrease_total_staked(e: &Env, amount: &i128) {
@@ -129,10 +176,19 @@ pub mod utils {
         e.storage()
             .instance()
             .set(&DataKey::TotalStaked, &(count - amount));
+
+        e.storage()
+            .instance()
+            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
     }
 
     pub fn get_total_staked_counter(env: &Env) -> i128 {
-        env.storage().instance().get(&DataKey::TotalStaked).unwrap()
+        let total_staked = env.storage().instance().get(&DataKey::TotalStaked).unwrap();
+        env.storage()
+            .instance()
+            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+
+        total_staked
     }
 
     // Keep track of all distributions to be able to iterate over them
@@ -148,24 +204,55 @@ pub mod utils {
         e.storage()
             .persistent()
             .set(&DataKey::Distributions, &distributions);
+        e.storage().persistent().extend_ttl(
+            &DataKey::Distributions,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn get_distributions(e: &Env) -> Vec<(Address, Address)> {
-        e.storage()
+        let distributions = e
+            .storage()
             .persistent()
             .get(&DataKey::Distributions)
-            .unwrap_or_else(|| soroban_sdk::vec![e])
+            .unwrap_or_else(|| soroban_sdk::vec![e]);
+        e.storage()
+            .persistent()
+            .has(&DataKey::Distributions)
+            .then(|| {
+                e.storage().persistent().extend_ttl(
+                    &DataKey::Distributions,
+                    PERSISTENT_LIFETIME_THRESHOLD,
+                    PERSISTENT_BUMP_AMOUNT,
+                )
+            });
+
+        distributions
     }
 
     pub fn get_stake_rewards(e: &Env) -> BytesN<32> {
-        e.storage()
+        let stake_rewards = e
+            .storage()
             .persistent()
             .get(&DataKey::StakeRewards)
-            .unwrap()
+            .unwrap();
+        e.storage().persistent().extend_ttl(
+            &DataKey::StakeRewards,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+
+        stake_rewards
     }
 
     pub fn set_stake_rewards(e: &Env, hash: &BytesN<32>) {
         e.storage().persistent().set(&DataKey::StakeRewards, hash);
+        e.storage().persistent().extend_ttl(
+            &DataKey::StakeRewards,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn find_stake_rewards_by_asset(e: &Env, asset: &Address) -> Option<Address> {

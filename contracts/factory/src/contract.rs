@@ -2,13 +2,16 @@ use crate::{
     error::ContractError,
     storage::{
         get_config, get_lp_vec, is_initialized, save_config, save_lp_vec,
-        save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, DataKey, LiquidityPoolInfo,
+        save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, LiquidityPoolInfo,
         LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
 };
-use phoenix::utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
 use phoenix::validate_bps;
+use phoenix::{
+    ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD},
+    utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo},
+};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,
     IntoVal, String, Symbol, Val, Vec,
@@ -325,16 +328,50 @@ impl FactoryTrait for Factory {
             token_b: token_b.clone(),
         });
 
+        env.storage()
+            .persistent()
+            .has(&PairTupleKey {
+                token_a: token_a.clone(),
+                token_b: token_b.clone(),
+            })
+            .then(|| {
+                env.storage().persistent().extend_ttl(
+                    &PairTupleKey {
+                        token_a: token_a.clone(),
+                        token_b: token_b.clone(),
+                    },
+                    PERSISTENT_LIFETIME_THRESHOLD,
+                    PERSISTENT_BUMP_AMOUNT,
+                );
+            });
+
         if let Some(addr) = pool_result {
             return addr;
         }
 
-        let reverted_pool_resul: Option<Address> = env.storage().persistent().get(&PairTupleKey {
-            token_a: token_b,
-            token_b: token_a,
+        let reverted_pool_result: Option<Address> = env.storage().persistent().get(&PairTupleKey {
+            token_a: token_b.clone(),
+            token_b: token_a.clone(),
         });
 
-        if let Some(addr) = reverted_pool_resul {
+        env.storage()
+            .persistent()
+            .has(&PairTupleKey {
+                token_a: token_b.clone(),
+                token_b: token_a.clone(),
+            })
+            .then(|| {
+                env.storage().persistent().extend_ttl(
+                    &PairTupleKey {
+                        token_a: token_b,
+                        token_b: token_a,
+                    },
+                    PERSISTENT_LIFETIME_THRESHOLD,
+                    PERSISTENT_BUMP_AMOUNT,
+                );
+            });
+
+        if let Some(addr) = reverted_pool_result {
             return addr;
         }
 
@@ -350,10 +387,7 @@ impl FactoryTrait for Factory {
     }
 
     fn get_config(env: Env) -> Config {
-        env.storage()
-            .persistent()
-            .get(&DataKey::Config)
-            .expect("Factory: No multihop present in storage")
+        get_config(&env)
     }
 
     fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio {

@@ -2,7 +2,7 @@ use crate::{
     contract::{Factory, FactoryClient},
     token_contract,
 };
-use phoenix::utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
+use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{testutils::Address as _, vec, xdr::ToXdr, Address, Bytes, BytesN, Env, String};
 pub const ONE_DAY: u64 = 86400;
 
@@ -88,6 +88,7 @@ pub fn deploy_factory_contract<'a>(
         &whitelisted_accounts,
         &10u32,
     );
+
     factory
 }
 
