@@ -192,15 +192,15 @@ pub mod utils {
     }
 
     // Keep track of all distributions to be able to iterate over them
-    pub fn add_distribution(e: &Env, asset: &Address, stake_rewards: &Address) {
+    pub fn add_distribution(e: &Env, asset: &Address) {
         let mut distributions = get_distributions(e);
-        for (old_asset, _) in distributions.clone() {
+        for old_asset in distributions.clone() {
             if &old_asset == asset {
                 log!(&e, "Stake: Add distribution: Distribution already added");
                 panic_with_error!(&e, ContractError::DistributionExists);
             }
         }
-        distributions.push_back((asset.clone(), stake_rewards.clone()));
+        distributions.push_back(asset.clone());
         e.storage()
             .persistent()
             .set(&DataKey::Distributions, &distributions);
@@ -211,7 +211,7 @@ pub mod utils {
         );
     }
 
-    pub fn get_distributions(e: &Env) -> Vec<(Address, Address)> {
+    pub fn get_distributions(e: &Env) -> Vec<Address> {
         let distributions = e
             .storage()
             .persistent()
@@ -229,40 +229,6 @@ pub mod utils {
             });
 
         distributions
-    }
-
-    pub fn get_stake_rewards(e: &Env) -> BytesN<32> {
-        let stake_rewards = e
-            .storage()
-            .persistent()
-            .get(&DataKey::StakeRewards)
-            .unwrap();
-        e.storage().persistent().extend_ttl(
-            &DataKey::StakeRewards,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
-        );
-
-        stake_rewards
-    }
-
-    pub fn set_stake_rewards(e: &Env, hash: &BytesN<32>) {
-        e.storage().persistent().set(&DataKey::StakeRewards, hash);
-        e.storage().persistent().extend_ttl(
-            &DataKey::StakeRewards,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
-        );
-    }
-
-    pub fn find_stake_rewards_by_asset(e: &Env, asset: &Address) -> Option<Address> {
-        let distributions = get_distributions(e);
-        for (stored_asset, stake_rewards) in distributions.iter() {
-            if &stored_asset == asset {
-                return Some(stake_rewards);
-            }
-        }
-        None
     }
 }
 
