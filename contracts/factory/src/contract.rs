@@ -1,9 +1,10 @@
 use crate::{
     error::ContractError,
     storage::{
-        get_config, get_lp_vec, is_initialized, save_config, save_lp_vec,
-        save_lp_vec_with_tuple_as_key, set_initialized, Asset, Config, LiquidityPoolInfo,
-        LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse, UserPortfolio,
+        get_config, get_lp_vec, get_stable_wasm_hash, is_initialized, save_config, save_lp_vec,
+        save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
+        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse,
+        UserPortfolio,
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
 };
@@ -33,7 +34,6 @@ pub trait FactoryTrait {
         lp_wasm_hash: BytesN<32>,
         stable_wasm_hash: BytesN<32>,
         stake_wasm_hash: BytesN<32>,
-        stake_rewards_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
         lp_token_decimals: u32,
@@ -91,7 +91,6 @@ impl FactoryTrait for Factory {
         lp_wasm_hash: BytesN<32>,
         stable_wasm_hash: BytesN<32>,
         stake_wasm_hash: BytesN<32>,
-        stake_rewards_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
         lp_token_decimals: u32,
@@ -120,14 +119,13 @@ impl FactoryTrait for Factory {
                 admin: admin.clone(),
                 multihop_address,
                 lp_wasm_hash,
-                stable_wasm_hash,
                 stake_wasm_hash,
-                stake_rewards_wasm_hash,
                 token_wasm_hash,
                 whitelisted_accounts,
                 lp_token_decimals,
             },
         );
+        save_stable_wasm_hash(&env, stable_wasm_hash);
 
         save_lp_vec(&env, Vec::new(&env));
 
@@ -167,11 +165,10 @@ impl FactoryTrait for Factory {
         let config = get_config(&env);
         let stake_wasm_hash = config.stake_wasm_hash;
         let token_wasm_hash = config.token_wasm_hash;
-        let stake_rewards_wasm_hash = config.stake_rewards_wasm_hash;
 
         let pool_hash = match pool_type {
             PoolType::Xyk => config.lp_wasm_hash,
-            PoolType::Stable => config.stable_wasm_hash,
+            PoolType::Stable => get_stable_wasm_hash(&env),
         };
 
         let lp_contract_address = deploy_lp_contract(
@@ -195,7 +192,6 @@ impl FactoryTrait for Factory {
         let mut init_fn_args: Vec<Val> = (
             stake_wasm_hash,
             token_wasm_hash,
-            stake_rewards_wasm_hash,
             lp_init_info.clone(),
             factory_addr,
             config.lp_token_decimals,
