@@ -36,7 +36,7 @@ fn factory_successfully_inits_multihop() {
 
     let multihop_address = factory.get_config().multihop_address;
 
-    assert!(multihop_address.to_string().len() != 0);
+    assert!(!multihop_address.to_string().is_empty());
 }
 
 #[test]
