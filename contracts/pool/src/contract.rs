@@ -9,7 +9,7 @@ use crate::{
     error::ContractError,
     stake_contract,
     storage::{
-        get_config, save_config,
+        get_config, get_default_slippage_bps, save_config, save_default_slippage_bps,
         utils::{self, get_admin, is_initialized, set_initialized},
         Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
@@ -250,10 +250,10 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
             max_referral_bps,
-            default_slippage_bps,
         };
 
         save_config(&env, config);
+        save_default_slippage_bps(&env, default_slippage_bps);
 
         utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);
@@ -319,7 +319,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     min_b,
                     pool_balance_a,
                     pool_balance_b,
-                    Decimal::bps(custom_slippage_bps.unwrap_or(config.default_slippage_bps)),
+                    Decimal::bps(custom_slippage_bps.unwrap_or(get_default_slippage_bps(&env))),
                 )
             }
             // None or invalid amounts are provided

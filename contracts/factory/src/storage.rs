@@ -57,7 +57,7 @@ pub fn get_stable_wasm_hash(env: &Env) -> BytesN<32> {
         .expect("Stable wasm hash not set");
 
     env.storage().persistent().extend_ttl(
-        &DataKey::Config,
+        &STABLE_WASM_HASH,
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
     );

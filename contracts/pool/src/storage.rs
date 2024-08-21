@@ -50,10 +50,33 @@ pub struct Config {
     pub max_allowed_spread_bps: i64,
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
-    /// Default value that will be used whenever the user hasn't specified their preferred slippage
-    pub default_slippage_bps: i64,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
+
+const DEFAULT_SLIPPAGE_BPS: Symbol = symbol_short!("DSLIPBPS");
+pub fn save_default_slippage_bps(env: &Env, bps: i64) {
+    env.storage().persistent().set(&DEFAULT_SLIPPAGE_BPS, &bps);
+    env.storage().persistent().extend_ttl(
+        &DEFAULT_SLIPPAGE_BPS,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    )
+}
+
+pub fn get_default_slippage_bps(env: &Env) -> i64 {
+    let bps = env
+        .storage()
+        .persistent()
+        .get(&DEFAULT_SLIPPAGE_BPS)
+        .expect("Stable wasm hash not set");
+
+    env.storage().persistent().extend_ttl(
+        &DEFAULT_SLIPPAGE_BPS,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+    bps
+}
 
 impl Config {
     pub fn protocol_fee_rate(&self) -> Decimal {
