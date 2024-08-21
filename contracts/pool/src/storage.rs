@@ -697,7 +697,6 @@ mod tests {
             fee_recipient: Address::generate(&env),
             max_allowed_spread_bps: 10_i64,
             max_referral_bps: 10i64,
-            default_slippage_bps: 100i64,
         };
 
         let result = config.max_allowed_slippage();

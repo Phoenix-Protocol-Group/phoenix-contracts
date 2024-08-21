@@ -1363,7 +1363,6 @@ mod tests {
             max_allowed_slippage_bps: 100i64,
             max_allowed_spread_bps: 100i64,
             max_referral_bps: 1_000i64,
-            default_slippage_bps: 100i64,
         };
         split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
     }
