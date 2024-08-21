@@ -112,7 +112,7 @@ pub trait LiquidityPoolTrait {
     );
 
     // Migration entrypoint
-    fn upgrade(e: Env, new_wasm_hash: BytesN<32>);
+    fn upgrade(e: Env, new_wasm_hash: BytesN<32>, new_default_slippage_bps: i64);
 
     // QUERIES
 
@@ -568,11 +568,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         save_config(&env, config);
     }
 
-    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>, new_default_slippage_bps: i64) {
         let admin: Address = utils::get_admin(&env);
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+        save_default_slippage_bps(&env, new_default_slippage_bps);
     }
 
     // Queries
