@@ -138,55 +138,71 @@ pub mod utils {
     }
 
     pub fn save_admin(e: &Env, address: &Address) {
-        e.storage().instance().set(&DataKey::Admin, address);
-        e.storage()
-            .instance()
-            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        e.storage().persistent().set(&DataKey::Admin, address);
+        e.storage().persistent().extend_ttl(
+            &DataKey::Admin,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn get_admin(e: &Env) -> Address {
-        let admin = e.storage().instance().get(&DataKey::Admin).unwrap();
-        e.storage()
-            .instance()
-            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        let admin = e.storage().persistent().get(&DataKey::Admin).unwrap();
+        e.storage().persistent().extend_ttl(
+            &DataKey::Admin,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
 
         admin
     }
 
     pub fn init_total_staked(e: &Env) {
-        e.storage().instance().set(&DataKey::TotalStaked, &0i128);
-        e.storage()
-            .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
     }
 
     pub fn increase_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
         e.storage()
-            .instance()
+            .persistent()
             .set(&DataKey::TotalStaked, &(count + amount));
 
-        e.storage()
-            .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
     }
 
     pub fn decrease_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
         e.storage()
-            .instance()
+            .persistent()
             .set(&DataKey::TotalStaked, &(count - amount));
 
-        e.storage()
-            .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
     }
 
     pub fn get_total_staked_counter(env: &Env) -> i128 {
-        let total_staked = env.storage().instance().get(&DataKey::TotalStaked).unwrap();
-        env.storage()
-            .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        let total_staked = env
+            .storage()
+            .persistent()
+            .get(&DataKey::TotalStaked)
+            .unwrap();
+        env.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
 
         total_staked
     }
