@@ -12,7 +12,7 @@ fmt:
 	cargo fmt --all
 
 clippy: build
-	cargo clippy --all-targets -- -D warnings
+	cargo clippy --tests -- -D warnings
 
 clean:
 	cargo clean
