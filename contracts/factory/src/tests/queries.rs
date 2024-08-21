@@ -255,6 +255,7 @@ fn test_deploy_multiple_liquidity_pools() {
 #[test]
 fn test_queries_by_tuple() {
     let env = Env::default();
+    env.budget().reset_unlimited();
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
 
@@ -427,6 +428,7 @@ fn test_queries_by_tuple() {
 #[should_panic(expected = "Factory: query_for_pool_by_token_pair failed: No liquidity pool found")]
 fn test_queries_by_tuple_errors() {
     let env = Env::default();
+    env.budget().reset_unlimited();
     let admin = Address::generate(&env);
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
@@ -436,6 +438,7 @@ fn test_queries_by_tuple_errors() {
 #[test]
 fn test_query_user_portfolio_with_stake() {
     let env = Env::default();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let fee_recipient = Address::generate(&env);
@@ -672,6 +675,7 @@ fn test_query_user_portfolio_with_stake() {
 #[test]
 fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_pools() {
     let env = Env::default();
+    env.budget().reset_unlimited();
     let admin = Address::generate(&env);
     let fee_recipient = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -1196,6 +1200,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
 #[test]
 fn test_query_user_portfolio_without_stake() {
     let env = Env::default();
+    env.budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let fee_recipient = Address::generate(&env);
