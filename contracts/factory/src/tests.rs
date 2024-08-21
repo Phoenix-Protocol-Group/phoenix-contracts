@@ -1,4 +1,3 @@
-use setup::install_stake_rewards_wasm;
 use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 use self::setup::{
@@ -24,7 +23,6 @@ fn test_deploy_factory_twice_should_fail() {
     let lp_wasm_hash = install_lp_contract(&env);
     let stable_wasm_hash = install_stable_lp(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
-    let stake_rewards_wasm_hash = install_stake_rewards_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
 
     let factory = deploy_factory_contract(&env, admin.clone());
@@ -35,7 +33,6 @@ fn test_deploy_factory_twice_should_fail() {
         &lp_wasm_hash,
         &stable_wasm_hash,
         &stake_wasm_hash,
-        &stake_rewards_wasm_hash,
         &token_wasm_hash,
         &vec![&env, auth_user.clone()],
         &10u32,
@@ -46,7 +43,6 @@ fn test_deploy_factory_twice_should_fail() {
         &lp_wasm_hash,
         &stable_wasm_hash,
         &stake_wasm_hash,
-        &stake_rewards_wasm_hash,
         &token_wasm_hash,
         &vec![&env, auth_user.clone()],
         &10u32,
