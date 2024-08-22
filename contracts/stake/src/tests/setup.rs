@@ -1,5 +1,6 @@
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
+    vec,
     xdr::ToXdr,
     Address, Bytes, BytesN, Env,
 };
@@ -76,7 +77,7 @@ pub fn deploy_staking_contract<'a>(
 }
 
 #[test]
-//#[cfg(feature = "upgrade")]
+#[cfg(feature = "upgrade")]
 fn upgrade_stake_contract() {
     let env = Env::default();
     env.mock_all_auths();
@@ -91,28 +92,53 @@ fn upgrade_stake_contract() {
 
     let stake_v_1_0_0_client = stake_v_1_0_0::Client::new(&env, &stake_addr);
 
-    let lp_token_addr = Address::generate(&env);
     let manager = Address::generate(&env);
     let owner = Address::generate(&env);
 
-    stake_v_1_0_0_client.initialize(&admin, &lp_token_addr, &10, &10, &manager, &owner, &10);
+    stake_v_1_0_0_client.initialize(
+        &admin,
+        &token_client.address,
+        &10,
+        &10,
+        &manager,
+        &owner,
+        &10,
+    );
 
     assert_eq!(stake_v_1_0_0_client.query_admin(), admin);
 
     env.ledger().with_mut(|li| li.timestamp = 100);
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     stake_v_1_0_0_client.bond(&user, &1_000);
-    soroban_sdk::testutils::arbitrary::std::dbg!();
-    //env.ledger().with_mut(|li| li.timestamp = 10_000);
-    //
-    //let new_stake_wasm = install_stake_latest_wasm(&env);
-    //stake_v_1_0_0_client.update(&new_stake_wasm);
-    //
-    //let updgraded_stake_client = stake_latest::Client::new(&env, &stake_addr);
-    //
-    //assert_eq!(updgraded_stake_client.query_admin(), admin);
-    //
-    //env.ledger().with_mut(|li| li.timestamp = 20_000);
-    //
-    //updgraded_stake_client.unbond(&user, &1_000, &100);
+    assert_eq!(
+        stake_v_1_0_0_client.query_staked(&user),
+        stake_v_1_0_0::StakedResponse {
+            stakes: vec![
+                &env,
+                stake_v_1_0_0::Stake {
+                    stake: 1_000i128,
+                    stake_timestamp: 100
+                }
+            ]
+        }
+    );
+
+    env.ledger().with_mut(|li| li.timestamp = 10_000);
+
+    let new_stake_wasm = install_stake_latest_wasm(&env);
+    stake_v_1_0_0_client.update(&new_stake_wasm);
+
+    let updgraded_stake_client = stake_latest::Client::new(&env, &stake_addr);
+
+    assert_eq!(updgraded_stake_client.query_admin(), admin);
+
+    env.ledger().with_mut(|li| li.timestamp = 20_000);
+
+    updgraded_stake_client.unbond(&user, &1_000, &100);
+    assert_eq!(
+        updgraded_stake_client.query_staked(&user),
+        stake_latest::StakedResponse {
+            stakes: vec![&env,],
+            total_stake: 0i128
+        }
+    );
 }
