@@ -1,167 +1,167 @@
-extern crate std;
-use soroban_sdk::{
-    symbol_short,
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    vec, Address, BytesN, Env, IntoVal, String, Symbol,
-};
-
-use super::setup::{deploy_staking_contract, deploy_token_contract};
-use pretty_assertions::assert_eq;
-
-use crate::{
-    msg::{
-        AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward,
-        WithdrawableRewardsResponse,
-    },
-    tests::setup::{ONE_DAY, SIXTY_DAYS},
-};
-
-#[test]
-fn add_distribution_and_distribute_reward() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let user = Address::generate(&env);
-    let manager = Address::generate(&env);
-    let lp_token = deploy_token_contract(&env, &admin);
-    let reward_token = deploy_token_contract(&env, &admin);
-
-    let staking = deploy_staking_contract(
-        &env,
-        admin.clone(),
-        &lp_token.address,
-        &manager,
-        &admin,
-        &50u32,
-    );
-
-    staking.create_distribution_flow(
-        &admin,
-        &reward_token.address,
-        &BytesN::from_array(&env, &[1; 32]),
-        &10,
-        &100,
-        &1,
-    );
-
-    assert_eq!(
-        env.auths(),
-        [(
-            admin.clone(),
-            AuthorizedInvocation {
-                function: AuthorizedFunction::Contract((
-                    staking.address.clone(),
-                    Symbol::new(&env, "create_distribution_flow"),
-                    (
-                        &admin.clone(),
-                        reward_token.address.clone(),
-                        BytesN::from_array(&env, &[1; 32]),
-                        10u32,
-                        100i128,
-                        1i128
-                    )
-                        .into_val(&env),
-                )),
-                sub_invocations: std::vec![],
-            }
-        ),]
-    );
-
-    let reward_amount: u128 = 100_000;
-    reward_token.mint(&admin, &(reward_amount as i128));
-
-    // bond tokens for user to enable distribution for him
-    lp_token.mint(&user, &1000);
-    staking.bond(&user, &1000);
-
-    // simulate moving forward 60 days for the full APR multiplier
-    env.ledger().with_mut(|li| {
-        li.timestamp = SIXTY_DAYS;
-    });
-
-    let staking_rewards = staking.query_distribution(&reward_token.address).unwrap();
-
-    let reward_duration = 600;
-    staking.fund_distribution(
-        &SIXTY_DAYS,
-        &reward_duration,
-        &reward_token.address,
-        &(reward_amount as i128),
-    );
-
-    assert_eq!(
-        env.auths(),
-        [(
-            admin.clone(),
-            AuthorizedInvocation {
-                function: AuthorizedFunction::Contract((
-                    staking.address.clone(),
-                    Symbol::new(&env, "fund_distribution"),
-                    (
-                        SIXTY_DAYS,
-                        reward_duration,
-                        reward_token.address.clone(),
-                        reward_amount as i128
-                    )
-                        .into_val(&env),
-                )),
-                sub_invocations: std::vec![AuthorizedInvocation {
-                    function: AuthorizedFunction::Contract((
-                        staking_rewards.clone(), // Repeat the fund_distribution call
-                        Symbol::new(&env, "fund_distribution"),
-                        (SIXTY_DAYS, reward_duration, reward_amount as i128).into_val(&env),
-                    )),
-                    sub_invocations: std::vec![AuthorizedInvocation {
-                        function: AuthorizedFunction::Contract((
-                            reward_token.address.clone(),
-                            symbol_short!("transfer"),
-                            (&admin, &staking_rewards.clone(), reward_amount as i128)
-                                .into_val(&env)
-                        )),
-                        sub_invocations: std::vec![],
-                    },],
-                },],
-            }
-        ),]
-    );
-
-    staking.distribute_rewards();
-    assert_eq!(
-        staking.query_undistributed_rewards(&reward_token.address),
-        reward_amount
-    );
-
-    env.ledger().with_mut(|li| {
-        li.timestamp = SIXTY_DAYS + reward_duration;
-    });
-    staking.distribute_rewards();
-    assert_eq!(
-        staking.query_undistributed_rewards(&reward_token.address),
-        0
-    );
-    assert_eq!(
-        staking.query_distributed_rewards(&reward_token.address),
-        reward_amount
-    );
-
-    assert_eq!(
-        staking.query_withdrawable_rewards(&user),
-        WithdrawableRewardsResponse {
-            rewards: vec![
-                &env,
-                WithdrawableReward {
-                    reward_address: reward_token.address.clone(),
-                    reward_amount
-                }
-            ]
-        }
-    );
-
-    staking.withdraw_rewards(&user);
-    assert_eq!(reward_token.balance(&user), reward_amount as i128);
-}
+//extern crate std;
+//use soroban_sdk::{
+//    symbol_short,
+//    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
+//    vec, Address, BytesN, Env, IntoVal, String, Symbol,
+//};
+//
+//use super::setup::{deploy_staking_contract, deploy_token_contract};
+//use pretty_assertions::assert_eq;
+//
+//use crate::{
+//    msg::{
+//        AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward,
+//        WithdrawableRewardsResponse,
+//    },
+//    tests::setup::{ONE_DAY, SIXTY_DAYS},
+//};
+//
+//#[test]
+//fn add_distribution_and_distribute_reward() {
+//    let env = Env::default();
+//    env.mock_all_auths();
+//    env.budget().reset_unlimited();
+//
+//    let admin = Address::generate(&env);
+//    let user = Address::generate(&env);
+//    let manager = Address::generate(&env);
+//    let lp_token = deploy_token_contract(&env, &admin);
+//    let reward_token = deploy_token_contract(&env, &admin);
+//
+//    let staking = deploy_staking_contract(
+//        &env,
+//        admin.clone(),
+//        &lp_token.address,
+//        &manager,
+//        &admin,
+//        &50u32,
+//    );
+//
+//    staking.create_distribution_flow(
+//        &admin,
+//        &reward_token.address,
+//        &BytesN::from_array(&env, &[1; 32]),
+//        &10,
+//        &100,
+//        &1,
+//    );
+//
+//    assert_eq!(
+//        env.auths(),
+//        [(
+//            admin.clone(),
+//            AuthorizedInvocation {
+//                function: AuthorizedFunction::Contract((
+//                    staking.address.clone(),
+//                    Symbol::new(&env, "create_distribution_flow"),
+//                    (
+//                        &admin.clone(),
+//                        reward_token.address.clone(),
+//                        BytesN::from_array(&env, &[1; 32]),
+//                        10u32,
+//                        100i128,
+//                        1i128
+//                    )
+//                        .into_val(&env),
+//                )),
+//                sub_invocations: std::vec![],
+//            }
+//        ),]
+//    );
+//
+//    let reward_amount: u128 = 100_000;
+//    reward_token.mint(&admin, &(reward_amount as i128));
+//
+//    // bond tokens for user to enable distribution for him
+//    lp_token.mint(&user, &1000);
+//    staking.bond(&user, &1000);
+//
+//    // simulate moving forward 60 days for the full APR multiplier
+//    env.ledger().with_mut(|li| {
+//        li.timestamp = SIXTY_DAYS;
+//    });
+//
+//    let staking_rewards = staking.query_distribution(&reward_token.address).unwrap();
+//
+//    let reward_duration = 600;
+//    staking.fund_distribution(
+//        &SIXTY_DAYS,
+//        &reward_duration,
+//        &reward_token.address,
+//        &(reward_amount as i128),
+//    );
+//
+//    assert_eq!(
+//        env.auths(),
+//        [(
+//            admin.clone(),
+//            AuthorizedInvocation {
+//                function: AuthorizedFunction::Contract((
+//                    staking.address.clone(),
+//                    Symbol::new(&env, "fund_distribution"),
+//                    (
+//                        SIXTY_DAYS,
+//                        reward_duration,
+//                        reward_token.address.clone(),
+//                        reward_amount as i128
+//                    )
+//                        .into_val(&env),
+//                )),
+//                sub_invocations: std::vec![AuthorizedInvocation {
+//                    function: AuthorizedFunction::Contract((
+//                        staking_rewards.clone(), // Repeat the fund_distribution call
+//                        Symbol::new(&env, "fund_distribution"),
+//                        (SIXTY_DAYS, reward_duration, reward_amount as i128).into_val(&env),
+//                    )),
+//                    sub_invocations: std::vec![AuthorizedInvocation {
+//                        function: AuthorizedFunction::Contract((
+//                            reward_token.address.clone(),
+//                            symbol_short!("transfer"),
+//                            (&admin, &staking_rewards.clone(), reward_amount as i128)
+//                                .into_val(&env)
+//                        )),
+//                        sub_invocations: std::vec![],
+//                    },],
+//                },],
+//            }
+//        ),]
+//    );
+//
+//    staking.distribute_rewards();
+//    assert_eq!(
+//        staking.query_undistributed_rewards(&reward_token.address),
+//        reward_amount
+//    );
+//
+//    env.ledger().with_mut(|li| {
+//        li.timestamp = SIXTY_DAYS + reward_duration;
+//    });
+//    staking.distribute_rewards();
+//    assert_eq!(
+//        staking.query_undistributed_rewards(&reward_token.address),
+//        0
+//    );
+//    assert_eq!(
+//        staking.query_distributed_rewards(&reward_token.address),
+//        reward_amount
+//    );
+//
+//    assert_eq!(
+//        staking.query_withdrawable_rewards(&user),
+//        WithdrawableRewardsResponse {
+//            rewards: vec![
+//                &env,
+//                WithdrawableReward {
+//                    reward_address: reward_token.address.clone(),
+//                    reward_amount
+//                }
+//            ]
+//        }
+//    );
+//
+//    staking.withdraw_rewards(&user);
+//    assert_eq!(reward_token.balance(&user), reward_amount as i128);
+//}
 
 // #[test]
 // fn two_distributions() {

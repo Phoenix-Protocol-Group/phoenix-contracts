@@ -21,19 +21,24 @@ pub fn install_stake_rewards_contract(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+#[allow(clippy::too_many_arguments)]
 mod stake_mainnet {
     soroban_sdk::contractimport!(file = "../../artifacts/phoenix_stake.wasm");
+}
+
+#[allow(clippy::too_many_arguments)]
+mod stake_latest {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
+    );
 }
 
 fn install_stake_mainnet_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(stake_mainnet::WASM)
 }
 
-fn install_current_stake_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
-    );
-    env.deployer().upload_contract_wasm(WASM)
+fn install_stake_latest_wasm(env: &Env) -> BytesN<32> {
+    env.deployer().upload_contract_wasm(stake_latest::WASM)
 }
 
 const MIN_BOND: i128 = 1000;
@@ -73,18 +78,9 @@ fn upgrade_stake_contract() {
     env.budget().reset_unlimited();
     let admin = Address::generate(&env);
 
-    let mut salt = Bytes::new(&env);
-    salt.append(&admin.clone().to_xdr(&env));
+    let stake_addr = env.register_contract_wasm(None, stake_mainnet::WASM);
 
-    let salt = env.crypto().sha256(&salt);
-
-    let mainnet_stake_wasm = install_stake_mainnet_wasm(&env);
-    let addr = env
-        .deployer()
-        .with_address(admin.clone(), salt)
-        .deploy(mainnet_stake_wasm);
-
-    let stake_mainnet_client = stake_mainnet::Client::new(&env, &addr);
+    let stake_mainnet_client = stake_mainnet::Client::new(&env, &stake_addr);
 
     let lp_token_addr = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -100,6 +96,10 @@ fn upgrade_stake_contract() {
         &10,
     );
 
-    let new_stake_wasm = install_current_stake_wasm(&env);
+    let new_stake_wasm = install_stake_latest_wasm(&env);
     stake_mainnet_client.update(&new_stake_wasm);
+
+    let updgraded_stake_client = stake_latest::Client::new(&env, &stake_addr);
+
+    assert_eq!(updgraded_stake_client.query_admin(), admin);
 }
