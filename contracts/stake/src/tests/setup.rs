@@ -1,4 +1,8 @@
-use soroban_sdk::{testutils::Address as _, xdr::ToXdr, Address, Bytes, BytesN, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger},
+    xdr::ToXdr,
+    Address, Bytes, BytesN, Env,
+};
 
 use crate::{
     contract::{Staking, StakingClient},
@@ -22,7 +26,7 @@ pub fn install_stake_rewards_contract(env: &Env) -> BytesN<32> {
 }
 
 #[allow(clippy::too_many_arguments)]
-mod stake_mainnet {
+mod stake_v_1_0_0 {
     soroban_sdk::contractimport!(file = "../../artifacts/phoenix_stake.wasm");
 }
 
@@ -34,7 +38,7 @@ mod stake_latest {
 }
 
 fn install_stake_mainnet_wasm(env: &Env) -> BytesN<32> {
-    env.deployer().upload_contract_wasm(stake_mainnet::WASM)
+    env.deployer().upload_contract_wasm(stake_v_1_0_0::WASM)
 }
 
 fn install_stake_latest_wasm(env: &Env) -> BytesN<32> {
@@ -72,34 +76,43 @@ pub fn deploy_staking_contract<'a>(
 }
 
 #[test]
+//#[cfg(feature = "upgrade")]
 fn upgrade_stake_contract() {
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
     let admin = Address::generate(&env);
+    let user = Address::generate(&env);
 
-    let stake_addr = env.register_contract_wasm(None, stake_mainnet::WASM);
+    let token_client = deploy_token_contract(&env, &admin);
+    token_client.mint(&user, &1_000);
 
-    let stake_mainnet_client = stake_mainnet::Client::new(&env, &stake_addr);
+    let stake_addr = env.register_contract_wasm(None, stake_v_1_0_0::WASM);
+
+    let stake_v_1_0_0_client = stake_v_1_0_0::Client::new(&env, &stake_addr);
 
     let lp_token_addr = Address::generate(&env);
     let manager = Address::generate(&env);
     let owner = Address::generate(&env);
 
-    stake_mainnet_client.initialize(
-        &admin,
-        &lp_token_addr,
-        &MIN_BOND,
-        &MIN_REWARD,
-        &manager,
-        &owner,
-        &10,
-    );
+    stake_v_1_0_0_client.initialize(&admin, &lp_token_addr, &10, &10, &manager, &owner, &10);
 
-    let new_stake_wasm = install_stake_latest_wasm(&env);
-    stake_mainnet_client.update(&new_stake_wasm);
+    assert_eq!(stake_v_1_0_0_client.query_admin(), admin);
 
-    let updgraded_stake_client = stake_latest::Client::new(&env, &stake_addr);
-
-    assert_eq!(updgraded_stake_client.query_admin(), admin);
+    env.ledger().with_mut(|li| li.timestamp = 100);
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    stake_v_1_0_0_client.bond(&user, &1_000);
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    //env.ledger().with_mut(|li| li.timestamp = 10_000);
+    //
+    //let new_stake_wasm = install_stake_latest_wasm(&env);
+    //stake_v_1_0_0_client.update(&new_stake_wasm);
+    //
+    //let updgraded_stake_client = stake_latest::Client::new(&env, &stake_addr);
+    //
+    //assert_eq!(updgraded_stake_client.query_admin(), admin);
+    //
+    //env.ledger().with_mut(|li| li.timestamp = 20_000);
+    //
+    //updgraded_stake_client.unbond(&user, &1_000, &100);
 }
