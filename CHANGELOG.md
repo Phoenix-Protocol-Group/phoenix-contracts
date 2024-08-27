@@ -6,6 +6,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [1.1.0] - 2024-08-27
+
 ## Changed
 
 - decimal: Rename to `soroban-decimal` and publish in crates.io ([#299])
