@@ -36,20 +36,24 @@ pub fn save_reward_history(e: &Env, reward_token: &Address, reward_history: Map<
         &DistributionDataKey::RewardHistory(reward_token.clone()),
         &reward_history,
     );
-    e.storage()
-        .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+    e.storage().persistent().extend_ttl(
+        &DistributionDataKey::RewardHistory(reward_token.clone()),
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_reward_history(e: &Env, reward_token: &Address) -> Map<u64, u128> {
     let reward_history = e
         .storage()
-        .instance()
+        .persistent()
         .get(&DistributionDataKey::RewardHistory(reward_token.clone()))
         .unwrap();
-    e.storage()
-        .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+    e.storage().persistent().extend_ttl(
+        &DistributionDataKey::RewardHistory(reward_token.clone()),
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 
     reward_history
 }
@@ -59,20 +63,24 @@ pub fn save_total_staked_history(e: &Env, total_staked_history: Map<u64, u128>) 
         &DistributionDataKey::TotalStakedHistory,
         &total_staked_history,
     );
-    e.storage()
-        .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+    e.storage().persistent().extend_ttl(
+        &DistributionDataKey::TotalStakedHistory,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_total_staked_history(e: &Env) -> Map<u64, u128> {
     let total_staked_history = e
         .storage()
-        .instance()
+        .persistent()
         .get(&DistributionDataKey::TotalStakedHistory)
         .unwrap();
-    e.storage()
-        .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+    e.storage().persistent().extend_ttl(
+        &DistributionDataKey::TotalStakedHistory,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 
     total_staked_history
 }
@@ -137,4 +145,53 @@ pub fn calculate_pending_rewards(
     }
 
     pending_rewards
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use soroban_sdk::{
+        testutils::LedgerInfo,
+        testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
+        vec, Env, map
+    };
+    use crate::storage::Stake;
+
+    #[test]
+    fn test_pending_rewards_with_stakes_and_rewards() {
+        let env = Env::default();
+        let user_info = BondingInfo {
+            stakes: vec![
+                &env,
+                Stake {
+                    stake_timestamp: SECONDS_PER_DAY * 50,
+                    stake: 100,
+                },
+                Stake {
+                    stake_timestamp: SECONDS_PER_DAY * 70,
+                    stake: 200,
+                },
+            ],
+            reward_debt: 0,
+            last_reward_time: SECONDS_PER_DAY * 80,
+            total_stake: 300,
+        };
+        let reward_token = Address::generate(&env);
+
+        // Mock the reward and total staked history
+        save_reward_history(&env, &reward_token, map![&env, (80, 1000), (81, 1200)]);
+        save_total_staked_history(&env, map![&env, (80, 500), (81, 600)]);
+
+        let pending_rewards = calculate_pending_rewards(&env, &reward_token, &user_info);
+
+        // Expected rewards calculation
+        // For simplicity, let's assume full rewards are accrued without decay or age multiplier
+        let expected_reward_day_80 = 1000 * user_info.total_stake as u128 / 500; // 1000 * 300 / 500 = 600
+        let expected_reward_day_81 = 1200 * user_info.total_stake as u128 / 600; // 1200 * 300 / 600 = 600
+
+        assert_eq!(
+            pending_rewards,
+            (expected_reward_day_80 + expected_reward_day_81) as i128
+        );
+    }
 }

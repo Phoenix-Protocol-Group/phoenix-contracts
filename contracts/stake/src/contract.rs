@@ -1,7 +1,7 @@
 use phoenix::utils::convert_i128_to_u128;
 use soroban_decimal::Decimal;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,
+    contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
     IntoVal, Symbol, Val, Vec,
 };
 
@@ -138,6 +138,7 @@ impl StakingTrait for Staking {
 
         utils::save_admin(&env, &admin);
         utils::init_total_staked(&env);
+        save_total_staked_history(&env, map![&env]);
     }
 
     fn bond(env: Env, sender: Address, tokens: i128) {
@@ -181,12 +182,12 @@ impl StakingTrait for Staking {
 
         // check for rewards and withdraw them
         Self::withdraw_rewards(env.clone(), sender.clone());
-        // let found_rewards: WithdrawableRewardsResponse =
-        //     Self::query_withdrawable_rewards(env.clone(), sender.clone());
+        let found_rewards: WithdrawableRewardsResponse =
+            Self::query_withdrawable_rewards(env.clone(), sender.clone());
 
-        // if !found_rewards.rewards.is_empty() {
-        //     Self::withdraw_rewards(env.clone(), sender.clone());
-        // }
+        if !found_rewards.rewards.is_empty() {
+            Self::withdraw_rewards(env.clone(), sender.clone());
+        }
 
         let mut stakes = get_stakes(&env, &sender);
 
@@ -215,6 +216,7 @@ impl StakingTrait for Staking {
         }
 
         add_distribution(&env, &asset);
+        save_reward_history(&env, &asset, map![&env]);
 
         env.events()
             .publish(("create_distribution_flow", "asset"), &asset);

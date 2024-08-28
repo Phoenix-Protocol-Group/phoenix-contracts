@@ -19,14 +19,6 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn install_stake_rewards_contract(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake_rewards.wasm"
-    );
-    env.deployer().upload_contract_wasm(WASM)
-}
-
-#[allow(clippy::too_many_arguments)]
 mod stake_v_1_0_0 {
     soroban_sdk::contractimport!(file = "../../artifacts/phoenix_stake.wasm");
 }
@@ -62,7 +54,6 @@ pub fn deploy_staking_contract<'a>(
 ) -> StakingClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
     let staking = StakingClient::new(env, &env.register_contract(None, Staking {}));
-    let _stake_rewards_hash = install_stake_rewards_contract(env);
 
     staking.initialize(
         &admin,
