@@ -1,21 +1,15 @@
-use phoenix::utils::convert_i128_to_u128;
-use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    IntoVal, Symbol, Val, Vec,
+    Vec,
 };
 
 use crate::{
     distribution::{
-        calc_power, calculate_pending_rewards, get_reward_history, get_total_staked_history,
+        calculate_pending_rewards, get_reward_history, get_total_staked_history,
         save_reward_history, save_total_staked_history,
     },
     error::ContractError,
-    msg::{
-        AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
-        WithdrawableReward, WithdrawableRewardsResponse,
-    },
-    stake_rewards_contract,
+    msg::{ConfigResponse, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse},
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
@@ -24,7 +18,7 @@ use crate::{
         },
         Config, Stake,
     },
-    token_contract, TOKEN_PER_POWER,
+    token_contract,
 };
 
 // Metadata that is added on to the WASM custom section

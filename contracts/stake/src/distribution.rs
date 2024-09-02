@@ -1,28 +1,11 @@
 use soroban_decimal::Decimal;
 use soroban_sdk::{contracttype, Env};
-use soroban_sdk::{log, panic_with_error, Address, ConversionError, Map, TryFromVal, Val, Vec};
+use soroban_sdk::{Address, Map};
 
-use crate::storage::{BondingInfo, Config};
-use phoenix::ttl::{
-    BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
-    PERSISTENT_LIFETIME_THRESHOLD,
-};
+use crate::storage::BondingInfo;
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 
 const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
-const SECONDS_PER_YEAR: u64 = 365 * SECONDS_PER_DAY;
-
-pub fn calc_power(
-    config: &Config,
-    stakes: i128,
-    multiplier: Decimal,
-    token_per_power: i32,
-) -> i128 {
-    if stakes < config.min_bond {
-        0
-    } else {
-        stakes * multiplier / token_per_power as i128
-    }
-}
 
 #[derive(Clone)]
 #[contracttype]
@@ -124,7 +107,7 @@ pub fn calculate_pending_rewards(
                     // Calculate multiplier based on the age of each stake
                     for stake in user_info.stakes.iter() {
                         let stake_age_days =
-                            (day / SECONDS_PER_DAY - stake.stake_timestamp / SECONDS_PER_DAY);
+                            day / SECONDS_PER_DAY - stake.stake_timestamp / SECONDS_PER_DAY;
                         let multiplier = if stake_age_days >= 60 {
                             Decimal::one()
                         } else {

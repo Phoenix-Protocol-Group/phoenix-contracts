@@ -2,7 +2,7 @@ use phoenix::ttl::{
     BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
     PERSISTENT_LIFETIME_THRESHOLD,
 };
-use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 use crate::stake_rewards_contract;
 

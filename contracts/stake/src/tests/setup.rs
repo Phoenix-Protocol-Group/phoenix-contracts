@@ -1,9 +1,4 @@
-use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    vec,
-    xdr::ToXdr,
-    Address, Bytes, BytesN, Env,
-};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 use crate::{
     contract::{Staking, StakingClient},
@@ -30,10 +25,12 @@ mod stake_latest {
     );
 }
 
+#[allow(dead_code)]
 fn install_stake_mainnet_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(stake_v_1_0_0::WASM)
 }
 
+#[allow(dead_code)]
 fn install_stake_latest_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(stake_latest::WASM)
 }

@@ -4,7 +4,7 @@ use pretty_assertions::assert_eq;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    vec, Address, BytesN, Env, IntoVal, Symbol,
+    vec, Address, Env, IntoVal, Symbol,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};

@@ -1,19 +1,15 @@
 extern crate std;
 use soroban_sdk::{
-    symbol_short,
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    vec, Address, BytesN, Env, IntoVal, String, Symbol,
+    testutils::{Address as _, Ledger},
+    vec, Address, Env,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 use pretty_assertions::assert_eq;
 
 use crate::{
-    msg::{
-        AnnualizedReward, AnnualizedRewardsResponse, WithdrawableReward,
-        WithdrawableRewardsResponse,
-    },
-    tests::setup::{ONE_DAY, SIXTY_DAYS},
+    msg::{WithdrawableReward, WithdrawableRewardsResponse},
+    tests::setup::SIXTY_DAYS,
 };
 
 #[test]
@@ -51,7 +47,7 @@ fn add_distribution_and_distribute_reward() {
         li.timestamp = SIXTY_DAYS;
     });
 
-    for i in 0..60 {
+    for _ in 0..60 {
         staking.distribute_rewards(&admin, &(reward_amount / 60i128), &reward_token.address);
         env.ledger().with_mut(|li| {
             li.timestamp += 3600 * 24;
@@ -66,7 +62,7 @@ fn add_distribution_and_distribute_reward() {
                 WithdrawableReward {
                     reward_address: reward_token.address.clone(),
                     // dividing 100k / 60 rounding
-                    reward_amount: 99_960 as u128
+                    reward_amount: 99_960_u128
                 }
             ]
         }
