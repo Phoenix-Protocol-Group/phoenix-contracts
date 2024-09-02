@@ -229,6 +229,14 @@ impl StakingTrait for Staking {
             panic_with_error!(&env, ContractError::Unauthorized);
         }
 
+        if !get_distributions(&env).contains(&reward_token) {
+            log!(
+                env,
+                "Stake: Distribute rewards: No distribution for this reward token exists!"
+            );
+            panic_with_error!(&env, ContractError::DistributionNotFound);
+        }
+
         let current_timestamp = env.ledger().timestamp();
         let total_staked_amount = get_total_staked_counter(&env);
 
