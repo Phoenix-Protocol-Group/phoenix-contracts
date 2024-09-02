@@ -328,7 +328,6 @@ fn unbond_wrong_user_stake_not_found() {
 
 #[test]
 fn pay_rewards_during_unbond() {
-    const STAKED_AMOUNT: i128 = 1_000;
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -353,7 +352,8 @@ fn pay_rewards_during_unbond() {
     lp_token.mint(&user, &10_000);
     reward_token.mint(&admin, &20_000);
 
-    staking.bond(&user, &STAKED_AMOUNT);
+    let staked = 1_000;
+    staking.bond(&user, &staked);
 
     // Move so that user would have 100% APR from bonding after 60 days
     env.ledger().with_mut(|li| {
@@ -363,13 +363,11 @@ fn pay_rewards_during_unbond() {
     staking.create_distribution_flow(&admin, &reward_token.address);
 
     // simulate passing 20 days and distributing 1000 tokens each day
-    for i in 0..20 {
-        staking.distribute_rewards(&1_000, &reward_token.address);
+    for _ in 0..20 {
+        staking.distribute_rewards(&admin, &1_000, &reward_token.address);
         env.ledger().with_mut(|li| {
             li.timestamp += 3600 * 24;
         });
-
-        dbg!(staking.query_withdrawable_rewards(&user).rewards);
     }
 
     assert_eq!(
@@ -383,8 +381,8 @@ fn pay_rewards_during_unbond() {
     );
     assert_eq!(reward_token.balance(&user), 0);
     // user bonded at timestamp 0
-    staking.unbond(&user, &STAKED_AMOUNT, &0);
-    assert_eq!(reward_token.balance(&user), 5_000);
+    staking.unbond(&user, &staked, &0);
+    assert_eq!(reward_token.balance(&user), 20_000);
 }
 
 #[should_panic(

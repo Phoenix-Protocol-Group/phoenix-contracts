@@ -57,7 +57,7 @@ pub trait StakingTrait {
 
     fn create_distribution_flow(env: Env, sender: Address, asset: Address);
 
-    fn distribute_rewards(env: Env, amount: i128, reward_token: Address);
+    fn distribute_rewards(env: Env, sender: Address, amount: i128, reward_token: Address);
 
     fn withdraw_rewards(env: Env, sender: Address);
 
@@ -208,9 +208,8 @@ impl StakingTrait for Staking {
     fn create_distribution_flow(env: Env, sender: Address, asset: Address) {
         sender.require_auth();
 
-        let manager = get_config(&env).manager;
-        let owner = get_config(&env).owner;
-        if sender != manager && sender != owner {
+        let config = get_config(&env);
+        if sender != config.manager && sender != config.owner {
             log!(env, "Stake: create distribution: Non-authorized creation!");
             panic_with_error!(&env, ContractError::Unauthorized);
         }
@@ -222,7 +221,14 @@ impl StakingTrait for Staking {
             .publish(("create_distribution_flow", "asset"), &asset);
     }
 
-    fn distribute_rewards(env: Env, amount: i128, reward_token: Address) {
+    fn distribute_rewards(env: Env, sender: Address, amount: i128, reward_token: Address) {
+        sender.require_auth();
+        let config = get_config(&env);
+        if sender != config.manager && sender != config.owner {
+            log!(env, "Stake: create distribution: Non-authorized creation!");
+            panic_with_error!(&env, ContractError::Unauthorized);
+        }
+
         let current_timestamp = env.ledger().timestamp();
         let total_staked_amount = get_total_staked_counter(&env);
 
@@ -233,6 +239,12 @@ impl StakingTrait for Staking {
         let mut reward_history = get_reward_history(&env, &reward_token);
         reward_history.set(current_timestamp, amount as u128);
         save_reward_history(&env, &reward_token, reward_history);
+
+        token_contract::Client::new(&env, &reward_token).transfer(
+            &sender,
+            &env.current_contract_address(),
+            &amount,
+        );
 
         env.events()
             .publish(("distribute_rewards", "asset"), &reward_token);
