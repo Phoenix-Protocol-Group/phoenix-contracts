@@ -135,8 +135,9 @@ fn upgrade_stake_contract() {
 
     upgraded_stake_client.create_distribution_flow(&owner, &token_client.address);
     token_client.mint(&admin, &1_000);
+    dbg!("Query now:");
     dbg!(upgraded_stake_client.query_total_staked_history());
-    dbg!("here?");
-    dbg!(upgraded_stake_client.query_total_staked_history());
-    upgraded_stake_client.distribute_rewards(&owner, &1_000, &token_client.address);
+    // dbg!("here?");
+    // dbg!(upgraded_stake_client.query_total_staked_history());
+    // upgraded_stake_client.distribute_rewards(&owner, &1_000, &token_client.address);
 }

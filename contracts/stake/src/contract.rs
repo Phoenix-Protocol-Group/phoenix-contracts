@@ -298,16 +298,11 @@ impl StakingTrait for Staking {
     }
 
     fn query_total_staked_history(env: Env) -> Map<u64, u128> {
-        let staked = get_total_staked_counter(&env);
-        env.storage()
-            .persistent()
-            .set(&DistributionDataKey::TotalStakedHistory, &staked);
-
         let total_staked_history = env
             .storage()
             .persistent()
             .get(&DistributionDataKey::TotalStakedHistory)
-            .unwrap_or(map![&env]);
+            .unwrap();
 
         total_staked_history
     }
@@ -379,18 +374,11 @@ impl Staking {
         let admin = get_admin(&env);
         admin.require_auth();
         env.deployer().update_current_contract_wasm(new_wasm_hash);
-        get_total_staked_history(&env);
 
-        save_total_staked_history(
-            &env,
-            map![
-                &env,
-                (
-                    env.ledger().timestamp(),
-                    get_total_staked_counter(&env) as u128
-                )
-            ],
-        );
+        env.storage()
+            .persistent()
+            .set(&DistributionDataKey::TotalStakedHistory, &map![&env, (0, 0)]);
+
     }
 }
 
