@@ -101,11 +101,10 @@ pub fn calculate_pending_rewards(
                 (reward_history.get(day), total_staked_history.get(day))
             {
                 if total_staked > 0 {
-                    // Calculate the user's share of the total staked amount
-                    let user_share = user_info.total_stake as u128 * daily_reward / total_staked;
-
                     // Calculate multiplier based on the age of each stake
                     for stake in user_info.stakes.iter() {
+                        // Calculate the user's share of the total staked amount at the time
+                        let user_share = stake.stake as u128 * daily_reward / total_staked;
                         let stake_age_days =
                             day / SECONDS_PER_DAY - stake.stake_timestamp / SECONDS_PER_DAY;
                         let multiplier = if stake_age_days >= 60 {
