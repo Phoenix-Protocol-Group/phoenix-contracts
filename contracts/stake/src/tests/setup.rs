@@ -64,6 +64,9 @@ pub fn deploy_staking_contract<'a>(
     staking
 }
 
+#[cfg(feature = "upgrade")]
+use soroban_sdk::{testutils::Ledger, vec};
+
 #[test]
 #[cfg(feature = "upgrade")]
 fn upgrade_stake_contract() {
