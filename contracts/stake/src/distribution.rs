@@ -73,9 +73,7 @@ pub fn calculate_pending_rewards(
     user_info: &BondingInfo,
 ) -> i128 {
     let current_timestamp = env.ledger().timestamp();
-    let last_reward_day = user_info.last_reward_time / SECONDS_PER_DAY;
-
-    let current_day = current_timestamp / SECONDS_PER_DAY;
+    let last_reward_day = user_info.last_reward_time;
 
     // Load reward history and total staked history from storage
     let reward_history = get_reward_history(env, reward_token);
@@ -89,15 +87,15 @@ pub fn calculate_pending_rewards(
     // Find the closest timestamp after last_reward_day
     if let Some(first_relevant_day) = reward_keys
         .iter()
-        .find(|&day| day > last_reward_day * SECONDS_PER_DAY)
+        .find(|&day| day > last_reward_day)
     {
-        for day in reward_keys
+        for staking_reward_day in reward_keys
             .iter()
             .skip_while(|&day| day < first_relevant_day)
-            .take_while(|&day| day <= current_day * SECONDS_PER_DAY)
+            .take_while(|&day| day <= current_timestamp)
         {
             if let (Some(daily_reward), Some(total_staked)) =
-                (reward_history.get(day), total_staked_history.get(day))
+                (reward_history.get(staking_reward_day), total_staked_history.get(staking_reward_day))
             {
                 if total_staked > 0 {
                     // Calculate multiplier based on the age of each stake
@@ -105,7 +103,7 @@ pub fn calculate_pending_rewards(
                         // Calculate the user's share of the total staked amount at the time
                         let user_share = stake.stake as u128 * daily_reward / total_staked;
                         let stake_age_days =
-                            day / SECONDS_PER_DAY - stake.stake_timestamp / SECONDS_PER_DAY;
+                            (staking_reward_day - stake.stake_timestamp) / SECONDS_PER_DAY;
                         let multiplier = if stake_age_days >= 60 {
                             Decimal::one()
                         } else {
