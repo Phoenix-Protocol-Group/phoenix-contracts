@@ -375,10 +375,11 @@ impl Staking {
         admin.require_auth();
         env.deployer().update_current_contract_wasm(new_wasm_hash);
 
-        env.storage()
-            .persistent()
-            .set(&DistributionDataKey::TotalStakedHistory, &map![&env, (0, 0)]);
-
+        let current_timestamp = env.ledger().timestamp();
+        let total_staked_amount = get_total_staked_counter(&env);
+        let mut total_staked_history = map![&env];
+        total_staked_history.set(current_timestamp, total_staked_amount as u128);
+        save_total_staked_history(&env, total_staked_history);
     }
 }
 

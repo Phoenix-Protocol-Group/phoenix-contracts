@@ -117,6 +117,7 @@ fn upgrade_stake_contract() {
 
     let new_stake_wasm = install_stake_latest_wasm(&env);
     stake_v_1_0_0_client.update(&new_stake_wasm);
+    stake_v_1_0_0_client.update(&new_stake_wasm);
 
     let upgraded_stake_client = stake_latest::Client::new(&env, &stake_addr);
 
@@ -134,10 +135,6 @@ fn upgrade_stake_contract() {
     );
 
     upgraded_stake_client.create_distribution_flow(&owner, &token_client.address);
-    token_client.mint(&admin, &1_000);
-    dbg!("Query now:");
-    dbg!(upgraded_stake_client.query_total_staked_history());
-    // dbg!("here?");
-    // dbg!(upgraded_stake_client.query_total_staked_history());
-    // upgraded_stake_client.distribute_rewards(&owner, &1_000, &token_client.address);
+    token_client.mint(&owner, &1_000);
+    upgraded_stake_client.distribute_rewards(&owner, &1_000, &token_client.address);
 }
