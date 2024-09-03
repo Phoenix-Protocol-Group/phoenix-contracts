@@ -1,12 +1,12 @@
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    Vec,
+    Map, Vec,
 };
 
 use crate::{
     distribution::{
         calculate_pending_rewards, get_reward_history, get_total_staked_history,
-        save_reward_history, save_total_staked_history,
+        save_reward_history, save_total_staked_history, DistributionDataKey,
     },
     error::ContractError,
     msg::{ConfigResponse, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse},
@@ -64,6 +64,8 @@ pub trait StakingTrait {
     fn query_staked(env: Env, address: Address) -> StakedResponse;
 
     fn query_total_staked(env: Env) -> i128;
+
+    fn query_total_staked_history(env: Env) -> Map<u64, u128>;
 
     // fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
 
@@ -295,6 +297,21 @@ impl StakingTrait for Staking {
         get_total_staked_counter(&env)
     }
 
+    fn query_total_staked_history(env: Env) -> Map<u64, u128> {
+        let staked = get_total_staked_counter(&env);
+        env.storage()
+            .persistent()
+            .set(&DistributionDataKey::TotalStakedHistory, &staked);
+
+        let total_staked_history = env
+            .storage()
+            .persistent()
+            .get(&DistributionDataKey::TotalStakedHistory)
+            .unwrap_or(map![&env]);
+
+        total_staked_history
+    }
+
     // fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
     //     let mut aprs = vec![&env];
     //     let total_stake_amount = get_total_staked_counter(&env);
@@ -362,6 +379,18 @@ impl Staking {
         let admin = get_admin(&env);
         admin.require_auth();
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+        get_total_staked_history(&env);
+
+        save_total_staked_history(
+            &env,
+            map![
+                &env,
+                (
+                    env.ledger().timestamp(),
+                    get_total_staked_counter(&env) as u128
+                )
+            ],
+        );
     }
 }
 

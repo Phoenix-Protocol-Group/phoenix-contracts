@@ -1,6 +1,5 @@
 use soroban_decimal::Decimal;
-use soroban_sdk::{contracttype, Env};
-use soroban_sdk::{Address, Map};
+use soroban_sdk::{contracttype, map, Address, Env, Map};
 
 use crate::storage::BondingInfo;
 use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
@@ -58,7 +57,7 @@ pub fn get_total_staked_history(e: &Env) -> Map<u64, u128> {
         .storage()
         .persistent()
         .get(&DistributionDataKey::TotalStakedHistory)
-        .unwrap();
+        .unwrap_or(map![&e]);
     e.storage().persistent().extend_ttl(
         &DistributionDataKey::TotalStakedHistory,
         PERSISTENT_LIFETIME_THRESHOLD,

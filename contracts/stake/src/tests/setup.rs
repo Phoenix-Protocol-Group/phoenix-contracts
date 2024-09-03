@@ -118,18 +118,25 @@ fn upgrade_stake_contract() {
     let new_stake_wasm = install_stake_latest_wasm(&env);
     stake_v_1_0_0_client.update(&new_stake_wasm);
 
-    let updgraded_stake_client = stake_latest::Client::new(&env, &stake_addr);
+    let upgraded_stake_client = stake_latest::Client::new(&env, &stake_addr);
 
-    assert_eq!(updgraded_stake_client.query_admin(), admin);
+    assert_eq!(upgraded_stake_client.query_admin(), admin);
 
     env.ledger().with_mut(|li| li.timestamp = 20_000);
 
-    updgraded_stake_client.unbond(&user, &1_000, &100);
+    upgraded_stake_client.unbond(&user, &1_000, &100);
     assert_eq!(
-        updgraded_stake_client.query_staked(&user),
+        upgraded_stake_client.query_staked(&user),
         stake_latest::StakedResponse {
             stakes: vec![&env,],
             total_stake: 0i128
         }
     );
+
+    upgraded_stake_client.create_distribution_flow(&owner, &token_client.address);
+    token_client.mint(&admin, &1_000);
+    dbg!(upgraded_stake_client.query_total_staked_history());
+    dbg!("here?");
+    dbg!(upgraded_stake_client.query_total_staked_history());
+    upgraded_stake_client.distribute_rewards(&owner, &1_000, &token_client.address);
 }
