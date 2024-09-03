@@ -1100,18 +1100,36 @@ fn distribute_rewards_daily_multiple_times_same_stakes() {
     staking.create_distribution_flow(&admin, &reward_token.address);
 
     // bond tokens for users; each user has a different amount staked
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1706968777;
+    });
+
     lp_token.mint(&user, &1000);
     staking.bond(&user, &1000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1714741177;
+    });
+
     lp_token.mint(&user2, &2000);
     staking.bond(&user2, &2000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1714741177;
+    });
+
     lp_token.mint(&user3, &3000);
     staking.bond(&user3, &3000);
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1715741177;
+    });
+
     lp_token.mint(&user4, &4000);
     staking.bond(&user4, &4000);
 
     // simulate moving forward 60 days for the full APR multiplier
     env.ledger().with_mut(|li| {
-        li.timestamp = SIXTY_DAYS;
+        li.timestamp += SIXTY_DAYS;
     });
 
     reward_token.mint(&admin, &4_000_000);
