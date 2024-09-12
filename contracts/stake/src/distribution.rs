@@ -57,7 +57,7 @@ pub fn get_total_staked_history(e: &Env) -> Map<u64, u128> {
         .storage()
         .persistent()
         .get(&DistributionDataKey::TotalStakedHistory)
-        .unwrap_or(map![&e]);
+        .unwrap();
     e.storage().persistent().extend_ttl(
         &DistributionDataKey::TotalStakedHistory,
         PERSISTENT_LIFETIME_THRESHOLD,
@@ -85,18 +85,16 @@ pub fn calculate_pending_rewards(
     let mut pending_rewards: i128 = 0;
 
     // Find the closest timestamp after last_reward_day
-    if let Some(first_relevant_day) = reward_keys
-        .iter()
-        .find(|&day| day > last_reward_day)
-    {
+    if let Some(first_relevant_day) = reward_keys.iter().find(|&day| day > last_reward_day) {
         for staking_reward_day in reward_keys
             .iter()
             .skip_while(|&day| day < first_relevant_day)
             .take_while(|&day| day <= current_timestamp)
         {
-            if let (Some(daily_reward), Some(total_staked)) =
-                (reward_history.get(staking_reward_day), total_staked_history.get(staking_reward_day))
-            {
+            if let (Some(daily_reward), Some(total_staked)) = (
+                reward_history.get(staking_reward_day),
+                total_staked_history.get(staking_reward_day),
+            ) {
                 if total_staked > 0 {
                     // Calculate multiplier based on the age of each stake
                     for stake in user_info.stakes.iter() {

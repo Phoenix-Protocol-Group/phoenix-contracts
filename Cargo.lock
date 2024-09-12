@@ -786,6 +786,7 @@ name = "phoenix-stake"
 version = "1.0.0"
 dependencies = [
  "curve",
+ "itoa",
  "phoenix",
  "pretty_assertions",
  "soroban-decimal",

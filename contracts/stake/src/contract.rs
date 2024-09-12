@@ -1,6 +1,6 @@
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    Map, Vec,
+    Map, String, Vec,
 };
 
 use crate::{
@@ -20,6 +20,7 @@ use crate::{
     },
     token_contract,
 };
+use soroban_decimal::Decimal;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -64,8 +65,6 @@ pub trait StakingTrait {
     fn query_staked(env: Env, address: Address) -> StakedResponse;
 
     fn query_total_staked(env: Env) -> i128;
-
-    fn query_total_staked_history(env: Env) -> Map<u64, u128>;
 
     // fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
 
@@ -290,21 +289,12 @@ impl StakingTrait for Staking {
         StakedResponse {
             stakes: stakes.stakes,
             total_stake: stakes.total_stake,
+            last_reward_time: stakes.last_reward_time,
         }
     }
 
     fn query_total_staked(env: Env) -> i128 {
         get_total_staked_counter(&env)
-    }
-
-    fn query_total_staked_history(env: Env) -> Map<u64, u128> {
-        let total_staked_history = env
-            .storage()
-            .persistent()
-            .get(&DistributionDataKey::TotalStakedHistory)
-            .unwrap();
-
-        total_staked_history
     }
 
     // fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
@@ -374,12 +364,6 @@ impl Staking {
         let admin = get_admin(&env);
         admin.require_auth();
         env.deployer().update_current_contract_wasm(new_wasm_hash);
-
-        let current_timestamp = env.ledger().timestamp();
-        let total_staked_amount = get_total_staked_counter(&env);
-        let mut total_staked_history = map![&env];
-        total_staked_history.set(current_timestamp, total_staked_amount as u128);
-        save_total_staked_history(&env, total_staked_history);
     }
 }
 

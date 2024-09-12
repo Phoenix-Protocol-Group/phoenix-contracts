@@ -18,6 +18,7 @@ soroban-decimal = { workspace = true }
 curve = { workspace = true }
 phoenix = { workspace = true }
 soroban-sdk = { workspace = true }
+itoa = { version = "1.0", default-features = false }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
