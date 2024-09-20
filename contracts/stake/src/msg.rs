@@ -17,6 +17,13 @@ pub struct StakedResponse {
 }
 
 #[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StakedResponseOld {
+    pub stakes: Vec<Stake>,
+    pub total_stake: i128,
+}
+
+#[contracttype]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct AnnualizedReward {
     pub asset: Address,

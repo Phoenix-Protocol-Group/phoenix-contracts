@@ -9,7 +9,7 @@ use crate::{
         save_reward_history, save_total_staked_history, DistributionDataKey,
     },
     error::ContractError,
-    msg::{ConfigResponse, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse},
+    msg::{ConfigResponse, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse, StakedResponseOld},
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
@@ -334,13 +334,25 @@ impl StakingTrait for Staking {
             &user,
         );
         let args: Vec<Val> = vec![&env, user.into_val(&env)];
-        let staked_resp: StakedResponse =
+        let staked_resp: StakedResponseOld =
             env.invoke_contract(&contract_addr, &Symbol::new(&env, "query_staked"), args);
 
         env.events()
             .publish(("Stake: Migration: ", "Query for user completed: "), &user);
-        // save resp to data
-        env.storage().persistent().set(&user, &staked_resp);
+
+        let mut stakes = get_stakes(&env, &user);
+
+        stakes.total_stake += staked_resp.total_stake;
+        for stake in stakes.stakes.clone() {
+            let new_stake = Stake {
+                stake: stake.stake,
+                stake_timestamp: stake.stake_timestamp,
+            };
+            stakes.stakes.push_back(new_stake);
+        }
+
+        save_stakes(&env, &user, &stakes);
+        utils::increase_total_staked(&env, &staked_resp.total_stake);
 
         // logging
         env.events().publish(
