@@ -70,6 +70,8 @@ pub trait StakingTrait {
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
 
+    fn migrate(env: Env, contract_addr: Address, user: Address);
+
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
     // fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
@@ -323,6 +325,10 @@ impl StakingTrait for Staking {
         }
 
         WithdrawableRewardsResponse { rewards }
+    }
+
+    fn migrate(env: Env, contract_addr: Address, user: Address) {
+        todo!()
     }
 
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
