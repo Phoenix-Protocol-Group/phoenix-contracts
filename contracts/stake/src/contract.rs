@@ -211,14 +211,6 @@ impl StakingTrait for Staking {
 
         let config = get_config(&env);
 
-        // check for rewards and withdraw them
-        let found_rewards: WithdrawableRewardsResponse =
-            Self::query_withdrawable_rewards(env.clone(), sender.clone());
-
-        if !found_rewards.rewards.is_empty() {
-            Self::withdraw_rewards(env.clone(), sender.clone());
-        }
-
         let mut stakes = get_stakes(&env, &sender);
 
         for (_asset, distribution_address) in get_distributions(&env) {
