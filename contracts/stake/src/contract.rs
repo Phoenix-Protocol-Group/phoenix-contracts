@@ -1,6 +1,6 @@
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    Map, String, Vec,
+    IntoVal, Map, String, Symbol, Val, Vec,
 };
 
 use crate::{
@@ -70,7 +70,7 @@ pub trait StakingTrait {
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
 
-    fn migrate(env: Env, contract_addr: Address, user: Address);
+    fn migration_query(env: Env, contract_addr: Address, user: Address);
 
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
@@ -327,8 +327,26 @@ impl StakingTrait for Staking {
         WithdrawableRewardsResponse { rewards }
     }
 
-    fn migrate(env: Env, contract_addr: Address, user: Address) {
-        todo!()
+    fn migration_query(env: Env, contract_addr: Address, user: Address) {
+        // query data
+        env.events().publish(
+            ("Stake: Migration: ", "Start of migration for user: "),
+            &user,
+        );
+        let args: Vec<Val> = vec![&env, user.into_val(&env)];
+        let staked_resp: StakedResponse =
+            env.invoke_contract(&contract_addr, &Symbol::new(&env, "query_staked"), args);
+
+        env.events()
+            .publish(("Stake: Migration: ", "Query for user completed: "), &user);
+        // save resp to data
+        env.storage().persistent().set(&user, &staked_resp);
+
+        // logging
+        env.events().publish(
+            ("Stake", "Migration for user completed and stored: "),
+            &user,
+        );
     }
 
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
