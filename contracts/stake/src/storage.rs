@@ -2,7 +2,7 @@ use phoenix::ttl::{
     BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
     PERSISTENT_LIFETIME_THRESHOLD,
 };
-use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 use crate::stake_rewards_contract;
 
@@ -138,69 +138,85 @@ pub mod utils {
     }
 
     pub fn save_admin(e: &Env, address: &Address) {
-        e.storage().instance().set(&DataKey::Admin, address);
-        e.storage()
-            .instance()
-            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        e.storage().persistent().set(&DataKey::Admin, address);
+        e.storage().persistent().extend_ttl(
+            &DataKey::Admin,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn get_admin(e: &Env) -> Address {
-        let admin = e.storage().instance().get(&DataKey::Admin).unwrap();
-        e.storage()
-            .instance()
-            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        let admin = e.storage().persistent().get(&DataKey::Admin).unwrap();
+        e.storage().persistent().extend_ttl(
+            &DataKey::Admin,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
 
         admin
     }
 
     pub fn init_total_staked(e: &Env) {
-        e.storage().instance().set(&DataKey::TotalStaked, &0i128);
-        e.storage()
-            .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
     }
 
     pub fn increase_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
         e.storage()
-            .instance()
+            .persistent()
             .set(&DataKey::TotalStaked, &(count + amount));
 
-        e.storage()
-            .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
     }
 
     pub fn decrease_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
         e.storage()
-            .instance()
+            .persistent()
             .set(&DataKey::TotalStaked, &(count - amount));
 
-        e.storage()
-            .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
     }
 
     pub fn get_total_staked_counter(env: &Env) -> i128 {
-        let total_staked = env.storage().instance().get(&DataKey::TotalStaked).unwrap();
-        env.storage()
-            .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        let total_staked = env
+            .storage()
+            .persistent()
+            .get(&DataKey::TotalStaked)
+            .unwrap();
+        env.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            BALANCE_LIFETIME_THRESHOLD,
+            BALANCE_BUMP_AMOUNT,
+        );
 
         total_staked
     }
 
     // Keep track of all distributions to be able to iterate over them
-    pub fn add_distribution(e: &Env, asset: &Address, stake_rewards: &Address) {
+    pub fn add_distribution(e: &Env, asset: &Address) {
         let mut distributions = get_distributions(e);
-        for (old_asset, _) in distributions.clone() {
+        for old_asset in distributions.clone() {
             if &old_asset == asset {
                 log!(&e, "Stake: Add distribution: Distribution already added");
                 panic_with_error!(&e, ContractError::DistributionExists);
             }
         }
-        distributions.push_back((asset.clone(), stake_rewards.clone()));
+        distributions.push_back(asset.clone());
         e.storage()
             .persistent()
             .set(&DataKey::Distributions, &distributions);
@@ -211,7 +227,7 @@ pub mod utils {
         );
     }
 
-    pub fn get_distributions(e: &Env) -> Vec<(Address, Address)> {
+    pub fn get_distributions(e: &Env) -> Vec<Address> {
         let distributions = e
             .storage()
             .persistent()
@@ -229,40 +245,6 @@ pub mod utils {
             });
 
         distributions
-    }
-
-    pub fn get_stake_rewards(e: &Env) -> BytesN<32> {
-        let stake_rewards = e
-            .storage()
-            .persistent()
-            .get(&DataKey::StakeRewards)
-            .unwrap();
-        e.storage().persistent().extend_ttl(
-            &DataKey::StakeRewards,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
-        );
-
-        stake_rewards
-    }
-
-    pub fn set_stake_rewards(e: &Env, hash: &BytesN<32>) {
-        e.storage().persistent().set(&DataKey::StakeRewards, hash);
-        e.storage().persistent().extend_ttl(
-            &DataKey::StakeRewards,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
-        );
-    }
-
-    pub fn find_stake_rewards_by_asset(e: &Env, asset: &Address) -> Option<Address> {
-        let distributions = get_distributions(e);
-        for (stored_asset, stake_rewards) in distributions.iter() {
-            if &stored_asset == asset {
-                return Some(stake_rewards);
-            }
-        }
-        None
     }
 }
 

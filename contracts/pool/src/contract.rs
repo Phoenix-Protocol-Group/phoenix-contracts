@@ -9,7 +9,7 @@ use crate::{
     error::ContractError,
     stake_contract,
     storage::{
-        get_config, save_config,
+        get_config, get_default_slippage_bps, save_config, save_default_slippage_bps,
         utils::{self, get_admin, is_initialized, set_initialized},
         Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse,
@@ -43,7 +43,6 @@ pub trait LiquidityPoolTrait {
         env: Env,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
-        stake_rewards_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
@@ -113,7 +112,7 @@ pub trait LiquidityPoolTrait {
     );
 
     // Migration entrypoint
-    fn upgrade(e: Env, new_wasm_hash: BytesN<32>);
+    fn upgrade(e: Env, new_wasm_hash: BytesN<32>, new_default_slippage_bps: i64);
 
     // QUERIES
 
@@ -153,7 +152,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         env: Env,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
-        stake_rewards_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
         share_token_decimals: u32,
@@ -234,7 +232,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         stake_contract::Client::new(&env, &stake_contract_address).initialize(
             &admin,
             &share_token_address,
-            &stake_rewards_wasm_hash,
             &min_bond,
             &min_reward,
             &manager,
@@ -253,10 +250,10 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
             max_referral_bps,
-            default_slippage_bps,
         };
 
         save_config(&env, config);
+        save_default_slippage_bps(&env, default_slippage_bps);
 
         utils::save_admin(&env, admin);
         utils::save_total_shares(&env, 0);
@@ -322,7 +319,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                     min_b,
                     pool_balance_a,
                     pool_balance_b,
-                    Decimal::bps(custom_slippage_bps.unwrap_or(config.default_slippage_bps)),
+                    Decimal::bps(custom_slippage_bps.unwrap_or(get_default_slippage_bps(&env))),
                 )
             }
             // None or invalid amounts are provided
@@ -571,11 +568,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         save_config(&env, config);
     }
 
-    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>, new_default_slippage_bps: i64) {
         let admin: Address = utils::get_admin(&env);
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+        save_default_slippage_bps(&env, new_default_slippage_bps);
     }
 
     // Queries
@@ -1365,7 +1363,6 @@ mod tests {
             max_allowed_slippage_bps: 100i64,
             max_allowed_spread_bps: 100i64,
             max_referral_bps: 1_000i64,
-            default_slippage_bps: 100i64,
         };
         split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
     }

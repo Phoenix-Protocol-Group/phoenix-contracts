@@ -4,12 +4,10 @@ use pretty_assertions::assert_eq;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    vec, Address, BytesN, Env, IntoVal, Symbol,
+    vec, Address, Env, IntoVal, Symbol,
 };
 
-use super::setup::{
-    deploy_staking_contract, deploy_token_contract, install_stake_rewards_contract,
-};
+use super::setup::{deploy_staking_contract, deploy_token_contract};
 
 use crate::{
     contract::{Staking, StakingClient},
@@ -81,7 +79,6 @@ fn test_deploying_stake_twice_should_fail() {
     first.initialize(
         &admin,
         &lp_token.address,
-        &install_stake_rewards_contract(&env),
         &100i128,
         &50i128,
         &manager,
@@ -331,7 +328,6 @@ fn unbond_wrong_user_stake_not_found() {
 
 #[test]
 fn pay_rewards_during_unbond() {
-    const STAKED_AMOUNT: i128 = 1_000;
     let env = Env::default();
     env.mock_all_auths();
     env.budget().reset_unlimited();
@@ -354,45 +350,26 @@ fn pay_rewards_during_unbond() {
     );
 
     lp_token.mint(&user, &10_000);
-    reward_token.mint(&admin, &10_000);
+    reward_token.mint(&admin, &20_000);
 
-    staking.bond(&user, &STAKED_AMOUNT);
+    let staked = 1_000;
+    staking.bond(&user, &staked);
 
     // Move so that user would have 100% APR from bonding after 60 days
     env.ledger().with_mut(|li| {
         li.timestamp = full_bonding_multiplier;
     });
 
-    staking.create_distribution_flow(
-        &admin,
-        &reward_token.address,
-        &BytesN::from_array(&env, &[1; 32]),
-        &10,
-        &100,
-        &1,
-    );
+    staking.create_distribution_flow(&admin, &reward_token.address);
 
-    // distribution starts at 6 weeks and lasts for 100 seconds
-    staking.fund_distribution(
-        &full_bonding_multiplier,
-        &100,
-        &reward_token.address,
-        &10_000,
-    );
+    // simulate passing 20 days and distributing 1000 tokens each day
+    for _ in 0..20 {
+        staking.distribute_rewards(&admin, &1_000, &reward_token.address);
+        env.ledger().with_mut(|li| {
+            li.timestamp += 3600 * 24;
+        });
+    }
 
-    // move to the half time
-    env.ledger().with_mut(|li| {
-        li.timestamp = full_bonding_multiplier + 50;
-    });
-
-    staking.distribute_rewards();
-
-    // user should have 5_000 rewards
-    // 5_000 rewards are still undistributed
-    assert_eq!(
-        staking.query_undistributed_rewards(&reward_token.address),
-        5_000
-    );
     assert_eq!(
         staking
             .query_withdrawable_rewards(&user)
@@ -400,12 +377,12 @@ fn pay_rewards_during_unbond() {
             .iter()
             .map(|reward| reward.reward_amount)
             .sum::<u128>(),
-        5_000
+        20_000
     );
     assert_eq!(reward_token.balance(&user), 0);
     // user bonded at timestamp 0
-    staking.unbond(&user, &STAKED_AMOUNT, &0);
-    assert_eq!(reward_token.balance(&user), 5_000);
+    staking.unbond(&user, &staked, &0);
+    assert_eq!(reward_token.balance(&user), 20_000);
 }
 
 #[should_panic(
@@ -421,7 +398,6 @@ fn initialize_staking_contract_should_panic_when_min_bond_invalid() {
     staking.initialize(
         &Address::generate(&env),
         &Address::generate(&env),
-        &install_stake_rewards_contract(&env),
         &0,
         &1_000,
         &Address::generate(&env),
@@ -441,7 +417,6 @@ fn initialize_staking_contract_should_panic_when_min_rewards_invalid() {
     staking.initialize(
         &Address::generate(&env),
         &Address::generate(&env),
-        &install_stake_rewards_contract(&env),
         &1_000,
         &0,
         &Address::generate(&env),
@@ -461,7 +436,6 @@ fn initialize_staking_contract_should_panic_when_max_complexity_invalid() {
     staking.initialize(
         &Address::generate(&env),
         &Address::generate(&env),
-        &install_stake_rewards_contract(&env),
         &1_000,
         &1_000,
         &Address::generate(&env),

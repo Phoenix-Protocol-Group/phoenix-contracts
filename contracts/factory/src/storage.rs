@@ -1,5 +1,7 @@
 use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
-use soroban_sdk::{contracttype, Address, BytesN, ConversionError, Env, TryFromVal, Val, Vec};
+use soroban_sdk::{
+    contracttype, symbol_short, Address, BytesN, ConversionError, Env, Symbol, TryFromVal, Val, Vec,
+};
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -30,12 +32,37 @@ pub struct Config {
     pub admin: Address,
     pub multihop_address: Address,
     pub lp_wasm_hash: BytesN<32>,
-    pub stable_wasm_hash: BytesN<32>,
     pub stake_wasm_hash: BytesN<32>,
     pub token_wasm_hash: BytesN<32>,
-    pub stake_rewards_wasm_hash: BytesN<32>,
     pub whitelisted_accounts: Vec<Address>,
     pub lp_token_decimals: u32,
+}
+
+const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
+
+pub fn save_stable_wasm_hash(env: &Env, hash: BytesN<32>) {
+    env.storage().persistent().set(&STABLE_WASM_HASH, &hash);
+    env.storage().persistent().extend_ttl(
+        &STABLE_WASM_HASH,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    )
+}
+
+pub fn get_stable_wasm_hash(env: &Env) -> BytesN<32> {
+    let hash = env
+        .storage()
+        .persistent()
+        .get(&STABLE_WASM_HASH)
+        .expect("Stable wasm hash not set");
+
+    env.storage().persistent().extend_ttl(
+        &STABLE_WASM_HASH,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    hash
 }
 
 #[contracttype]

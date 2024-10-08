@@ -3,8 +3,8 @@ use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 use super::setup::{
-    deploy_liquidity_pool_contract, deploy_token_contract, install_new_lp_wasm,
-    install_stake_rewards_wasm, install_stake_wasm, install_token_wasm,
+    deploy_liquidity_pool_contract, deploy_token_contract, install_new_lp_wasm, install_stake_wasm,
+    install_token_wasm,
 };
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
@@ -42,7 +42,6 @@ fn test_initialize_with_bigger_first_token_should_fail() {
     };
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
-    let stake_reward_wasm_hash = install_stake_rewards_wasm(&env);
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin,
@@ -59,7 +58,6 @@ fn test_initialize_with_bigger_first_token_should_fail() {
     pool.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
-        &stake_reward_wasm_hash,
         &lp_init_info,
         &Address::generate(&env),
         &10u32,
@@ -117,7 +115,6 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
-            default_slippage_bps: 100i64,
         }
     );
 
@@ -143,7 +140,6 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 1_000,
-            default_slippage_bps: 100i64,
         }
     );
 
@@ -162,7 +158,6 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 5_000,
             max_referral_bps: 500,
-            default_slippage_bps: 100i64,
         }
     );
 }
@@ -261,7 +256,6 @@ fn update_config_update_admin() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
-            default_slippage_bps: 100i64,
         }
     );
 }
@@ -343,7 +337,7 @@ fn update_liquidity_pool_works() {
     let new_wasm_hash = install_new_lp_wasm(&env);
 
     // no assertions, just check if it goes smooth
-    pool.upgrade(&new_wasm_hash);
+    pool.upgrade(&new_wasm_hash, &5_000i64);
 
     let result = pool.query_pool_info_for_factory();
     // not using result only because we have to take the current contract address, which is not known during the test
@@ -415,7 +409,6 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
-            default_slippage_bps: 100i64,
         }
     );
 
@@ -443,7 +436,6 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_slippage_bps: 1000,
             max_allowed_spread_bps: 1000,
             max_referral_bps: 1000,
-            default_slippage_bps: 100i64,
         }
     );
 }
@@ -477,7 +469,6 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
     };
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
-    let stake_reward_wasm_hash = install_stake_rewards_wasm(&env);
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin,
@@ -486,15 +477,14 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
         max_allowed_slippage_bps: 5_000,
         max_allowed_spread_bps: 1_000,
         max_referral_bps: 5_000,
+        default_slippage_bps: 1_000,
         token_init_info,
         stake_init_info,
-        default_slippage_bps: 500,
     };
 
     pool.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
-        &stake_reward_wasm_hash,
         &lp_init_info,
         &Address::generate(&env),
         &10u32,
