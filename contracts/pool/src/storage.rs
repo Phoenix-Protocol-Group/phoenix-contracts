@@ -247,6 +247,18 @@ pub mod utils {
     pub fn mint_shares(e: &Env, share_token: &Address, to: &Address, amount: i128) {
         let total = get_total_shares(e);
 
+        if amount <= 0 {
+            log!(
+                e,
+                "Shares calculation went wrong! You can't mint a negative amount of shares: {}",
+                amount
+            );
+            panic!(
+                "Shares calculation went wrong! You can't mint a negative amount of shares: {}",
+                amount
+            );
+        }
+
         token_contract::Client::new(e, share_token).mint(to, &amount);
 
         save_total_shares(e, total + amount);
