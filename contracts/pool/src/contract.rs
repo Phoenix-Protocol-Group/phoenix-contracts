@@ -383,6 +383,11 @@ impl LiquidityPoolTrait for LiquidityPool {
             shares - MINIMUM_LIQUIDITY_AMOUNT
         };
 
+        if new_total_shares <= 0 || new_total_shares < total_shares {
+            log!(&env, "Shares calculation went wrong! New total shares: {} are smaller than previous total shares: {}", new_total_shares, total_shares);
+            panic!("Shares calculation went wrong! New total shares: {} are smaller than previous total shares: {}", new_total_shares, total_shares);
+        }
+
         utils::mint_shares(
             &env,
             &config.share_token,
