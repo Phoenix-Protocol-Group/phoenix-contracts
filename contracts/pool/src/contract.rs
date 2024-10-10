@@ -746,6 +746,14 @@ impl LiquidityPool {
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+
+        let config = get_config(&env);
+        let token_a_client = token_contract::Client::new(&env, &config.token_a);
+        let token_b_client = token_contract::Client::new(&env, &config.token_b);
+        let actual_balance_a = token_a_client.balance(&env.current_contract_address());
+        let actual_balance_b = token_b_client.balance(&env.current_contract_address());
+        utils::save_pool_balance_a(&env, actual_balance_a);
+        utils::save_pool_balance_b(&env, actual_balance_b);
     }
 }
 
