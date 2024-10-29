@@ -1,7 +1,4 @@
-use phoenix::ttl::{
-    BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
-    PERSISTENT_LIFETIME_THRESHOLD,
-};
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 use crate::stake_rewards_contract;
@@ -83,8 +80,8 @@ pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
     env.storage().persistent().has(&key).then(|| {
         env.storage().persistent().extend_ttl(
             &key,
-            BALANCE_LIFETIME_THRESHOLD,
-            BALANCE_BUMP_AMOUNT,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
         );
     });
 
@@ -93,9 +90,11 @@ pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
 
 pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
     env.storage().persistent().set(key, bonding_info);
-    env.storage()
-        .persistent()
-        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+    env.storage().persistent().extend_ttl(
+        &key,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub mod utils {
@@ -161,8 +160,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
-            BALANCE_LIFETIME_THRESHOLD,
-            BALANCE_BUMP_AMOUNT,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
         );
     }
 
@@ -174,8 +173,8 @@ pub mod utils {
 
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
-            BALANCE_LIFETIME_THRESHOLD,
-            BALANCE_BUMP_AMOUNT,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
         );
     }
 
@@ -187,8 +186,8 @@ pub mod utils {
 
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
-            BALANCE_LIFETIME_THRESHOLD,
-            BALANCE_BUMP_AMOUNT,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
         );
     }
 
@@ -200,8 +199,8 @@ pub mod utils {
             .unwrap();
         env.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
-            BALANCE_LIFETIME_THRESHOLD,
-            BALANCE_BUMP_AMOUNT,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
         );
 
         total_staked

@@ -46,7 +46,7 @@ pub fn save_stable_wasm_hash(env: &Env, hash: BytesN<32>) {
         &STABLE_WASM_HASH,
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
-    )
+    );
 }
 
 pub fn get_stable_wasm_hash(env: &Env) -> BytesN<32> {
@@ -138,7 +138,7 @@ pub fn save_config(env: &Env, config: Config) {
         &DataKey::Config,
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
-    )
+    );
 }
 
 pub fn get_config(env: &Env) -> Config {

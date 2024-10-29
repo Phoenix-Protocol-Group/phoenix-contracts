@@ -8,7 +8,10 @@ use crate::{
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
 };
-use phoenix::validate_bps;
+use phoenix::{
+    ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
+    validate_bps,
+};
 use phoenix::{
     ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD},
     utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo},
@@ -146,6 +149,9 @@ impl FactoryTrait for Factory {
         max_allowed_fee_bps: i64,
     ) -> Address {
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         validate_pool_info(&pool_type, &amp);
 
         if !get_config(&env).whitelisted_accounts.contains(sender) {
@@ -234,6 +240,9 @@ impl FactoryTrait for Factory {
         to_remove: Vec<Address>,
     ) {
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let config = get_config(&env);
 
@@ -277,6 +286,9 @@ impl FactoryTrait for Factory {
         let config = get_config(&env);
 
         config.admin.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         save_config(
             &env,
@@ -290,10 +302,16 @@ impl FactoryTrait for Factory {
     }
 
     fn query_pools(env: Env) -> Vec<Address> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_lp_vec(&env)
     }
 
     fn query_pool_details(env: Env, pool_address: Address) -> LiquidityPoolInfo {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let pool_response: LiquidityPoolInfo = env.invoke_contract(
             &pool_address,
             &Symbol::new(&env, "query_pool_info_for_factory"),
@@ -303,6 +321,9 @@ impl FactoryTrait for Factory {
     }
 
     fn query_all_pools_details(env: Env) -> Vec<LiquidityPoolInfo> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let all_lp_vec_addresses = get_lp_vec(&env);
         let mut result = Vec::new(&env);
         for address in all_lp_vec_addresses {
@@ -319,6 +340,9 @@ impl FactoryTrait for Factory {
     }
 
     fn query_for_pool_by_token_pair(env: Env, token_a: Address, token_b: Address) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let pool_result: Option<Address> = env.storage().persistent().get(&PairTupleKey {
             token_a: token_a.clone(),
             token_b: token_b.clone(),
@@ -379,14 +403,23 @@ impl FactoryTrait for Factory {
     }
 
     fn get_admin(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_config(&env).admin
     }
 
     fn get_config(env: Env) -> Config {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_config(&env)
     }
 
     fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let initialized_pools = get_lp_vec(&env);
         let mut lp_portfolio: Vec<LpPortfolio> = Vec::new(&env);
         let mut stake_portfolio: Vec<StakePortfolio> = Vec::new(&env);

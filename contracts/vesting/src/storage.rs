@@ -1,8 +1,5 @@
 use curve::Curve;
-use phoenix::ttl::{
-    BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
-    PERSISTENT_LIFETIME_THRESHOLD,
-};
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contracttype, log, panic_with_error, vec, Address, ConversionError, Env, String, TryFromVal,
     Val, Vec,
@@ -125,8 +122,8 @@ pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
     env.storage().persistent().set(&vesting_key, vesting_info);
     env.storage().persistent().extend_ttl(
         &vesting_key,
-        BALANCE_LIFETIME_THRESHOLD,
-        BALANCE_BUMP_AMOUNT,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
     );
 }
 
@@ -138,8 +135,8 @@ pub fn update_vesting(env: &Env, address: &Address, index: u64, vesting_info: &V
     env.storage().persistent().set(&vesting_key, vesting_info);
     env.storage().persistent().extend_ttl(
         &vesting_key,
-        BALANCE_LIFETIME_THRESHOLD,
-        BALANCE_BUMP_AMOUNT,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
     );
 }
 
@@ -154,8 +151,8 @@ pub fn get_vesting(env: &Env, recipient: &Address, index: u64) -> VestingInfo {
     });
     env.storage().persistent().extend_ttl(
         &vesting_key,
-        BALANCE_LIFETIME_THRESHOLD,
-        BALANCE_BUMP_AMOUNT,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
     );
 
     vesting_info
@@ -176,8 +173,8 @@ pub fn get_all_vestings(env: &Env, address: &Address) -> Vec<VestingInfo> {
             index += 1;
             env.storage().persistent().extend_ttl(
                 &vesting_key,
-                BALANCE_LIFETIME_THRESHOLD,
-                BALANCE_BUMP_AMOUNT,
+                PERSISTENT_LIFETIME_THRESHOLD,
+                PERSISTENT_BUMP_AMOUNT,
             );
         } else {
             break;
@@ -197,10 +194,12 @@ pub fn save_minter(env: &Env, minter: &MinterInfo) {
 
 #[cfg(feature = "minter")]
 pub fn get_minter(env: &Env) -> Option<MinterInfo> {
+    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+
     let minter_info = env.storage().instance().get(&DataKey::Minter);
     env.storage()
         .instance()
-        .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
     minter_info
 }

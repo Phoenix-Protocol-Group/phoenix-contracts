@@ -14,20 +14,10 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 }
 
 #[allow(clippy::too_many_arguments)]
-mod stake_v_1_0_0 {
-    soroban_sdk::contractimport!(file = "../../artifacts/phoenix_stake.wasm");
-}
-
-#[allow(clippy::too_many_arguments)]
 mod stake_latest {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
-}
-
-#[allow(dead_code)]
-fn install_stake_mainnet_wasm(env: &Env) -> BytesN<32> {
-    env.deployer().upload_contract_wasm(stake_v_1_0_0::WASM)
 }
 
 #[allow(dead_code)]

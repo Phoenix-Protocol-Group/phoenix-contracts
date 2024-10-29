@@ -70,7 +70,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
 
     let token_wasm_hash = install_token_wasm(env);
     let stake_wasm_hash = install_stake_wasm(env);
-    let stake_rewards_wasm_hash = install_stake_rewards_wasm(env);
+    let _stake_rewards_wasm_hash = install_stake_rewards_wasm(env);
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin,
@@ -87,7 +87,6 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     pool.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
-        &stake_rewards_wasm_hash,
         &lp_init_info,
         &factory,
         &10, // LP share decimals, unused
