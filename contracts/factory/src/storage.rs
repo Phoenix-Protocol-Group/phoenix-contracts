@@ -1,4 +1,7 @@
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
+use phoenix::ttl::{
+    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
+    PERSISTENT_LIFETIME_THRESHOLD,
+};
 use soroban_sdk::{
     contracttype, symbol_short, Address, BytesN, ConversionError, Env, Symbol, TryFromVal, Val, Vec,
 };
@@ -46,7 +49,10 @@ pub fn save_stable_wasm_hash(env: &Env, hash: BytesN<32>) {
         &STABLE_WASM_HASH,
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
-    )
+    );
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 }
 
 pub fn get_stable_wasm_hash(env: &Env) -> BytesN<32> {
@@ -61,6 +67,10 @@ pub fn get_stable_wasm_hash(env: &Env) -> BytesN<32> {
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
     );
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
     hash
 }
@@ -138,7 +148,11 @@ pub fn save_config(env: &Env, config: Config) {
         &DataKey::Config,
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
-    )
+    );
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 }
 
 pub fn get_config(env: &Env) -> Config {
@@ -153,6 +167,10 @@ pub fn get_config(env: &Env) -> Config {
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
     );
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
     config
 }
@@ -170,6 +188,10 @@ pub fn get_lp_vec(env: &Env) -> Vec<Address> {
         PERSISTENT_BUMP_AMOUNT,
     );
 
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
     lp_vec
 }
 
@@ -180,6 +202,10 @@ pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
     );
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 }
 
 pub fn save_lp_vec_with_tuple_as_key(
@@ -203,6 +229,10 @@ pub fn save_lp_vec_with_tuple_as_key(
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
     );
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 }
 
 pub fn is_initialized(e: &Env) -> bool {
@@ -220,4 +250,8 @@ pub fn set_initialized(e: &Env) {
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
     );
+
+    e.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 }
