@@ -213,7 +213,8 @@ pub struct SimulateReverseSwapResponse {
 }
 
 pub mod utils {
-    use phoenix::ttl::{BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
+
+    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 
     use super::*;
 
@@ -252,21 +253,21 @@ pub mod utils {
         e.storage().instance().set(&DataKey::TotalShares, &amount);
         e.storage()
             .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
     }
 
     pub fn save_pool_balance_a(e: &Env, amount: i128) {
         e.storage().instance().set(&DataKey::ReserveA, &amount);
         e.storage()
             .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
     }
 
     pub fn save_pool_balance_b(e: &Env, amount: i128) {
         e.storage().instance().set(&DataKey::ReserveB, &amount);
         e.storage()
             .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
     }
 
     pub fn mint_shares(e: &Env, share_token: &Address, to: &Address, amount: i128) {
@@ -299,7 +300,7 @@ pub mod utils {
         let total_shares = e.storage().instance().get(&DataKey::TotalShares).unwrap();
         e.storage()
             .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         total_shares
     }
@@ -307,7 +308,7 @@ pub mod utils {
         let balance_a = e.storage().instance().get(&DataKey::ReserveA).unwrap();
         e.storage()
             .instance()
-            .extend_ttl(BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         balance_a
     }
