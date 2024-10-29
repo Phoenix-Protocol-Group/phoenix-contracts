@@ -278,10 +278,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         custom_slippage_bps: Option<i64>,
         deadline: Option<u64>,
     ) {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
                 log!(
@@ -296,6 +292,10 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         // sender needs to authorize the deposit
         sender.require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let config = get_config(&env);
         let pool_balance_a = utils::get_pool_balance_a(&env);
@@ -423,10 +423,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         deadline: Option<u64>,
         max_allowed_fee_bps: Option<i64>,
     ) -> i128 {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
                 log!(env, "Pool: Swap: Transaction executed after deadline!");
@@ -437,6 +433,10 @@ impl LiquidityPoolTrait for LiquidityPool {
         validate_int_parameters!(offer_amount);
 
         sender.require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         do_swap(
             env,
@@ -458,10 +458,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_b: i128,
         deadline: Option<u64>,
     ) -> (i128, i128) {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
                 log!(
@@ -475,6 +471,9 @@ impl LiquidityPoolTrait for LiquidityPool {
         validate_int_parameters!(share_amount, min_a, min_b);
 
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let config = get_config(&env);
 
@@ -550,12 +549,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
     ) {
+        let admin: Address = utils::get_admin(&env);
+        admin.require_auth();
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
-        let admin: Address = utils::get_admin(&env);
-        admin.require_auth();
 
         let mut config = get_config(&env);
 
