@@ -1,4 +1,7 @@
-use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo};
+use phoenix::{
+    ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
+    utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo},
+};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
     String,
@@ -294,6 +297,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         // sender needs to authorize the deposit
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let config = get_config(&env);
         let greatest_precision = get_greatest_precision(&env);
@@ -453,6 +459,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         validate_int_parameters!(offer_amount);
 
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         do_swap(
             env,
@@ -486,6 +495,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         validate_int_parameters!(share_amount, min_a, min_b);
 
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let config = get_config(&env);
 
@@ -564,6 +576,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             log!(&env, "Pool Stable: UpdateConfig: Unauthorized");
             panic_with_error!(&env, ContractError::Unauthorized);
         }
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let mut config = get_config(&env);
 
@@ -599,18 +614,30 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     // Queries
 
     fn query_config(env: Env) -> Config {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_config(&env)
     }
 
     fn query_share_token_address(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_config(&env).share_token
     }
 
     fn query_stake_contract_address(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_config(&env).stake_contract
     }
 
     fn query_pool_info(env: Env) -> PoolResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let config = get_config(&env);
 
         PoolResponse {
@@ -631,6 +658,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     }
 
     fn query_pool_info_for_factory(env: Env) -> StableLiquidityPoolInfo {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let config = get_config(&env);
         let pool_response = PoolResponse {
             asset_a: Asset {
@@ -657,6 +687,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     }
 
     fn simulate_swap(env: Env, offer_asset: Address, offer_amount: i128) -> SimulateSwapResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let config = get_config(&env);
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
@@ -707,6 +740,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         offer_asset: Address,
         ask_amount: i128,
     ) -> SimulateReverseSwapResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let config = get_config(&env);
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
@@ -749,6 +785,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     }
 
     fn query_share(env: Env, amount: i128) -> (Asset, Asset) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let pool_info = Self::query_pool_info(env);
         let total_share = pool_info.asset_lp_share.amount;
         let token_a_amount = pool_info.asset_a.amount;
@@ -774,6 +813,9 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     }
 
     fn query_total_issued_lp(env: Env) -> i128 {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         utils::get_total_shares(&env)
     }
 }
