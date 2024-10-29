@@ -1,7 +1,4 @@
-use phoenix::ttl::{
-    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
-    PERSISTENT_LIFETIME_THRESHOLD,
-};
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contracttype, symbol_short, Address, BytesN, ConversionError, Env, Symbol, TryFromVal, Val, Vec,
 };

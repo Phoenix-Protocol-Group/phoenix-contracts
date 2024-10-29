@@ -1,7 +1,6 @@
 use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{
-    contracttype, log, panic_with_error, token, Address, ConversionError, Env, String, TryFromVal,
-    Val,
+    contracttype, log, panic_with_error, Address, ConversionError, Env, String, TryFromVal, Val,
 };
 
 use crate::error::ContractError;

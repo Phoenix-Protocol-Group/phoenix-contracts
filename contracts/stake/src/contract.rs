@@ -1,13 +1,13 @@
 use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    Map, String, Vec,
+    Vec,
 };
 
 use crate::{
     distribution::{
         calculate_pending_rewards, get_reward_history, get_total_staked_history,
-        save_reward_history, save_total_staked_history, DistributionDataKey,
+        save_reward_history, save_total_staked_history,
     },
     error::ContractError,
     msg::{ConfigResponse, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse},
@@ -21,7 +21,6 @@ use crate::{
     },
     token_contract,
 };
-use soroban_decimal::Decimal;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
