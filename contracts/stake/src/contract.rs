@@ -1,3 +1,4 @@
+use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
     Map, String, Vec,
@@ -138,6 +139,9 @@ impl StakingTrait for Staking {
 
     fn bond(env: Env, sender: Address, tokens: i128) {
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let ledger = env.ledger();
         let config = get_config(&env);
@@ -173,6 +177,10 @@ impl StakingTrait for Staking {
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
         sender.require_auth();
 
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
         let config = get_config(&env);
 
         let mut stakes = get_stakes(&env, &sender);
@@ -193,6 +201,9 @@ impl StakingTrait for Staking {
 
     fn create_distribution_flow(env: Env, sender: Address, asset: Address) {
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let config = get_config(&env);
         if sender != config.manager && sender != config.owner {
@@ -209,6 +220,11 @@ impl StakingTrait for Staking {
 
     fn distribute_rewards(env: Env, sender: Address, amount: i128, reward_token: Address) {
         sender.require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
         let config = get_config(&env);
         if sender != config.manager && sender != config.owner {
             log!(env, "Stake: create distribution: Non-authorized creation!");
@@ -245,7 +261,13 @@ impl StakingTrait for Staking {
     }
 
     fn withdraw_rewards(env: Env, sender: Address) {
+        sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
         env.events().publish(("withdraw_rewards", "user"), &sender);
+
         let mut stakes = get_stakes(&env, &sender);
 
         for asset in get_distributions(&env) {
@@ -266,16 +288,25 @@ impl StakingTrait for Staking {
     // QUERIES
 
     fn query_config(env: Env) -> ConfigResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         ConfigResponse {
             config: get_config(&env),
         }
     }
 
     fn query_admin(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_admin(&env)
     }
 
     fn query_staked(env: Env, address: Address) -> StakedResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let stakes = get_stakes(&env, &address);
         StakedResponse {
             stakes: stakes.stakes,
@@ -285,6 +316,9 @@ impl StakingTrait for Staking {
     }
 
     fn query_total_staked(env: Env) -> i128 {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_total_staked_counter(&env)
     }
 
@@ -310,6 +344,9 @@ impl StakingTrait for Staking {
     // }
 
     fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let stakes = get_stakes(&env, &user);
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
