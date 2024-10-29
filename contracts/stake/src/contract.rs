@@ -261,7 +261,6 @@ impl StakingTrait for Staking {
     }
 
     fn withdraw_rewards(env: Env, sender: Address) {
-        sender.require_auth();
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
