@@ -1,3 +1,4 @@
+use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, Env, String,
 };
@@ -111,6 +112,9 @@ impl TraderTrait for Trader {
         max_allowed_fee_bps: Option<i64>,
     ) {
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         if sender != get_admin(&env) {
             log!(&env, "Trader: Trade_token: Unauthorized trade");
@@ -174,6 +178,9 @@ impl TraderTrait for Trader {
         token_address: Option<Address>,
     ) {
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         if sender != get_admin(&env) {
             log!(&env, "Trader: Transfer: Unauthorized transfer");
@@ -192,6 +199,9 @@ impl TraderTrait for Trader {
     }
 
     fn query_balances(env: Env) -> BalanceInfo {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let output_token = get_output_token(&env);
         let (token_a, token_b) = get_pair(&env);
 
@@ -223,18 +233,30 @@ impl TraderTrait for Trader {
     }
 
     fn query_trading_pairs(env: Env) -> (Address, Address) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_pair(&env)
     }
 
     fn query_admin_address(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_admin(&env)
     }
 
     fn query_contract_name(env: Env) -> String {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         get_name(&env)
     }
 
     fn query_output_token_info(env: Env) -> OutputTokenInfo {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let output_token = get_output_token(&env);
         let output_token_client = token_contract::Client::new(&env, &output_token);
 
