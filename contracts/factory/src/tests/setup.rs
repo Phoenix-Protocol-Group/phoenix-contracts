@@ -60,7 +60,6 @@ pub fn deploy_factory_contract<'a>(
     admin: impl Into<Option<Address>>,
 ) -> FactoryClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
-    let factory = FactoryClient::new(env, &env.register_contract(None, Factory {}));
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![env, admin.clone()];
 
@@ -69,15 +68,21 @@ pub fn deploy_factory_contract<'a>(
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
 
-    factory.initialize(
-        &admin,
-        &multihop_wasm_hash,
-        &lp_wasm_hash,
-        &stable_wasm_hash,
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &whitelisted_accounts,
-        &10u32,
+    let factory = FactoryClient::new(
+        env,
+        &env.register(
+            Factory,
+            (
+                admin,
+                multihop_wasm_hash,
+                lp_wasm_hash,
+                stable_wasm_hash,
+                stake_wasm_hash,
+                token_wasm_hash,
+                whitelisted_accounts,
+                10u32,
+            ),
+        ),
     );
 
     factory
