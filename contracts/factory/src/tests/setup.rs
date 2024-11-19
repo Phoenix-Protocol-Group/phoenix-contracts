@@ -132,11 +132,9 @@ pub fn install_and_deploy_token_contract<'a>(
     let token_addr = env
         .deployer()
         .with_address(admin.clone(), salt)
-        .deploy(token_wasm);
+        .deploy_v2(token_wasm, (admin, *decimal, name.clone(), symbol.clone()));
 
     let token_client = token_contract::Client::new(env, &token_addr);
-
-    token_client.initialize(admin, decimal, name, symbol);
 
     token_client
 }
