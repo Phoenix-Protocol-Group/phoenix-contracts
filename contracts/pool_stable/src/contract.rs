@@ -4,7 +4,7 @@ use phoenix::{
 };
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, xdr::ToXdr, Address, Bytes,
-    BytesN, Env, IntoVal, String,
+    BytesN, Env, String,
 };
 
 use crate::{
