@@ -1,12 +1,14 @@
 use crate::{
     error::ContractError,
+    stake_contract,
     storage::{
         get_config, get_lp_vec, get_stable_wasm_hash, is_initialized, save_config, save_lp_vec,
         save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
-        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse,
-        UserPortfolio,
+        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio,
     },
+    token_contract,
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
+    ConvertVec,
 };
 use phoenix::{
     ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
@@ -433,17 +435,13 @@ impl FactoryTrait for Factory {
 
             // get the lp share token balance for the user
             // if the user has any liquidity tokens in the pool add to the lp_portfolio
-            let lp_share_balance: i128 = env.invoke_contract(
-                &response.pool_response.asset_lp_share.address,
-                &Symbol::new(&env, "balance"),
-                vec![&env, sender.into_val(&env)],
-            );
+            let lp_share_balance =
+                token_contract::Client::new(&env, &response.pool_response.asset_lp_share.address)
+                    .balance(&sender);
 
-            let lp_share_staked: StakedResponse = env.invoke_contract(
-                &response.pool_response.stake_address,
-                &Symbol::new(&env, "query_staked"),
-                vec![&env, sender.into_val(&env)],
-            );
+            let lp_share_staked =
+                stake_contract::Client::new(&env, &response.pool_response.stake_address)
+                    .query_staked(&sender);
 
             let sum_of_lp_share_staked: i128 =
                 lp_share_staked.stakes.iter().map(|stake| stake.stake).sum();
@@ -467,17 +465,15 @@ impl FactoryTrait for Factory {
 
             // make a call towards the stake contract to check the staked amount
             if staking {
-                let stake_response: StakedResponse = env.invoke_contract(
-                    &response.pool_response.stake_address,
-                    &Symbol::new(&env, "query_staked"),
-                    vec![&env, sender.into_val(&env)],
-                );
+                let stake_response =
+                    stake_contract::Client::new(&env, &response.pool_response.stake_address)
+                        .query_staked(&sender);
 
                 // only stakes that the user has made
                 if !stake_response.stakes.is_empty() {
                     stake_portfolio.push_back(StakePortfolio {
                         staking_contract: response.pool_response.stake_address,
-                        stakes: stake_response.stakes,
+                        stakes: stake_response.stakes.convert_vec(),
                     })
                 }
             }
