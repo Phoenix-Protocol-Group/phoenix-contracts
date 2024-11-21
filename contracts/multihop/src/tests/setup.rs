@@ -2,11 +2,12 @@ use crate::contract::{Multihop, MultihopClient};
 use crate::factory_contract::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
 use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
 
+use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     Address, Bytes, BytesN, Env,
 };
-use soroban_sdk::{vec, IntoVal, String};
+use soroban_sdk::{vec, String};
 pub fn create_token_contract_with_metadata<'a>(
     env: &Env,
     admin: &Address,
@@ -15,11 +16,21 @@ pub fn create_token_contract_with_metadata<'a>(
     symbol: String,
     amount: i128,
 ) -> token_contract::Client<'a> {
-    let token =
-        token_contract::Client::new(env, &env.register_contract_wasm(None, token_contract::WASM));
-    token.initialize(admin, &decimals, &name.into_val(env), &symbol.into_val(env));
-    token.mint(admin, &amount);
-    token
+    let token_wasm = install_token_wasm(env);
+
+    let mut salt = Bytes::new(env);
+    salt.append(&name.clone().to_xdr(env));
+    let salt = env.crypto().sha256(&salt);
+    let token_addr = env
+        .deployer()
+        .with_address(admin.clone(), salt)
+        .deploy_v2(token_wasm, (admin, decimals, name.clone(), symbol.clone()));
+
+    let token_client = token_contract::Client::new(env, &token_addr);
+
+    token_client.mint(admin, &amount);
+
+    token_client
 }
 
 pub fn install_lp_contract(env: &Env) -> BytesN<32> {
@@ -63,7 +74,9 @@ pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
     let salt = Bytes::new(e);
     let salt = e.crypto().sha256(&salt);
 
-    e.deployer().with_address(admin, salt).deploy(factory_wasm)
+    e.deployer()
+        .with_address(admin, salt)
+        .deploy_v2(factory_wasm, ())
 }
 
 pub fn deploy_multihop_contract<'a>(
@@ -73,7 +86,7 @@ pub fn deploy_multihop_contract<'a>(
 ) -> MultihopClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
 
-    let multihop = MultihopClient::new(env, &env.register_contract(None, Multihop {}));
+    let multihop = MultihopClient::new(env, &env.register(Multihop, ()));
 
     multihop.initialize(&admin, factory);
     multihop

@@ -15,7 +15,7 @@ fn test_deploy_multihop_twice_should_fail() {
 
     let admin = Address::generate(&env);
 
-    let multihop = MultihopClient::new(&env, &env.register_contract(None, Multihop {}));
+    let multihop = MultihopClient::new(&env, &env.register(Multihop, ()));
     let factory = deploy_factory_contract(&env, admin.clone());
     multihop.initialize(&admin, &factory);
     multihop.initialize(&admin, &factory);
