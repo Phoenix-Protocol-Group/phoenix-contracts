@@ -92,6 +92,8 @@ pub trait FactoryTrait {
     fn get_config(env: Env) -> Config;
 
     fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio;
+
+    fn remove_pool(env: Env, pool: Address) -> ();
 }
 
 #[contractimpl]
@@ -551,17 +553,27 @@ impl FactoryTrait for Factory {
             stake_portfolio,
         }
     }
+
+    fn remove_pool(env: Env, pool: Address) -> () {
+        let admin = get_config(&env).admin;
+        admin.require_auth();
+
+        let mut vec = get_lp_vec(&env);
+        if let Some(index) = vec.last_index_of(pool) {
+            vec.remove(index);
+            save_lp_vec(&env, vec);
+        };
+    }
 }
 
 #[contractimpl]
 impl Factory {
     #[allow(dead_code)]
-    pub fn update(env: Env, new_wasm_hash: BytesN<32>, new_stable_pool_hash: BytesN<32>) {
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_config(&env).admin;
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
-        save_stable_wasm_hash(&env, new_stable_pool_hash);
     }
 }
 

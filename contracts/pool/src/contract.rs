@@ -360,11 +360,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             PERSISTENT_LIFETIME_THRESHOLD,
             PERSISTENT_BUMP_AMOUNT,
         );
-        // let token_a_client = token_contract::Client::new(&env, &token_a);
-        // let token_b_client = token_contract::Client::new(&env, &token_b);
-
-        // token_a_client.transfer(&admin.clone(), &env.current_contract_address(), &(261_897_744_151));
-        // token_b_client.transfer(&admin.clone(), &env.current_contract_address(), &(132_762_467_592));
 
         env.events()
             .publish(("initialize", "XYK LP token_a"), token_a);
