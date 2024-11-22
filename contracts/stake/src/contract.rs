@@ -268,7 +268,7 @@ impl StakingTrait for Staking {
 
         let mut stakes = get_stakes(&env, &sender);
 
-        for asset in get_distributions(&env) {
+        for asset in get_distributions(&env).iter() {
             let pending_reward = calculate_pending_rewards(&env, &asset, &stakes);
             env.events()
                 .publish(("withdraw_rewards", "reward_token"), &asset);

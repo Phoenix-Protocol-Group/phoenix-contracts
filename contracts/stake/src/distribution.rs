@@ -75,47 +75,43 @@ pub fn calculate_pending_rewards(
     let current_timestamp = env.ledger().timestamp();
     let last_reward_day = user_info.last_reward_time;
 
-    // Load the reward and total staked histories
+    // Load reward history and total staked history
     let reward_history = get_reward_history(env, reward_token);
     let total_staked_history = get_total_staked_history(env);
 
-    // Filter reward history to the relevant range
-    let mut relevant_reward_history = Map::new(env);
-    for (day, reward) in reward_history.iter() {
-        if day >= last_reward_day && day <= current_timestamp {
-            relevant_reward_history.set(day, reward);
-        }
-    }
-
+    let reward_keys = reward_history.keys();
     let mut pending_rewards: i128 = 0;
 
-    // Iterate over each stake
-    for stake in user_info.stakes.iter() {
-        let stake_start_day = stake.stake_timestamp / SECONDS_PER_DAY;
+    // Find the first relevant reward day after `last_reward_day`
+    if let Some(first_relevant_day) = reward_keys.iter().find(|&day| day > last_reward_day) {
+        // Iterate over all relevant reward days
+        for reward_day in reward_keys
+            .iter()
+            .skip_while(|&day| day < first_relevant_day)
+            .take_while(|&day| day <= current_timestamp)
+        {
+            // Get the daily reward and total staked for this day
+            if let (Some(daily_reward), Some(total_staked)) = (
+                reward_history.get(reward_day),
+                total_staked_history.get(reward_day),
+            ) {
+                if total_staked == 0 {
+                    continue; // Skip if nothing was staked
+                }
 
-        // Iterate over the relevant reward days
-        for (day, daily_reward) in relevant_reward_history.iter() {
-            if day < stake_start_day || day > current_timestamp {
-                continue;
-            }
+                // Process each stake for the current reward day
+                for stake in user_info.stakes.iter() {
+                    // Calculate the age of the stake in days
+                    let stake_age_days =
+                        ((reward_day - stake.stake_timestamp) / SECONDS_PER_DAY).min(60);
 
-            // Find the total staked amount for the given day
-            if let Some(total_staked) = total_staked_history.get(day) {
-                if total_staked > 0 {
-                    // Calculate stake age in days
-                    let stake_age_days = (day - stake_start_day).min(60);
+                    // Determine the multiplier based on the stake age
+                    let multiplier = Decimal::from_ratio(stake_age_days, 60);
 
-                    // Correct multiplier logic
-                    let multiplier = if stake_age_days >= 60 {
-                        Decimal::one()
-                    } else {
-                        Decimal::from_ratio(stake_age_days, 60)
-                    };
-
-                    // Calculate the user's share of the reward
+                    // Calculate the user's share of the rewards
                     let user_share = (stake.stake as u128) * daily_reward / total_staked;
 
-                    // Apply multiplier and accumulate rewards
+                    // Adjust the reward using the multiplier and add to the total
                     pending_rewards += (user_share as i128) * multiplier;
                 }
             }
