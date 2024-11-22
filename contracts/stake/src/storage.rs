@@ -3,6 +3,8 @@ use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 use crate::stake_rewards_contract;
 
+pub const NEW_LP: Symbol = symbol_short!("NEWLP");
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
