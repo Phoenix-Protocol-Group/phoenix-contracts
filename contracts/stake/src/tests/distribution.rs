@@ -1303,3 +1303,138 @@ fn add_distribution_and_distribute_reward_in_chunks() {
         }
     );
 }
+
+#[test]
+fn distribute_rewards_daily_multiple_times_same_stakes_chunked() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let user = Address::generate(&env);
+    let user2 = Address::generate(&env);
+    let user3 = Address::generate(&env);
+    let user4 = Address::generate(&env);
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &admin,
+        &50u32,
+    );
+    staking.create_distribution_flow(&admin, &reward_token.address);
+
+    // Bond tokens for users; each user has a different amount staked
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1706968777;
+    });
+
+    lp_token.mint(&user, &1000);
+    staking.bond(&user, &1000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1714741177;
+    });
+
+    lp_token.mint(&user2, &2000);
+    staking.bond(&user2, &2000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1714741177;
+    });
+
+    lp_token.mint(&user3, &3000);
+    staking.bond(&user3, &3000);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 1715741177;
+    });
+
+    lp_token.mint(&user4, &4000);
+    staking.bond(&user4, &4000);
+
+    // Simulate moving forward 60 days for the full APR multiplier
+    env.ledger().with_mut(|li| {
+        li.timestamp += SIXTY_DAYS;
+    });
+
+    reward_token.mint(&admin, &4_000_000);
+    staking.distribute_rewards(&admin, &1_000_000, &reward_token.address);
+
+    // Withdraw rewards in a single chunk for all users
+    let chunk_size = 60u32; // Large chunk size to withdraw everything
+    staking.withdraw_rewards_chunks(&user, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user), 100_000);
+
+    staking.withdraw_rewards_chunks(&user2, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user2), 200_000);
+
+    staking.withdraw_rewards_chunks(&user3, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user3), 300_000);
+
+    staking.withdraw_rewards_chunks(&user4, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user4), 400_000);
+
+    // Distribute another round of rewards
+    env.ledger().with_mut(|li| {
+        li.timestamp += 3600 * 24;
+    });
+    staking.distribute_rewards(&admin, &1_000_000, &reward_token.address);
+
+    staking.withdraw_rewards_chunks(&user, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user), 200_000);
+
+    staking.withdraw_rewards_chunks(&user2, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user2), 400_000);
+
+    staking.withdraw_rewards_chunks(&user3, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user3), 600_000);
+
+    staking.withdraw_rewards_chunks(&user4, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user4), 800_000);
+
+    // Distribute another round of rewards
+    env.ledger().with_mut(|li| {
+        li.timestamp += 3600 * 24;
+    });
+    staking.distribute_rewards(&admin, &1_000_000, &reward_token.address);
+
+    staking.withdraw_rewards_chunks(&user, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user), 300_000);
+
+    staking.withdraw_rewards_chunks(&user2, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user2), 600_000);
+
+    staking.withdraw_rewards_chunks(&user3, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user3), 900_000);
+
+    staking.withdraw_rewards_chunks(&user4, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user4), 1_200_000);
+
+    // Distribute another round of rewards
+    env.ledger().with_mut(|li| {
+        li.timestamp += 3600 * 24;
+    });
+    staking.distribute_rewards(&admin, &1_000_000, &reward_token.address);
+
+    staking.withdraw_rewards_chunks(&user, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user), 400_000);
+
+    staking.withdraw_rewards_chunks(&user2, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user2), 800_000);
+
+    staking.withdraw_rewards_chunks(&user3, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user3), 1_200_000);
+
+    staking.withdraw_rewards_chunks(&user4, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user4), 1_600_000);
+
+    // Ensure the contract balance is zero
+    assert_eq!(reward_token.balance(&staking.address), 0);
+}
