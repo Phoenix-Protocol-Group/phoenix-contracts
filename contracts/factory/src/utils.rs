@@ -14,6 +14,20 @@ pub fn deploy_lp_contract(
     env.deployer().with_current_contract(salt).deploy(wasm_hash)
 }
 
+pub fn deploy_lp_contract2(
+    env: &Env,
+    wasm_hash: BytesN<32>,
+    token_a: &Address,
+    token_b: &Address,
+) -> Address {
+    let mut salt = Bytes::new(env);
+    salt.append(&token_a.to_xdr(env));
+    salt.append(&token_b.to_xdr(env));
+    salt.append(&42u32.to_xdr(env));
+    let salt = env.crypto().sha256(&salt);
+
+    env.deployer().with_current_contract(salt).deploy(wasm_hash)
+}
 pub fn deploy_and_initialize_multihop_contract(
     env: Env,
     admin: Address,

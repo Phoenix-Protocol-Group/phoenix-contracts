@@ -6,7 +6,7 @@ use crate::{
         save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
         LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio,
     },
-    utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
+    utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract, deploy_lp_contract2},
     ConvertVec,
 };
 use phoenix::{
@@ -277,7 +277,7 @@ impl FactoryTrait for Factory {
             &env,
             "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
         ));
-        let lp_contract_address = deploy_lp_contract(&env, pool_hash, &token_a, &token_b);
+        let lp_contract_address = deploy_lp_contract2(&env, pool_hash, &token_a, &token_b);
 
         let init_fn: Symbol = Symbol::new(&env, "initialize_with_stake");
         let init_fn_args: Vec<Val> =
