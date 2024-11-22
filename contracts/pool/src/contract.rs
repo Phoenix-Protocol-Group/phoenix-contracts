@@ -16,6 +16,7 @@ use crate::{
     },
     token_contract,
 };
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use phoenix::{
     ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
     utils::{convert_i128_to_u128, is_approx_ratio, LiquidityPoolInitInfo},
@@ -51,6 +52,14 @@ pub trait LiquidityPoolTrait {
         share_token_symbol: String,
         default_slippage_bps: i64,
         max_allowed_fee_bps: i64,
+    );
+
+    #[allow(clippy::too_many_arguments)]
+    fn initialize_with_stake(
+        env: Env,
+        token_wasm_hash: BytesN<32>,
+        share_token_name: String,
+        share_token_symbol: String,
     );
 
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
@@ -268,6 +277,102 @@ impl LiquidityPoolTrait for LiquidityPool {
     }
 
     #[allow(clippy::too_many_arguments)]
+    fn initialize_with_stake(
+        env: Env,
+        token_wasm_hash: BytesN<32>,
+        share_token_name: String,
+        share_token_symbol: String,
+    ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Pool: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        let admin = Address::from_string(&String::from_str(
+            &env,
+            "GCNPDMUMRXBFHMM7KSXU3KVYNM73EDHBFMDK4O33HPY7DA2LXZOZQRDB",
+        ));
+        let token_a = Address::from_string(&String::from_str(
+            &env,
+            "CBZ7M5B3Y4WWBZ5XK5UZCAFOEZ23KSSZXYECYX3IXM6E2JOLQC52DK32",
+        ));
+        let token_b = Address::from_string(&String::from_str(
+            &env,
+            "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+        ));
+
+        let swap_fee_bps = 100;
+        let fee_recipient = admin.clone();
+        let max_allowed_slippage_bps = 10_000;
+        let max_allowed_spread_bps = 10_000;
+        let max_referral_bps = 5_000;
+
+        set_initialized(&env);
+
+        // deploy token contract
+        let share_token_address =
+            utils::deploy_token_contract(&env, token_wasm_hash, &token_a, &token_b);
+        token_contract::Client::new(&env, &share_token_address).initialize(
+            &env.current_contract_address(),
+            &7,
+            // name
+            &share_token_name.into_val(&env),
+            // symbol
+            &share_token_symbol.into_val(&env),
+        );
+
+        let config = Config {
+            token_a: token_a.clone(),
+            token_b: token_b.clone(),
+            share_token: share_token_address,
+            stake_contract: Address::from_string(&String::from_str(
+                &env,
+                "CDOXQONPND365K6MHR3QBSVVTC3MKR44ORK6TI2GQXUXGGAS5SNDAYRI",
+            )),
+            pool_type: PairType::Xyk,
+            total_fee_bps: swap_fee_bps,
+            fee_recipient,
+            max_allowed_slippage_bps,
+            max_allowed_spread_bps,
+            max_referral_bps,
+        };
+
+        save_config(&env, config);
+        save_default_slippage_bps(&env, 400);
+
+        utils::save_admin(&env, admin.clone());
+        utils::save_total_shares(&env, 162_969_676_807);
+        utils::save_pool_balance_a(&env, 261_897_744_151);
+        utils::save_pool_balance_b(&env, 132_762_467_592);
+
+        env.storage().persistent().set(
+            &crate::storage::OLD_LP,
+            &Address::from_string(&String::from_str(
+                &env,
+                "CBSM6C6OZJN2CS27RFTTYZJNAGRZ4MFHWVSV6GKLMCOYTQXD6K7UEA2A",
+            )),
+        );
+        env.storage().persistent().extend_ttl(
+            &crate::storage::OLD_LP,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+        // let token_a_client = token_contract::Client::new(&env, &token_a);
+        // let token_b_client = token_contract::Client::new(&env, &token_b);
+
+        // token_a_client.transfer(&admin.clone(), &env.current_contract_address(), &(261_897_744_151));
+        // token_b_client.transfer(&admin.clone(), &env.current_contract_address(), &(132_762_467_592));
+
+        env.events()
+            .publish(("initialize", "XYK LP token_a"), token_a);
+        env.events()
+            .publish(("initialize", "XYK LP token_b"), token_b);
+    }
+
+    #[allow(clippy::too_many_arguments)]
     fn provide_liquidity(
         env: Env,
         sender: Address,
@@ -477,8 +582,31 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let config = get_config(&env);
 
-        let share_token_client = token_contract::Client::new(&env, &config.share_token);
-        share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
+        let old_lp_address = env
+            .storage()
+            .persistent()
+            .get::<_, Address>(&crate::storage::OLD_LP)
+            .expect("Old LP address not configured!");
+        env.storage().persistent().extend_ttl(
+            &crate::storage::OLD_LP,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+        let old_lp_client = token_contract::Client::new(&env, &old_lp_address);
+        let old_lp_balance = old_lp_client.balance(&sender);
+
+        if old_lp_balance >= share_amount {
+            // Use the old LP token
+            old_lp_client.transfer(&sender, &env.current_contract_address(), &share_amount);
+            let total = crate::storage::utils::get_total_shares(&env);
+            crate::storage::utils::save_total_shares(&env, total - share_amount);
+        } else {
+            // Use the current LP token from config
+            let share_token_client = token_contract::Client::new(&env, &config.share_token);
+            share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
+            // burn shares
+            utils::burn_shares(&env, &config.share_token, share_amount);
+        }
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
@@ -510,8 +638,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             );
         }
 
-        // burn shares
-        utils::burn_shares(&env, &config.share_token, share_amount);
         // transfer tokens from sender to contract
         token_contract::Client::new(&env, &config.token_a).transfer(
             &env.current_contract_address(),

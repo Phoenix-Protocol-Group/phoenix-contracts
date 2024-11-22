@@ -7,6 +7,8 @@ use soroban_sdk::{
 use crate::{error::ContractError, token_contract};
 use soroban_decimal::Decimal;
 
+pub const OLD_LP: Symbol = symbol_short!("OLDLP");
+
 #[derive(Clone, Copy)]
 #[repr(u32)]
 pub enum DataKey {
