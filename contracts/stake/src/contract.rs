@@ -6,8 +6,8 @@ use soroban_sdk::{
 
 use crate::{
     distribution::{
-        calculate_pending_rewards, get_reward_history, get_total_staked_history,
-        save_reward_history, save_total_staked_history,
+        calculate_pending_rewards, calculate_pending_rewards_chunked, get_reward_history,
+        get_total_staked_history, save_reward_history, save_total_staked_history,
     },
     error::ContractError,
     msg::{ConfigResponse, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse},
@@ -56,6 +56,8 @@ pub trait StakingTrait {
 
     fn withdraw_rewards(env: Env, sender: Address);
 
+    fn withdraw_rewards_chunks(env: Env, sender: Address, reward_token: Address, chunk_size: u32);
+
     // QUERIES
 
     fn query_config(env: Env) -> ConfigResponse;
@@ -69,6 +71,13 @@ pub trait StakingTrait {
     // fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
+
+    fn query_withdrawable_rewards_ch(
+        env: Env,
+        address: Address,
+        chunk_size: u32,
+        start_day: Option<u64>,
+    ) -> WithdrawableRewardsResponse;
 
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
@@ -283,6 +292,37 @@ impl StakingTrait for Staking {
         save_stakes(&env, &sender, &stakes);
     }
 
+    fn withdraw_rewards_chunks(env: Env, sender: Address, reward_token: Address, chunk_size: u32) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        env.events().publish(("withdraw_rewards", "user"), &sender);
+
+        let mut stakes = get_stakes(&env, &sender);
+
+        // Start from the user's last reward time
+        let start_day = stakes.last_reward_time / crate::distribution::SECONDS_PER_DAY;
+
+        // Calculate pending rewards in chunks
+        let pending_rewards =
+            calculate_pending_rewards_chunked(&env, &reward_token, &stakes, start_day, chunk_size);
+
+        // Transfer pending rewards to the user
+        if pending_rewards > 0 {
+            token_contract::Client::new(&env, &reward_token).transfer(
+                &env.current_contract_address(),
+                &sender,
+                &pending_rewards,
+            );
+        }
+
+        // Explicitly document that chunk_size is inclusive of start_day
+        let last_processed_day = start_day + chunk_size as u64 - 1;
+        stakes.last_reward_time = last_processed_day * crate::distribution::SECONDS_PER_DAY;
+        save_stakes(&env, &sender, &stakes);
+    }
+
     // QUERIES
 
     fn query_config(env: Env) -> ConfigResponse {
@@ -350,6 +390,37 @@ impl StakingTrait for Staking {
         let mut rewards = vec![&env];
         for asset in get_distributions(&env) {
             let pending_reward = calculate_pending_rewards(&env, &asset, &stakes);
+
+            rewards.push_back(WithdrawableReward {
+                reward_address: asset,
+                reward_amount: pending_reward as u128,
+            });
+        }
+
+        WithdrawableRewardsResponse { rewards }
+    }
+
+    fn query_withdrawable_rewards_ch(
+        env: Env,
+        user: Address,
+        chunk_size: u32,
+        start_day: Option<u64>,
+    ) -> WithdrawableRewardsResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let stakes = get_stakes(&env, &user);
+        let mut rewards = vec![&env];
+
+        // Use start_day if provided; otherwise, start from the user's last reward time
+        let start_day =
+            start_day.unwrap_or(stakes.last_reward_time / crate::distribution::SECONDS_PER_DAY);
+
+        // Iterate over all distributions and calculate withdrawable rewards
+        for asset in get_distributions(&env) {
+            let pending_reward =
+                calculate_pending_rewards_chunked(&env, &asset, &stakes, start_day, chunk_size);
 
             rewards.push_back(WithdrawableReward {
                 reward_address: asset,

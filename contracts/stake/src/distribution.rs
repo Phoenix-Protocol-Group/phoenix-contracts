@@ -4,7 +4,7 @@ use soroban_sdk::{contracttype, Address, Env, Map};
 use crate::storage::BondingInfo;
 use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 
-const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
+pub const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
 
 #[derive(Clone)]
 #[contracttype]
@@ -112,6 +112,54 @@ pub fn calculate_pending_rewards(
                     let user_share = (stake.stake as u128) * daily_reward / total_staked;
 
                     // Adjust the reward using the multiplier and add to the total
+                    pending_rewards += (user_share as i128) * multiplier;
+                }
+            }
+        }
+    }
+
+    pending_rewards
+}
+
+pub fn calculate_pending_rewards_chunked(
+    env: &Env,
+    reward_token: &Address,
+    user_info: &BondingInfo,
+    start_day: u64,
+    chunk_size: u32,
+) -> i128 {
+    let current_timestamp = env.ledger().timestamp();
+    let last_claim_time = user_info.last_reward_time;
+
+    let reward_history = get_reward_history(env, reward_token);
+    let total_staked_history = get_total_staked_history(env);
+
+    let mut reward_keys = soroban_sdk::Vec::new(env);
+
+    for day in reward_history.keys().into_iter() {
+        if day > last_claim_time && day <= current_timestamp {
+            reward_keys.push_back(day);
+        }
+    }
+
+    let mut pending_rewards: i128 = 0;
+
+    for reward_day in reward_keys
+        .into_iter()
+        .skip_while(|&day| day < start_day)
+        .take(chunk_size as usize)
+    {
+        if let (Some(daily_reward), Some(total_staked)) = (
+            reward_history.get(reward_day),
+            total_staked_history.get(reward_day),
+        ) {
+            if total_staked > 0 {
+                for stake in user_info.stakes.iter() {
+                    let stake_age_days =
+                        ((reward_day - stake.stake_timestamp) / SECONDS_PER_DAY).min(60);
+                    let multiplier = Decimal::from_ratio(stake_age_days, 60);
+
+                    let user_share = (stake.stake as u128) * daily_reward / total_staked;
                     pending_rewards += (user_share as i128) * multiplier;
                 }
             }
