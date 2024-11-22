@@ -56,6 +56,15 @@ pub trait FactoryTrait {
         max_allowed_fee_bps: i64,
     ) -> Address;
 
+    #[allow(clippy::too_many_arguments)]
+    fn create_liquidity_pool_v2(
+        env: Env,
+        sender: Address,
+        pool_hash: BytesN<32>,
+        share_token_name: String,
+        share_token_symbol: String,
+    ) -> Address;
+
     fn update_whitelisted_accounts(
         env: Env,
         sender: Address,
@@ -227,6 +236,59 @@ impl FactoryTrait for Factory {
         let token_a = &lp_init_info.token_init_info.token_a;
         let token_b = &lp_init_info.token_init_info.token_b;
         save_lp_vec_with_tuple_as_key(&env, (token_a, token_b), &lp_contract_address);
+
+        env.events()
+            .publish(("create", "liquidity_pool"), &lp_contract_address);
+
+        lp_contract_address
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn create_liquidity_pool_v2(
+        env: Env,
+        sender: Address,
+        pool_hash: BytesN<32>,
+        share_token_name: String,
+        share_token_symbol: String,
+    ) -> Address {
+        sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        if !get_config(&env).whitelisted_accounts.contains(sender) {
+            log!(
+                &env,
+                "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
+            );
+            panic_with_error!(&env, ContractError::NotAuthorized);
+        };
+
+        let config = get_config(&env);
+        let token_wasm_hash = config.token_wasm_hash;
+
+        let token_a = Address::from_string(&String::from_str(
+            &env,
+            "CBZ7M5B3Y4WWBZ5XK5UZCAFOEZ23KSSZXYECYX3IXM6E2JOLQC52DK32",
+        ));
+        let token_b = Address::from_string(&String::from_str(
+            &env,
+            "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+        ));
+        let lp_contract_address = deploy_lp_contract(&env, pool_hash, &token_a, &token_b);
+
+        let init_fn: Symbol = Symbol::new(&env, "initialize_with_stake");
+        let init_fn_args: Vec<Val> =
+            (token_wasm_hash, share_token_name, share_token_symbol).into_val(&env);
+
+        env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
+
+        let mut lp_vec = get_lp_vec(&env);
+
+        lp_vec.push_back(lp_contract_address.clone());
+
+        save_lp_vec(&env, lp_vec);
+        save_lp_vec_with_tuple_as_key(&env, (&token_a, &token_b), &lp_contract_address);
 
         env.events()
             .publish(("create", "liquidity_pool"), &lp_contract_address);
