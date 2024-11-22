@@ -414,8 +414,7 @@ impl StakingTrait for Staking {
         let mut rewards = vec![&env];
 
         // Use start_day if provided; otherwise, start from the user's last reward time
-        let start_day =
-            start_day.unwrap_or(stakes.last_reward_time / crate::distribution::SECONDS_PER_DAY);
+        let start_day = start_day.unwrap_or(stakes.last_reward_time);
 
         // Iterate over all distributions and calculate withdrawable rewards
         for asset in get_distributions(&env) {

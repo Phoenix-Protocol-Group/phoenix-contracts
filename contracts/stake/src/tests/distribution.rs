@@ -8,6 +8,7 @@ use super::setup::{deploy_staking_contract, deploy_token_contract};
 use pretty_assertions::assert_eq;
 
 use crate::{
+    distribution::SECONDS_PER_DAY,
     msg::{WithdrawableReward, WithdrawableRewardsResponse},
     tests::setup::SIXTY_DAYS,
 };
@@ -1193,4 +1194,112 @@ fn distribute_rewards_daily_multiple_times_same_stakes() {
     assert_eq!(reward_token.balance(&user4), 1_600_000);
 
     assert_eq!(reward_token.balance(&staking.address), 0);
+}
+
+#[test]
+fn add_distribution_and_distribute_reward_in_chunks() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &admin,
+        &50u32,
+    );
+
+    staking.create_distribution_flow(&admin, &reward_token.address);
+
+    let reward_amount: i128 = 100_000;
+    reward_token.mint(&admin, &reward_amount);
+
+    // Bond tokens for the user
+    lp_token.mint(&user, &1000);
+    staking.bond(&user, &1000);
+
+    // Simulate moving forward 60 days for full APR multiplier
+    env.ledger().with_mut(|li| {
+        li.timestamp = SIXTY_DAYS;
+    });
+
+    // Distribute rewards daily for 60 days
+    for _ in 0..60 {
+        staking.distribute_rewards(&admin, &(reward_amount / 60i128), &reward_token.address);
+        env.ledger().with_mut(|li| {
+            li.timestamp += 3600 * 24; // Move forward 1 day
+        });
+    }
+
+    // Query withdrawable rewards in the first chunk (e.g., chunk_size = 30 days)
+    let chunk_size = 30u32;
+    let withdrawable_chunk_1 = staking.query_withdrawable_rewards_ch(&user, &chunk_size, &None);
+
+    assert_eq!(
+        withdrawable_chunk_1,
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 49_980_u128 // 50% of total rewards
+                }
+            ]
+        }
+    );
+
+    // Withdraw the first chunk of rewards
+    staking.withdraw_rewards_chunks(&user, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user), 49_980);
+
+    // Ensure `last_reward_time` was updated correctly
+    assert_eq!(
+        staking.query_staked(&user).last_reward_time,
+        (chunk_size - 1) as u64 * SECONDS_PER_DAY
+    );
+
+    // Query withdrawable rewards for the second chunk
+    let withdrawable_chunk_2 = staking.query_withdrawable_rewards_ch(
+        &user,
+        &chunk_size,
+        &Some(chunk_size as u64 * SECONDS_PER_DAY),
+    );
+
+    assert_eq!(
+        withdrawable_chunk_2,
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 49_980_u128 // Remaining 50%
+                }
+            ]
+        }
+    );
+
+    // Withdraw the second chunk of rewards
+    staking.withdraw_rewards_chunks(&user, &reward_token.address, &chunk_size);
+    assert_eq!(reward_token.balance(&user), 99_960);
+
+    // Ensure no more rewards are withdrawable
+    let withdrawable_chunk_3 = staking.query_withdrawable_rewards_ch(
+        &user,
+        &chunk_size,
+        &Some(2 * (chunk_size - 1) as u64 * SECONDS_PER_DAY),
+    );
+    assert_eq!(
+        withdrawable_chunk_3,
+        WithdrawableRewardsResponse {
+            rewards: vec![&env]
+        }
+    );
 }
