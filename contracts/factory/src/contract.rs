@@ -1,12 +1,13 @@
 use crate::{
     error::ContractError,
+    stake_contract::StakedResponse,
     storage::{
         get_config, get_lp_vec, get_stable_wasm_hash, is_initialized, save_config, save_lp_vec,
         save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
-        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, StakedResponse,
-        UserPortfolio,
+        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio,
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
+    ConvertVec,
 };
 use phoenix::{
     ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
@@ -477,7 +478,7 @@ impl FactoryTrait for Factory {
                 if !stake_response.stakes.is_empty() {
                     stake_portfolio.push_back(StakePortfolio {
                         staking_contract: response.pool_response.stake_address,
-                        stakes: stake_response.stakes,
+                        stakes: stake_response.stakes.convert_vec(),
                     })
                 }
             }

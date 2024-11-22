@@ -4,14 +4,14 @@ use pretty_assertions::assert_eq;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    vec, Address, Env, IntoVal, Symbol,
+    vec, Address, Env, IntoVal, Symbol, Vec,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
 use crate::{
     contract::{Staking, StakingClient},
-    msg::ConfigResponse,
+    msg::{ConfigResponse, StakedResponse},
     storage::{Config, Stake},
     tests::setup::{ONE_DAY, ONE_WEEK},
 };
@@ -380,9 +380,25 @@ fn pay_rewards_during_unbond() {
         20_000
     );
     assert_eq!(reward_token.balance(&user), 0);
+
+    // we first have to withdraw_rewards _before_ unbonding
+    // as this messes up with the reward calculation
+    // if we unbond first then we get no rewards
+    staking.withdraw_rewards(&user);
+    assert_eq!(reward_token.balance(&user), 20_000);
+
     // user bonded at timestamp 0
     staking.unbond(&user, &staked, &0);
-    assert_eq!(reward_token.balance(&user), 20_000);
+    assert_eq!(lp_token.balance(&staking.address), 0);
+    assert_eq!(lp_token.balance(&user), 9000 + staked);
+    assert_eq!(
+        staking.query_staked(&user),
+        StakedResponse {
+            stakes: Vec::new(&env),
+            total_stake: 0i128,
+            last_reward_time: 6_912_000
+        }
+    );
 }
 
 #[should_panic(
