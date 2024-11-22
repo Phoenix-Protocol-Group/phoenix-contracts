@@ -1,7 +1,7 @@
 use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    Vec,
+    IntoVal, Symbol, Val, Vec,
 };
 
 use crate::{
@@ -282,11 +282,10 @@ impl StakingTrait for Staking {
             env.events()
                 .publish(("withdraw_rewards", "reward_token"), &asset);
 
-            token_contract::Client::new(&env, &asset).transfer(
-                &env.current_contract_address(),
-                &sender,
-                &pending_reward,
-            );
+            let init_fn = Symbol::new(&env, "transfer");
+            let init_args: Vec<Val> =
+                (env.current_contract_address(), &sender, pending_reward).into_val(&env);
+            env.invoke_contract::<Val>(&asset, &init_fn, init_args);
         }
         stakes.last_reward_time = env.ledger().timestamp();
         save_stakes(&env, &sender, &stakes);
@@ -307,11 +306,10 @@ impl StakingTrait for Staking {
 
         // Transfer pending rewards to the user
         if pending_rewards > 0 {
-            token_contract::Client::new(&env, &reward_token).transfer(
-                &env.current_contract_address(),
-                &sender,
-                &pending_rewards,
-            );
+            let init_fn = Symbol::new(&env, "transfer");
+            let init_args: Vec<Val> =
+                (env.current_contract_address(), &sender, pending_rewards).into_val(&env);
+            env.invoke_contract::<Val>(&reward_token, &init_fn, init_args);
         }
 
         stakes.last_reward_time = last_reward_day;
