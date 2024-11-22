@@ -301,12 +301,9 @@ impl StakingTrait for Staking {
 
         let mut stakes = get_stakes(&env, &sender);
 
-        // Start from the user's last reward time
-        let start_day = stakes.last_reward_time / crate::distribution::SECONDS_PER_DAY;
-
         // Calculate pending rewards in chunks
         let (pending_rewards, last_reward_day) =
-            calculate_pending_rewards_chunked(&env, &reward_token, &stakes, start_day, chunk_size);
+            calculate_pending_rewards_chunked(&env, &reward_token, &stakes, chunk_size, None);
 
         // Transfer pending rewards to the user
         if pending_rewards > 0 {
@@ -317,7 +314,6 @@ impl StakingTrait for Staking {
             );
         }
 
-        // Explicitly document that chunk_size is inclusive of start_day
         stakes.last_reward_time = last_reward_day;
         save_stakes(&env, &sender, &stakes);
     }
@@ -412,13 +408,10 @@ impl StakingTrait for Staking {
         let stakes = get_stakes(&env, &user);
         let mut rewards = vec![&env];
 
-        // Use start_day if provided; otherwise, start from the user's last reward time
-        let start_day = start_day.unwrap_or(stakes.last_reward_time);
-
         // Iterate over all distributions and calculate withdrawable rewards
         for asset in get_distributions(&env) {
             let (pending_reward, _) =
-                calculate_pending_rewards_chunked(&env, &asset, &stakes, start_day, chunk_size);
+                calculate_pending_rewards_chunked(&env, &asset, &stakes, chunk_size, start_day);
 
             rewards.push_back(WithdrawableReward {
                 reward_address: asset,

@@ -125,8 +125,8 @@ pub fn calculate_pending_rewards_chunked(
     env: &Env,
     reward_token: &Address,
     user_info: &BondingInfo,
-    start_day: u64,
     chunk_size: u32,
+    start_day: Option<u64>,
 ) -> (i128, u64) {
     let current_timestamp = env.ledger().timestamp();
     let last_claim_time = user_info.last_reward_time;
@@ -147,7 +147,7 @@ pub fn calculate_pending_rewards_chunked(
 
     for reward_day in reward_keys
         .into_iter()
-        .skip_while(|&day| day < start_day)
+        .skip_while(|&day| day < start_day.unwrap_or(last_claim_time))
         .take(chunk_size as usize)
     {
         if let (Some(daily_reward), Some(total_staked)) = (
