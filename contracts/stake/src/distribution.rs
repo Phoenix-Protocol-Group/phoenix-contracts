@@ -127,7 +127,7 @@ pub fn calculate_pending_rewards_chunked(
     user_info: &BondingInfo,
     start_day: u64,
     chunk_size: u32,
-) -> i128 {
+) -> (i128, u64) {
     let current_timestamp = env.ledger().timestamp();
     let last_claim_time = user_info.last_reward_time;
 
@@ -143,6 +143,7 @@ pub fn calculate_pending_rewards_chunked(
     }
 
     let mut pending_rewards: i128 = 0;
+    let mut last_reward_day = 0u64;
 
     for reward_day in reward_keys
         .into_iter()
@@ -163,8 +164,9 @@ pub fn calculate_pending_rewards_chunked(
                     pending_rewards += (user_share as i128) * multiplier;
                 }
             }
+            last_reward_day = reward_day;
         }
     }
 
-    pending_rewards
+    (pending_rewards, last_reward_day)
 }

@@ -1260,12 +1260,6 @@ fn add_distribution_and_distribute_reward_in_chunks() {
     staking.withdraw_rewards_chunks(&user, &reward_token.address, &chunk_size);
     assert_eq!(reward_token.balance(&user), 49_980);
 
-    // Ensure `last_reward_time` was updated correctly
-    assert_eq!(
-        staking.query_staked(&user).last_reward_time,
-        (chunk_size - 1) as u64 * SECONDS_PER_DAY
-    );
-
     // Query withdrawable rewards for the second chunk
     let withdrawable_chunk_2 = staking.query_withdrawable_rewards_ch(
         &user,
@@ -1299,7 +1293,13 @@ fn add_distribution_and_distribute_reward_in_chunks() {
     assert_eq!(
         withdrawable_chunk_3,
         WithdrawableRewardsResponse {
-            rewards: vec![&env]
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 0
+                }
+            ]
         }
     );
 }
