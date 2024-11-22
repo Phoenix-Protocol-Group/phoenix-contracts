@@ -1,13 +1,13 @@
 use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    IntoVal, Symbol, Val, Vec,
+    Vec,
 };
 
 use crate::{
     distribution::{
-        calculate_pending_rewards, calculate_pending_rewards_chunked, get_reward_history,
-        get_total_staked_history, save_reward_history, save_total_staked_history,
+        calculate_pending_rewards, get_reward_history, get_total_staked_history,
+        save_reward_history, save_total_staked_history,
     },
     error::ContractError,
     msg::{ConfigResponse, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse},
@@ -56,8 +56,6 @@ pub trait StakingTrait {
 
     fn withdraw_rewards(env: Env, sender: Address);
 
-    fn withdraw_rewards_chunks(env: Env, sender: Address, reward_token: Address, chunk_size: u32);
-
     // QUERIES
 
     fn query_config(env: Env) -> ConfigResponse;
@@ -71,13 +69,6 @@ pub trait StakingTrait {
     // fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
-
-    fn query_withdrawable_rewards_ch(
-        env: Env,
-        address: Address,
-        chunk_size: u32,
-        start_day: Option<u64>,
-    ) -> WithdrawableRewardsResponse;
 
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
@@ -277,42 +268,18 @@ impl StakingTrait for Staking {
 
         let mut stakes = get_stakes(&env, &sender);
 
-        for asset in get_distributions(&env).iter() {
+        for asset in get_distributions(&env) {
             let pending_reward = calculate_pending_rewards(&env, &asset, &stakes);
             env.events()
                 .publish(("withdraw_rewards", "reward_token"), &asset);
 
-            let init_fn = Symbol::new(&env, "transfer");
-            let init_args: Vec<Val> =
-                (env.current_contract_address(), &sender, pending_reward).into_val(&env);
-            env.invoke_contract::<Val>(&asset, &init_fn, init_args);
+            token_contract::Client::new(&env, &asset).transfer(
+                &env.current_contract_address(),
+                &sender,
+                &pending_reward,
+            );
         }
         stakes.last_reward_time = env.ledger().timestamp();
-        save_stakes(&env, &sender, &stakes);
-    }
-
-    fn withdraw_rewards_chunks(env: Env, sender: Address, reward_token: Address, chunk_size: u32) {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
-        env.events().publish(("withdraw_rewards", "user"), &sender);
-
-        let mut stakes = get_stakes(&env, &sender);
-
-        // Calculate pending rewards in chunks
-        let (pending_rewards, last_reward_day) =
-            calculate_pending_rewards_chunked(&env, &reward_token, &stakes, chunk_size, None);
-
-        // Transfer pending rewards to the user
-        if pending_rewards > 0 {
-            let init_fn = Symbol::new(&env, "transfer");
-            let init_args: Vec<Val> =
-                (env.current_contract_address(), &sender, pending_rewards).into_val(&env);
-            env.invoke_contract::<Val>(&reward_token, &init_fn, init_args);
-        }
-
-        stakes.last_reward_time = last_reward_day;
         save_stakes(&env, &sender, &stakes);
     }
 
@@ -383,33 +350,6 @@ impl StakingTrait for Staking {
         let mut rewards = vec![&env];
         for asset in get_distributions(&env) {
             let pending_reward = calculate_pending_rewards(&env, &asset, &stakes);
-
-            rewards.push_back(WithdrawableReward {
-                reward_address: asset,
-                reward_amount: pending_reward as u128,
-            });
-        }
-
-        WithdrawableRewardsResponse { rewards }
-    }
-
-    fn query_withdrawable_rewards_ch(
-        env: Env,
-        user: Address,
-        chunk_size: u32,
-        start_day: Option<u64>,
-    ) -> WithdrawableRewardsResponse {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
-        let stakes = get_stakes(&env, &user);
-        let mut rewards = vec![&env];
-
-        // Iterate over all distributions and calculate withdrawable rewards
-        for asset in get_distributions(&env) {
-            let (pending_reward, _) =
-                calculate_pending_rewards_chunked(&env, &asset, &stakes, chunk_size, start_day);
 
             rewards.push_back(WithdrawableReward {
                 reward_address: asset,
