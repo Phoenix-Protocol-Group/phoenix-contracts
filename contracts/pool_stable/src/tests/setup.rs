@@ -1,4 +1,4 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String};
+use soroban_sdk::{testutils::Address as _, xdr::ToXdr, Address, Bytes, BytesN, Env, String};
 
 use crate::{
     contract::{StableLiquidityPool, StableLiquidityPoolClient},
@@ -92,8 +92,32 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         &10, // LP share decimals, unused
         &String::from_str(env, "LP_SHARE_TOKEN"),
         &String::from_str(env, "PHOBTCLP"),
-        &init_amp.into().unwrap_or(6u64),
+        &init_amp.into().unwrap_or(100u64),
         &1_000,
     );
     pool
+}
+
+pub fn install_and_deploy_token_contract<'a>(
+    env: &Env,
+    admin: &Address,
+    decimal: &u32,
+    name: &String,
+    symbol: &String,
+) -> token_contract::Client<'a> {
+    let token_wasm = install_token_wasm(env);
+
+    let mut salt = Bytes::new(env);
+    salt.append(&name.clone().to_xdr(env));
+    let salt = env.crypto().sha256(&salt);
+    let token_addr = env
+        .deployer()
+        .with_address(admin.clone(), salt)
+        .deploy(token_wasm);
+
+    let token_client = token_contract::Client::new(env, &token_addr);
+
+    token_client.initialize(admin, decimal, name, symbol);
+
+    token_client
 }
