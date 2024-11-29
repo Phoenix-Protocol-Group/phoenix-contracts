@@ -160,7 +160,7 @@ impl StakingTrait for Staking {
             .storage()
             .persistent()
             .get::<_, Address>(&crate::storage::NEW_LP)
-            .expect("Old LP address not configured!");
+            .expect("NEW LP address not configured!");
         env.storage().persistent().extend_ttl(
             &crate::storage::NEW_LP,
             PERSISTENT_LIFETIME_THRESHOLD,
