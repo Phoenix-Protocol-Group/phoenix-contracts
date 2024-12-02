@@ -16,7 +16,7 @@ fmt:
 	cargo fmt --all
 
 clippy: build
-	cargo clippy --all-targets -- -D warnings
+	cargo clippy --all-targets -- -D warnings -A clippy::too_many_arguments
 
 clean:
 	cargo clean

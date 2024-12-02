@@ -3,8 +3,7 @@ use phoenix::{
     utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo},
 };
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, xdr::ToXdr, Address, Bytes,
-    BytesN, Env, IntoVal, String,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
 };
 
 use crate::{

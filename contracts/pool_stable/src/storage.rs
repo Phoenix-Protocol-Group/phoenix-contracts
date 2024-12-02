@@ -245,7 +245,7 @@ pub mod utils {
 
         e.deployer()
             .with_current_contract(salt)
-            .deploy(stake_wasm_hash)
+            .deploy_v2(stake_wasm_hash, ())
     }
 
     pub fn save_admin(e: &Env, address: Address) {
