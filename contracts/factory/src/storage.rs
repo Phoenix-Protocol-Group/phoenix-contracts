@@ -3,6 +3,8 @@ use soroban_sdk::{
     contracttype, symbol_short, Address, BytesN, ConversionError, Env, Symbol, TryFromVal, Val, Vec,
 };
 
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
+
 #[derive(Clone, Copy)]
 #[repr(u32)]
 pub enum DataKey {
