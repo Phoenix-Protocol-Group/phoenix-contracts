@@ -17,7 +17,7 @@ use crate::{
             self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
             is_initialized, set_initialized,
         },
-        Config, Stake,
+        Config, Stake, ADMIN,
     },
     token_contract,
 };
@@ -69,6 +69,8 @@ pub trait StakingTrait {
     // fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
@@ -358,6 +360,12 @@ impl StakingTrait for Staking {
         }
 
         WithdrawableRewardsResponse { rewards }
+    }
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_admin(&env);
+        env.storage().persistent().set(&ADMIN, &admin);
+
+        Ok(())
     }
 
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
