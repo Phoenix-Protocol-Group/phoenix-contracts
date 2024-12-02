@@ -6,7 +6,7 @@ use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     Address, Bytes, BytesN, Env,
 };
-use soroban_sdk::{vec, IntoVal, String};
+use soroban_sdk::{vec, String};
 pub fn create_token_contract_with_metadata<'a>(
     env: &Env,
     admin: &Address,
@@ -15,9 +15,10 @@ pub fn create_token_contract_with_metadata<'a>(
     symbol: String,
     amount: i128,
 ) -> token_contract::Client<'a> {
-    let token =
-        token_contract::Client::new(env, &env.register_contract_wasm(None, token_contract::WASM));
-    token.initialize(admin, &decimals, &name.into_val(env), &symbol.into_val(env));
+    let token = token_contract::Client::new(
+        env,
+        &env.register(token_contract::WASM, (admin, decimals, name, symbol)),
+    );
     token.mint(admin, &amount);
     token
 }
