@@ -64,7 +64,9 @@ pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
     let salt = Bytes::new(e);
     let salt = e.crypto().sha256(&salt);
 
-    e.deployer().with_address(admin, salt).deploy(factory_wasm)
+    e.deployer()
+        .with_address(admin, salt)
+        .deploy_v2(factory_wasm, ())
 }
 
 pub fn deploy_multihop_contract<'a>(
@@ -74,7 +76,7 @@ pub fn deploy_multihop_contract<'a>(
 ) -> MultihopClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
 
-    let multihop = MultihopClient::new(env, &env.register_contract(None, Multihop {}));
+    let multihop = MultihopClient::new(env, &env.register(Multihop, ()));
 
     multihop.initialize(&admin, factory);
     multihop
