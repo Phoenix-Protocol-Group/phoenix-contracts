@@ -234,7 +234,7 @@ fn factory_fails_to_init_lp_when_no_whitelisted_accounts() {
     env.mock_all_auths();
     env.budget().reset_unlimited();
 
-    let factory = FactoryClient::new(&env, &env.register_contract(None, Factory {}));
+    let factory = FactoryClient::new(&env, &env.register(Factory, ()));
     let multihop_wasm_hash = install_multihop_wasm(&env);
     let whitelisted_accounts = vec![&env];
 

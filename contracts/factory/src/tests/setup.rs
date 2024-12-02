@@ -60,7 +60,7 @@ pub fn deploy_factory_contract<'a>(
     admin: impl Into<Option<Address>>,
 ) -> FactoryClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
-    let factory = FactoryClient::new(env, &env.register_contract(None, Factory {}));
+    let factory = FactoryClient::new(env, &env.register(Factory, ()));
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![env, admin.clone()];
 
@@ -127,7 +127,7 @@ pub fn install_and_deploy_token_contract<'a>(
     let token_addr = env
         .deployer()
         .with_address(admin.clone(), salt)
-        .deploy(token_wasm);
+        .deploy_v2(token_wasm, ());
 
     let token_client = token_contract::Client::new(env, &token_addr);
 
