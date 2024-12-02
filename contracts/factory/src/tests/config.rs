@@ -114,17 +114,17 @@ fn factory_successfully_inits_stable_pool() {
 
     let mut token1 = install_and_deploy_token_contract(
         &env,
-        &token_admin.clone(),
-        &7,
-        &String::from_str(&env, "EURO Coin"),
-        &String::from_str(&env, "EURC"),
+        token_admin.clone(),
+        7,
+        String::from_str(&env, "EURO Coin"),
+        String::from_str(&env, "EURC"),
     );
     let mut token2 = install_and_deploy_token_contract(
         &env,
-        &token_admin.clone(),
-        &7,
-        &String::from_str(&env, "USD Coin"),
-        &String::from_str(&env, "USDC"),
+        token_admin.clone(),
+        7,
+        String::from_str(&env, "USD Coin"),
+        String::from_str(&env, "USDC"),
     );
 
     if token2.address < token1.address {
@@ -378,17 +378,17 @@ fn factory_stable_pool_creation_should_fail_early_without_amp() {
 
     let mut token1 = install_and_deploy_token_contract(
         &env,
-        &token_admin.clone(),
-        &7,
-        &String::from_str(&env, "EURO Coin"),
-        &String::from_str(&env, "EURC"),
+        token_admin.clone(),
+        7,
+        String::from_str(&env, "EURO Coin"),
+        String::from_str(&env, "EURC"),
     );
     let mut token2 = install_and_deploy_token_contract(
         &env,
-        &token_admin.clone(),
-        &7,
-        &String::from_str(&env, "USD Coin"),
-        &String::from_str(&env, "USDC"),
+        token_admin.clone(),
+        7,
+        String::from_str(&env, "USD Coin"),
+        String::from_str(&env, "USDC"),
     );
 
     if token2.address < token1.address {
@@ -431,17 +431,17 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
 
     let mut token1 = install_and_deploy_token_contract(
         &env,
-        &token_admin.clone(),
-        &7,
-        &String::from_str(&env, "Phoenix"),
-        &String::from_str(&env, "PHO"),
+        token_admin.clone(),
+        7,
+        String::from_str(&env, "Phoenix"),
+        String::from_str(&env, "PHO"),
     );
     let mut token2 = install_and_deploy_token_contract(
         &env,
-        &token_admin.clone(),
-        &7,
-        &String::from_str(&env, "USD Coin"),
-        &String::from_str(&env, "USDC"),
+        token_admin.clone(),
+        7,
+        String::from_str(&env, "USD Coin"),
+        String::from_str(&env, "USDC"),
     );
 
     if token2.address < token1.address {
