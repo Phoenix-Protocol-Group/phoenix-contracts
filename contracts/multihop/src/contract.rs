@@ -55,7 +55,7 @@ pub trait MultihopTrait {
         pool_type: PoolType,
     ) -> SimulateReverseSwapResponse;
 
-    fn migrate_admin_key(env: Env);
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -288,9 +288,11 @@ impl MultihopTrait for Multihop {
         simulate_swap_response
     }
 
-    fn migrate_admin_key(env: Env) {
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
         let admin = get_admin(&env);
         env.storage().instance().set(&ADMIN, &admin);
+
+        Ok(())
     }
 }
 
