@@ -1,11 +1,13 @@
 use curve::Curve;
 use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{
-    contracttype, log, panic_with_error, vec, Address, ConversionError, Env, String, TryFromVal,
-    Val, Vec,
+    contracttype, log, panic_with_error, symbol_short, vec, Address, ConversionError, Env, String,
+    Symbol, TryFromVal, Val, Vec,
 };
 
 use crate::error::ContractError;
+
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
 
 impl TryFromVal<Env, DataKey> for Val {
     type Error = ConversionError;

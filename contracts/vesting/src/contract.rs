@@ -13,7 +13,7 @@ use crate::{
     storage::{
         get_admin, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
         is_initialized, save_admin, save_max_vesting_complexity, save_token_info, save_vesting,
-        set_initialized, update_vesting, VestingInfo, VestingSchedule, VestingTokenInfo,
+        set_initialized, update_vesting, VestingInfo, VestingSchedule, VestingTokenInfo, ADMIN,
     },
     token_contract,
     utils::{check_duplications, validate_vesting_schedule},
@@ -77,6 +77,8 @@ pub trait VestingTrait {
 
     #[cfg(feature = "minter")]
     fn query_minter(env: Env) -> MinterInfo;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -474,5 +476,12 @@ impl VestingTrait for Vesting {
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_admin(&env);
+        env.storage().persistent().set(&ADMIN, &admin);
+
+        Ok(())
     }
 }
