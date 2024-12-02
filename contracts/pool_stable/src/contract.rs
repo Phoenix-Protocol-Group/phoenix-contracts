@@ -3,8 +3,8 @@ use phoenix::{
     utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo},
 };
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String,
+    contract, contractimpl, contractmeta, log, panic_with_error, xdr::ToXdr, Address, Bytes,
+    BytesN, Env, IntoVal, String,
 };
 
 use crate::{
@@ -211,18 +211,17 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         save_greatest_precision(&env, &token_a, &token_b);
 
-        // deploy token contract
-        let share_token_address =
-            utils::deploy_token_contract(&env, token_wasm_hash, &token_a, &token_b);
-        token_contract::Client::new(&env, &share_token_address).initialize(
-            // admin
-            &env.current_contract_address(),
-            // number of decimals on the share token
-            &get_greatest_precision(&env),
-            // name
-            &share_token_name.into_val(&env),
-            // symbol
-            &share_token_symbol.into_val(&env),
+        let decimals = get_greatest_precision(&env);
+        // deploy and initialize token contract
+        let share_token_address = utils::deploy_token_contract(
+            &env,
+            token_wasm_hash,
+            &token_a,
+            &token_b,
+            env.current_contract_address(),
+            decimals,
+            share_token_name,
+            share_token_symbol,
         );
 
         let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);

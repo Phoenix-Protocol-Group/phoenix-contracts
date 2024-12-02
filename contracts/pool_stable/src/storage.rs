@@ -215,14 +215,20 @@ pub struct SimulateReverseSwapResponse {
 pub mod utils {
 
     use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+    use soroban_sdk::String;
 
     use super::*;
 
+    #[allow(clippy::too_many_arguments)]
     pub fn deploy_token_contract(
         e: &Env,
         token_wasm_hash: BytesN<32>,
         token_a: &Address,
         token_b: &Address,
+        admin: Address,
+        decimals: u32,
+        name: String,
+        symbol: String,
     ) -> Address {
         let mut salt = Bytes::new(e);
         salt.append(&token_a.to_xdr(e));
@@ -230,7 +236,7 @@ pub mod utils {
         let salt = e.crypto().sha256(&salt);
         e.deployer()
             .with_current_contract(salt)
-            .deploy(token_wasm_hash)
+            .deploy_v2(token_wasm_hash, (admin, decimals, name, symbol))
     }
 
     pub fn deploy_stake_contract(e: &Env, stake_wasm_hash: BytesN<32>) -> Address {
