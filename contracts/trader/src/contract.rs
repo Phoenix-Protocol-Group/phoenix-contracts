@@ -8,7 +8,7 @@ use crate::{
     lp_contract,
     storage::{
         get_admin, get_name, get_output_token, get_pair, is_initialized, save_admin, save_name,
-        save_output_token, save_pair, set_initialized, Asset, BalanceInfo, OutputTokenInfo,
+        save_output_token, save_pair, set_initialized, Asset, BalanceInfo, OutputTokenInfo, ADMIN,
     },
     token_contract,
 };
@@ -61,6 +61,8 @@ pub trait TraderTrait {
     fn query_contract_name(env: Env) -> String;
 
     fn query_output_token_info(env: Env) -> OutputTokenInfo;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -266,5 +268,12 @@ impl TraderTrait for Trader {
             symbol: output_token_client.symbol(),
             decimal: output_token_client.decimals(),
         }
+    }
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_admin(&env);
+        env.storage().persistent().set(&ADMIN, &admin);
+
+        Ok(())
     }
 }
