@@ -6,6 +6,7 @@ use soroban_sdk::{
 };
 
 use crate::distribution::calc_power;
+use crate::storage::ADMIN;
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
@@ -76,6 +77,8 @@ pub trait StakingRewardsTrait {
     fn query_distributed_reward(env: Env, asset: Address) -> u128;
 
     fn query_undistributed_reward(env: Env, asset: Address) -> u128;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -531,6 +534,13 @@ impl StakingRewardsTrait for StakingRewards {
         let reward_token_client = token_contract::Client::new(&env, &asset);
         let reward_token_balance = reward_token_client.balance(&env.current_contract_address());
         convert_i128_to_u128(reward_token_balance) - distribution.withdrawable_total
+    }
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_admin(&env);
+        env.storage().persistent().set(&ADMIN, &admin);
+
+        Ok(())
     }
 }
 

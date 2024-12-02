@@ -1,6 +1,8 @@
 use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
