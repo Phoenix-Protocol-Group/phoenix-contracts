@@ -7,6 +7,8 @@ use soroban_sdk::{
 use crate::{error::ContractError, token_contract};
 use soroban_decimal::Decimal;
 
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
+
 #[derive(Clone, Copy)]
 #[repr(u32)]
 pub enum DataKey {
