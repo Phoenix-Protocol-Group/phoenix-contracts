@@ -15,7 +15,7 @@ use crate::{
         save_greatest_precision,
         utils::{self, get_admin, is_initialized, set_initialized},
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
-        SimulateSwapResponse, StableLiquidityPoolInfo,
+        SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN,
     },
     token_contract, DECIMAL_PRECISION,
 };
@@ -138,6 +138,8 @@ pub trait StableLiquidityPoolTrait {
     fn query_share(env: Env, amount: i128) -> (Asset, Asset);
 
     fn query_total_issued_lp(env: Env) -> i128;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -815,6 +817,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         utils::get_total_shares(&env)
+    }
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_admin(&env);
+        env.storage().instance().set(&ADMIN, &admin);
+
+        Ok(())
     }
 }
 
