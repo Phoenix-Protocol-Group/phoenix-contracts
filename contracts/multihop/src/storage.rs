@@ -1,7 +1,11 @@
 use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
-use soroban_sdk::{contracttype, log, panic_with_error, Address, Env, String, Vec};
+use soroban_sdk::{
+    contracttype, log, panic_with_error, symbol_short, Address, Env, String, Symbol, Vec,
+};
 
 use crate::error::ContractError;
+
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -9,7 +9,7 @@ use crate::factory_contract::PoolType;
 // use crate::lp_contract::Referral;
 use crate::storage::{
     get_admin, get_factory, is_initialized, save_admin, save_factory, set_initialized,
-    SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
+    SimulateReverseSwapResponse, SimulateSwapResponse, Swap, ADMIN,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
@@ -54,6 +54,8 @@ pub trait MultihopTrait {
         amount: i128,
         pool_type: PoolType,
     ) -> SimulateReverseSwapResponse;
+
+    fn migrate_admin_key(env: Env);
 }
 
 #[contractimpl]
@@ -284,6 +286,11 @@ impl MultihopTrait for Multihop {
         });
 
         simulate_swap_response
+    }
+
+    fn migrate_admin_key(env: Env) {
+        let admin = get_admin(&env);
+        env.storage().instance().set(&ADMIN, &admin);
     }
 }
 
