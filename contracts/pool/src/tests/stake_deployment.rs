@@ -96,7 +96,7 @@ fn second_pool_deployment_should_fail() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
 
-    let pool = LiquidityPoolClient::new(&env, &env.register_contract(None, LiquidityPool {}));
+    let pool = LiquidityPoolClient::new(&env, &env.register(LiquidityPool, ()));
 
     let token_wasm_hash = install_token_wasm(&env);
     let stake_wasm_hash = install_stake_wasm(&env);

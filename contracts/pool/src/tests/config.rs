@@ -27,7 +27,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         std::mem::swap(&mut token1, &mut token2);
     }
 
-    let pool = LiquidityPoolClient::new(&env, &env.register_contract(None, LiquidityPool {}));
+    let pool = LiquidityPoolClient::new(&env, &env.register(LiquidityPool, ()));
     let fee_recipient = Address::generate(&env);
 
     let token_init_info = TokenInitInfo {
@@ -454,7 +454,7 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
         std::mem::swap(&mut token1, &mut token2);
     }
 
-    let pool = LiquidityPoolClient::new(&env, &env.register_contract(None, LiquidityPool {}));
+    let pool = LiquidityPoolClient::new(&env, &env.register(LiquidityPool, ()));
     let fee_recipient = Address::generate(&env);
 
     let token_init_info = TokenInitInfo {

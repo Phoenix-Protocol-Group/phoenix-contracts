@@ -1,6 +1,5 @@
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, xdr::ToXdr, Address, Bytes,
-    BytesN, Env, String, U256,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String, U256,
 };
 
 use num_integer::Roots;

@@ -51,7 +51,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
     stake_owner: Address,
 ) -> LiquidityPoolClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
-    let pool = LiquidityPoolClient::new(env, &env.register_contract(None, LiquidityPool {}));
+    let pool = LiquidityPoolClient::new(env, &env.register(LiquidityPool, ()));
     let fee_recipient = fee_recipient
         .into()
         .unwrap_or_else(|| Address::generate(env));
