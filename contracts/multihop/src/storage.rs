@@ -1,4 +1,7 @@
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
+use phoenix::ttl::{
+    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
+    PERSISTENT_LIFETIME_THRESHOLD,
+};
 use soroban_sdk::{
     contracttype, log, panic_with_error, symbol_short, Address, Env, String, Symbol, Vec,
 };
@@ -91,14 +94,21 @@ pub fn get_factory(env: &Env) -> Address {
     address
 }
 
-pub fn save_admin(env: &Env, admin: &Address) {
+pub fn save_admin_old(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, admin);
     env.storage()
         .instance()
         .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
 }
 
-pub fn get_admin(env: &Env) -> Address {
+pub fn save_admin(env: &Env, admin: &Address) {
+    env.storage().instance().set(&ADMIN, admin);
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+}
+
+pub fn get_admin_old(env: &Env) -> Address {
     let address = env
         .storage()
         .instance()
@@ -114,6 +124,20 @@ pub fn get_admin(env: &Env) -> Address {
 
     address
 }
+
+pub fn get_admin(env: &Env) -> Address {
+    let admin = env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
+        log!(env, "Admin not set");
+        panic_with_error!(&env, ContractError::AdminNotSet)
+    });
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+    admin
+}
+
 pub fn is_initialized(e: &Env) -> bool {
     e.storage()
         .persistent()
