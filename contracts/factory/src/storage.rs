@@ -3,8 +3,11 @@ use phoenix::ttl::{
     PERSISTENT_LIFETIME_THRESHOLD,
 };
 use soroban_sdk::{
-    contracttype, symbol_short, Address, BytesN, ConversionError, Env, Symbol, TryFromVal, Val, Vec,
+    contracttype, log, panic_with_error, symbol_short, Address, BytesN, ConversionError, Env,
+    Symbol, TryFromVal, Val, Vec,
 };
+
+use crate::error::ContractError;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 
@@ -171,11 +174,10 @@ pub fn save_admin(env: &Env, admin_addr: Address) {
 }
 
 pub fn get_admin(env: &Env) -> Address {
-    let admin_addr = env
-        .storage()
-        .instance()
-        .get(&ADMIN)
-        .expect("Factory: Get Admin: Admin not found");
+    let admin_addr = env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
+        log!(env, "Admin not set");
+        panic_with_error!(&env, ContractError::AdminNotSet)
+    });
 
     env.storage()
         .instance()
