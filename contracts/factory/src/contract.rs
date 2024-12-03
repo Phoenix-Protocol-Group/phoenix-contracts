@@ -494,7 +494,7 @@ impl FactoryTrait for Factory {
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
         let admin = get_config(&env).admin;
-        env.storage().persistent().set(&ADMIN, &admin);
+        env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())
     }
