@@ -1,4 +1,7 @@
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
+use phoenix::ttl::{
+    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
+    PERSISTENT_LIFETIME_THRESHOLD,
+};
 use soroban_sdk::{
     contracttype, symbol_short, Address, BytesN, ConversionError, Env, Symbol, TryFromVal, Val, Vec,
 };
@@ -157,6 +160,28 @@ pub fn get_config(env: &Env) -> Config {
     );
 
     config
+}
+
+pub fn save_admin(env: &Env, admin_addr: Address) {
+    env.storage().instance().set(&ADMIN, &admin_addr);
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+}
+
+pub fn get_admin(env: &Env) -> Address {
+    let admin_addr = env
+        .storage()
+        .instance()
+        .get(&ADMIN)
+        .expect("Factory: Get Admin: Admin not found");
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+    admin_addr
 }
 
 pub fn get_lp_vec(env: &Env) -> Vec<Address> {
