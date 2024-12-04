@@ -182,6 +182,7 @@ pub struct SimulateReverseSwapResponse {
 }
 
 pub mod utils {
+    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
     use soroban_sdk::String;
 
     use super::*;
