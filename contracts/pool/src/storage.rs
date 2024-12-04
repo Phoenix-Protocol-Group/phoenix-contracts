@@ -292,7 +292,7 @@ pub mod utils {
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         e.storage().instance().get(&ADMIN).unwrap_or_else(|| {
-            log!(e, "Admin not set");
+            log!(e, "XYZ Pool: Admin not set");
             panic_with_error!(&e, ContractError::AdminNotSet)
         })
     }

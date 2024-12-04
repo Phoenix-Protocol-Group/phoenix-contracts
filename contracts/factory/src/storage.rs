@@ -175,7 +175,7 @@ pub fn _save_admin(env: &Env, admin_addr: Address) {
 
 pub fn _get_admin(env: &Env) -> Address {
     let admin_addr = env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
-        log!(env, "Admin not set");
+        log!(env, "Factory: Admin not set");
         panic_with_error!(&env, ContractError::AdminNotSet)
     });
 

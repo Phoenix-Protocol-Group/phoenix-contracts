@@ -96,7 +96,7 @@ pub fn _get_admin(env: &Env) -> Address {
         .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
     env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
-        log!(env, "Admin not set");
+        log!(env, "Trader: Admin not set");
         panic_with_error!(&env, ContractError::AdminNotSet)
     })
 }

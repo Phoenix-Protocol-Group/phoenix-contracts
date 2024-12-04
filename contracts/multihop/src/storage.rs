@@ -127,7 +127,7 @@ pub fn get_admin_old(env: &Env) -> Address {
 
 pub fn _get_admin(env: &Env) -> Address {
     let admin = env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
-        log!(env, "Admin not set");
+        log!(env, "Multihop: Admin not set");
         panic_with_error!(&env, ContractError::AdminNotSet)
     });
 
