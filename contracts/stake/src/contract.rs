@@ -14,7 +14,7 @@ use crate::{
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
-            self, add_distribution, get_admin, get_distributions, get_total_staked_counter,
+            self, add_distribution, get_admin_old, get_distributions, get_total_staked_counter,
             is_initialized, set_initialized,
         },
         Config, Stake, ADMIN,
@@ -133,7 +133,7 @@ impl StakingTrait for Staking {
         };
         save_config(&env, config);
 
-        utils::save_admin(&env, &admin);
+        utils::save_admin_old(&env, &admin);
         utils::init_total_staked(&env);
         save_total_staked_history(&env, map![&env]);
     }
@@ -300,7 +300,7 @@ impl StakingTrait for Staking {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        get_admin(&env)
+        get_admin_old(&env)
     }
 
     fn query_staked(env: Env, address: Address) -> StakedResponse {
@@ -362,7 +362,7 @@ impl StakingTrait for Staking {
         WithdrawableRewardsResponse { rewards }
     }
     fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())
@@ -395,7 +395,7 @@ impl StakingTrait for Staking {
 impl Staking {
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         admin.require_auth();
         env.deployer().update_current_contract_wasm(new_wasm_hash);
     }

@@ -103,6 +103,7 @@ pub mod utils {
 
     use super::*;
 
+    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
     use soroban_sdk::{log, panic_with_error, ConversionError, TryFromVal, Val};
 
     #[derive(Clone, Copy)]
@@ -137,7 +138,7 @@ pub mod utils {
             .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
     }
 
-    pub fn save_admin(e: &Env, address: &Address) {
+    pub fn save_admin_old(e: &Env, address: &Address) {
         e.storage().persistent().set(&DataKey::Admin, address);
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
@@ -146,7 +147,14 @@ pub mod utils {
         );
     }
 
-    pub fn get_admin(e: &Env) -> Address {
+    pub fn _save_admin(e: &Env, address: &Address) {
+        e.storage().instance().set(&ADMIN, &address);
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+    }
+
+    pub fn get_admin_old(e: &Env) -> Address {
         let admin = e.storage().persistent().get(&DataKey::Admin).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
@@ -155,6 +163,17 @@ pub mod utils {
         );
 
         admin
+    }
+
+    pub fn _get_admin(e: &Env) -> Address {
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        e.storage().instance().get(&ADMIN).unwrap_or_else(|| {
+            log!(e, "Admin not set");
+            panic_with_error!(&e, ContractError::AdminNotSet)
+        })
     }
 
     pub fn init_total_staked(e: &Env) {
