@@ -7,8 +7,9 @@ use crate::{
     error::ContractError,
     lp_contract,
     storage::{
-        get_admin, get_name, get_output_token, get_pair, is_initialized, save_admin, save_name,
-        save_output_token, save_pair, set_initialized, Asset, BalanceInfo, OutputTokenInfo, ADMIN,
+        get_admin_old, get_name, get_output_token, get_pair, is_initialized, save_admin_old,
+        save_name, save_output_token, save_pair, set_initialized, Asset, BalanceInfo,
+        OutputTokenInfo, ADMIN,
     },
     token_contract,
 };
@@ -81,7 +82,7 @@ impl TraderTrait for Trader {
             panic_with_error!(env, ContractError::AlreadyInitialized)
         }
 
-        save_admin(&env, &admin);
+        save_admin_old(&env, &admin);
 
         save_name(&env, &contract_name);
 
@@ -118,7 +119,7 @@ impl TraderTrait for Trader {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        if sender != get_admin(&env) {
+        if sender != get_admin_old(&env) {
             log!(&env, "Trader: Trade_token: Unauthorized trade");
             panic_with_error!(env, ContractError::Unauthorized);
         }
@@ -184,7 +185,7 @@ impl TraderTrait for Trader {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        if sender != get_admin(&env) {
+        if sender != get_admin_old(&env) {
             log!(&env, "Trader: Transfer: Unauthorized transfer");
             panic_with_error!(env, ContractError::Unauthorized);
         }
@@ -245,7 +246,7 @@ impl TraderTrait for Trader {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        get_admin(&env)
+        get_admin_old(&env)
     }
 
     fn query_contract_name(env: Env) -> String {
@@ -271,7 +272,7 @@ impl TraderTrait for Trader {
     }
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())

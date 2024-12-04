@@ -14,4 +14,5 @@ pub enum ContractError {
     InvalidMaxSpreadBps = 8,
     InitValueNotFound = 9,
     AlreadyInitialized = 10,
+    AdminNotSet = 11,
 }
