@@ -180,21 +180,28 @@ pub struct SimulateReverseSwapResponse {
 }
 
 pub mod utils {
+    use soroban_sdk::String;
+
     use super::*;
 
+    #[allow(clippy::too_many_arguments)]
     pub fn deploy_token_contract(
-        e: &Env,
+        env: &Env,
         token_wasm_hash: BytesN<32>,
         token_a: &Address,
         token_b: &Address,
+        admin: Address,
+        decimals: u32,
+        name: String,
+        symbol: String,
     ) -> Address {
-        let mut salt = Bytes::new(e);
-        salt.append(&token_a.to_xdr(e));
-        salt.append(&token_b.to_xdr(e));
-        let salt = e.crypto().sha256(&salt);
-        e.deployer()
+        let mut salt = Bytes::new(env);
+        salt.append(&token_a.clone().to_xdr(env));
+        salt.append(&token_b.clone().to_xdr(env));
+        let salt = env.crypto().sha256(&salt);
+        env.deployer()
             .with_current_contract(salt)
-            .deploy(token_wasm_hash)
+            .deploy_v2(token_wasm_hash, (admin, decimals, name, symbol))
     }
 
     pub fn deploy_stake_contract(e: &Env, stake_wasm_hash: BytesN<32>) -> Address {
@@ -203,7 +210,7 @@ pub mod utils {
 
         e.deployer()
             .with_current_contract(salt)
-            .deploy(stake_wasm_hash)
+            .deploy_v2(stake_wasm_hash, ())
     }
 
     pub fn save_admin(e: &Env, address: Address) {

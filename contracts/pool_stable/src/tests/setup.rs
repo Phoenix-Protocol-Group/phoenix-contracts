@@ -51,8 +51,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     init_amp: impl Into<Option<u64>>,
 ) -> StableLiquidityPoolClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
-    let pool =
-        StableLiquidityPoolClient::new(env, &env.register_contract(None, StableLiquidityPool {}));
+    let pool = StableLiquidityPoolClient::new(env, &env.register(StableLiquidityPool, ()));
     let fee_recipient = fee_recipient
         .into()
         .unwrap_or_else(|| Address::generate(env));

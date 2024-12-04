@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn instantiate_vesting_client(env: &Env) -> VestingClient {
-    VestingClient::new(env, &env.register_contract(None, Vesting {}))
+    VestingClient::new(env, &env.register(Vesting, ()))
 }
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {

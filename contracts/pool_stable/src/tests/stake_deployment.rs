@@ -97,8 +97,7 @@ fn second_pool_stable_deployment_should_fail() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
 
-    let pool =
-        StableLiquidityPoolClient::new(&env, &env.register_contract(None, StableLiquidityPool {}));
+    let pool = StableLiquidityPoolClient::new(&env, &env.register(StableLiquidityPool, ()));
 
     let token_wasm_hash = install_token_wasm(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
@@ -177,8 +176,7 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
         std::mem::swap(&mut admin2, &mut admin1);
     }
 
-    let pool =
-        StableLiquidityPoolClient::new(&env, &env.register_contract(None, StableLiquidityPool {}));
+    let pool = StableLiquidityPoolClient::new(&env, &env.register(StableLiquidityPool, ()));
 
     let token_wasm_hash = install_token_wasm(&env);
     let stake_wasm_hash = install_stake_wasm(&env);

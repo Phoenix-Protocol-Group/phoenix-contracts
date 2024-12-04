@@ -11,7 +11,9 @@ pub fn deploy_lp_contract(
     salt.append(&token_b.to_xdr(env));
     let salt = env.crypto().sha256(&salt);
 
-    env.deployer().with_current_contract(salt).deploy(wasm_hash)
+    env.deployer()
+        .with_current_contract(salt)
+        .deploy_v2(wasm_hash, ())
 }
 
 pub fn deploy_and_initialize_multihop_contract(
@@ -26,7 +28,7 @@ pub fn deploy_and_initialize_multihop_contract(
     let multihop_address = env
         .deployer()
         .with_current_contract(salt)
-        .deploy(multihop_wasm_hash);
+        .deploy_v2(multihop_wasm_hash, ());
 
     let init_fn = Symbol::new(&env, "initialize");
     let init_args: Vec<Val> = (admin, env.current_contract_address()).into_val(&env);

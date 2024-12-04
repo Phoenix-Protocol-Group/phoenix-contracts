@@ -1,6 +1,5 @@
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, IntoVal,
-    String, U256,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String, U256,
 };
 
 use num_integer::Roots;
@@ -215,18 +214,16 @@ impl LiquidityPoolTrait for LiquidityPool {
             panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
         }
 
-        // deploy token contract
-        let share_token_address =
-            utils::deploy_token_contract(&env, token_wasm_hash, &token_a, &token_b);
-        token_contract::Client::new(&env, &share_token_address).initialize(
-            // admin
-            &env.current_contract_address(),
-            // number of decimals on the share token
-            &share_token_decimals,
-            // name
-            &share_token_name.into_val(&env),
-            // symbol
-            &share_token_symbol.into_val(&env),
+        // deploy and initialize token contract
+        let share_token_address = utils::deploy_token_contract(
+            &env,
+            token_wasm_hash.clone(),
+            &token_a,
+            &token_b,
+            env.current_contract_address(),
+            share_token_decimals,
+            share_token_name,
+            share_token_symbol,
         );
 
         let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);

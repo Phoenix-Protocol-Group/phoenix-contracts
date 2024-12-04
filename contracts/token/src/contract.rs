@@ -1,6 +1,6 @@
 //! This contract demonstrates a sample implementation of the Soroban token
 //! interface.
-use crate::admin::{has_administrator, read_administrator, write_administrator};
+use crate::admin::{read_administrator, write_administrator};
 use crate::allowance::{read_allowance, spend_allowance, write_allowance};
 use crate::balance::{read_balance, receive_balance, spend_balance};
 use crate::metadata::{read_decimal, read_name, read_symbol, write_metadata};
@@ -23,15 +23,11 @@ pub struct Token;
 
 #[contractimpl]
 impl Token {
-    pub fn initialize(e: Env, admin: Address, decimal: u32, name: String, symbol: String) {
-        if has_administrator(&e) {
-            panic!("already initialized")
-        }
-        write_administrator(&e, &admin);
+    pub fn __constructor(e: Env, admin: Address, decimal: u32, name: String, symbol: String) {
         if decimal > 18 {
             panic!("Decimal must not be greater than 18");
         }
-
+        write_administrator(&e, &admin);
         write_metadata(
             &e,
             TokenMetadata {
@@ -67,7 +63,6 @@ impl Token {
         TokenUtils::new(&e).events().set_admin(admin, new_admin);
     }
 
-    #[cfg_attr(not(test), allow(dead_code))]
     #[cfg(test)]
     pub fn get_allowance(e: Env, from: Address, spender: Address) -> Option<AllowanceValue> {
         let key = DataKey::Allowance(AllowanceDataKey { from, spender });

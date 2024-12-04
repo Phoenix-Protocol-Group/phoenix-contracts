@@ -6,7 +6,7 @@ use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     Address, Bytes, BytesN, Env,
 };
-use soroban_sdk::{vec, IntoVal, String};
+use soroban_sdk::{vec, String};
 pub fn create_token_contract_with_metadata<'a>(
     env: &Env,
     admin: &Address,
@@ -15,9 +15,10 @@ pub fn create_token_contract_with_metadata<'a>(
     symbol: String,
     amount: i128,
 ) -> token_contract::Client<'a> {
-    let token =
-        token_contract::Client::new(env, &env.register_contract_wasm(None, token_contract::WASM));
-    token.initialize(admin, &decimals, &name.into_val(env), &symbol.into_val(env));
+    let token = token_contract::Client::new(
+        env,
+        &env.register(token_contract::WASM, (admin, decimals, name, symbol)),
+    );
     token.mint(admin, &amount);
     token
 }
@@ -63,7 +64,9 @@ pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
     let salt = Bytes::new(e);
     let salt = e.crypto().sha256(&salt);
 
-    e.deployer().with_address(admin, salt).deploy(factory_wasm)
+    e.deployer()
+        .with_address(admin, salt)
+        .deploy_v2(factory_wasm, ())
 }
 
 pub fn deploy_multihop_contract<'a>(
@@ -73,7 +76,7 @@ pub fn deploy_multihop_contract<'a>(
 ) -> MultihopClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
 
-    let multihop = MultihopClient::new(env, &env.register_contract(None, Multihop {}));
+    let multihop = MultihopClient::new(env, &env.register(Multihop, ()));
 
     multihop.initialize(&admin, factory);
     multihop
