@@ -101,7 +101,7 @@ pub fn save_admin_old(env: &Env, admin: &Address) {
         .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
 }
 
-pub fn save_admin(env: &Env, admin: &Address) {
+pub fn _save_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&ADMIN, admin);
     env.storage()
         .instance()
@@ -125,7 +125,7 @@ pub fn get_admin_old(env: &Env) -> Address {
     address
 }
 
-pub fn get_admin(env: &Env) -> Address {
+pub fn _get_admin(env: &Env) -> Address {
     let admin = env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
         log!(env, "Admin not set");
         panic_with_error!(&env, ContractError::AdminNotSet)
