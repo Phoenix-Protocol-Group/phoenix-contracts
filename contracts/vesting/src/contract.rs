@@ -11,8 +11,8 @@ use crate::storage::{get_minter, save_minter, MinterInfo};
 use crate::{
     error::ContractError,
     storage::{
-        get_admin, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
-        is_initialized, save_admin, save_max_vesting_complexity, save_token_info, save_vesting,
+        get_admin_old, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
+        is_initialized, save_admin_old, save_max_vesting_complexity, save_token_info, save_vesting,
         set_initialized, update_vesting, VestingInfo, VestingSchedule, VestingTokenInfo, ADMIN,
     },
     token_contract,
@@ -99,7 +99,7 @@ impl VestingTrait for Vesting {
 
         set_initialized(&env);
 
-        save_admin(&env, &admin);
+        save_admin_old(&env, &admin);
 
         let token_info = VestingTokenInfo {
             name: vesting_token.name,
@@ -132,7 +132,7 @@ impl VestingTrait for Vesting {
         }
 
         set_initialized(&env);
-        save_admin(&env, &admin);
+        save_admin_old(&env, &admin);
 
         save_minter(&env, &minter_info);
 
@@ -151,7 +151,7 @@ impl VestingTrait for Vesting {
     }
 
     fn create_vesting_schedules(env: Env, vesting_schedules: Vec<VestingSchedule>) {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         admin.require_auth();
         env.storage()
             .instance()
@@ -353,7 +353,7 @@ impl VestingTrait for Vesting {
         let is_authorized = if let Some(current_minter) = current_minter.clone() {
             sender == current_minter.address
         } else {
-            sender == get_admin(&env)
+            sender == get_admin_old(&env)
         };
 
         if !is_authorized {
@@ -384,7 +384,7 @@ impl VestingTrait for Vesting {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        if sender != get_admin(&env) {
+        if sender != get_admin_old(&env) {
             log!(
                 &env,
                 "Vesting: Update minter capacity: Only contract's admin can update the minter's capacity"
@@ -472,14 +472,14 @@ impl VestingTrait for Vesting {
     }
 
     fn update(env: Env, new_wasm_hash: BytesN<32>) {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())
