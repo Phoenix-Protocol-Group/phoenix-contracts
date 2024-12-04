@@ -18,7 +18,7 @@ use crate::{
     msg::{AnnualizedRewardResponse, ConfigResponse, WithdrawableRewardResponse},
     storage::{
         get_config, save_config,
-        utils::{self, get_admin, is_initialized, set_initialized},
+        utils::{self, get_admin_old, is_initialized, set_initialized},
         BondingInfo, Config,
     },
     token_contract,
@@ -133,7 +133,7 @@ impl StakingRewardsTrait for StakingRewards {
         env.events()
             .publish(("create_distribution_flow", "asset"), &reward_token);
 
-        utils::save_admin(&env, &admin);
+        utils::save_admin_old(&env, &admin);
     }
 
     fn add_user(env: Env, user: Address, stakes: BondingInfo) {
@@ -342,7 +342,7 @@ impl StakingRewardsTrait for StakingRewards {
         distribution_duration: u64,
         token_amount: i128,
     ) {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         admin.require_auth();
         env.storage()
             .instance()
@@ -445,7 +445,7 @@ impl StakingRewardsTrait for StakingRewards {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        get_admin(&env)
+        get_admin_old(&env)
     }
 
     fn query_annualized_reward(env: Env, total_staked_amount: i128) -> AnnualizedRewardResponse {
@@ -537,7 +537,7 @@ impl StakingRewardsTrait for StakingRewards {
     }
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())
@@ -548,7 +548,7 @@ impl StakingRewardsTrait for StakingRewards {
 impl StakingRewards {
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
