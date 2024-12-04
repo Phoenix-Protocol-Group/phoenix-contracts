@@ -4,7 +4,7 @@ use crate::{
     storage::{
         get_config, get_lp_vec, get_stable_wasm_hash, is_initialized, save_config, save_lp_vec,
         save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
-        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio,
+        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
     ConvertVec,
@@ -83,6 +83,8 @@ pub trait FactoryTrait {
     fn get_config(env: Env) -> Config;
 
     fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -488,6 +490,13 @@ impl FactoryTrait for Factory {
             lp_portfolio,
             stake_portfolio,
         }
+    }
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_config(&env).admin;
+        env.storage().instance().set(&ADMIN, &admin);
+
+        Ok(())
     }
 }
 

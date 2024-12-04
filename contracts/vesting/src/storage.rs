@@ -1,11 +1,16 @@
 use curve::Curve;
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
+use phoenix::ttl::{
+    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
+    PERSISTENT_LIFETIME_THRESHOLD,
+};
 use soroban_sdk::{
-    contracttype, log, panic_with_error, vec, Address, ConversionError, Env, String, TryFromVal,
-    Val, Vec,
+    contracttype, log, panic_with_error, symbol_short, vec, Address, ConversionError, Env, String,
+    Symbol, TryFromVal, Val, Vec,
 };
 
 use crate::error::ContractError;
+
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
 
 impl TryFromVal<Env, DataKey> for Val {
     type Error = ConversionError;
@@ -69,7 +74,7 @@ impl MinterInfo {
     }
 }
 
-pub fn save_admin(env: &Env, admin: &Address) {
+pub fn save_admin_old(env: &Env, admin: &Address) {
     env.storage().persistent().set(&DataKey::Admin, admin);
     env.storage().persistent().extend_ttl(
         &DataKey::Admin,
@@ -78,7 +83,14 @@ pub fn save_admin(env: &Env, admin: &Address) {
     );
 }
 
-pub fn get_admin(env: &Env) -> Address {
+pub fn _save_admin(env: &Env, admin: &Address) {
+    env.storage().instance().set(&ADMIN, admin);
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+}
+
+pub fn get_admin_old(env: &Env) -> Address {
     let admin_addr = env
         .storage()
         .persistent()
@@ -94,6 +106,17 @@ pub fn get_admin(env: &Env) -> Address {
     );
 
     admin_addr
+}
+
+pub fn _get_admin(env: &Env) -> Address {
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+    env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
+        log!(&env, "Vesting: Admin not set");
+        panic_with_error!(&env, ContractError::AdminNotFound)
+    })
 }
 
 #[contracttype]

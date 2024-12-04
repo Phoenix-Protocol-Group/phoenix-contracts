@@ -7,6 +7,8 @@ use soroban_sdk::{
 use crate::{error::ContractError, token_contract};
 use soroban_decimal::Decimal;
 
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
+
 #[derive(Clone, Copy)]
 #[repr(u32)]
 pub enum DataKey {
@@ -180,6 +182,7 @@ pub struct SimulateReverseSwapResponse {
 }
 
 pub mod utils {
+    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
     use soroban_sdk::String;
 
     use super::*;
@@ -213,13 +216,20 @@ pub mod utils {
             .deploy_v2(stake_wasm_hash, ())
     }
 
-    pub fn save_admin(e: &Env, address: Address) {
+    pub fn save_admin_old(e: &Env, address: Address) {
         e.storage().persistent().set(&DataKey::Admin, &address);
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
             PERSISTENT_LIFETIME_THRESHOLD,
             PERSISTENT_BUMP_AMOUNT,
         );
+    }
+
+    pub fn _save_admin(e: &Env, address: Address) {
+        e.storage().instance().set(&ADMIN, &address);
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
     }
 
     pub fn save_total_shares(e: &Env, amount: i128) {
@@ -266,7 +276,7 @@ pub mod utils {
     }
 
     // queries
-    pub fn get_admin(e: &Env) -> Address {
+    pub fn get_admin_old(e: &Env) -> Address {
         let admin = e.storage().persistent().get(&DataKey::Admin).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
@@ -275,6 +285,17 @@ pub mod utils {
         );
 
         admin
+    }
+
+    pub fn _get_admin(e: &Env) -> Address {
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        e.storage().instance().get(&ADMIN).unwrap_or_else(|| {
+            log!(e, "XYZ Pool: Admin not set");
+            panic_with_error!(&e, ContractError::AdminNotSet)
+        })
     }
 
     pub fn get_total_shares(e: &Env) -> i128 {
@@ -463,7 +484,7 @@ mod tests {
     #[should_panic]
     fn test_get_admin_failure() {
         let env = Env::default();
-        let _ = utils::get_admin(&env);
+        let _ = utils::get_admin_old(&env);
     }
 
     #[test]
