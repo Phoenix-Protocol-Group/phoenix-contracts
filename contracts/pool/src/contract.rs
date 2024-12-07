@@ -110,6 +110,7 @@ pub trait LiquidityPoolTrait {
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
         pho_token_staking_addr: Option<Address>,
+        staking_breakpoint: Option<u64>,
     );
 
     // Migration entrypoint
@@ -250,6 +251,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_spread_bps,
             max_referral_bps,
             pho_token_staking_addr: None,
+            staking_breakpoint: None,
         };
 
         save_config(&env, config);
@@ -548,6 +550,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
         pho_token_staking_addr: Option<Address>,
+        staking_breakpoint: Option<u64>,
     ) {
         let admin: Address = utils::get_admin(&env);
         admin.require_auth();
@@ -581,6 +584,10 @@ impl LiquidityPoolTrait for LiquidityPool {
         }
         if let Some(pho_token_staking_addr) = pho_token_staking_addr {
             config.pho_token_staking_addr = Some(pho_token_staking_addr);
+        }
+
+        if let Some(staking_breakpoint) = staking_breakpoint {
+            config.staking_breakpoint = Some(staking_breakpoint);
         }
 
         save_config(&env, config);
@@ -1411,6 +1418,7 @@ mod tests {
             max_allowed_spread_bps: 100i64,
             max_referral_bps: 1_000i64,
             pho_token_staking_addr: None,
+            staking_breakpoint: None,
         };
         split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
     }
