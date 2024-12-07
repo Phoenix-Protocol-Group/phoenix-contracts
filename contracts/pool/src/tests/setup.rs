@@ -49,7 +49,6 @@ pub fn deploy_liquidity_pool_contract<'a>(
     max_allowed_spread_bps: impl Into<Option<i64>>,
     stake_manager: Address,
     stake_owner: Address,
-    pho_token_staking_addr: Option<Address>,
 ) -> LiquidityPoolClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
     let pool = LiquidityPoolClient::new(env, &env.register(LiquidityPool, ()));

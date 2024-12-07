@@ -44,7 +44,6 @@ fn provide_liquidity() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -166,7 +165,6 @@ fn withdraw_liquidity() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -301,7 +299,6 @@ fn swap_with_no_amounts() {
         None,
         stake_manager,
         stake_owner,
-        None,
     );
 
     token1.mint(&user1, &10_001_000);
@@ -342,7 +339,6 @@ fn withdraw_liqudity_below_min() {
         None,
         stake_manager,
         stake_owner,
-        None,
     );
 
     token1.mint(&user1, &10_000);
@@ -394,7 +390,6 @@ fn query_share_valid_liquidity() {
         None,
         stake_manager,
         stake_owner,
-        None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -765,7 +760,6 @@ fn query_share_empty_pool() {
         None,
         stake_manager,
         stake_owner,
-        None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -817,7 +811,6 @@ fn provide_liquidity_slippage_tolerance_too_high() {
         None,
         Address::generate(&env),
         Address::generate(&env),
-        None,
     );
 
     pool.provide_liquidity(
@@ -860,7 +853,6 @@ fn test_query_info_for_factory_works() {
         200,
         stake_manager,
         stake_owner,
-        None,
     );
 
     let result = pool.query_pool_info_for_factory();
@@ -916,7 +908,6 @@ fn provide_liqudity_with_deadline_should_work() {
         None,
         stake_manager,
         stake_owner,
-        None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -1039,7 +1030,6 @@ fn provide_liqudity_past_deadline_should_panic() {
         None,
         stake_manager,
         stake_owner,
-        None,
     );
 
     token1.mint(&user1, &10_000);
@@ -1090,7 +1080,6 @@ fn withdraw_liquidity_with_deadline_should_work() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -1209,7 +1198,6 @@ fn withdraw_liquidity_past_deadline_should_panic() {
         None,
         stake_manager,
         stake_owner,
-        None,
     );
 
     token1.mint(&user1, &10_000);

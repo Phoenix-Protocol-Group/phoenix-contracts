@@ -42,7 +42,6 @@ fn confirm_stake_contract_deployment() {
         200,
         stake_manager.clone(),
         stake_owner.clone(),
-        pho_token_staking_addr.clone(),
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -62,6 +61,7 @@ fn confirm_stake_contract_deployment() {
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
             pho_token_staking_addr,
+            staking_breakpoint: Some(500),
         }
     );
 

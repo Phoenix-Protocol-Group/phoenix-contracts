@@ -41,7 +41,6 @@ fn simple_swap() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     let liquidity_amount = 100_000_000_000_000_i128; // 10 million with 7 decimal places
@@ -204,7 +203,6 @@ fn simple_swap_with_preferred_pool_fee() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     token1.mint(&user1, &1_001_000);
@@ -359,7 +357,6 @@ fn simple_swap_should_panic_when_user_accepted_fee_is_less_than_pool_fee() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     token1.mint(&user1, &1_001_000);
@@ -490,7 +487,6 @@ fn simple_swap_with_referral_fee() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     token1.mint(&user1, &1_001_000);
@@ -621,7 +617,6 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     token1.mint(&user1, &1_001_000);
@@ -688,7 +683,6 @@ fn swap_should_panic_with_bad_max_spread() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     token1.mint(&user1, &1_001_000);
@@ -747,7 +741,6 @@ fn swap_with_high_fee() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     let initial_liquidity = 1_000_000i128;
@@ -834,7 +827,6 @@ fn swap_simulation_even_pool() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     let initial_liquidity = 1_000_000i128;
@@ -940,7 +932,6 @@ fn swap_simulation_one_third_pool() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     let initial_liquidity = 1_000_000i128;
@@ -1046,7 +1037,6 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
         10_000i64,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     let initial_liquidity = 110_358_880_127; // taken from the current amount of tokens in pool
@@ -1132,7 +1122,6 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         Some(500i64),
         Address::generate(&env),
         Address::generate(&env),
-        Some(Address::generate(&env)),
     );
 
     token1.mint(&user1, &1_001_000);
@@ -1189,7 +1178,6 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
         None,
         Address::generate(&env),
         Address::generate(&env),
-        Some(Address::generate(&env)),
     );
     // Swap fails because we provide incorrect token as offer token.
     pool.swap(
@@ -1233,7 +1221,6 @@ fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_i
         None,
         Address::generate(&env),
         Address::generate(&env),
-        Some(Address::generate(&env)),
     );
     // Simulate swap fails because we provide incorrect token as offer token.
     pool.simulate_swap(
@@ -1272,7 +1259,6 @@ fn test_v_phx_vul_017_should_panic_when_simulating_reverse_swap_for_non_existing
         None,
         Address::generate(&env),
         Address::generate(&env),
-        Some(Address::generate(&env)),
     );
     // Simulate swap fails because we provide incorrect token as offer token.
     pool.simulate_reverse_swap(
@@ -1307,7 +1293,6 @@ fn test_should_swap_with_valid_ask_asset_min_amount() {
         None,
         Address::generate(&env),
         Address::generate(&env),
-        Some(Address::generate(&env)),
     );
 
     token1.mint(&user, &1_050_000);
@@ -1376,7 +1361,6 @@ fn test_should_fail_when_invalid_ask_asset_min_amount() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     token1.mint(&user, &1_001_000);
@@ -1433,7 +1417,6 @@ fn simple_swap_with_deadline_success() {
         None,
         stake_manager,
         stake_owner,
-        Some(Address::generate(&env)),
     );
 
     token1.mint(&user1, &1_001_000);
@@ -1556,7 +1539,6 @@ fn simple_swap_with_should_fail_when_after_the_deadline() {
         None,
         stake_manager,
         stake_owner,
-        None,
     );
 
     token1.mint(&user1, &1_001_000);
@@ -1620,7 +1602,6 @@ fn simple_swap_with_biggest_possible_decimal_precision() {
         Some(10_000),
         stake_manager,
         stake_owner,
-        None,
     );
 
     token1.mint(&user1, &999_000_000_000_001_000);
