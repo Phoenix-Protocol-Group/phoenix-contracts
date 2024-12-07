@@ -100,8 +100,12 @@ pub fn calculate_pending_rewards(
                     for stake in user_info.stakes.iter() {
                         // Calculate the user's share of the total staked amount at the time
                         let user_share = stake.stake as u128 * daily_reward / total_staked;
-                        let stake_age_days =
-                            (staking_reward_day - stake.stake_timestamp) / SECONDS_PER_DAY;
+                        let stake_age_days = (staking_reward_day
+                            .saturating_sub(stake.stake_timestamp))
+                            / SECONDS_PER_DAY;
+                        if stake_age_days == 0u64 {
+                            continue;
+                        }
                         let multiplier = if stake_age_days >= 60 {
                             Decimal::one()
                         } else {
