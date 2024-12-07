@@ -29,6 +29,7 @@ fn confirm_stake_contract_deployment() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -41,6 +42,7 @@ fn confirm_stake_contract_deployment() {
         200,
         stake_manager.clone(),
         stake_owner.clone(),
+        pho_token_staking_addr.clone(),
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -59,6 +61,7 @@ fn confirm_stake_contract_deployment() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
+            pho_token_staking_addr,
         }
     );
 
@@ -113,6 +116,7 @@ fn second_pool_deployment_should_fail() {
         min_reward: 5i128,
         manager: Address::generate(&env),
         max_complexity: 10u32,
+        pho_token_staking_addr: Address::generate(&env),
     };
 
     let lp_init_info = LiquidityPoolInitInfo {

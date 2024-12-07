@@ -109,6 +109,7 @@ pub trait LiquidityPoolTrait {
         max_allowed_slippage_bps: Option<i64>,
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
+        pho_token_staking_addr: Option<Address>,
     );
 
     // Migration entrypoint
@@ -248,6 +249,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
             max_referral_bps,
+            pho_token_staking_addr: stake_init_info.pho_token_staking_addr,
         };
 
         save_config(&env, config);
@@ -545,6 +547,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         max_allowed_slippage_bps: Option<i64>,
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
+        pho_token_staking_addr: Option<Address>,
     ) {
         let admin: Address = utils::get_admin(&env);
         admin.require_auth();
@@ -575,6 +578,9 @@ impl LiquidityPoolTrait for LiquidityPool {
         if let Some(max_referral_bps) = max_referral_bps {
             validate_bps!(max_referral_bps);
             config.max_referral_bps = max_referral_bps;
+        }
+        if let Some(pho_token_staking_addr) = pho_token_staking_addr {
+            config.pho_token_staking_addr = pho_token_staking_addr;
         }
 
         save_config(&env, config);
@@ -1404,6 +1410,7 @@ mod tests {
             max_allowed_slippage_bps: 100i64,
             max_allowed_spread_bps: 100i64,
             max_referral_bps: 1_000i64,
+            pho_token_staking_addr: Address::generate(&env),
         };
         split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
     }

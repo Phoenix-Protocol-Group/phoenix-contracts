@@ -49,6 +49,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
     max_allowed_spread_bps: impl Into<Option<i64>>,
     stake_manager: Address,
     stake_owner: Address,
+    pho_token_staking_addr: Address,
 ) -> LiquidityPoolClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
     let pool = LiquidityPoolClient::new(env, &env.register(LiquidityPool, ()));
@@ -65,6 +66,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
         min_reward: 5i128,
         manager: stake_manager,
         max_complexity: 10u32,
+        pho_token_staking_addr,
     };
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);

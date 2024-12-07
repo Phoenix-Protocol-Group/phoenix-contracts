@@ -32,6 +32,7 @@ fn provide_liquidity() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -44,6 +45,7 @@ fn provide_liquidity() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -153,6 +155,7 @@ fn withdraw_liquidity() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -165,6 +168,7 @@ fn withdraw_liquidity() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -287,6 +291,7 @@ fn swap_with_no_amounts() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -299,6 +304,7 @@ fn swap_with_no_amounts() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     token1.mint(&user1, &10_001_000);
@@ -327,6 +333,7 @@ fn withdraw_liqudity_below_min() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -339,6 +346,7 @@ fn withdraw_liqudity_below_min() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     token1.mint(&user1, &10_000);
@@ -379,6 +387,7 @@ fn query_share_valid_liquidity() {
     let user3 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -390,6 +399,7 @@ fn query_share_valid_liquidity() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -749,6 +759,7 @@ fn query_share_empty_pool() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -760,6 +771,7 @@ fn query_share_empty_pool() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -793,6 +805,7 @@ fn provide_liquidity_slippage_tolerance_too_high() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -811,6 +824,7 @@ fn provide_liquidity_slippage_tolerance_too_high() {
         None,
         Address::generate(&env),
         Address::generate(&env),
+        pho_token_staking_addr,
     );
 
     pool.provide_liquidity(
@@ -832,6 +846,7 @@ fn test_query_info_for_factory_works() {
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
@@ -853,6 +868,7 @@ fn test_query_info_for_factory_works() {
         200,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     let result = pool.query_pool_info_for_factory();
@@ -896,6 +912,7 @@ fn provide_liqudity_with_deadline_should_work() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -908,6 +925,7 @@ fn provide_liqudity_with_deadline_should_work() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -1018,6 +1036,7 @@ fn provide_liqudity_past_deadline_should_panic() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -1030,6 +1049,7 @@ fn provide_liqudity_past_deadline_should_panic() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     token1.mint(&user1, &10_000);
@@ -1068,6 +1088,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -1080,6 +1101,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -1186,6 +1208,7 @@ fn withdraw_liquidity_past_deadline_should_panic() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -1198,6 +1221,7 @@ fn withdraw_liquidity_past_deadline_should_panic() {
         None,
         stake_manager,
         stake_owner,
+        pho_token_staking_addr,
     );
 
     token1.mint(&user1, &10_000);

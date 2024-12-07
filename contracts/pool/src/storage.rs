@@ -50,6 +50,7 @@ pub struct Config {
     pub max_allowed_spread_bps: i64,
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
+    pub pho_token_staking_addr: Address,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
@@ -702,6 +703,7 @@ mod tests {
             fee_recipient: Address::generate(&env),
             max_allowed_spread_bps: 10_i64,
             max_referral_bps: 10i64,
+            pho_token_staking_addr: Address::generate(&env),
         };
 
         let result = config.max_allowed_slippage();
