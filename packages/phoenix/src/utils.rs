@@ -68,7 +68,6 @@ pub struct StakeInitInfo {
     pub min_reward: i128,
     pub manager: Address,
     pub max_complexity: u32,
-    pub pho_token_staking_addr: Address,
 }
 
 #[contracttype]

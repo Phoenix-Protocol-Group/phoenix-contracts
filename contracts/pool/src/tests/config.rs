@@ -39,7 +39,6 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         min_reward: 5i128,
         manager: Address::generate(&env),
         max_complexity: 10u32,
-        pho_token_staking_addr: Address::generate(&env),
     };
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
@@ -87,7 +86,7 @@ fn update_config() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
-    let pho_token_staking_addr = Address::generate(&env);
+    let pho_token_staking_addr = Some(Address::generate(&env));
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -100,7 +99,7 @@ fn update_config() {
         200,
         stake_manager,
         stake_owner,
-        pho_token_staking_addr,
+        pho_token_staking_addr.clone(),
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -119,7 +118,7 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
-            pho_token_staking_addr: Address::generate(&env),
+            pho_token_staking_addr,
         }
     );
 
@@ -148,7 +147,7 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 1_000,
-            pho_token_staking_addr: new_pho_token_staking_addr,
+            pho_token_staking_addr: Some(new_pho_token_staking_addr),
         }
     );
 
@@ -175,7 +174,7 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 5_000,
             max_referral_bps: 500,
-            pho_token_staking_addr: Address::generate(&env),
+            pho_token_staking_addr: None,
         }
     );
 }
@@ -197,7 +196,6 @@ fn update_config_unauthorized() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
-    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -210,7 +208,7 @@ fn update_config_unauthorized() {
         200,
         stake_manager,
         stake_owner,
-        pho_token_staking_addr,
+        None,
     );
 
     pool.update_config(
@@ -242,7 +240,6 @@ fn update_config_update_admin() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
-    let pho_token_staking_addr = Address::generate(&env);
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -255,7 +252,7 @@ fn update_config_update_admin() {
         200,
         stake_manager,
         stake_owner,
-        pho_token_staking_addr,
+        None,
     );
 
     // update admin to new admin
@@ -271,6 +268,7 @@ fn update_config_update_admin() {
 
     let share_token_address = pool.query_share_token_address();
     let stake_token_address = pool.query_stake_contract_address();
+    let new_token_staking_addr = Address::generate(&env);
 
     // now update succeeds
     pool.update_config(
@@ -280,7 +278,7 @@ fn update_config_update_admin() {
         &None,
         &None,
         &None,
-        &None,
+        &Some(new_token_staking_addr.clone()),
     );
     assert_eq!(
         pool.query_config(),
@@ -295,7 +293,7 @@ fn update_config_update_admin() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
-            pho_token_staking_addr: Address::generate(&env),
+            pho_token_staking_addr: Some(new_token_staking_addr),
         }
     );
 }
@@ -331,7 +329,7 @@ fn update_config_too_high_fees() {
         200,
         stake_manager,
         stake_owner,
-        pho_token_staking_addr,
+        None,
     );
 
     // update fees and recipient
@@ -377,7 +375,7 @@ fn update_liquidity_pool_works() {
         200,
         stake_manager,
         stake_owner,
-        pho_token_staking_addr,
+        None,
     );
 
     let new_wasm_hash = install_new_lp_wasm(&env);
@@ -439,7 +437,7 @@ fn update_configs_all_bps_values_should_work() {
         200,
         stake_manager,
         stake_owner,
-        pho_token_staking_addr,
+        None,
     );
 
     let share_token_address = pool.query_share_token_address();
@@ -458,7 +456,7 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
-            pho_token_staking_addr: Address::generate(&env),
+            pho_token_staking_addr: None,
         }
     );
 
@@ -487,7 +485,7 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_slippage_bps: 1000,
             max_allowed_spread_bps: 1000,
             max_referral_bps: 1000,
-            pho_token_staking_addr: Address::generate(&env),
+            pho_token_staking_addr: None,
         }
     );
 }
@@ -518,7 +516,6 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
         min_reward: 5i128,
         manager: Address::generate(&env),
         max_complexity: 10u32,
-        pho_token_staking_addr: Address::generate(&env),
     };
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);

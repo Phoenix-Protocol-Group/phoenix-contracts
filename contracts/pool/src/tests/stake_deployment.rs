@@ -29,7 +29,7 @@ fn confirm_stake_contract_deployment() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
-    let pho_token_staking_addr = Address::generate(&env);
+    let pho_token_staking_addr = Some(Address::generate(&env));
 
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
@@ -116,7 +116,6 @@ fn second_pool_deployment_should_fail() {
         min_reward: 5i128,
         manager: Address::generate(&env),
         max_complexity: 10u32,
-        pho_token_staking_addr: Address::generate(&env),
     };
 
     let lp_init_info = LiquidityPoolInitInfo {

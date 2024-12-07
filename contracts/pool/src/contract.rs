@@ -249,7 +249,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             max_allowed_slippage_bps,
             max_allowed_spread_bps,
             max_referral_bps,
-            pho_token_staking_addr: stake_init_info.pho_token_staking_addr,
+            pho_token_staking_addr: None,
         };
 
         save_config(&env, config);
@@ -580,7 +580,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             config.max_referral_bps = max_referral_bps;
         }
         if let Some(pho_token_staking_addr) = pho_token_staking_addr {
-            config.pho_token_staking_addr = pho_token_staking_addr;
+            config.pho_token_staking_addr = Some(pho_token_staking_addr);
         }
 
         save_config(&env, config);
@@ -1410,7 +1410,7 @@ mod tests {
             max_allowed_slippage_bps: 100i64,
             max_allowed_spread_bps: 100i64,
             max_referral_bps: 1_000i64,
-            pho_token_staking_addr: Address::generate(&env),
+            pho_token_staking_addr: None,
         };
         split_deposit_based_on_pool_ratio(&env, config, 100, 100, 100, &Address::generate(&env));
     }
