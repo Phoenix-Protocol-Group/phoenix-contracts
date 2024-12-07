@@ -50,7 +50,10 @@ pub struct Config {
     pub max_allowed_spread_bps: i64,
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
+    /// The $PHO token staking address
     pub pho_token_staking_addr: Option<Address>,
+    /// value representing the number of tokens that the user must have staked in order for the
+    /// `total_fee_bps` to start becoming significantly cheaper
     pub staking_breakpoint: Option<u64>,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
