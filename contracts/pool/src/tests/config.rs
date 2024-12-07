@@ -116,12 +116,8 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
-            pho_token_staking_addr: None,
-            staking_breakpoint: None
         }
     );
-
-    let new_pho_token_staking_addr = Address::generate(&env);
 
     // update fees and recipient
     pool.update_config(
@@ -131,8 +127,6 @@ fn update_config() {
         &None,
         &None,
         &Some(1_000i64),
-        &Some(new_pho_token_staking_addr.clone()),
-        &Some(500),
     );
     assert_eq!(
         pool.query_config(),
@@ -147,22 +141,11 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 1_000,
-            pho_token_staking_addr: Some(new_pho_token_staking_addr),
-            staking_breakpoint: Some(500),
         }
     );
 
     // update slippage and spread
-    pool.update_config(
-        &None,
-        &None,
-        &None,
-        &None,
-        &Some(5_000i64),
-        &Some(500),
-        &None,
-        &None,
-    );
+    pool.update_config(&None, &None, &None, &None, &Some(5_000i64), &Some(500));
     assert_eq!(
         pool.query_config(),
         Config {
@@ -176,8 +159,6 @@ fn update_config() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 5_000,
             max_referral_bps: 500,
-            pho_token_staking_addr: None,
-            staking_breakpoint: None,
         }
     );
 }
@@ -220,8 +201,6 @@ fn update_config_unauthorized() {
         &None,
         &None,
         &None,
-        &None,
-        &None,
     );
 }
 
@@ -258,32 +237,13 @@ fn update_config_update_admin() {
     );
 
     // update admin to new admin
-    pool.update_config(
-        &Some(admin2.clone()),
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-    );
+    pool.update_config(&Some(admin2.clone()), &None, &None, &None, &None, &None);
 
     let share_token_address = pool.query_share_token_address();
     let stake_token_address = pool.query_stake_contract_address();
-    let new_token_staking_addr = Address::generate(&env);
 
     // now update succeeds
-    pool.update_config(
-        &Some(admin2.clone()),
-        &None,
-        &None,
-        &None,
-        &None,
-        &None,
-        &Some(new_token_staking_addr.clone()),
-        &None,
-    );
+    pool.update_config(&Some(admin2.clone()), &None, &None, &None, &None, &None);
     assert_eq!(
         pool.query_config(),
         Config {
@@ -297,8 +257,6 @@ fn update_config_update_admin() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
-            pho_token_staking_addr: Some(new_token_staking_addr),
-            staking_breakpoint: None
         }
     );
 }
@@ -340,8 +298,6 @@ fn update_config_too_high_fees() {
         &None,
         &Some(10_100i64), // 101% fees
         &Some(admin2.clone()),
-        &None,
-        &None,
         &None,
         &None,
         &None,
@@ -456,8 +412,6 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_slippage_bps: 500,
             max_allowed_spread_bps: 200,
             max_referral_bps: 5_000,
-            pho_token_staking_addr: None,
-            staking_breakpoint: None,
         }
     );
 
@@ -469,8 +423,6 @@ fn update_configs_all_bps_values_should_work() {
         &Some(1000i64),
         &Some(1000i64),
         &Some(1000i64),
-        &None,
-        &Some(500),
     );
 
     // assert the changes
@@ -487,8 +439,6 @@ fn update_configs_all_bps_values_should_work() {
             max_allowed_slippage_bps: 1000,
             max_allowed_spread_bps: 1000,
             max_referral_bps: 1000,
-            pho_token_staking_addr: None,
-            staking_breakpoint: Some(500),
         }
     );
 }
