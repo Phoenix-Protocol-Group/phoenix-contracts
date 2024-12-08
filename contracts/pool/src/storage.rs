@@ -502,12 +502,8 @@ pub mod utils {
         let staked = Decimal::new(user_staked as i128);
         let breakpoint = Decimal::new(variable_fee_info.staking_breakpoint as i128);
 
-        // Compute ratio in Decimal
         let ratio = breakpoint / (breakpoint + staked);
 
-        // Perform calculation in Decimal
-
-        // Now swap_fee is already a properly scaled Decimal
         fee_min + (fee_max - fee_min) * ratio
     }
 }
