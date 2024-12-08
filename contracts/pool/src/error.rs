@@ -35,4 +35,7 @@ pub enum ContractError {
     SwapFeeBpsOverLimit = 25,
     NotEnoughSharesToBeMinted = 26,
     NotEnoughLiquidityProvided = 27,
+    VariableFeeNotSet = 28,
+    InvalidMinimumFeeBps = 29,
+    InvalidStakingBreakpoint = 30,
 }

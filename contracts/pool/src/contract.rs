@@ -9,9 +9,12 @@ use crate::{
     stake_contract,
     storage::{
         get_config, get_default_slippage_bps, save_config, save_default_slippage_bps,
-        utils::{self, get_admin, is_initialized, set_initialized},
+        utils::{
+            self, calculate_swap_fee, get_admin, get_variable_fee_info, is_initialized,
+            save_variable_fee_info, set_initialized,
+        },
         Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse,
+        SimulateReverseSwapResponse, SimulateSwapResponse, VariableFeeInfo, VARIABLE_FEE_INFO,
     },
     token_contract,
 };
@@ -24,6 +27,14 @@ use soroban_decimal::Decimal;
 
 /// Minimum initial LP share
 const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1_000i128;
+/// The smallest fee allowed
+const SMALLEST_ALLOWED_FEE: u128 = 10u128; // 0.1% in bps
+/// The largest fee allowed
+const LARGEST_ALLOWED_FEE: u128 = 200u128; // 2.0% in bps
+/// The amount after which the users get higher discount
+const MAXIMUM_ALLOWED_STAKING_BREAKPOINT: u128 = 1_000u128; // we shouldn't ask for more than 1_000
+                                                            // staked $PHO for the users get
+                                                            // significantly cheaper swap fees
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -110,6 +121,10 @@ pub trait LiquidityPoolTrait {
         max_allowed_spread_bps: Option<i64>,
         max_referral_bps: Option<i64>,
     );
+
+    fn update_variable_fee(env: Env, variable_fee_info: VariableFeeInfo);
+
+    fn delete_variable_fee(env: Env);
 
     // Migration entrypoint
     fn upgrade(e: Env, new_wasm_hash: BytesN<32>, new_default_slippage_bps: i64);
@@ -580,6 +595,47 @@ impl LiquidityPoolTrait for LiquidityPool {
         save_config(&env, config);
     }
 
+    fn update_variable_fee(env: Env, variable_fee_info: VariableFeeInfo) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        if variable_fee_info.min_fee < SMALLEST_ALLOWED_FEE {
+            log!(
+                env,
+                "Pool: Enable Variable Fee: Invalid minimum fee - less than 0.1%"
+            );
+            panic_with_error!(env, ContractError::InvalidMinimumFeeBps);
+        }
+
+        if variable_fee_info.max_fee > LARGEST_ALLOWED_FEE {
+            log!(
+                env,
+                "Pool: Enable Variable Fee: Invalid maximum fee - over 2.0%"
+            );
+            panic_with_error!(env, ContractError::InvalidMinimumFeeBps);
+        }
+
+        if variable_fee_info.staking_breakpoint > MAXIMUM_ALLOWED_STAKING_BREAKPOINT {
+            log!(
+                env,
+                "Pool: Enable Variable Fee: Invalid staking breakpoint - over 1000"
+            );
+            panic_with_error!(env, ContractError::InvalidStakingBreakpoint);
+        }
+
+        // TODO: add a way to verify that the address provided is really `$PHO` staking contract's
+        // probably add a new query msg in staking that verifies that
+
+        save_variable_fee_info(&env, variable_fee_info);
+    }
+
+    fn delete_variable_fee(env: Env) {
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        env.storage().instance().remove(&VARIABLE_FEE_INFO);
+    }
+
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>, new_default_slippage_bps: i64) {
         let admin: Address = utils::get_admin(&env);
         admin.require_auth();
@@ -841,13 +897,24 @@ fn do_swap(
     // };
     let referral_fee_bps = 0;
 
-    // 1. We calculate the referral_fee below. If none referral fee will be 0
+    let swap_fee = if env.storage().instance().has(&VARIABLE_FEE_INFO) {
+        let variable_fee_info = get_variable_fee_info(&env);
+        let user_staked =
+            stake_contract::Client::new(&env, &variable_fee_info.pho_token_staking_addr)
+                .query_staked(&sender)
+                .total_stake;
+
+        calculate_swap_fee(convert_i128_to_u128(user_staked), variable_fee_info)
+    } else {
+        config.protocol_fee_rate()
+    };
+
     let compute_swap: ComputeSwap = compute_swap(
         &env,
         pool_balance_sell,
         pool_balance_buy,
         offer_amount,
-        config.protocol_fee_rate(),
+        swap_fee,
         referral_fee_bps,
     );
 

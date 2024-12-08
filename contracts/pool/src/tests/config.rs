@@ -86,6 +86,7 @@ fn update_config() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -321,6 +322,7 @@ fn update_liquidity_pool_works() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
@@ -380,6 +382,7 @@ fn update_configs_all_bps_values_should_work() {
     let user1 = Address::generate(&env);
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
+
     let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,

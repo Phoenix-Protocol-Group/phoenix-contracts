@@ -34,6 +34,22 @@ pub enum PairType {
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VariableFeeInfo {
+    /// minimum fee that the users can pay on each swap in `bps`
+    pub min_fee: u128,
+    /// maximum fee that the users can pay on each swap in `bps`
+    pub max_fee: u128,
+    /// The $PHO token staking address
+    pub pho_token_staking_addr: Address,
+    /// value representing the number of tokens that the user must have staked in order for the
+    /// `total_fee_bps` to start becoming significantly cheaper
+    pub staking_breakpoint: u128,
+}
+
+pub const VARIABLE_FEE_INFO: Symbol = symbol_short!("VAR_INFO");
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
     pub token_a: Address,
     pub token_b: Address,
@@ -51,6 +67,7 @@ pub struct Config {
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
 }
+
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
 const DEFAULT_SLIPPAGE_BPS: Symbol = symbol_short!("DSLIPBPS");
@@ -180,6 +197,7 @@ pub struct SimulateReverseSwapResponse {
 }
 
 pub mod utils {
+    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
     use soroban_sdk::String;
 
     use super::*;
@@ -451,13 +469,52 @@ pub mod utils {
             PERSISTENT_BUMP_AMOUNT,
         );
     }
+
+    pub fn save_variable_fee_info(env: &Env, variable_fee_info: VariableFeeInfo) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        env.storage()
+            .instance()
+            .set(&VARIABLE_FEE_INFO, &variable_fee_info);
+    }
+
+    pub fn get_variable_fee_info(env: &Env) -> VariableFeeInfo {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        env.storage()
+            .instance()
+            .get(&VARIABLE_FEE_INFO)
+            .unwrap_or_else(|| {
+                log!(env, "Pool: Get Variable Fee Info: Fee not set");
+                panic_with_error!(env, ContractError::VariableFeeNotSet);
+            })
+    }
+
+    // Swap Fee = fee_min + (fee_max−fee_min) × (staking_breakpoint / (staking_breakpoint+staked))
+    pub fn calculate_swap_fee(user_staked: u128, variable_fee_info: VariableFeeInfo) -> Decimal {
+        let fee_min = Decimal::bps(variable_fee_info.min_fee as i64);
+        let fee_max = Decimal::bps(variable_fee_info.max_fee as i64);
+
+        let staked = Decimal::new(user_staked as i128);
+        let breakpoint = Decimal::new(variable_fee_info.staking_breakpoint as i128);
+
+        let ratio = breakpoint / (breakpoint + staked);
+
+        fee_min + (fee_max - fee_min) * ratio
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use phoenix::utils::is_approx_ratio;
     use soroban_sdk::testutils::Address as _;
     use test_case::test_case;
+    use utils::calculate_swap_fee;
 
     #[test]
     #[should_panic]
@@ -711,5 +768,69 @@ mod tests {
             Decimal::percent(1),
             "Max allowed slippage should be 1%."
         );
+    }
+
+    #[test]
+    fn swap_fee_should_be_one_percent_no_tokens_staked() {
+        let env = Env::default();
+
+        let variable_fee_info = VariableFeeInfo {
+            min_fee: 10,  // 0.1% in bps
+            max_fee: 100, // 1.0% in bps
+            pho_token_staking_addr: Address::generate(&env),
+            staking_breakpoint: 800,
+        };
+
+        let result = calculate_swap_fee(0, variable_fee_info);
+        // should be around 100 bps +/- 1 bps
+        assert!(is_approx_ratio(result, Decimal::bps(100), Decimal::bps(1)));
+    }
+
+    #[test]
+    fn swap_fee_should_be_half_percent_percent_staked_1000() {
+        let env = Env::default();
+
+        let variable_fee_info = VariableFeeInfo {
+            min_fee: 10,  // 0.1%
+            max_fee: 100, // 1.0%
+            pho_token_staking_addr: Address::generate(&env),
+            staking_breakpoint: 800,
+        };
+
+        let result = calculate_swap_fee(1000, variable_fee_info);
+        // should be around 50 bps +/- 1 bps
+        assert!(is_approx_ratio(result, Decimal::bps(50), Decimal::bps(1)));
+    }
+
+    #[test]
+    fn swap_fee_should_be_zero_one_percent_large_stake() {
+        let env = Env::default();
+
+        let variable_fee_info = VariableFeeInfo {
+            min_fee: 10,  // 0.1%
+            max_fee: 100, // 1.0%
+            pho_token_staking_addr: Address::generate(&env),
+            staking_breakpoint: 800,
+        };
+
+        // very large stake
+        let result = calculate_swap_fee(1_000_000_000_000u128, variable_fee_info);
+        // should be around 10 bps +/- 1 bps
+        assert!(is_approx_ratio(result, Decimal::bps(10), Decimal::bps(1)));
+    }
+
+    #[test]
+    fn swap_fee_should_be_one_and_half_percent() {
+        let env = Env::default();
+
+        let variable_fee_info = VariableFeeInfo {
+            min_fee: 10,  // 0.1%
+            max_fee: 150, // 1.5%
+            pho_token_staking_addr: Address::generate(&env),
+            staking_breakpoint: 800,
+        };
+
+        let result = calculate_swap_fee(0, variable_fee_info);
+        assert_eq!(result, Decimal::bps(150));
     }
 }
