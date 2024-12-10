@@ -301,7 +301,7 @@ impl StakingTrait for Staking {
         let mut removed_stakes: Vec<Stake> = Vec::new(&env);
 
         // remove the stakes the sender sends us from storage in reverse order
-        for stake_timestamp in stake_timestamps.iter().rev() {
+        for stake_timestamp in stake_timestamps.iter() {
             // verify that the stakes we are about to remove are > 60 days
             assert!(
                 present_timestamp - stake_timestamp >= SIXTY_DAYS_IN_LEDGER_TIMESTAMP,
@@ -339,16 +339,16 @@ impl StakingTrait for Staking {
 
         let mut new_stake = Stake {
             stake: 0,
-            stake_timestamp: env.ledger().timestamp(), // just a placeholder
+            stake_timestamp: 0, // just a placeholder
         };
 
         // consolidate the stakes from sender into a single stake
-        let _ = removed_stakes.iter().map(|old_stake| {
+        for old_stake in removed_stakes.iter() {
             new_stake.stake += old_stake.stake;
-            if new_stake.stake_timestamp > old_stake.stake_timestamp {
+            if new_stake.stake_timestamp < old_stake.stake_timestamp {
                 new_stake.stake_timestamp = old_stake.stake_timestamp;
             }
-        });
+        }
 
         // update the storage again using the new consolidated stake
         user_bonding_info.stakes.push_back(new_stake);
