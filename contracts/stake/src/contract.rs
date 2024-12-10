@@ -1,7 +1,7 @@
 use phoenix::ttl::{DAY_IN_LEDGERS, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    String, Vec,
+    Vec,
 };
 
 use crate::{
