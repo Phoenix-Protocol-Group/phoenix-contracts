@@ -292,6 +292,9 @@ impl StakingTrait for Staking {
 
     fn consolidate_stakes(env: Env, sender: Address, stake_timestamps: Vec<u64>) {
         sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let mut user_bonding_info = get_stakes(&env, &sender);
         let present_timestamp = env.ledger().timestamp();
