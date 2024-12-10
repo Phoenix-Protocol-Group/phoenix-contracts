@@ -597,6 +597,56 @@ fn should_consolidate_all_stakes_after_sixty_days() {
     );
 }
 // 3. all stakes are less than 60 days
+
+#[test]
+#[should_panic(
+    expected = "Stake: Consodlidate Stake: Cannot consolidate stakes -> less than 60 days for stake."
+)]
+fn should_fail_consolidation_when_all_stakes_are_less_than_60_days() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &DEFAULT_COMPLEXITY,
+    );
+
+    lp_token.mint(&user, &50_000);
+
+    // ensure all stakes are less than 60 days old
+    let mut user_stakes: Vec<Stake> = Vec::new(&env);
+    for _ in 0..5 {
+        env.ledger().with_mut(|li| {
+            li.timestamp += ONE_DAY * 5;
+        });
+
+        staking.bond(&user, &1_000);
+        user_stakes.push_back(Stake {
+            stake: 1_000,
+            stake_timestamp: env.ledger().timestamp(),
+        });
+    }
+
+    assert_eq!(staking.query_staked(&user).stakes, user_stakes);
+
+    let mut stake_timestamps: Vec<u64> = Vec::new(&env);
+    for stake in user_stakes.iter() {
+        stake_timestamps.push_front(stake.stake_timestamp);
+    }
+
+    staking.consolidate_stakes(&user, &stake_timestamps);
+}
+
 // 4. mixture of valid and invalid stakes
 // 5. non-existing timestamp
 // 6. no stakes at all
