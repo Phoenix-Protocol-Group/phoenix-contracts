@@ -1,7 +1,7 @@
-use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+use phoenix::ttl::{DAY_IN_LEDGERS, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    Vec,
+    String, Vec,
 };
 
 use crate::{
@@ -21,6 +21,9 @@ use crate::{
     },
     token_contract,
 };
+
+const SIXTY_DAYS_IN_LEDGER_TIMESTAMP: u64 = DAY_IN_LEDGERS as u64 * 60u64; // safe to be done with
+                                                                           // `as`
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -55,6 +58,8 @@ pub trait StakingTrait {
     fn distribute_rewards(env: Env, sender: Address, amount: i128, reward_token: Address);
 
     fn withdraw_rewards(env: Env, sender: Address);
+
+    fn consolidate_stakes(env: Env, sender: Address, stake_timestamps: Vec<u64>);
 
     // QUERIES
 
@@ -283,6 +288,55 @@ impl StakingTrait for Staking {
         }
         stakes.last_reward_time = env.ledger().timestamp();
         save_stakes(&env, &sender, &stakes);
+    }
+
+    fn consolidate_stakes(env: Env, sender: Address, stake_timestamps: Vec<u64>) {
+        sender.require_auth();
+
+        let mut user_bonding_info = get_stakes(&env, &sender);
+        let current_timestamp = env.ledger().timestamp();
+
+        // remove the stakes the sender sends us from storage
+
+        // not sure how useful that is, but we
+        // should be starting our iterator from the
+        // oldest stake
+        for st in stake_timestamps.iter().rev() {
+            // verify that the stakes we are about to remove are > 60 days
+            assert!(
+                current_timestamp - st >= SIXTY_DAYS_IN_LEDGER_TIMESTAMP,
+                "Stake: Consodlidate Stake: Cannot consolidate stake {st} -> less than 60 days for stake."
+            );
+
+            let idx_to_remove = user_bonding_info
+                .stakes
+                .iter()
+                .position(|el| el.stake_timestamp == st)
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Stake: Consolidate Stakes: Cannot find stake for given timestamp: {}",
+                        st
+                    );
+                    panic_with_error!(&env, ContractError::StakeNotFound);
+                });
+
+            user_bonding_info
+                .stakes
+                .remove(idx_to_remove as u32)
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Stake: Consolidate Stakes: Cannot remove stake with given timestamp: {}",
+                        st
+                    );
+                    panic_with_error!(&env, ContractError::StakeNotFound);
+                });
+        }
+
+        // 2. consolidate the stakes from sender into a single stake
+        // 3. update the storage again using the longest stake
+        todo!()
     }
 
     // QUERIES
