@@ -13,7 +13,7 @@ use crate::{
     contract::{Staking, StakingClient},
     msg::{ConfigResponse, StakedResponse},
     storage::{Config, Stake},
-    tests::setup::{ONE_DAY, ONE_WEEK},
+    tests::setup::{ONE_DAY, ONE_WEEK, SIXTY_DAYS},
 };
 
 const DEFAULT_COMPLEXITY: u32 = 7;
@@ -460,10 +460,142 @@ fn initialize_staking_contract_should_panic_when_max_complexity_invalid() {
     );
 }
 
-// cases for the consolidation
-// 1. happy path - all stakes are after 60 days
-// 2. many stakes, just a few are after 60 days
-// 2.1. many stakes, many are after 60 days
+#[test]
+fn should_consolidate_all_stakes_after_sixty_days() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &DEFAULT_COMPLEXITY,
+    );
+
+    lp_token.mint(&user, &100_000);
+    let mut user_stakes: Vec<Stake> = Vec::new(&env);
+
+    // stake 25 days
+    for _ in 0..5 {
+        env.ledger().with_mut(|li| {
+            li.timestamp += ONE_DAY * 5;
+        });
+
+        staking.bond(&user, &1_000);
+        user_stakes.push_back(Stake {
+            stake: 1_000,
+            stake_timestamp: env.ledger().timestamp(),
+        })
+    }
+
+    // move forward to day 60
+    env.ledger().with_mut(|li| li.timestamp = SIXTY_DAYS);
+
+    // 5 more stakes after day #60
+    for _ in 0..5 {
+        env.ledger().with_mut(|li| {
+            li.timestamp += ONE_DAY * 5;
+        });
+
+        staking.bond(&user, &1_000);
+        user_stakes.push_back(Stake {
+            stake: 1_000,
+            stake_timestamp: env.ledger().timestamp(),
+        })
+    }
+
+    env.ledger().with_mut(|li| {
+        li.timestamp += SIXTY_DAYS * 5;
+    });
+
+    assert_eq!(staking.query_staked(&user).stakes, user_stakes);
+
+    let mut last_three: Vec<u64> = Vec::new(&env);
+
+    for stake in user_stakes.iter().rev().take(3) {
+        last_three.push_front(stake.stake_timestamp);
+    }
+
+    staking.consolidate_stakes(&user, &last_three);
+    let updated_stakes = vec![
+        &env,
+        Stake {
+            stake: 1_000,
+            stake_timestamp: 432000,
+        },
+        Stake {
+            stake: 1_000,
+            stake_timestamp: 864000,
+        },
+        Stake {
+            stake: 1_000,
+            stake_timestamp: 1296000,
+        },
+        Stake {
+            stake: 1_000,
+            stake_timestamp: 1728000,
+        },
+        Stake {
+            stake: 1_000,
+            stake_timestamp: 2160000,
+        },
+        Stake {
+            stake: 1_000,
+            stake_timestamp: 5616000,
+        },
+        Stake {
+            stake: 1_000,
+            stake_timestamp: 6048000,
+        },
+        Stake {
+            stake: 3_000,
+            stake_timestamp: 7344000,
+        },
+    ];
+    assert_eq!(staking.query_staked(&user).stakes, updated_stakes);
+
+    // consolidating one more time
+    staking.consolidate_stakes(&user, &vec![&env, 7344000u64, 6048000u64, 5616000u64]);
+
+    assert_eq!(
+        staking.query_staked(&user).stakes,
+        vec![
+            &env,
+            Stake {
+                stake: 1_000,
+                stake_timestamp: 432000
+            },
+            Stake {
+                stake: 1_000,
+                stake_timestamp: 864000
+            },
+            Stake {
+                stake: 1_000,
+                stake_timestamp: 1296000
+            },
+            Stake {
+                stake: 1_000,
+                stake_timestamp: 1728000
+            },
+            Stake {
+                stake: 1_000,
+                stake_timestamp: 2160000
+            },
+            Stake {
+                stake: 5_000,
+                stake_timestamp: 7344000
+            }
+        ]
+    );
+}
 // 3. all stakes are less than 60 days
 // 4. mixture of valid and invalid stakes
 // 5. non-existing timestamp
