@@ -294,32 +294,32 @@ impl StakingTrait for Staking {
         sender.require_auth();
 
         let mut user_bonding_info = get_stakes(&env, &sender);
-        let current_timestamp = env.ledger().timestamp();
+        let present_timestamp = env.ledger().timestamp();
+        let mut removed_stakes: Vec<Stake> = Vec::new(&env);
 
-        // remove the stakes the sender sends us from storage
-
-        // not sure how useful that is, but we
-        // should be starting our iterator from the
-        // oldest stake
-        for st in stake_timestamps.iter().rev() {
+        // remove the stakes the sender sends us from storage in reverse order
+        for stake_timestamp in stake_timestamps.iter().rev() {
             // verify that the stakes we are about to remove are > 60 days
             assert!(
-                current_timestamp - st >= SIXTY_DAYS_IN_LEDGER_TIMESTAMP,
-                "Stake: Consodlidate Stake: Cannot consolidate stake {st} -> less than 60 days for stake."
+                present_timestamp - stake_timestamp >= SIXTY_DAYS_IN_LEDGER_TIMESTAMP,
+                "Stake: Consodlidate Stake: Cannot consolidate stakes -> less than 60 days for stake."
             );
 
-            let idx_to_remove = user_bonding_info
+            let (idx_to_remove, stake_to_remove) = user_bonding_info
                 .stakes
                 .iter()
-                .position(|el| el.stake_timestamp == st)
+                .enumerate()
+                .find(|(_, el)| el.stake_timestamp == stake_timestamp)
                 .unwrap_or_else(|| {
                     log!(
                         &env,
                         "Stake: Consolidate Stakes: Cannot find stake for given timestamp: {}",
-                        st
+                        stake_timestamp
                     );
                     panic_with_error!(&env, ContractError::StakeNotFound);
                 });
+
+            removed_stakes.push_back(stake_to_remove);
 
             user_bonding_info
                 .stakes
@@ -328,15 +328,28 @@ impl StakingTrait for Staking {
                     log!(
                         &env,
                         "Stake: Consolidate Stakes: Cannot remove stake with given timestamp: {}",
-                        st
+                        stake_timestamp
                     );
                     panic_with_error!(&env, ContractError::StakeNotFound);
                 });
         }
 
-        // 2. consolidate the stakes from sender into a single stake
-        // 3. update the storage again using the longest stake
-        todo!()
+        let mut new_stake = Stake {
+            stake: 0,
+            stake_timestamp: env.ledger().timestamp(), // just a placeholder
+        };
+
+        // consolidate the stakes from sender into a single stake
+        let _ = removed_stakes.iter().map(|old_stake| {
+            new_stake.stake += old_stake.stake;
+            if new_stake.stake_timestamp > old_stake.stake_timestamp {
+                new_stake.stake_timestamp = old_stake.stake_timestamp;
+            }
+        });
+
+        // update the storage again using the new consolidated stake
+        user_bonding_info.stakes.push_back(new_stake);
+        save_stakes(&env, &sender, &user_bonding_info);
     }
 
     // QUERIES
