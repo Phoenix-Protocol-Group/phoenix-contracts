@@ -459,3 +459,15 @@ fn initialize_staking_contract_should_panic_when_max_complexity_invalid() {
         &0u32,
     );
 }
+
+// cases for the consolidation
+// 1. happy path - all stakes are after 60 days
+// 2. many stakes, just a few are after 60 days
+// 2.1. many stakes, many are after 60 days
+// 3. all stakes are less than 60 days
+// 4. mixture of valid and invalid stakes
+// 5. non-existing timestamp
+// 6. no stakes at all
+// 7. just one stake at the 60 days threshold
+// 8. few valid stakes and one `invalid` stake
+// 9. different user tries to consolidate 3rd party stakes
