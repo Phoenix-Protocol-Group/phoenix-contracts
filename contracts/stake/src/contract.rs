@@ -305,7 +305,7 @@ impl StakingTrait for Staking {
             // verify that the stakes we are about to remove are > 60 days
             assert!(
                 present_timestamp - stake_timestamp >= SIXTY_DAYS_IN_LEDGER_TIMESTAMP,
-                "Stake: Consodlidate Stake: Cannot consolidate stakes -> less than 60 days for stake."
+                "Stake: Consolidate Stake: Cannot consolidate stakes -> less than 60 days for stake."
             );
 
             let (idx_to_remove, stake_to_remove) = user_bonding_info
