@@ -599,7 +599,7 @@ fn should_consolidate_all_stakes_after_sixty_days() {
 
 #[test]
 #[should_panic(
-    expected = "Stake: Consodlidate Stake: Cannot consolidate stakes -> less than 60 days for stake."
+    expected = "Stake: Consolidate Stake: Cannot consolidate stakes -> less than 60 days for stake."
 )]
 fn should_fail_consolidation_when_all_stakes_are_less_than_60_days() {
     let env = Env::default();
@@ -646,9 +646,182 @@ fn should_fail_consolidation_when_all_stakes_are_less_than_60_days() {
     staking.consolidate_stakes(&user, &stake_timestamps);
 }
 
-// 4. mixture of valid and invalid stakes
-// 5. non-existing timestamp
-// 6. no stakes at all
-// 7. just one stake at the 60 days threshold
-// 8. few valid stakes and one `invalid` stake
-// 9. different user tries to consolidate 3rd party stakes
+#[test]
+#[should_panic(
+    expected = "Stake: Consolidate Stake: Cannot consolidate stakes -> less than 60 days for stake."
+)]
+fn should_fail_consolidation_with_mixture_of_valid_and_invalid_stakes() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &DEFAULT_COMPLEXITY,
+    );
+
+    lp_token.mint(&user, &50_000);
+
+    let mut user_stakes_timestamps: Vec<u64> = Vec::new(&env);
+
+    // less than 60 days
+    for _ in 0..2 {
+        env.ledger().with_mut(|li| li.timestamp += ONE_WEEK);
+        staking.bond(&user, &1_000);
+        user_stakes_timestamps.push_back(env.ledger().timestamp());
+    }
+
+    // older than 60 days
+    env.ledger().with_mut(|li| li.timestamp += SIXTY_DAYS);
+
+    for _ in 0..3 {
+        env.ledger().with_mut(|li| li.timestamp += ONE_WEEK);
+        staking.bond(&user, &1_000);
+        user_stakes_timestamps.push_back(env.ledger().timestamp());
+    }
+
+    staking.consolidate_stakes(&user, &user_stakes_timestamps);
+}
+
+#[test]
+#[should_panic(expected = "Stake: Consolidate Stakes: Cannot find stake for given timestamp")]
+fn should_fail_consolidation_with_non_existing_timestamp() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &DEFAULT_COMPLEXITY,
+    );
+
+    lp_token.mint(&user, &50_000);
+
+    for _ in 0..3 {
+        env.ledger().with_mut(|li| li.timestamp += ONE_WEEK);
+        staking.bond(&user, &1_000);
+    }
+
+    let invalid_timestamp = 0; // the non-existing stake
+
+    staking.consolidate_stakes(&user, &vec![&env, invalid_timestamp]);
+}
+
+#[test]
+#[should_panic(
+    expected = "Stake: Consolidate Stake: Cannot consolidate stakes -> less than 60 days for stake."
+)]
+fn should_fail_consolidation_with_no_stakes() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &DEFAULT_COMPLEXITY,
+    );
+
+    let timestamp = ONE_WEEK;
+    env.ledger().with_mut(|li| li.timestamp = timestamp);
+
+    staking.consolidate_stakes(&user, &vec![&env, timestamp]);
+}
+
+#[test]
+fn should_consolidate_one_stake_at_sixty_days_threshold() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &DEFAULT_COMPLEXITY,
+    );
+
+    lp_token.mint(&user, &50_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 0);
+    staking.bond(&user, &1_000);
+
+    env.ledger().with_mut(|li| li.timestamp = SIXTY_DAYS);
+
+    let stake_timestamps = vec![&env, 0];
+
+    staking.consolidate_stakes(&user, &stake_timestamps);
+
+    assert_eq!(
+        staking.query_staked(&user).stakes,
+        vec![
+            &env,
+            Stake {
+                stake: 1_000,
+                stake_timestamp: 0
+            }
+        ]
+    );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Auth, InvalidAction)")]
+fn should_fail_consolidation_when_different_user_tries_to_consolidate() {
+    let env = Env::default();
+
+    let admin = Address::generate(&env);
+    let user1 = Address::generate(&env);
+    let user2 = Address::generate(&env); // Unauthorized user
+    let lp_token = deploy_token_contract(&env, &admin);
+    let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &lp_token.address,
+        &manager,
+        &owner,
+        &DEFAULT_COMPLEXITY,
+    );
+
+    lp_token.mint(&user1, &50_000);
+
+    env.ledger().with_mut(|li| li.timestamp = SIXTY_DAYS);
+    staking.bond(&user1, &1_000);
+
+    staking.consolidate_stakes(&user2, &vec![&env, SIXTY_DAYS]);
+}
