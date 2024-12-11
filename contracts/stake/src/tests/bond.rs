@@ -596,7 +596,6 @@ fn should_consolidate_all_stakes_after_sixty_days() {
         ]
     );
 }
-// 3. all stakes are less than 60 days
 
 #[test]
 #[should_panic(
