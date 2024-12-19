@@ -111,7 +111,7 @@ pub fn get_precisions(env: &Env, token: &Address) -> u32 {
     precision
 }
 
-pub fn save_greatest_precision(env: &Env, token1: &Address, token2: &Address) {
+pub fn save_greatest_precision(env: &Env, token1: &Address, token2: &Address) -> u32 {
     let precision1 = token_contract::Client::new(env, token1).decimals();
     let precision2 = token_contract::Client::new(env, token2).decimals();
     let max_precision: u32 = if precision1 > precision2 {
@@ -139,6 +139,8 @@ pub fn save_greatest_precision(env: &Env, token1: &Address, token2: &Address) {
     env.storage()
         .instance()
         .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+
+    max_precision
 }
 
 #[contracttype]

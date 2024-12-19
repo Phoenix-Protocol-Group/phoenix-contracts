@@ -45,7 +45,6 @@ pub trait LiquidityPoolTrait {
         token_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
-        share_token_decimals: u32,
         share_token_name: String,
         share_token_symbol: String,
         default_slippage_bps: i64,
@@ -156,7 +155,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         token_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
-        share_token_decimals: u32,
         share_token_name: String,
         share_token_symbol: String,
         default_slippage_bps: i64,
@@ -216,6 +214,14 @@ impl LiquidityPoolTrait for LiquidityPool {
             panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
         }
 
+        let precision1 = token_contract::Client::new(&env, &token_a).decimals();
+        let precision2 = token_contract::Client::new(&env, &token_b).decimals();
+        let max_precision_decimals: u32 = if precision1 > precision2 {
+            precision1
+        } else {
+            precision2
+        };
+
         // deploy and initialize token contract
         let share_token_address = utils::deploy_token_contract(
             &env,
@@ -223,7 +229,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             &token_a,
             &token_b,
             env.current_contract_address(),
-            share_token_decimals,
+            max_precision_decimals,
             share_token_name,
             share_token_symbol,
         );

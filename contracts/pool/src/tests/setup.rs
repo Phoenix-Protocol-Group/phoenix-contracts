@@ -86,7 +86,6 @@ pub fn deploy_liquidity_pool_contract<'a>(
         &token_wasm_hash,
         &lp_init_info,
         &stake_owner,
-        &10u32,
         &String::from_str(env, "Pool"),
         &String::from_str(env, "PHOBTC"),
         &100i64,

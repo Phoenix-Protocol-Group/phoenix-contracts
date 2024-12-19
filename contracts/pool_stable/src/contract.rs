@@ -208,9 +208,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
         }
 
-        save_greatest_precision(&env, &token_a, &token_b);
+        let decimals = save_greatest_precision(&env, &token_a, &token_b);
 
-        let decimals = get_greatest_precision(&env);
         // deploy and initialize token contract
         let share_token_address = utils::deploy_token_contract(
             &env,

@@ -46,13 +46,25 @@ fn factory_successfully_inits_lp() {
     let mut token2_admin = Address::generate(&env);
     let user = Address::generate(&env);
 
-    let mut token1 = Address::generate(&env);
-    let mut token2 = Address::generate(&env);
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        9,
+        String::from_str(&env, "Phoenix"),
+        String::from_str(&env, "PHO"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        13,
+        String::from_str(&env, "Stellar"),
+        String::from_str(&env, "XLM"),
+    );
 
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
 
-    if token2 < token1 {
+    if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut token1_admin, &mut token2_admin);
     }
@@ -61,8 +73,8 @@ fn factory_successfully_inits_lp() {
     assert_eq!(factory.get_admin(), admin);
 
     let lp_init_info = generate_lp_init_info(
-        token1.clone(),
-        token2.clone(),
+        token1.address.clone(),
+        token2.address.clone(),
         Address::generate(&env),
         admin.clone(),
         user.clone(),
@@ -94,8 +106,8 @@ fn factory_successfully_inits_lp() {
             pool_type: lp_contract::PairType::Xyk,
             share_token: share_token_address,
             stake_contract: stake_token_address,
-            token_a: token1,
-            token_b: token2,
+            token_a: token1.address,
+            token_b: token2.address,
             total_fee_bps: 0,
         }
     );
