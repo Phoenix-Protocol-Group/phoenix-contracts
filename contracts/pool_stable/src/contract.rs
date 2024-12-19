@@ -46,7 +46,6 @@ pub trait StableLiquidityPoolTrait {
         token_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
-        share_token_decimal: u32,
         share_token_name: String,
         share_token_symbol: String,
         amp: u64,
@@ -151,7 +150,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         token_wasm_hash: BytesN<32>,
         lp_init_info: LiquidityPoolInitInfo,
         factory_addr: Address,
-        _share_token_decimal: u32,
         share_token_name: String,
         share_token_symbol: String,
         amp: u64,
@@ -210,9 +208,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
         }
 
-        save_greatest_precision(&env, &token_a, &token_b);
+        let decimals = save_greatest_precision(&env, &token_a, &token_b);
 
-        let decimals = get_greatest_precision(&env);
         // deploy and initialize token contract
         let share_token_address = utils::deploy_token_contract(
             &env,
