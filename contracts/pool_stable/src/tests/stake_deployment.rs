@@ -137,7 +137,6 @@ fn second_pool_stable_deployment_should_fail() {
         &token_wasm_hash,
         &lp_init_info,
         &factory,
-        &10, // LP share decimals, unused
         &String::from_str(&env, "LP_SHARE_TOKEN"),
         &String::from_str(&env, "PHOBTCLP"),
         &amp,
@@ -148,7 +147,6 @@ fn second_pool_stable_deployment_should_fail() {
         &token_wasm_hash,
         &lp_init_info,
         &factory,
-        &10, // LP share decimals, unused
         &String::from_str(&env, "LP_SHARE_TOKEN"),
         &String::from_str(&env, "PHOBTCLP"),
         &amp,
@@ -216,7 +214,6 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
         &token_wasm_hash,
         &lp_init_info,
         &factory,
-        &10, // LP share decimals, unused
         &String::from_str(&env, "LP_SHARE_TOKEN"),
         &String::from_str(&env, "PHOBTCLP"),
         &amp,
