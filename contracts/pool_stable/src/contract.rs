@@ -13,9 +13,9 @@ use crate::{
     storage::{
         get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
         save_greatest_precision,
-        utils::{self, get_admin, is_initialized, set_initialized},
+        utils::{self, get_admin_old, is_initialized, set_initialized},
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
-        SimulateSwapResponse, StableLiquidityPoolInfo,
+        SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN,
     },
     token_contract, DECIMAL_PRECISION,
 };
@@ -138,6 +138,8 @@ pub trait StableLiquidityPoolTrait {
     fn query_share(env: Env, amount: i128) -> (Asset, Asset);
 
     fn query_total_issued_lp(env: Env) -> i128;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -261,7 +263,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 next_amp_time: current_time,
             },
         );
-        utils::save_admin(&env, admin);
+        utils::save_admin_old(&env, admin);
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
@@ -570,7 +572,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         max_allowed_slippage_bps: Option<i64>,
         max_allowed_spread_bps: Option<i64>,
     ) {
-        if sender != utils::get_admin(&env) {
+        if sender != utils::get_admin_old(&env) {
             log!(&env, "Pool Stable: UpdateConfig: Unauthorized");
             panic_with_error!(&env, ContractError::Unauthorized);
         }
@@ -581,7 +583,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let mut config = get_config(&env);
 
         if let Some(new_admin) = new_admin {
-            utils::save_admin(&env, new_admin);
+            utils::save_admin_old(&env, new_admin);
         }
         if let Some(total_fee_bps) = total_fee_bps {
             validate_bps!(total_fee_bps);
@@ -603,7 +605,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
     }
 
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
-        let admin: Address = utils::get_admin(&env);
+        let admin: Address = utils::get_admin_old(&env);
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
@@ -816,13 +818,20 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         utils::get_total_shares(&env)
     }
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_admin_old(&env);
+        env.storage().instance().set(&ADMIN, &admin);
+
+        Ok(())
+    }
 }
 
 #[contractimpl]
 impl StableLiquidityPool {
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);

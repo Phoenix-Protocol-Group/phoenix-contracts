@@ -8,8 +8,8 @@ use crate::factory_contract::PoolType;
 // FIXM: Disable Referral struct
 // use crate::lp_contract::Referral;
 use crate::storage::{
-    get_admin, get_factory, is_initialized, save_admin, save_factory, set_initialized,
-    SimulateReverseSwapResponse, SimulateSwapResponse, Swap,
+    get_admin_old, get_factory, is_initialized, save_admin_old, save_factory, set_initialized,
+    SimulateReverseSwapResponse, SimulateSwapResponse, Swap, ADMIN,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
@@ -54,6 +54,8 @@ pub trait MultihopTrait {
         amount: i128,
         pool_type: PoolType,
     ) -> SimulateReverseSwapResponse;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -69,7 +71,7 @@ impl MultihopTrait for Multihop {
 
         set_initialized(&env);
 
-        save_admin(&env, &admin);
+        save_admin_old(&env, &admin);
 
         save_factory(&env, factory);
 
@@ -285,13 +287,20 @@ impl MultihopTrait for Multihop {
 
         simulate_swap_response
     }
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_admin_old(&env);
+        env.storage().instance().set(&ADMIN, &admin);
+
+        Ok(())
+    }
 }
 
 #[contractimpl]
 impl Multihop {
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);

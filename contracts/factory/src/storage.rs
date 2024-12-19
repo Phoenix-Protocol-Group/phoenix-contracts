@@ -1,7 +1,15 @@
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
-use soroban_sdk::{
-    contracttype, symbol_short, Address, BytesN, ConversionError, Env, Symbol, TryFromVal, Val, Vec,
+use phoenix::ttl::{
+    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
+    PERSISTENT_LIFETIME_THRESHOLD,
 };
+use soroban_sdk::{
+    contracttype, log, panic_with_error, symbol_short, Address, BytesN, ConversionError, Env,
+    Symbol, TryFromVal, Val, Vec,
+};
+
+use crate::error::ContractError;
+
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -155,6 +163,27 @@ pub fn get_config(env: &Env) -> Config {
     );
 
     config
+}
+
+pub fn _save_admin(env: &Env, admin_addr: Address) {
+    env.storage().instance().set(&ADMIN, &admin_addr);
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+}
+
+pub fn _get_admin(env: &Env) -> Address {
+    let admin_addr = env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
+        log!(env, "Factory: Admin not set");
+        panic_with_error!(&env, ContractError::AdminNotSet)
+    });
+
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+    admin_addr
 }
 
 pub fn get_lp_vec(env: &Env) -> Vec<Address> {

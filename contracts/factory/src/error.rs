@@ -11,4 +11,5 @@ pub enum ContractError {
     TokenABiggerThanTokenB = 5,
     MinStakeInvalid = 6,
     MinRewardInvalid = 7,
+    AdminNotSet = 8,
 }
