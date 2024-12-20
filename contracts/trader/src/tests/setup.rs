@@ -44,10 +44,7 @@ pub fn deploy_token_contract<'a>(
     name: &String,
     symbol: &String,
 ) -> token_contract::Client<'a> {
-    let token_addr = env.register(
-        TOKEN_WASM,
-        (admin, decimal.clone(), name.clone(), symbol.clone()),
-    );
+    let token_addr = env.register(TOKEN_WASM, (admin, *decimal, name.clone(), symbol.clone()));
     let token_client = token_contract::Client::new(env, &token_addr);
 
     token_client
