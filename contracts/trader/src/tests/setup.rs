@@ -97,6 +97,7 @@ pub fn deploy_and_init_lp_client(
         &token_wasm_hash,
         &lp_init_info,
         &Address::generate(env),
+        &6u32,
         &String::from_str(env, "staked Phoenix"),
         &String::from_str(env, "sPHO"),
         &100i64,
