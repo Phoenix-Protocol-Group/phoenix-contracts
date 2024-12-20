@@ -10,6 +10,9 @@ use crate::{
     token_contract,
 };
 
+const TOKEN_WASM: &[u8] =
+    include_bytes!("../../../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm");
+
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(token_contract::WASM)
 }
@@ -31,7 +34,7 @@ pub fn deploy_lp_wasm(env: &Env, admin: Address, token_a: Address, token_b: Addr
 
     env.deployer()
         .with_address(admin, salt)
-        .deploy(factory_wasm)
+        .deploy_v2(factory_wasm, ())
 }
 
 pub fn deploy_token_contract<'a>(
@@ -41,19 +44,11 @@ pub fn deploy_token_contract<'a>(
     name: &String,
     symbol: &String,
 ) -> token_contract::Client<'a> {
-    let token_wasm = install_token_wasm(env);
-
-    let mut salt = Bytes::new(env);
-    salt.append(&name.clone().to_xdr(env));
-    let salt = env.crypto().sha256(&salt);
-    let token_addr = env
-        .deployer()
-        .with_address(admin.clone(), salt)
-        .deploy(token_wasm);
-
+    let token_addr = env.register(
+        TOKEN_WASM,
+        (admin, decimal.clone(), name.clone(), symbol.clone()),
+    );
     let token_client = token_contract::Client::new(env, &token_addr);
-
-    token_client.initialize(admin, decimal, name, symbol);
 
     token_client
 }
@@ -102,7 +97,6 @@ pub fn deploy_and_init_lp_client(
         &token_wasm_hash,
         &lp_init_info,
         &Address::generate(env),
-        &6,
         &String::from_str(env, "staked Phoenix"),
         &String::from_str(env, "sPHO"),
         &100i64,
@@ -122,5 +116,5 @@ pub fn deploy_and_init_lp_client(
 }
 
 pub fn deploy_trader_client(env: &Env) -> TraderClient {
-    TraderClient::new(env, &env.register_contract(None, Trader))
+    TraderClient::new(env, &env.register(Trader, ()))
 }
