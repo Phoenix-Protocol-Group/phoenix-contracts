@@ -16,7 +16,7 @@ use crate::{
 fn provide_liqudity() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -128,7 +128,7 @@ fn provide_liqudity() {
 fn withdraw_liquidity() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user1 = Address::generate(&env);
@@ -500,7 +500,7 @@ fn withdraw_liqudity_below_min() {
 fn provide_liqudity_with_deadline_works() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -573,7 +573,7 @@ fn provide_liqudity_with_deadline_works() {
 fn provide_liqudity_past_deadline_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -613,7 +613,7 @@ fn provide_liqudity_past_deadline_should_panic() {
 fn withdraw_liquidity_with_deadline_should_work() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user1 = Address::generate(&env);
@@ -703,7 +703,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
 fn withdraw_liquidity_past_deadline_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user1 = Address::generate(&env);
@@ -757,7 +757,7 @@ fn withdraw_liquidity_past_deadline_should_panic() {
 fn provide_liqudity_should_panic_when_shares_to_be_minted_below_minimum_shares() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -793,7 +793,7 @@ fn provide_liqudity_should_panic_when_shares_to_be_minted_below_minimum_shares()
 fn provide_liqudity_with_user_specified_minimum_lp_shares() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -868,7 +868,7 @@ fn provide_liqudity_with_user_specified_minimum_lp_shares_should_panic_when_user
 ) {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);

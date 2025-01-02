@@ -16,7 +16,7 @@ use crate::{
 fn add_distribution_and_distribute_reward() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
@@ -76,7 +76,7 @@ fn add_distribution_and_distribute_reward() {
 // fn two_distributions() {
 //     let env = Env::default();
 //     env.mock_all_auths();
-//     env.budget().reset_unlimited();
+//     env.cost_estimate().budget().reset_unlimited();
 //
 //     let admin = Address::generate(&env);
 //     let user = Address::generate(&env);
@@ -211,7 +211,7 @@ fn add_distribution_and_distribute_reward() {
 fn four_users_with_different_stakes() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
@@ -348,7 +348,7 @@ fn fund_rewards_without_establishing_distribution() {
 // fn try_to_withdraw_rewards_without_bonding() {
 //     let env = Env::default();
 //     env.mock_all_auths();
-//     env.budget().reset_unlimited();
+//     env.cost_estimate().budget().reset_unlimited();
 //
 //     let admin = Address::generate(&env);
 //     let user = Address::generate(&env);
@@ -420,7 +420,7 @@ fn fund_rewards_without_establishing_distribution() {
 // fn calculate_apr() {
 //     let env = Env::default();
 //     env.mock_all_auths();
-//     env.budget().reset_unlimited();
+//     env.cost_estimate().budget().reset_unlimited();
 //
 //     let admin = Address::generate(&env);
 //     let user = Address::generate(&env);
@@ -559,7 +559,7 @@ fn fund_rewards_without_establishing_distribution() {
 // fn test_v_phx_vul_010_unbond_breakes_reward_distribution() {
 //     let env = Env::default();
 //     env.mock_all_auths();
-//     env.budget().reset_unlimited();
+//     env.cost_estimate().budget().reset_unlimited();
 //
 //     let admin = Address::generate(&env);
 //     let user_1 = Address::generate(&env);
@@ -689,7 +689,7 @@ fn fund_rewards_without_establishing_distribution() {
 // fn test_bond_withdraw_unbond() {
 //     let env = Env::default();
 //     env.mock_all_auths();
-//     env.budget().reset_unlimited();
+//     env.cost_estimate().budget().reset_unlimited();
 //
 //     let admin = Address::generate(&env);
 //     let user = Address::generate(&env);
@@ -822,7 +822,7 @@ fn fund_rewards_without_establishing_distribution() {
 //
 //     let env = Env::default();
 //     env.mock_all_auths();
-//     env.budget().reset_unlimited();
+//     env.cost_estimate().budget().reset_unlimited();
 //
 //     let admin = Address::generate(&env);
 //     let manager = Address::generate(&env);
@@ -882,7 +882,7 @@ fn fund_rewards_without_establishing_distribution() {
 fn multiple_equal_users_with_different_multipliers() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -957,7 +957,7 @@ fn multiple_equal_users_with_different_multipliers() {
 fn distribute_rewards_daily_multiple_times_different_stakes() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -1077,7 +1077,7 @@ fn distribute_rewards_daily_multiple_times_different_stakes() {
 fn distribute_rewards_daily_multiple_times_same_stakes() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let user = Address::generate(&env);
     let user2 = Address::generate(&env);

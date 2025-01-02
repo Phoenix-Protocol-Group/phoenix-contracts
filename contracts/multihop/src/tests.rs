@@ -11,7 +11,7 @@ mod swap;
 fn test_deploy_multihop_twice_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 

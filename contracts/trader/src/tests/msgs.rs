@@ -15,7 +15,7 @@ use super::setup::{deploy_and_init_lp_client, deploy_trader_client};
 fn initialize() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let contract_name = String::from_str(&env, "XLM/USDC");
@@ -62,7 +62,7 @@ fn initialize() {
 fn initialize_twice_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let contract_name = String::from_str(&env, "XLM/USDC");
@@ -117,7 +117,7 @@ fn simple_trade_token_and_transfer_token() {
     let env = Env::default();
 
     env.mock_all_auths_allowing_non_root_auth();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let rcpt = Address::generate(&env);
@@ -230,7 +230,7 @@ fn extended_trade_and_transfer_token() {
     let env = Env::default();
 
     env.mock_all_auths_allowing_non_root_auth();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let rcpt = Address::generate(&env);
@@ -466,7 +466,7 @@ fn trade_token_should_fail_when_unauthorized() {
     let env = Env::default();
 
     env.mock_all_auths_allowing_non_root_auth();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -533,7 +533,7 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
     let env = Env::default();
 
     env.mock_all_auths_allowing_non_root_auth();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -600,7 +600,7 @@ fn transfer_should_fail_when_unauthorized() {
     let env = Env::default();
 
     env.mock_all_auths_allowing_non_root_auth();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let rcpt = Address::generate(&env);
@@ -671,7 +671,7 @@ fn transfer_should_fail_with_invalid_spread_bps(max_spread_bps: i64) {
     let env = Env::default();
 
     env.mock_all_auths_allowing_non_root_auth();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -737,7 +737,7 @@ fn simple_trade_token_and_transfer_token_with_some_ask_asset_min_amount() {
     let env = Env::default();
 
     env.mock_all_auths_allowing_non_root_auth();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let rcpt = Address::generate(&env);

@@ -15,7 +15,7 @@ use soroban_decimal::Decimal;
 fn simple_swap() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -176,7 +176,7 @@ fn simple_swap() {
 fn simple_swap_with_preferred_pool_fee() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -330,7 +330,7 @@ fn simple_swap_with_preferred_pool_fee() {
 fn simple_swap_should_panic_when_user_accepted_fee_is_less_than_pool_fee() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -460,7 +460,7 @@ fn simple_swap_should_panic_when_user_accepted_fee_is_less_than_pool_fee() {
 fn simple_swap_with_referral_fee() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -592,7 +592,7 @@ fn simple_swap_with_referral_fee() {
 fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -658,7 +658,7 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
 fn swap_should_panic_with_bad_max_spread() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -714,7 +714,7 @@ fn swap_should_panic_with_bad_max_spread() {
 fn swap_with_high_fee() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -806,7 +806,7 @@ fn swap_with_high_fee() {
 fn swap_simulation_even_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
     let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
@@ -911,7 +911,7 @@ fn swap_simulation_even_pool() {
 fn swap_simulation_one_third_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
     let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
@@ -1017,7 +1017,7 @@ fn swap_simulation_one_third_pool() {
 fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
     let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
@@ -1099,7 +1099,7 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
 fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Option<i64>) {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -1154,7 +1154,7 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
 fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -1198,7 +1198,7 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
 fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -1236,7 +1236,7 @@ fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_i
 fn test_v_phx_vul_017_should_panic_when_simulating_reverse_swap_for_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -1273,7 +1273,7 @@ fn test_v_phx_vul_017_should_panic_when_simulating_reverse_swap_for_non_existing
 fn test_should_swap_with_valid_ask_asset_min_amount() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
     let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
@@ -1339,7 +1339,7 @@ fn test_should_swap_with_valid_ask_asset_min_amount() {
 fn test_should_fail_when_invalid_ask_asset_min_amount() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut token1 = deploy_token_contract(&env, &Address::generate(&env));
     let mut token2 = deploy_token_contract(&env, &Address::generate(&env));
@@ -1391,7 +1391,7 @@ fn test_should_fail_when_invalid_ask_asset_min_amount() {
 fn simple_swap_with_deadline_success() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -1513,7 +1513,7 @@ fn simple_swap_with_deadline_success() {
 fn simple_swap_with_should_fail_when_after_the_deadline() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -1575,7 +1575,7 @@ fn simple_swap_with_should_fail_when_after_the_deadline() {
 fn simple_swap_with_biggest_possible_decimal_precision() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);

@@ -330,7 +330,7 @@ fn unbond_wrong_user_stake_not_found() {
 fn pay_rewards_during_unbond() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let full_bonding_multiplier = ONE_DAY * 60;
 

@@ -29,7 +29,7 @@ fn initialize_staking_rewards_contract() {
 #[should_panic(expected = "Error(Auth, InvalidAction)")]
 fn calculate_bond_called_by_anyone() {
     let env = Env::default();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);
@@ -65,7 +65,7 @@ fn calculate_bond_called_by_anyone() {
 #[ignore = "Figure out how to assert two authentication (user and contract) in the same assertion..."]
 fn calculate_bond_called_by_staking_contract() {
     let env = Env::default();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let lp_token = deploy_token_contract(&env, &admin);

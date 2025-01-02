@@ -11,7 +11,7 @@ use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 fn simulate_swap_single_pool_no_fees() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -90,7 +90,7 @@ fn simulate_swap_single_pool_no_fees() {
 fn simulate_swap_three_equal_pools_no_fees() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -248,7 +248,7 @@ fn simulate_swap_three_equal_pools_no_fees() {
 fn simulate_swap_single_pool_with_fees() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -323,7 +323,7 @@ fn simulate_swap_single_pool_with_fees() {
 fn simulate_swap_three_different_pools_no_fees() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -483,7 +483,7 @@ fn simulate_swap_three_different_pools_no_fees() {
 fn simulate_swap_three_different_pools_with_fees() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
