@@ -208,13 +208,6 @@ impl FactoryTrait for Factory {
         )
             .into_val(&env);
 
-        //if let PoolType::Xyk = pool_type {
-        //    init_fn_args.push_back(config.lp_token_decimals.into_val(&env));
-        //}
-
-        //init_fn_args.push_back(share_token_name.into_val(&env));
-        //init_fn_args.push_back(share_token_symbol.into_val(&env));
-
         if let PoolType::Xyk = pool_type {
             init_fn_args.push_back(default_slippage_bps.into_val(&env));
         }
