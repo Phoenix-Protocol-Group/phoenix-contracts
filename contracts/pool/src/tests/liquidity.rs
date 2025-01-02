@@ -18,7 +18,7 @@ use crate::{
 fn provide_liquidity() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -139,7 +139,7 @@ fn provide_liquidity() {
 fn withdraw_liquidity() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -363,7 +363,7 @@ fn withdraw_liqudity_below_min() {
 fn query_share_valid_liquidity() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -735,7 +735,7 @@ fn query_share_valid_liquidity() {
 fn query_share_empty_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -789,7 +789,7 @@ fn query_share_empty_pool() {
 fn provide_liquidity_slippage_tolerance_too_high() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -828,7 +828,7 @@ fn provide_liquidity_slippage_tolerance_too_high() {
 fn test_query_info_for_factory_works() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -882,7 +882,7 @@ fn test_query_info_for_factory_works() {
 fn provide_liqudity_with_deadline_should_work() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -1004,7 +1004,7 @@ fn provide_liqudity_with_deadline_should_work() {
 fn provide_liqudity_past_deadline_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -1054,7 +1054,7 @@ fn provide_liqudity_past_deadline_should_panic() {
 fn withdraw_liquidity_with_deadline_should_work() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -1172,7 +1172,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
 fn withdraw_liquidity_past_deadline_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);

@@ -17,7 +17,6 @@ use soroban_sdk::{
 fn factory_successfully_inits_itself() {
     let env = Env::default();
     let admin = Address::generate(&env);
-    env.budget().reset_unlimited();
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
@@ -28,7 +27,7 @@ fn factory_successfully_inits_itself() {
 fn factory_successfully_inits_multihop() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -51,7 +50,7 @@ fn factory_successfully_inits_lp() {
     let mut token2 = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     if token2 < token1 {
         std::mem::swap(&mut token1, &mut token2);
@@ -106,7 +105,7 @@ fn factory_successfully_inits_lp() {
 fn factory_successfully_inits_stable_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let token_admin = Address::generate(&env);
@@ -191,7 +190,7 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
     let mut token2 = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     if token2 < token1 {
         std::mem::swap(&mut token1, &mut token2);
@@ -232,7 +231,7 @@ fn factory_fails_to_init_lp_when_no_whitelisted_accounts() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let factory = FactoryClient::new(&env, &env.register(Factory, ()));
     let multihop_wasm_hash = install_multihop_wasm(&env);
@@ -259,7 +258,7 @@ fn factory_fails_to_init_lp_when_no_whitelisted_accounts() {
 fn successfully_updates_new_list_of_whitelisted_accounts() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let first_wl_addr = Address::generate(&env);
@@ -289,7 +288,7 @@ fn successfully_updates_new_list_of_whitelisted_accounts() {
 fn doesn_not_change_whitelisted_accounts_when_removing_non_existent() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -310,7 +309,7 @@ fn doesn_not_change_whitelisted_accounts_when_removing_non_existent() {
 fn fails_to_update_whitelisted_accounts_when_not_authorized() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let first_wl_addr = Address::generate(&env);
@@ -330,7 +329,7 @@ fn fails_to_update_whitelisted_accounts_when_not_authorized() {
 fn test_add_vec_with_duplicates_should_be_handled_correctly() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let first_wl_addr = Address::generate(&env);
@@ -370,7 +369,7 @@ fn test_add_vec_with_duplicates_should_be_handled_correctly() {
 fn factory_stable_pool_creation_should_fail_early_without_amp() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let token_admin = Address::generate(&env);
@@ -423,7 +422,7 @@ fn factory_stable_pool_creation_should_fail_early_without_amp() {
 fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let token_admin = Address::generate(&env);

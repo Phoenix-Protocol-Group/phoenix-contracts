@@ -8,7 +8,7 @@ use crate::storage::{Config, PairType};
 fn update_config() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -145,7 +145,7 @@ fn update_config_unauthorized() {
 fn update_config_update_admin() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -278,7 +278,7 @@ fn initialize_with_incorrect_amp() {
 fn update_config_all_bps_params_should_work() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);

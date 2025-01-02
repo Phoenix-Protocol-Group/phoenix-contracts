@@ -18,7 +18,7 @@ use crate::{
 fn test_initialize_with_bigger_first_token_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let mut token1 = deploy_token_contract(&env, &admin);
@@ -72,7 +72,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
 fn update_config() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -207,7 +207,7 @@ fn update_config_unauthorized() {
 fn update_config_update_admin() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -307,7 +307,7 @@ fn update_config_too_high_fees() {
 fn update_liquidity_pool_works() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -366,7 +366,7 @@ fn update_liquidity_pool_works() {
 fn update_configs_all_bps_values_should_work() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -445,7 +445,7 @@ fn update_configs_all_bps_values_should_work() {
 fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let mut token1 = deploy_token_contract(&env, &admin);

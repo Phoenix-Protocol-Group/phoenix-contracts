@@ -11,7 +11,7 @@ use soroban_decimal::Decimal;
 fn simple_swap() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -155,7 +155,7 @@ fn simple_swap() {
 fn swap_with_high_fee() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -240,7 +240,7 @@ fn swap_with_high_fee() {
 fn swap_simulation_even_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -343,7 +343,7 @@ fn swap_simulation_even_pool() {
 fn simple_swap_with_deadline_should_work() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -458,7 +458,7 @@ fn simple_swap_with_deadline_should_work() {
 fn simple_swap_should_panic_after_deadline() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);
@@ -516,7 +516,7 @@ fn simple_swap_should_panic_after_deadline() {
 fn simple_swap_with_low_user_fee_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let manager = Address::generate(&env);

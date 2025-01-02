@@ -70,7 +70,7 @@ fn mint_panics_when_over_the_cap() {
 fn burn_works() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -121,7 +121,7 @@ fn burn_works() {
 fn burn_should_panic_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let token = deploy_token_contract(&env, &admin);
@@ -148,7 +148,7 @@ fn burn_should_panic_when_invalid_amount() {
 fn mint_works() {
     let env = Env::default();
     env.mock_all_auths_allowing_non_root_auth();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -215,7 +215,7 @@ fn mint_works() {
 fn mint_should_panic_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -245,7 +245,7 @@ fn mint_should_panic_when_invalid_amount() {
 fn mint_should_panic_when_not_authorized_to_mint() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -276,7 +276,7 @@ fn mint_should_panic_when_not_authorized_to_mint() {
 fn mint_should_panic_when_mintet_does_not_have_enough_capacity() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let minter = Address::generate(&env);
@@ -306,7 +306,7 @@ fn mint_should_panic_when_mintet_does_not_have_enough_capacity() {
 fn update_minter_works_correctly() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let minter = Address::generate(&env);
@@ -349,7 +349,7 @@ fn update_minter_works_correctly() {
 fn update_minter_fails_when_not_authorized() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let new_minter = Address::generate(&env);
@@ -384,7 +384,7 @@ fn update_minter_fails_when_not_authorized() {
 fn update_minter_capacity_when_replacing_old_capacity() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let minter = Address::generate(&env);
@@ -423,7 +423,7 @@ fn update_minter_capacity_when_replacing_old_capacity() {
 fn updating_minter_capacity_without_auth() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let minter = Address::generate(&env);
@@ -454,7 +454,7 @@ fn updating_minter_capacity_without_auth() {
 fn burning_more_than_balance() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 

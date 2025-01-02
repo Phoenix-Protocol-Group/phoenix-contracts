@@ -12,7 +12,7 @@ use crate::{
 fn query_share_valid_liquidity() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 
@@ -237,7 +237,7 @@ fn query_share_valid_liquidity() {
 fn query_share_empty_pool() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
 

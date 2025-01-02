@@ -15,7 +15,7 @@ use super::setup::deploy_token_contract;
 fn claim_tokens_when_fully_vested() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -85,7 +85,7 @@ fn claim_tokens_when_fully_vested() {
 fn transfer_tokens_when_half_vested() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -146,7 +146,7 @@ fn transfer_tokens_when_half_vested() {
 fn claim_tokens_once_then_claim_again() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -216,7 +216,7 @@ fn claim_tokens_once_then_claim_again() {
 fn user_can_claim_tokens_way_after_the_testing_period() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -279,7 +279,7 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
     const START_TIMESTAMP: u64 = 15;
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -325,7 +325,7 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
 fn claim_after_all_tokens_have_been_claimed() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -502,7 +502,7 @@ fn transfer_works_with_multiple_users_and_distributions() {
 fn claim_works() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -581,7 +581,7 @@ fn claim_works() {
 fn claim_tokens_from_two_distributions() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
@@ -710,7 +710,7 @@ fn claim_tokens_from_two_distributions() {
 fn first_mainnet_simulation() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let vester1 = Address::generate(&env);

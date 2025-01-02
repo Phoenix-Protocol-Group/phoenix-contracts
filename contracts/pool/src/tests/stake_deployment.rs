@@ -15,7 +15,7 @@ use crate::tests::setup::{install_stake_wasm, install_token_wasm};
 fn confirm_stake_contract_deployment() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -83,7 +83,7 @@ fn confirm_stake_contract_deployment() {
 fn second_pool_deployment_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);

@@ -16,7 +16,7 @@ use crate::{
 fn confirm_stake_contract_deployment() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -84,7 +84,7 @@ fn confirm_stake_contract_deployment() {
 fn second_pool_stable_deployment_should_fail() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);
@@ -163,7 +163,7 @@ fn second_pool_stable_deployment_should_fail() {
 fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let mut admin1 = Address::generate(&env);
     let mut admin2 = Address::generate(&env);

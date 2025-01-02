@@ -24,7 +24,7 @@ fn swap_three_equal_pools_no_fees() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -119,7 +119,7 @@ fn swap_three_equal_pools_no_fees_referral_fee() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -229,7 +229,7 @@ fn swap_single_pool_no_fees() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
@@ -289,7 +289,7 @@ fn swap_should_fail_when_spread_exceeds_the_limit() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 3_001_000i128);
@@ -339,7 +339,7 @@ fn swap_single_pool_with_fees() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
@@ -400,7 +400,7 @@ fn swap_three_different_pools_no_fees() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -498,7 +498,7 @@ fn swap_three_different_pools_with_fees() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -639,7 +639,7 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
@@ -732,7 +732,7 @@ fn test_swap_with_ask_asset_min_amount() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 1_001_000i128);
@@ -803,7 +803,7 @@ fn swap_three_equal_stable_pool() {
     let admin = Address::generate(&env);
 
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let token1 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
     let token2 = deploy_and_mint_tokens(&env, &admin, 10_000_000i128);
