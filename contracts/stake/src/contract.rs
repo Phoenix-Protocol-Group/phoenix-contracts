@@ -22,8 +22,7 @@ use crate::{
     token_contract,
 };
 
-const SIXTY_DAYS_IN_LEDGER_TIMESTAMP: u64 = DAY_IN_LEDGERS as u64 * 60u64; // safe to be done with
-                                                                           // `as`
+const SIXTY_DAYS_IN_LEDGER_TIMESTAMP: u64 = DAY_IN_LEDGERS as u64 * 60u64;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
