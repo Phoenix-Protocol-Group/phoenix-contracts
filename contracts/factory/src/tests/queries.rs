@@ -1,6 +1,8 @@
 use super::setup::{deploy_factory_contract, generate_lp_init_info};
 use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
-use crate::tests::setup::{lp_contract, stake_contract, ONE_DAY};
+use crate::tests::setup::{
+    install_and_deploy_token_contract, lp_contract, stake_contract, ONE_DAY,
+};
 use crate::token_contract;
 use phoenix::utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::testutils::Ledger;
@@ -42,33 +44,69 @@ fn test_deploy_multiple_liquidity_pools() {
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
 
-    let mut token1 = Address::generate(&env);
-    let mut token2 = Address::generate(&env);
-    let mut token3 = Address::generate(&env);
-    let mut token4 = Address::generate(&env);
-    let mut token5 = Address::generate(&env);
-    let mut token6 = Address::generate(&env);
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        9,
+        String::from_str(&env, "Phoenix"),
+        String::from_str(&env, "PHO"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        14,
+        String::from_str(&env, "Stellar"),
+        String::from_str(&env, "XLM"),
+    );
+    let mut token3 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        6,
+        String::from_str(&env, "Polkadot"),
+        String::from_str(&env, "DOT"),
+    );
+    let mut token4 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        14,
+        String::from_str(&env, "Cosmos"),
+        String::from_str(&env, "ATOM"),
+    );
+    let mut token5 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        4,
+        String::from_str(&env, "Osmosis"),
+        String::from_str(&env, "OSMO"),
+    );
+    let mut token6 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        9,
+        String::from_str(&env, "Dog wiff hat"),
+        String::from_str(&env, "WIFF"),
+    );
 
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
 
-    if token2 < token1 {
+    if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
 
-    if token4 < token3 {
+    if token4.address < token3.address {
         std::mem::swap(&mut token3, &mut token4);
     }
 
-    if token6 < token5 {
+    if token6.address < token5.address {
         std::mem::swap(&mut token5, &mut token6);
     }
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let first_token_init_info = TokenInitInfo {
-        token_a: token1.clone(),
-        token_b: token2.clone(),
+        token_a: token1.address.clone(),
+        token_b: token2.address.clone(),
     };
     let first_stake_init_info = StakeInitInfo {
         min_bond: 10i128,
@@ -78,8 +116,8 @@ fn test_deploy_multiple_liquidity_pools() {
     };
 
     let second_token_init_info = TokenInitInfo {
-        token_a: token3.clone(),
-        token_b: token4.clone(),
+        token_a: token3.address.clone(),
+        token_b: token4.address.clone(),
     };
     let second_stake_init_info = StakeInitInfo {
         min_bond: 5i128,
@@ -89,8 +127,8 @@ fn test_deploy_multiple_liquidity_pools() {
     };
 
     let third_token_init_info = TokenInitInfo {
-        token_a: token5.clone(),
-        token_b: token6.clone(),
+        token_a: token5.address.clone(),
+        token_b: token6.address.clone(),
     };
     let third_stake_init_info = StakeInitInfo {
         min_bond: 6i128,
@@ -183,8 +221,8 @@ fn test_deploy_multiple_liquidity_pools() {
         first_lp_config.max_allowed_spread_bps
     );
 
-    assert_eq!(token1, first_result.pool_response.asset_a.address);
-    assert_eq!(token2, first_result.pool_response.asset_b.address);
+    assert_eq!(token1.address, first_result.pool_response.asset_a.address);
+    assert_eq!(token2.address, first_result.pool_response.asset_b.address);
     assert_eq!(
         share_token_addr,
         first_result.pool_response.asset_lp_share.address
@@ -208,8 +246,8 @@ fn test_deploy_multiple_liquidity_pools() {
         second_lp_config.max_allowed_spread_bps
     );
 
-    assert_eq!(token3, second_result.pool_response.asset_a.address);
-    assert_eq!(token4, second_result.pool_response.asset_b.address);
+    assert_eq!(token3.address, second_result.pool_response.asset_a.address);
+    assert_eq!(token4.address, second_result.pool_response.asset_b.address);
     assert_eq!(
         second_share_token_addr,
         second_result.pool_response.asset_lp_share.address
@@ -233,8 +271,8 @@ fn test_deploy_multiple_liquidity_pools() {
         third_lp_config.max_allowed_spread_bps
     );
 
-    assert_eq!(token5, third_result.pool_response.asset_a.address);
-    assert_eq!(token6, third_result.pool_response.asset_b.address);
+    assert_eq!(token5.address, third_result.pool_response.asset_a.address);
+    assert_eq!(token6.address, third_result.pool_response.asset_b.address);
     assert_eq!(
         third_share_token_addr,
         third_result.pool_response.asset_lp_share.address
@@ -247,7 +285,8 @@ fn test_deploy_multiple_liquidity_pools() {
         assert!(all_pools.contains(pool));
     });
 
-    let first_lp_address_by_tuple = factory.query_for_pool_by_token_pair(&token1, &token2);
+    let first_lp_address_by_tuple =
+        factory.query_for_pool_by_token_pair(&token1.address, &token2.address);
     assert_eq!(first_lp_address_by_tuple, lp_contract_addr);
 }
 
@@ -258,33 +297,69 @@ fn test_queries_by_tuple() {
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
 
-    let mut token1 = Address::generate(&env);
-    let mut token2 = Address::generate(&env);
-    let mut token3 = Address::generate(&env);
-    let mut token4 = Address::generate(&env);
-    let mut token5 = Address::generate(&env);
-    let mut token6 = Address::generate(&env);
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        9,
+        String::from_str(&env, "Phoenix"),
+        String::from_str(&env, "PHO"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        14,
+        String::from_str(&env, "Stellar"),
+        String::from_str(&env, "XLM"),
+    );
+    let mut token3 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        6,
+        String::from_str(&env, "Polkadot"),
+        String::from_str(&env, "DOT"),
+    );
+    let mut token4 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        14,
+        String::from_str(&env, "Cosmos"),
+        String::from_str(&env, "ATOM"),
+    );
+    let mut token5 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        4,
+        String::from_str(&env, "Osmosis"),
+        String::from_str(&env, "OSMO"),
+    );
+    let mut token6 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        9,
+        String::from_str(&env, "Dog wiff hat"),
+        String::from_str(&env, "WIFF"),
+    );
 
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
 
-    if token2 < token1 {
+    if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
 
-    if token4 < token3 {
+    if token4.address < token3.address {
         std::mem::swap(&mut token3, &mut token4);
     }
 
-    if token6 < token5 {
+    if token6.address < token5.address {
         std::mem::swap(&mut token5, &mut token6);
     }
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let first_token_init_info = TokenInitInfo {
-        token_a: token1.clone(),
-        token_b: token2.clone(),
+        token_a: token1.address.clone(),
+        token_b: token2.address.clone(),
     };
     let first_stake_init_info = StakeInitInfo {
         min_bond: 10i128,
@@ -294,8 +369,8 @@ fn test_queries_by_tuple() {
     };
 
     let second_token_init_info = TokenInitInfo {
-        token_a: token3.clone(),
-        token_b: token4.clone(),
+        token_a: token3.address.clone(),
+        token_b: token4.address.clone(),
     };
     let second_stake_init_info = StakeInitInfo {
         min_bond: 5i128,
@@ -305,8 +380,8 @@ fn test_queries_by_tuple() {
     };
 
     let third_token_init_info = TokenInitInfo {
-        token_a: token5.clone(),
-        token_b: token6.clone(),
+        token_a: token5.address.clone(),
+        token_b: token6.address.clone(),
     };
     let third_stake_init_info = StakeInitInfo {
         min_bond: 6i128,
@@ -384,8 +459,8 @@ fn test_queries_by_tuple() {
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
 
-    assert_eq!(token1, first_result.pool_response.asset_a.address);
-    assert_eq!(token2, first_result.pool_response.asset_b.address);
+    assert_eq!(token1.address, first_result.pool_response.asset_a.address);
+    assert_eq!(token2.address, first_result.pool_response.asset_b.address);
     assert_eq!(lp_contract_addr, first_result.pool_address);
 
     let second_result = factory.query_pool_details(&second_lp_contract_addr);
@@ -406,17 +481,20 @@ fn test_queries_by_tuple() {
         second_lp_config.max_allowed_spread_bps
     );
 
-    assert_eq!(token3, second_result.pool_response.asset_a.address);
-    assert_eq!(token4, second_result.pool_response.asset_b.address);
+    assert_eq!(token3.address, second_result.pool_response.asset_a.address);
+    assert_eq!(token4.address, second_result.pool_response.asset_b.address);
     assert_eq!(
         second_share_token_addr,
         second_result.pool_response.asset_lp_share.address
     );
     assert_eq!(second_lp_contract_addr, second_result.pool_address);
 
-    let first_lp_address_by_tuple = factory.query_for_pool_by_token_pair(&token2, &token1);
-    let second_lp_address_by_tuple = factory.query_for_pool_by_token_pair(&token3, &token4);
-    let third_lp_address_by_tuple = factory.query_for_pool_by_token_pair(&token5, &token6);
+    let first_lp_address_by_tuple =
+        factory.query_for_pool_by_token_pair(&token2.address, &token1.address);
+    let second_lp_address_by_tuple =
+        factory.query_for_pool_by_token_pair(&token3.address, &token4.address);
+    let third_lp_address_by_tuple =
+        factory.query_for_pool_by_token_pair(&token5.address, &token6.address);
 
     assert_eq!(first_lp_address_by_tuple, lp_contract_addr);
     assert_eq!(second_lp_address_by_tuple, second_lp_contract_addr);

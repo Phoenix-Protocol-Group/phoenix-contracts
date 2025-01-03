@@ -203,7 +203,6 @@ impl FactoryTrait for Factory {
             token_wasm_hash,
             lp_init_info.clone(),
             factory_addr,
-            config.lp_token_decimals,
             share_token_name,
             share_token_symbol,
         )
