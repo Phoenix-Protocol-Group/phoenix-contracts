@@ -31,19 +31,6 @@ pub struct Factory;
 #[allow(dead_code)]
 pub trait FactoryTrait {
     #[allow(clippy::too_many_arguments)]
-    fn initialize(
-        env: Env,
-        admin: Address,
-        multihop_wasm_hash: BytesN<32>,
-        lp_wasm_hash: BytesN<32>,
-        stable_wasm_hash: BytesN<32>,
-        stake_wasm_hash: BytesN<32>,
-        token_wasm_hash: BytesN<32>,
-        whitelisted_accounts: Vec<Address>,
-        lp_token_decimals: u32,
-    );
-
-    #[allow(clippy::too_many_arguments)]
     fn create_liquidity_pool(
         env: Env,
         sender: Address,
@@ -89,56 +76,6 @@ pub trait FactoryTrait {
 
 #[contractimpl]
 impl FactoryTrait for Factory {
-    #[allow(clippy::too_many_arguments)]
-    fn initialize(
-        env: Env,
-        admin: Address,
-        multihop_wasm_hash: BytesN<32>,
-        lp_wasm_hash: BytesN<32>,
-        stable_wasm_hash: BytesN<32>,
-        stake_wasm_hash: BytesN<32>,
-        token_wasm_hash: BytesN<32>,
-        whitelisted_accounts: Vec<Address>,
-        lp_token_decimals: u32,
-    ) {
-        if is_initialized(&env) {
-            log!(
-                &env,
-                "Factory: Initialize: initializing contract twice is not allowed"
-            );
-            panic_with_error!(&env, ContractError::AlreadyInitialized);
-        }
-
-        if whitelisted_accounts.is_empty() {
-            log!(&env, "Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.");
-            panic_with_error!(&env, ContractError::WhiteListeEmpty);
-        }
-
-        set_initialized(&env);
-
-        let multihop_address =
-            deploy_and_initialize_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
-
-        save_config(
-            &env,
-            Config {
-                admin: admin.clone(),
-                multihop_address,
-                lp_wasm_hash,
-                stake_wasm_hash,
-                token_wasm_hash,
-                whitelisted_accounts,
-                lp_token_decimals,
-            },
-        );
-        save_stable_wasm_hash(&env, stable_wasm_hash);
-
-        save_lp_vec(&env, Vec::new(&env));
-
-        env.events()
-            .publish(("initialize", "LP factory contract"), admin);
-    }
-
     #[allow(clippy::too_many_arguments)]
     fn create_liquidity_pool(
         env: Env,
@@ -501,6 +438,56 @@ impl FactoryTrait for Factory {
 
 #[contractimpl]
 impl Factory {
+    #[allow(clippy::too_many_arguments)]
+    pub fn __constructor(
+        env: Env,
+        admin: Address,
+        multihop_wasm_hash: BytesN<32>,
+        lp_wasm_hash: BytesN<32>,
+        stable_wasm_hash: BytesN<32>,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        whitelisted_accounts: Vec<Address>,
+        lp_token_decimals: u32,
+    ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Factory: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        if whitelisted_accounts.is_empty() {
+            log!(&env, "Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.");
+            panic_with_error!(&env, ContractError::WhiteListeEmpty);
+        }
+
+        set_initialized(&env);
+
+        let multihop_address =
+            deploy_and_initialize_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
+
+        save_config(
+            &env,
+            Config {
+                admin: admin.clone(),
+                multihop_address,
+                lp_wasm_hash,
+                stake_wasm_hash,
+                token_wasm_hash,
+                whitelisted_accounts,
+                lp_token_decimals,
+            },
+        );
+        save_stable_wasm_hash(&env, stable_wasm_hash);
+
+        save_lp_vec(&env, Vec::new(&env));
+
+        env.events()
+            .publish(("initialize", "LP factory contract"), admin);
+    }
+
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>, new_stable_pool_hash: BytesN<32>) {
         let admin = get_config(&env).admin;

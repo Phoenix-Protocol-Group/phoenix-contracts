@@ -1,8 +1,10 @@
-use soroban_sdk::{testutils::Address as _, vec, Address, Env};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env, Vec};
+
+use crate::contract::{Factory, FactoryClient};
 
 use self::setup::{
-    deploy_factory_contract, install_lp_contract, install_multihop_wasm, install_stable_lp,
-    install_stake_wasm, install_token_wasm,
+    install_lp_contract, install_multihop_wasm, install_stable_lp, install_stake_wasm,
+    install_token_wasm,
 };
 
 mod config;
@@ -24,27 +26,42 @@ fn test_deploy_factory_twice_should_fail() {
     let stable_wasm_hash = install_stable_lp(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
+    let whitelisted_accounts = vec![&env, auth_user];
+    let contract_addr = Address::generate(&env);
 
-    let factory = deploy_factory_contract(&env, admin.clone());
-
-    factory.initialize(
-        &admin,
-        &multihop_wasm_hash,
-        &lp_wasm_hash,
-        &stable_wasm_hash,
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &vec![&env, auth_user.clone()],
-        &10u32,
+    let _ = FactoryClient::new(
+        &env,
+        &env.register_at(
+            &contract_addr.clone(),
+            Factory {},
+            (
+                &admin,
+                &multihop_wasm_hash,
+                &lp_wasm_hash,
+                &stable_wasm_hash,
+                &stake_wasm_hash,
+                &token_wasm_hash,
+                whitelisted_accounts.clone(),
+                &10u32,
+            ),
+        ),
     );
-    factory.initialize(
-        &admin,
-        &multihop_wasm_hash,
-        &lp_wasm_hash,
-        &stable_wasm_hash,
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &vec![&env, auth_user.clone()],
-        &10u32,
+
+    let _ = FactoryClient::new(
+        &env,
+        &env.register_at(
+            &contract_addr,
+            Factory {},
+            (
+                &admin,
+                &multihop_wasm_hash,
+                &lp_wasm_hash,
+                &stable_wasm_hash,
+                &stake_wasm_hash,
+                &token_wasm_hash,
+                whitelisted_accounts,
+                &10u32,
+            ),
+        ),
     );
 }
