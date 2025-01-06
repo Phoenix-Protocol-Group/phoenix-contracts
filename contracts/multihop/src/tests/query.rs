@@ -65,7 +65,9 @@ fn simulate_swap_single_pool_no_fees() {
     ];
 
     // Offering 1k token1 should result in 2k token2
+    soroban_sdk::testutils::arbitrary::std::dbg!("BEFORE");
     let result = multihop.simulate_swap(&operation, &1_000, &PoolType::Xyk);
+    soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
 
     assert_eq!(result.ask_amount, 2_000i128);
     assert_eq!(
