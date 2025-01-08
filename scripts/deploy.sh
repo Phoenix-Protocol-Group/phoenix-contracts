@@ -399,7 +399,7 @@ soroban contract invoke \
     --source $IDENTITY_STRING \
     --network $NETWORK --fee 10000000 \
     -- \
-    provide_liquidity --sender $ADMIN_ADDRESS --desired_a 20000000 --desired_b 20000000
+    provide_liquidity --sender $ADMIN_ADDRESS --desired_a 2000000000 --desired_b 2000000000
 
 echo "Liquidity provided."
 
