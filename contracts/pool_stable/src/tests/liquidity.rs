@@ -24,6 +24,7 @@ fn provide_liqudity() {
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
+
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
@@ -45,14 +46,21 @@ fn provide_liqudity() {
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);
 
-    token1.mint(&user1, &1000);
-    assert_eq!(token1.balance(&user1), 1000);
+    token1.mint(&user1, &100000000000);
+    assert_eq!(token1.balance(&user1), 100000000000);
 
-    token2.mint(&user1, &1000);
-    assert_eq!(token2.balance(&user1), 1000);
+    token2.mint(&user1, &100000000000);
+    assert_eq!(token2.balance(&user1), 100000000000);
 
     // tokens 1 & 2 have 7 decimal digits, meaning those values are 0.0001 of token
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &2000000000,
+        &2000000000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
 
     assert_eq!(
         env.auths(),
@@ -64,8 +72,8 @@ fn provide_liqudity() {
                     Symbol::new(&env, "provide_liquidity"),
                     (
                         &user1,
-                        1000i128,
-                        1000i128,
+                        2000000000i128,
+                        2000000000i128,
                         None::<i64>,
                         None::<u64>,
                         None::<u128>
@@ -77,7 +85,7 @@ fn provide_liqudity() {
                         function: AuthorizedFunction::Contract((
                             token1.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 1000_i128).into_val(&env)
+                            (&user1, &pool.address, 2000000000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     },
@@ -85,7 +93,7 @@ fn provide_liqudity() {
                         function: AuthorizedFunction::Contract((
                             token2.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 1000_i128).into_val(&env)
+                            (&user1, &pool.address, 2000000000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     },
@@ -94,12 +102,12 @@ fn provide_liqudity() {
         ),]
     );
 
-    assert_eq!(token_share.balance(&user1), 1000);
+    assert_eq!(token_share.balance(&user1), 3999999000);
     assert_eq!(token_share.balance(&pool.address), 0);
-    assert_eq!(token1.balance(&user1), 0);
-    assert_eq!(token1.balance(&pool.address), 1000);
-    assert_eq!(token2.balance(&user1), 0);
-    assert_eq!(token2.balance(&pool.address), 1000);
+    assert_eq!(token1.balance(&user1), 98000000000);
+    assert_eq!(token1.balance(&pool.address), 2000000000);
+    assert_eq!(token2.balance(&user1), 98000000000);
+    assert_eq!(token2.balance(&pool.address), 2000000000);
 
     let result = pool.query_pool_info();
     assert_eq!(
@@ -107,21 +115,21 @@ fn provide_liqudity() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address,
-                amount: 1000i128
+                amount: 2000000000i128
             },
             asset_b: Asset {
                 address: token2.address,
-                amount: 1000i128
+                amount: 2000000000i128
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 1000i128
+                amount: 3999999000i128
             },
             stake_address: pool.query_stake_contract_address(),
         }
     );
 
-    assert_eq!(pool.query_total_issued_lp(), 1000);
+    assert_eq!(pool.query_total_issued_lp(), 3999999000);
 }
 
 #[test]
