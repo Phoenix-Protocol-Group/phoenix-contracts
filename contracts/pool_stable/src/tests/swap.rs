@@ -152,6 +152,119 @@ fn simple_swap() {
 }
 
 #[test]
+fn simple_swap_big_numbers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    // minting 1_000_000 tokens to user1
+    token1.mint(&user1, &10_000_000_000_000);
+    token2.mint(&user1, &10_000_000_000_000);
+    // providing 100_000 tokens as liquidity from both token1 and token2
+    pool.provide_liquidity(
+        &user1,
+        &1_000_000_000_000,
+        &1_000_000_000_000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
+
+    // selling 10_000 tokens with 1% max spread allowed
+    let spread = 1_000i64; // 10% maximum spread allowed
+    pool.swap(
+        &user1,
+        &token1.address,
+        &10_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        &Some(150),
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1000000010000i128,
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999999990000i128,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: 1999999999000i128,
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+    assert_eq!(token1.balance(&user1), 8999999990000); // -10_000 from the swap
+    assert_eq!(token2.balance(&user1), 9000000010000); // +10_000 from the swap
+
+    // this time 5_000 units
+    let output_amount = pool.swap(
+        &user1,
+        &token2.address,
+        &5_000,
+        &None,
+        &Some(spread),
+        &None::<u64>,
+        &None,
+    );
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address.clone(),
+                amount: 1000000010000 - 5_000, // previous balance minus 5_000
+            },
+            asset_b: Asset {
+                address: token2.address.clone(),
+                amount: 999999990000 + 5_000,
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1999999999000i128, // this has not changed
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+    assert_eq!(output_amount, 5000);
+    assert_eq!(token1.balance(&user1), 8999999995000);
+    assert_eq!(token2.balance(&user1), 9000000005000); // user1 sold 1k of token B on second swap
+}
+
+#[test]
 fn swap_with_high_fee() {
     let env = Env::default();
     env.mock_all_auths();

@@ -160,17 +160,17 @@ fn provide_liqudity_big_numbers() {
     let token_share = token_contract::Client::new(&env, &share_token_address);
 
     // minting 1_000_000 tokens to the user
-    token1.mint(&user1, &1_000_000_0000000);
-    assert_eq!(token1.balance(&user1), 1_000_000_0000000);
+    token1.mint(&user1, &10_000_000_000_000);
+    assert_eq!(token1.balance(&user1), 10_000_000_000_000);
 
-    token2.mint(&user1, &1_000_000_0000000);
-    assert_eq!(token2.balance(&user1), 1_000_000_0000000);
+    token2.mint(&user1, &10_000_000_000_000);
+    assert_eq!(token2.balance(&user1), 10_000_000_000_000);
 
     // user1 provides 100_000 tokens
     pool.provide_liquidity(
         &user1,
-        &100_000_0000000,
-        &100_000_0000000,
+        &1_000_000_000_000,
+        &1_000_000_000_000,
         &None,
         &None::<u64>,
         &None::<u128>,
@@ -186,8 +186,8 @@ fn provide_liqudity_big_numbers() {
                     Symbol::new(&env, "provide_liquidity"),
                     (
                         &user1,
-                        100_000_0000000i128,
-                        100_000_0000000i128,
+                        1_000_000_000_000_i128,
+                        1_000_000_000_000_i128,
                         None::<i64>,
                         None::<u64>,
                         None::<u128>
@@ -199,7 +199,7 @@ fn provide_liqudity_big_numbers() {
                         function: AuthorizedFunction::Contract((
                             token1.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 100_000_0000000i128).into_val(&env)
+                            (&user1, &pool.address, 1_000_000_000_000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     },
@@ -207,7 +207,7 @@ fn provide_liqudity_big_numbers() {
                         function: AuthorizedFunction::Contract((
                             token2.address.clone(),
                             symbol_short!("transfer"),
-                            (&user1, &pool.address, 100_000_0000000i128).into_val(&env)
+                            (&user1, &pool.address, 1_000_000_000_000_i128).into_val(&env)
                         )),
                         sub_invocations: std::vec![],
                     },
