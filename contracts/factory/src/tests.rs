@@ -1,4 +1,4 @@
-use soroban_sdk::{testutils::Address as _, vec, Address, Env, Vec};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env};
 
 use crate::contract::{Factory, FactoryClient};
 

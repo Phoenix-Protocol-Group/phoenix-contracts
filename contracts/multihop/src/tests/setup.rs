@@ -6,7 +6,7 @@ use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     Address, BytesN, Env,
 };
-use soroban_sdk::{vec, String};
+use soroban_sdk::{vec, String, Vec};
 
 const FACTORY_WASM: &[u8] =
     include_bytes!("../../../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm");
@@ -89,7 +89,7 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory_contr
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
 
-    let whitelisted_accounts = vec![env, admin.clone()];
+    let whitelisted_accounts: Vec<Address> = vec![env, admin.clone()];
 
     let factory = factory_contract::Client::new(
         env,
@@ -103,7 +103,7 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory_contr
                 &stake_wasm_hash,
                 &token_wasm_hash,
                 whitelisted_accounts,
-                &10u32,
+                10u32,
             ),
         ),
     );
