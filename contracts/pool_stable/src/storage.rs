@@ -16,10 +16,9 @@ pub enum DataKey {
     ReserveA = 1,
     ReserveB = 2,
     Admin = 3,
-    Initialized = 4,
-    Amp = 5,
-    MaxPrecision = 6,
-    TokenPrecision = 7,
+    Amp = 4,
+    MaxPrecision = 5,
+    TokenPrecision = 6,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -355,22 +354,6 @@ pub mod utils {
 
     pub fn get_balance(e: &Env, contract: &Address) -> i128 {
         token_contract::Client::new(e, contract).balance(&e.current_contract_address())
-    }
-
-    pub fn is_initialized(e: &Env) -> bool {
-        e.storage()
-            .persistent()
-            .get(&DataKey::Initialized)
-            .unwrap_or(false)
-    }
-
-    pub fn set_initialized(e: &Env) {
-        e.storage().persistent().set(&DataKey::Initialized, &true);
-        e.storage().persistent().extend_ttl(
-            &DataKey::Initialized,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
-        );
     }
 }
 

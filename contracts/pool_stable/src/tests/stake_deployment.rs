@@ -80,81 +80,6 @@ fn confirm_stake_contract_deployment() {
 }
 
 #[test]
-#[should_panic(expected = "Pool stable: Initialize: initializing contract twice is not allowed")]
-fn second_pool_stable_deployment_should_fail() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.cost_estimate().budget().reset_unlimited();
-
-    let mut admin1 = Address::generate(&env);
-    let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
-
-    let mut token1 = deploy_token_contract(&env, &admin1);
-    let mut token2 = deploy_token_contract(&env, &admin2);
-    if token2.address < token1.address {
-        std::mem::swap(&mut token1, &mut token2);
-        std::mem::swap(&mut admin1, &mut admin2);
-    }
-
-    let pool = StableLiquidityPoolClient::new(&env, &env.register(StableLiquidityPool, ()));
-
-    let token_wasm_hash = install_token_wasm(&env);
-    let stake_wasm_hash = install_stake_wasm(&env);
-    let _stake_reward_wasm_hash = install_stake_rewards_wasm(&env);
-    let fee_recipient = user;
-    let max_allowed_slippage = 5_000i64; // 50% if not specified
-    let max_allowed_spread = 500i64; // 5% if not specified
-    let amp = 6u64;
-    let stake_manager = Address::generate(&env);
-    let factory = Address::generate(&env);
-
-    let token_init_info = TokenInitInfo {
-        token_a: token1.address.clone(),
-        token_b: token2.address.clone(),
-    };
-    let stake_init_info = StakeInitInfo {
-        min_bond: 10i128,
-        min_reward: 5i128,
-        manager: stake_manager.clone(),
-        max_complexity: 10,
-    };
-
-    let lp_init_info = LiquidityPoolInitInfo {
-        admin: admin1,
-        swap_fee_bps: 0i64,
-        fee_recipient,
-        max_allowed_slippage_bps: max_allowed_slippage,
-        default_slippage_bps: 2_500,
-        max_allowed_spread_bps: max_allowed_spread,
-        max_referral_bps: 500,
-        token_init_info,
-        stake_init_info,
-    };
-
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-        &factory,
-        &String::from_str(&env, "LP_SHARE_TOKEN"),
-        &String::from_str(&env, "PHOBTCLP"),
-        &amp,
-        &150,
-    );
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-        &factory,
-        &String::from_str(&env, "LP_SHARE_TOKEN"),
-        &String::from_str(&env, "PHOBTCLP"),
-        &amp,
-        &150,
-    );
-}
-
-#[test]
 #[should_panic(
     expected = "Pool Stable: Initialize: First token must be alphabetically smaller than second token"
 )]
@@ -174,8 +99,6 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
         std::mem::swap(&mut admin2, &mut admin1);
     }
 
-    let pool = StableLiquidityPoolClient::new(&env, &env.register(StableLiquidityPool, ()));
-
     let token_wasm_hash = install_token_wasm(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
     let _stake_reward_wasm_hash = install_stake_rewards_wasm(&env);
@@ -208,15 +131,20 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
         token_init_info,
         stake_init_info,
     };
-
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-        &factory,
-        &String::from_str(&env, "LP_SHARE_TOKEN"),
-        &String::from_str(&env, "PHOBTCLP"),
-        &amp,
-        &150,
+    let _ = StableLiquidityPoolClient::new(
+        &env,
+        &env.register(
+            StableLiquidityPool,
+            (
+                &stake_wasm_hash,
+                &token_wasm_hash,
+                lp_init_info,
+                &factory,
+                String::from_str(&env, "LP_SHARE_TOKEN"),
+                String::from_str(&env, "PHOBTCLP"),
+                &amp,
+                &150i64,
+            ),
+        ),
     );
 }
