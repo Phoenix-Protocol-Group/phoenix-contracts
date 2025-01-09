@@ -2,9 +2,9 @@ use crate::{
     error::ContractError,
     stake_contract::StakedResponse,
     storage::{
-        get_config, get_lp_vec, get_stable_wasm_hash, is_initialized, save_config, save_lp_vec,
-        save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
-        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
+        get_config, get_lp_vec, get_stable_wasm_hash, save_config, save_lp_vec,
+        save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, Asset, Config, LiquidityPoolInfo,
+        LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
     },
     utils::deploy_and_initialize_multihop_contract,
     ConvertVec,
@@ -451,20 +451,10 @@ impl Factory {
         whitelisted_accounts: Vec<Address>,
         lp_token_decimals: u32,
     ) {
-        if is_initialized(&env) {
-            log!(
-                &env,
-                "Factory: Initialize: initializing contract twice is not allowed"
-            );
-            panic_with_error!(&env, ContractError::AlreadyInitialized);
-        }
-
         if whitelisted_accounts.is_empty() {
             log!(&env, "Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.");
             panic_with_error!(&env, ContractError::WhiteListeEmpty);
         }
-
-        set_initialized(&env);
 
         let multihop_address =
             deploy_and_initialize_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);

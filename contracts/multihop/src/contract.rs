@@ -8,8 +8,8 @@ use crate::factory_contract::PoolType;
 // FIXM: Disable Referral struct
 // use crate::lp_contract::Referral;
 use crate::storage::{
-    get_admin_old, get_factory, is_initialized, save_admin_old, save_factory, set_initialized,
-    SimulateReverseSwapResponse, SimulateSwapResponse, Swap, ADMIN,
+    get_admin_old, get_factory, save_admin_old, save_factory, SimulateReverseSwapResponse,
+    SimulateSwapResponse, Swap, ADMIN,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
@@ -278,16 +278,6 @@ impl MultihopTrait for Multihop {
 #[contractimpl]
 impl Multihop {
     pub fn __constructor(env: Env, admin: Address, factory: Address) {
-        if is_initialized(&env) {
-            log!(
-                &env,
-                "Multihop: Initialize: initializing contract twice is not allowed"
-            );
-            panic_with_error!(&env, ContractError::AlreadyInitialized);
-        }
-
-        set_initialized(&env);
-
         save_admin_old(&env, &admin);
 
         save_factory(&env, factory);

@@ -9,7 +9,7 @@ use crate::{
     stake_contract,
     storage::{
         get_config, get_default_slippage_bps, save_config, save_default_slippage_bps,
-        utils::{self, get_admin_old, is_initialized, set_initialized},
+        utils::{self, get_admin_old},
         Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse, ADMIN,
     },
@@ -663,14 +663,6 @@ impl LiquidityPool {
         default_slippage_bps: i64,
         max_allowed_fee_bps: i64,
     ) {
-        if is_initialized(&env) {
-            log!(
-                &env,
-                "Pool: Initialize: initializing contract twice is not allowed"
-            );
-            panic_with_error!(&env, ContractError::AlreadyInitialized);
-        }
-
         let admin = lp_init_info.admin;
         let swap_fee_bps = lp_init_info.swap_fee_bps;
         let fee_recipient = lp_init_info.fee_recipient;
@@ -697,8 +689,6 @@ impl LiquidityPool {
             );
             panic_with_error!(&env, ContractError::SwapFeeBpsOverLimit);
         }
-
-        set_initialized(&env);
 
         // Token info
         let token_a = token_init_info.token_a;
