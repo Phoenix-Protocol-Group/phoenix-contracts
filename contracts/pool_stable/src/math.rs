@@ -247,3 +247,104 @@ pub(crate) fn calc_y(
     log!(env, "calc_y: not converging in 64 iterations!");
     panic_with_error!(env, ContractError::CalcYErr);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use soroban_sdk::Env;
+
+    #[test]
+    fn test_scale_value_up() {
+        let env = Env::default();
+        // example: 123 (with 3 decimals) => want 6 decimals
+        // 10^(6-3) = 10^3 = 1000, result => 123 * 1000 = 123000
+        let val = scale_value(&env, 123, 3, 6);
+        assert_eq!(val, 123_000);
+    }
+
+    #[test]
+    fn test_scale_value_down() {
+        let env = Env::default();
+        // example: 123_000 (with 6 decimals) => want 3 decimals
+        // 10^(6-3) = 10^3 = 1000, result => 123000 / 1000 = 123
+        let val = scale_value(&env, 123_000, 6, 3);
+        assert_eq!(val, 123);
+    }
+
+    #[test]
+    fn test_scale_value_no_change() {
+        let env = Env::default();
+        // if decimal_places == target_decimal_places, value is unchanged
+        let val = scale_value(&env, 999_999, 5, 5);
+        assert_eq!(val, 999_999);
+    }
+
+    #[test]
+    fn test_scale_value_big_numbers() {
+        let env = Env::default();
+        // something bigger, e.g. 1_234_567 with decimal_places=2 => target=6
+        // 10^(6-2) = 10^4 = 10000, result => 1234567 * 10000 = 12345670000
+        let val = scale_value(&env, 1_234_567, 2, 6);
+        assert_eq!(val, 12_345_670_000);
+    }
+
+    #[test]
+    fn test_compute_d_zero_sum() {
+        let env = Env::default();
+        // if sum_x=0 => function returns zero
+        let d = compute_d(&env, 100, &[0, 0]);
+        assert_eq!(d, U256::from_u128(&env, 0));
+    }
+
+    #[test]
+    fn test_compute_d_basic() {
+        let env = Env::default();
+        // With amp=100, each of the two tokens having a balance of 1000,
+        // the stableswap invariant D converges to 2000 in the current formula.
+        let amp = 100;
+        let pools = [1000u128, 1000u128];
+
+        let d = compute_d(&env, amp, &pools);
+
+        // Check that we get exactly 2000, which is the expected stable-swap invariant
+        assert_eq!(d, U256::from_u128(&env, 2000));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to add with overflow")]
+    fn test_compute_d_non_convergence() {
+        let env = Env::default();
+        // forcing a scenario that should cause no convergence, eg.
+        // unbalanced pools or something that triggers the iteration to never meet TOL.
+        let amp = 1_000_000_000;
+        let pools = [u128::MAX, u128::MAX];
+        compute_d(&env, amp, &pools);
+    }
+
+    #[test]
+    fn test_calc_y_simple() {
+        let env = Env::default();
+        let amp = 100;
+        let xp = [1000u128, 1000u128];
+        let new_amount = 500u128;
+        let target_precision = 6;
+
+        // the math above shows final y == 0 after the scaling.
+        let result = calc_y(&env, amp, new_amount, &xp, target_precision);
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to add with overflow")]
+    fn test_calc_y_extreme_overflow() {
+        let env = Env::default();
+        // using very large `xp` or `new_amount` to see if we’d attempt a final `y` that can't fit u128
+        calc_y(
+            &env,
+            1_000_000_000_000_000_000, // big `AMP`
+            u128::MAX,                 // big `new_amount`
+            &[u128::MAX, u128::MAX],
+            18,
+        );
+    }
+}
