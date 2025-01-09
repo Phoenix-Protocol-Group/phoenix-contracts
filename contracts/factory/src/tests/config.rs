@@ -483,9 +483,9 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
         &String::from_str(&env, "Pool Stable"),
         &String::from_str(&env, "EUROC/USDC"),
         &PoolType::Xyk,
-        &Some(10),
+        &Some(10u64),
         &100i64,
-        &1_000,
+        &1_000i64,
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();

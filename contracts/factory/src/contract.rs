@@ -6,7 +6,7 @@ use crate::{
         save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
         LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
     },
-    utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
+    utils::deploy_and_initialize_multihop_contract,
     ConvertVec,
 };
 use phoenix::{
@@ -18,8 +18,8 @@ use phoenix::{
     utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo},
 };
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,
-    IntoVal, String, Symbol, Val, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, xdr::ToXdr, Address, Bytes,
+    BytesN, Env, IntoVal, String, Symbol, Val, Vec,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -112,18 +112,6 @@ impl FactoryTrait for Factory {
         let stake_wasm_hash = config.stake_wasm_hash;
         let token_wasm_hash = config.token_wasm_hash;
 
-        let pool_hash = match pool_type {
-            PoolType::Xyk => config.lp_wasm_hash,
-            PoolType::Stable => get_stable_wasm_hash(&env),
-        };
-
-        let lp_contract_address = deploy_lp_contract(
-            &env,
-            pool_hash,
-            &lp_init_info.token_init_info.token_a,
-            &lp_init_info.token_init_info.token_b,
-        );
-
         validate_bps!(
             lp_init_info.swap_fee_bps,
             lp_init_info.max_allowed_slippage_bps,
@@ -134,7 +122,6 @@ impl FactoryTrait for Factory {
         );
 
         let factory_addr = env.current_contract_address();
-        let init_fn: Symbol = Symbol::new(&env, "initialize");
         let mut init_fn_args: Vec<Val> = (
             stake_wasm_hash,
             token_wasm_hash,
@@ -155,7 +142,21 @@ impl FactoryTrait for Factory {
 
         init_fn_args.push_back(max_allowed_fee_bps.into_val(&env));
 
-        env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
+        let mut salt = Bytes::new(&env);
+        salt.append(&lp_init_info.token_init_info.token_a.clone().to_xdr(&env));
+        salt.append(&lp_init_info.token_init_info.token_b.clone().to_xdr(&env));
+        let salt = env.crypto().sha256(&salt);
+
+        let lp_contract_address = match pool_type {
+            PoolType::Xyk => env
+                .deployer()
+                .with_current_contract(salt)
+                .deploy_v2(config.lp_wasm_hash, init_fn_args.clone()),
+            PoolType::Stable => env
+                .deployer()
+                .with_current_contract(salt)
+                .deploy_v2(get_stable_wasm_hash(&env), init_fn_args),
+        };
 
         let mut lp_vec = get_lp_vec(&env);
 
