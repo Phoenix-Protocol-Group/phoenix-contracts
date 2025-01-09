@@ -23,20 +23,6 @@ pub mod stake_contract {
     );
 }
 
-//#[allow(clippy::too_many_arguments)]
-//pub mod xyk_pool {
-//    soroban_sdk::contractimport!(
-//        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm"
-//    );
-//}
-//
-//#[allow(clippy::too_many_arguments)]
-//pub mod stable_pool {
-//    soroban_sdk::contractimport!(
-//        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool_stable.wasm"
-//    );
-//}
-//
 pub trait ConvertVec<T, U> {
     fn convert_vec(&self) -> soroban_sdk::Vec<U>;
 }
