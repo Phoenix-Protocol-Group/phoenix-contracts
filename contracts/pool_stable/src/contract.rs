@@ -9,7 +9,6 @@ use soroban_sdk::{
 use crate::{
     error::ContractError,
     math::{calc_y, compute_current_amp, compute_d, scale_value, AMP_PRECISION},
-    stake_contract,
     storage::{
         get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
         save_greatest_precision,
@@ -752,15 +751,16 @@ impl StableLiquidityPool {
             share_token_symbol,
         );
 
-        let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);
-        stake_contract::Client::new(&env, &stake_contract_address).initialize(
+        let stake_contract_address = utils::deploy_stake_contract(
+            &env,
+            stake_wasm_hash,
             &admin,
             &share_token_address,
-            &min_bond,
-            &min_reward,
+            min_bond,
+            min_reward,
             &manager,
             &factory_addr,
-            &stake_init_info.max_complexity,
+            stake_init_info.max_complexity,
         );
 
         let config = Config {
