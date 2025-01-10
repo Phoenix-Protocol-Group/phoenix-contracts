@@ -31,6 +31,7 @@ pub enum DataKey {
     PairKey(Pair),
     FactoryKey,
     Admin,
+    Initialized, // deprecated, do not remove for now
 }
 
 #[contracttype]

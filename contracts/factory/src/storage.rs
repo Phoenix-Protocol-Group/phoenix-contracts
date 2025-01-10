@@ -16,6 +16,7 @@ pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub enum DataKey {
     Config = 1,
     LpVec = 2,
+    Initialized = 3, // deprecated, do not remove for now
 }
 
 #[derive(Clone)]

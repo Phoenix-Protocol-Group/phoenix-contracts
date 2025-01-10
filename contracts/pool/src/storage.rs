@@ -16,6 +16,7 @@ pub enum DataKey {
     ReserveA = 1,
     ReserveB = 2,
     Admin = 3,
+    Initialized = 4, // deprecated, do not remove for now
 }
 
 impl TryFromVal<Env, DataKey> for Val {

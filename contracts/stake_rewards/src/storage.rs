@@ -55,6 +55,7 @@ pub mod utils {
     #[derive(Clone, Copy)]
     #[repr(u32)]
     pub enum DataKey {
+        Initialized = 0, // deprecated, do not remove for now
         Admin = 1,
     }
 

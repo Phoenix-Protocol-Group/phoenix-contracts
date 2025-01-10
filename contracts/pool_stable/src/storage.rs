@@ -16,9 +16,10 @@ pub enum DataKey {
     ReserveA = 1,
     ReserveB = 2,
     Admin = 3,
-    Amp = 4,
-    MaxPrecision = 5,
-    TokenPrecision = 6,
+    Initialized = 4, // deprecated, do not remove for now
+    Amp = 5,
+    MaxPrecision = 6,
+    TokenPrecision = 7,
 }
 
 impl TryFromVal<Env, DataKey> for Val {

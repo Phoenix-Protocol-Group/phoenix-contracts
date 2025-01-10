@@ -112,7 +112,8 @@ pub mod utils {
         Admin = 0,
         TotalStaked = 1,
         Distributions = 2,
-        StakeRewards = 3,
+        Initialized = 3, // deprecated, do not remove for now
+        StakeRewards = 4,
     }
 
     impl TryFromVal<Env, DataKey> for Val {

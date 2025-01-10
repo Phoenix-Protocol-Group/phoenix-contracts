@@ -19,7 +19,7 @@ pub enum DataKey {
     Pair,
     Token,
     MaxSpread,
-    IsInitialized,
+    IsInitialized, // deprecated, do not remove for now
 }
 
 #[contracttype]
