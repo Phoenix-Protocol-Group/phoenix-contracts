@@ -13,6 +13,5 @@ pub enum ContractError {
     SwapTokenNotInPair = 7,
     InvalidMaxSpreadBps = 8,
     InitValueNotFound = 9,
-    AlreadyInitialized = 10,
-    AdminNotSet = 11,
+    AdminNotSet = 10,
 }

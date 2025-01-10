@@ -7,9 +7,8 @@ use crate::{
     error::ContractError,
     lp_contract,
     storage::{
-        get_admin_old, get_name, get_output_token, get_pair, is_initialized, save_admin_old,
-        save_name, save_output_token, save_pair, set_initialized, Asset, BalanceInfo,
-        OutputTokenInfo, ADMIN,
+        get_admin_old, get_name, get_output_token, get_pair, save_admin_old, save_name,
+        save_output_token, save_pair, Asset, BalanceInfo, OutputTokenInfo, ADMIN,
     },
     token_contract,
 };
@@ -24,14 +23,6 @@ pub struct Trader;
 
 #[allow(dead_code)]
 pub trait TraderTrait {
-    fn initialize(
-        env: Env,
-        admin: Address,
-        contract_name: String,
-        pair_addresses: (Address, Address),
-        output_token: Address,
-    );
-
     #[allow(clippy::too_many_arguments)]
     fn trade_token(
         env: Env,
@@ -68,40 +59,6 @@ pub trait TraderTrait {
 
 #[contractimpl]
 impl TraderTrait for Trader {
-    fn initialize(
-        env: Env,
-        admin: Address,
-        contract_name: String,
-        pair_addresses: (Address, Address),
-        output_token: Address,
-    ) {
-        admin.require_auth();
-
-        if is_initialized(&env) {
-            log!(&env, "Trader: Initialize: Cannot initialize trader twice!");
-            panic_with_error!(env, ContractError::AlreadyInitialized)
-        }
-
-        save_admin_old(&env, &admin);
-
-        save_name(&env, &contract_name);
-
-        save_pair(&env, &pair_addresses);
-
-        save_output_token(&env, &output_token);
-
-        set_initialized(&env);
-
-        env.events()
-            .publish(("Trader: Initialize", "admin: "), &admin);
-        env.events()
-            .publish(("Trader: Initialize", "contract name: "), contract_name);
-        env.events()
-            .publish(("Trader: Initialize", "pairs: "), pair_addresses);
-        env.events()
-            .publish(("Trader: Initialize", "PHO token: "), output_token);
-    }
-
     #[allow(clippy::too_many_arguments)]
     fn trade_token(
         env: Env,
@@ -276,5 +233,35 @@ impl TraderTrait for Trader {
         env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())
+    }
+}
+
+#[contractimpl]
+impl Trader {
+    pub fn __constructor(
+        env: Env,
+        admin: Address,
+        contract_name: String,
+        pair_addresses: (Address, Address),
+        output_token: Address,
+    ) {
+        admin.require_auth();
+
+        save_admin_old(&env, &admin);
+
+        save_name(&env, &contract_name);
+
+        save_pair(&env, &pair_addresses);
+
+        save_output_token(&env, &output_token);
+
+        env.events()
+            .publish(("Trader: Initialize", "admin: "), &admin);
+        env.events()
+            .publish(("Trader: Initialize", "contract name: "), contract_name);
+        env.events()
+            .publish(("Trader: Initialize", "pairs: "), pair_addresses);
+        env.events()
+            .publish(("Trader: Initialize", "PHO token: "), output_token);
     }
 }
