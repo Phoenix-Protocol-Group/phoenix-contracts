@@ -41,6 +41,12 @@ pub struct VestingTokenInfo {
     pub address: Address,
 }
 
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Config {
+    pub is_with_minter: bool,
+}
+
 // This structure is used as an argument during the vesting account creation
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -277,16 +283,29 @@ pub fn get_max_vesting_complexity(env: &Env) -> u32 {
     vesting_complexity
 }
 
-pub fn is_initialized(e: &Env) -> bool {
-    e.storage()
-        .instance()
-        .get(&DataKey::IsInitialized)
-        .unwrap_or(false)
+pub fn save_config(env: &Env, config: Config) {
+    env.storage().persistent().set(&DataKey::Config, &config);
+
+    env.storage().persistent().extend_ttl(
+        &DataKey::Config,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    )
 }
 
-pub fn set_initialized(e: &Env) {
-    e.storage().instance().set(&DataKey::IsInitialized, &true);
-    e.storage()
-        .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+pub fn get_config(env: &Env) -> Config {
+    let config = env
+        .storage()
+        .persistent()
+        .get(&DataKey::Config)
+        .unwrap_or_else(|| {
+            log!(&env, "Config not found");
+            panic_with_error!(&env, ContractError::NoConfigFound)
+        });
+    env.storage().persistent().extend_ttl(
+        &DataKey::Config,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+    config
 }
