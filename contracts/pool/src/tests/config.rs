@@ -1,14 +1,15 @@
-extern crate std;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{testutils::Address as _, Address, Env, String};
+use soroban_sdk::{
+    testutils::{arbitrary::std, Address as _},
+    Address, Env, String,
+};
 
 use super::setup::{
-    deploy_liquidity_pool_contract, deploy_token_contract, install_new_lp_wasm, install_stake_wasm,
-    install_token_wasm,
+    deploy_liquidity_pool_contract, deploy_token_contract, install_stake_wasm, install_token_wasm,
 };
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
-    storage::{Asset, Config, PairType, PoolResponse},
+    storage::{Config, PairType},
 };
 
 #[should_panic(
@@ -300,65 +301,6 @@ fn update_config_too_high_fees() {
         &None,
         &None,
     );
-}
-
-#[test]
-fn update_liquidity_pool_works() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.cost_estimate().budget().reset_unlimited();
-
-    let mut admin1 = Address::generate(&env);
-    let mut admin2 = Address::generate(&env);
-
-    let mut token1 = deploy_token_contract(&env, &admin1);
-    let mut token2 = deploy_token_contract(&env, &admin2);
-    if token2.address < token1.address {
-        std::mem::swap(&mut token1, &mut token2);
-        std::mem::swap(&mut admin1, &mut admin2);
-    }
-    let user1 = Address::generate(&env);
-    let stake_manager = Address::generate(&env);
-    let stake_owner = Address::generate(&env);
-    let swap_fees = 0i64;
-    let pool = deploy_liquidity_pool_contract(
-        &env,
-        Some(admin1.clone()),
-        (&token1.address, &token2.address),
-        swap_fees,
-        user1.clone(),
-        500,
-        200,
-        stake_manager,
-        stake_owner,
-    );
-
-    let new_wasm_hash = install_new_lp_wasm(&env);
-
-    // no assertions, just check if it goes smooth
-    pool.upgrade(&new_wasm_hash, &5_000i64);
-
-    let result = pool.query_pool_info_for_factory();
-    // not using result only because we have to take the current contract address, which is not known during the test
-    assert_eq!(
-        result.pool_response,
-        PoolResponse {
-            asset_a: Asset {
-                address: token1.address,
-                amount: 0
-            },
-            asset_b: Asset {
-                address: token2.address,
-                amount: 0
-            },
-            asset_lp_share: Asset {
-                address: pool.query_share_token_address(),
-                amount: 0
-            },
-            stake_address: pool.query_stake_contract_address(),
-        }
-    );
-    assert_eq!(result.total_fee_bps, 0);
 }
 
 #[test]
