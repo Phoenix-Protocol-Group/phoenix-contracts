@@ -3,7 +3,6 @@ use crate::{
     token_contract,
 };
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
-use soroban_sdk::{testutils::Ledger, vec};
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
     token_contract::Client::new(

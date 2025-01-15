@@ -17,18 +17,21 @@ pub mod old_factory {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
 pub fn old_lp_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_pool.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
 pub fn old_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_stake.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
 pub fn install_latest_factory(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"

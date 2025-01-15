@@ -30,6 +30,7 @@ pub mod latest_liquidity_pool {
     );
 }
 
+#[cfg(feature = "upgrade")]
 pub fn install_old_token_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.artifacts/old_soroban_token_contract.wasm");
     env.deployer().upload_contract_wasm(WASM)
@@ -51,6 +52,7 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
 pub fn install_new_lp_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm"
