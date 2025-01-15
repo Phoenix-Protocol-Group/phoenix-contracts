@@ -1,0 +1,23 @@
+[package]
+name = "phoenix-stake-rewards"
+version = { workspace = true }
+authors = ["Jakub <jakub@moonbite.space>"]
+repository = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+testutils = ["soroban-sdk/testutils"]
+upgrade = []
+
+[dependencies]
+soroban-decimal = { workspace = true }
+curve = { workspace = true }
+phoenix = { workspace = true }
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
