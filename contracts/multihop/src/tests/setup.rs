@@ -8,10 +8,12 @@ use soroban_sdk::{
 };
 use soroban_sdk::{vec, String};
 
+#[allow(clippy::too_many_arguments)]
 pub mod old_multihop {
     soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_multihop.wasm");
 }
 
+#[allow(clippy::too_many_arguments)]
 pub mod latest_multihop {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_multihop.wasm"
