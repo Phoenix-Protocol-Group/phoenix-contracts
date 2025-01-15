@@ -112,7 +112,7 @@ pub mod utils {
         Admin = 0,
         TotalStaked = 1,
         Distributions = 2,
-        Initialized = 3, // deprecated, do not remove for now
+        Initialized = 3,
         StakeRewards = 4,
     }
 
@@ -122,6 +122,20 @@ pub mod utils {
         fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
             Ok((*v as u32).into())
         }
+    }
+
+    pub fn is_initialized(e: &Env) -> bool {
+        e.storage()
+            .instance()
+            .get(&DataKey::Initialized)
+            .unwrap_or(false)
+    }
+
+    pub fn set_initialized(e: &Env) {
+        e.storage().instance().set(&DataKey::Initialized, &true);
+        e.storage()
+            .instance()
+            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
     }
 
     pub fn save_admin_old(e: &Env, address: &Address) {

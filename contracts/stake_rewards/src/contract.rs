@@ -18,7 +18,7 @@ use crate::{
     msg::{AnnualizedRewardResponse, ConfigResponse, WithdrawableRewardResponse},
     storage::{
         get_config, save_config,
-        utils::{self, get_admin_old},
+        utils::{self, get_admin_old, is_initialized, set_initialized},
         BondingInfo, Config,
     },
     token_contract,
@@ -36,6 +36,18 @@ pub struct StakingRewards;
 
 #[allow(dead_code)]
 pub trait StakingRewardsTrait {
+    // Sets the token contract addresses for this pool
+    #[allow(clippy::too_many_arguments)]
+    fn initialize(
+        env: Env,
+        admin: Address,
+        staking_contract: Address,
+        reward_token: Address,
+        max_complexity: u32,
+        min_reward: i128,
+        min_bond: i128,
+    );
+
     fn add_user(env: Env, user: Address, stakes: BondingInfo);
 
     fn calculate_bond(env: Env, sender: Address, stakes: BondingInfo);
@@ -71,6 +83,59 @@ pub trait StakingRewardsTrait {
 
 #[contractimpl]
 impl StakingRewardsTrait for StakingRewards {
+    #[allow(clippy::too_many_arguments)]
+    fn initialize(
+        env: Env,
+        admin: Address,
+        staking_contract: Address,
+        reward_token: Address,
+        max_complexity: u32,
+        min_reward: i128,
+        min_bond: i128,
+    ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Stake rewards: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        set_initialized(&env);
+
+        env.events().publish(
+            ("initialize", "StakingRewards rewards distribution contract"),
+            (),
+        );
+
+        let config = Config {
+            staking_contract,
+            reward_token: reward_token.clone(),
+            max_complexity,
+            min_reward,
+            min_bond,
+        };
+        save_config(&env, config);
+
+        let distribution = Distribution {
+            shares_per_point: 1u128,
+            shares_leftover: 0u64,
+            distributed_total: 0u128,
+            withdrawable_total: 0u128,
+            max_bonus_bps: 0u64,
+            bonus_per_day_bps: 0u64,
+        };
+
+        save_distribution(&env, &reward_token, &distribution);
+        // Create the default reward distribution curve which is just a flat 0 const
+        save_reward_curve(&env, reward_token.clone(), &Curve::Constant(0));
+
+        env.events()
+            .publish(("create_distribution_flow", "asset"), &reward_token);
+
+        utils::save_admin_old(&env, &admin);
+    }
+
     fn add_user(env: Env, user: Address, stakes: BondingInfo) {
         let config = get_config(&env);
         // only Staking contract which deployed this one can call this method
@@ -481,49 +546,6 @@ impl StakingRewardsTrait for StakingRewards {
 
 #[contractimpl]
 impl StakingRewards {
-    #[allow(clippy::too_many_arguments)]
-    pub fn __constructor(
-        env: Env,
-        admin: Address,
-        staking_contract: Address,
-        reward_token: Address,
-        max_complexity: u32,
-        min_reward: i128,
-        min_bond: i128,
-    ) {
-        env.events().publish(
-            ("initialize", "StakingRewards rewards distribution contract"),
-            (),
-        );
-
-        let config = Config {
-            staking_contract,
-            reward_token: reward_token.clone(),
-            max_complexity,
-            min_reward,
-            min_bond,
-        };
-        save_config(&env, config);
-
-        let distribution = Distribution {
-            shares_per_point: 1u128,
-            shares_leftover: 0u64,
-            distributed_total: 0u128,
-            withdrawable_total: 0u128,
-            max_bonus_bps: 0u64,
-            bonus_per_day_bps: 0u64,
-        };
-
-        save_distribution(&env, &reward_token, &distribution);
-        // Create the default reward distribution curve which is just a flat 0 const
-        save_reward_curve(&env, reward_token.clone(), &Curve::Constant(0));
-
-        env.events()
-            .publish(("create_distribution_flow", "asset"), &reward_token);
-
-        utils::save_admin_old(&env, &admin);
-    }
-
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin_old(&env);

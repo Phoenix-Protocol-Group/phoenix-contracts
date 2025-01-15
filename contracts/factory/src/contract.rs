@@ -2,11 +2,11 @@ use crate::{
     error::ContractError,
     stake_contract::StakedResponse,
     storage::{
-        get_config, get_lp_vec, get_stable_wasm_hash, save_config, save_lp_vec,
-        save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, Asset, Config, LiquidityPoolInfo,
-        LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
+        get_config, get_lp_vec, get_stable_wasm_hash, is_initialized, save_config, save_lp_vec,
+        save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
+        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
     },
-    utils::deploy_and_initialize_multihop_contract,
+    utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
     ConvertVec,
 };
 use phoenix::{
@@ -18,8 +18,8 @@ use phoenix::{
     utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo},
 };
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, xdr::ToXdr, Address, Bytes,
-    BytesN, Env, IntoVal, String, Symbol, Val, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env,
+    IntoVal, String, Symbol, Val, Vec,
 };
 
 // Metadata that is added on to the WASM custom section
@@ -30,6 +30,19 @@ pub struct Factory;
 
 #[allow(dead_code)]
 pub trait FactoryTrait {
+    #[allow(clippy::too_many_arguments)]
+    fn initialize(
+        env: Env,
+        admin: Address,
+        multihop_wasm_hash: BytesN<32>,
+        lp_wasm_hash: BytesN<32>,
+        stable_wasm_hash: BytesN<32>,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        whitelisted_accounts: Vec<Address>,
+        lp_token_decimals: u32,
+    );
+
     #[allow(clippy::too_many_arguments)]
     fn create_liquidity_pool(
         env: Env,
@@ -77,6 +90,56 @@ pub trait FactoryTrait {
 #[contractimpl]
 impl FactoryTrait for Factory {
     #[allow(clippy::too_many_arguments)]
+    fn initialize(
+        env: Env,
+        admin: Address,
+        multihop_wasm_hash: BytesN<32>,
+        lp_wasm_hash: BytesN<32>,
+        stable_wasm_hash: BytesN<32>,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        whitelisted_accounts: Vec<Address>,
+        lp_token_decimals: u32,
+    ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Factory: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        if whitelisted_accounts.is_empty() {
+            log!(&env, "Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.");
+            panic_with_error!(&env, ContractError::WhiteListeEmpty);
+        }
+
+        set_initialized(&env);
+
+        let multihop_address =
+            deploy_and_initialize_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
+
+        save_config(
+            &env,
+            Config {
+                admin: admin.clone(),
+                multihop_address,
+                lp_wasm_hash,
+                stake_wasm_hash,
+                token_wasm_hash,
+                whitelisted_accounts,
+                lp_token_decimals,
+            },
+        );
+        save_stable_wasm_hash(&env, stable_wasm_hash);
+
+        save_lp_vec(&env, Vec::new(&env));
+
+        env.events()
+            .publish(("initialize", "LP factory contract"), admin);
+    }
+
+    #[allow(clippy::too_many_arguments)]
     fn create_liquidity_pool(
         env: Env,
         sender: Address,
@@ -112,6 +175,18 @@ impl FactoryTrait for Factory {
         let stake_wasm_hash = config.stake_wasm_hash;
         let token_wasm_hash = config.token_wasm_hash;
 
+        let pool_hash = match pool_type {
+            PoolType::Xyk => config.lp_wasm_hash,
+            PoolType::Stable => get_stable_wasm_hash(&env),
+        };
+
+        let lp_contract_address = deploy_lp_contract(
+            &env,
+            pool_hash,
+            &lp_init_info.token_init_info.token_a,
+            &lp_init_info.token_init_info.token_b,
+        );
+
         validate_bps!(
             lp_init_info.swap_fee_bps,
             lp_init_info.max_allowed_slippage_bps,
@@ -122,6 +197,7 @@ impl FactoryTrait for Factory {
         );
 
         let factory_addr = env.current_contract_address();
+        let init_fn: Symbol = Symbol::new(&env, "initialize");
         let mut init_fn_args: Vec<Val> = (
             stake_wasm_hash,
             token_wasm_hash,
@@ -142,21 +218,7 @@ impl FactoryTrait for Factory {
 
         init_fn_args.push_back(max_allowed_fee_bps.into_val(&env));
 
-        let mut salt = Bytes::new(&env);
-        salt.append(&lp_init_info.token_init_info.token_a.clone().to_xdr(&env));
-        salt.append(&lp_init_info.token_init_info.token_b.clone().to_xdr(&env));
-        let salt = env.crypto().sha256(&salt);
-
-        let lp_contract_address = match pool_type {
-            PoolType::Xyk => env
-                .deployer()
-                .with_current_contract(salt)
-                .deploy_v2(config.lp_wasm_hash, init_fn_args.clone()),
-            PoolType::Stable => env
-                .deployer()
-                .with_current_contract(salt)
-                .deploy_v2(get_stable_wasm_hash(&env), init_fn_args),
-        };
+        env.invoke_contract::<Val>(&lp_contract_address, &init_fn, init_fn_args);
 
         let mut lp_vec = get_lp_vec(&env);
 
@@ -439,46 +501,6 @@ impl FactoryTrait for Factory {
 
 #[contractimpl]
 impl Factory {
-    #[allow(clippy::too_many_arguments)]
-    pub fn __constructor(
-        env: Env,
-        admin: Address,
-        multihop_wasm_hash: BytesN<32>,
-        lp_wasm_hash: BytesN<32>,
-        stable_wasm_hash: BytesN<32>,
-        stake_wasm_hash: BytesN<32>,
-        token_wasm_hash: BytesN<32>,
-        whitelisted_accounts: Vec<Address>,
-        lp_token_decimals: u32,
-    ) {
-        if whitelisted_accounts.is_empty() {
-            log!(&env, "Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools.");
-            panic_with_error!(&env, ContractError::WhiteListeEmpty);
-        }
-
-        let multihop_address =
-            deploy_and_initialize_multihop_contract(env.clone(), admin.clone(), multihop_wasm_hash);
-
-        save_config(
-            &env,
-            Config {
-                admin: admin.clone(),
-                multihop_address,
-                lp_wasm_hash,
-                stake_wasm_hash,
-                token_wasm_hash,
-                whitelisted_accounts,
-                lp_token_decimals,
-            },
-        );
-        save_stable_wasm_hash(&env, stable_wasm_hash);
-
-        save_lp_vec(&env, Vec::new(&env));
-
-        env.events()
-            .publish(("initialize", "LP factory contract"), admin);
-    }
-
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>, new_stable_pool_hash: BytesN<32>) {
         let admin = get_config(&env).admin;

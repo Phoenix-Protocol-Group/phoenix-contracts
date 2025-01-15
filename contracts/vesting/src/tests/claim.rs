@@ -1,5 +1,5 @@
 use crate::{
-    storage::{MinterInfo, VestingInfo, VestingSchedule, VestingTokenInfo},
+    storage::{VestingInfo, VestingSchedule, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,
 };
 use curve::{Curve, PiecewiseLinear, SaturatingLinear, Step};
@@ -52,12 +52,12 @@ fn claim_tokens_when_fully_vested() {
         },
     ];
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
 
     // admin has 320 vesting tokens prior to initializing the contract
     assert_eq!(token_client.balance(&admin), 320);
 
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     // after initialization the admin has 0 vesting tokens
@@ -113,12 +113,12 @@ fn transfer_tokens_when_half_vested() {
         },
     ];
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
 
     // admin has 120 vesting tokens prior to initializing the contract
     assert_eq!(token_client.balance(&admin), 120);
 
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     // after initialization the admin has 0 vesting tokens
@@ -174,9 +174,9 @@ fn claim_tokens_once_then_claim_again() {
         },
     ];
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
 
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     // after initialization the admin has 0 vesting tokens
@@ -244,12 +244,12 @@ fn user_can_claim_tokens_way_after_the_testing_period() {
         },
     ];
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
 
     // admin has 120 vesting tokens prior to initializing the contract
     assert_eq!(token_client.balance(&admin), 120);
 
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     // after initialization the admin has 0 vesting tokens
@@ -307,9 +307,9 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
         },
     ];
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
 
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     // we set the timestamp at a time earlier than the vesting period start
@@ -353,9 +353,9 @@ fn claim_after_all_tokens_have_been_claimed() {
         },
     ];
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
 
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     env.ledger().with_mut(|li| li.timestamp = 61);
@@ -428,9 +428,9 @@ fn transfer_works_with_multiple_users_and_distributions() {
         },
     ];
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
 
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     // vesting period for our 4 vesters is between 0 and 1_500
@@ -530,12 +530,12 @@ fn claim_works() {
         },
     ];
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
 
     // admin has 120 vesting tokens prior to initializing the contract
     assert_eq!(token_client.balance(&admin), 120);
 
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     // after initialization the admin has 0 vesting tokens
@@ -596,8 +596,8 @@ fn claim_tokens_from_two_distributions() {
         address: token_client.address.clone(),
     };
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
 
     let vesting_schedules = vec![
         &env,
@@ -738,8 +738,9 @@ fn first_mainnet_simulation() {
         },
     ];
 
-    let vesting_client =
-        instantiate_vesting_client(&env, &admin, vesting_token, 10u32, None::<MinterInfo>);
+    let vesting_client = instantiate_vesting_client(&env);
+
+    vesting_client.initialize(&admin, &vesting_token, &10u32);
 
     // we move time to the beginning of the vesting schedule (100s before)
     env.ledger().with_mut(|li| li.timestamp = 1716817100);

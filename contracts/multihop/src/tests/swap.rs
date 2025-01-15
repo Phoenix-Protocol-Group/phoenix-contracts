@@ -726,7 +726,7 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #20)")]
+#[should_panic(expected = "Error(Contract, #21)")]
 fn test_swap_with_ask_asset_min_amount() {
     let env = Env::default();
     let admin = Address::generate(&env);

@@ -1,6 +1,7 @@
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
-    Address, BytesN, Env, String,
+    xdr::ToXdr,
+    Address, Bytes, BytesN, Env, String,
 };
 
 use crate::{
@@ -22,6 +23,18 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
     env.deployer().upload_contract_wasm(WASM)
+}
+
+pub fn deploy_lp_wasm(env: &Env, admin: Address, token_a: Address, token_b: Address) -> Address {
+    let factory_wasm = env.deployer().upload_contract_wasm(lp_contract::WASM);
+    let mut salt = Bytes::new(env);
+    salt.append(&token_a.to_xdr(env));
+    salt.append(&token_b.to_xdr(env));
+    let salt = env.crypto().sha256(&salt);
+
+    env.deployer()
+        .with_address(admin, salt)
+        .deploy_v2(factory_wasm, ())
 }
 
 pub fn deploy_token_contract<'a>(
@@ -46,6 +59,10 @@ pub fn deploy_and_init_lp_client(
     token_b_amount: i128,
     swap_fee_bps: i64,
 ) -> lp_contract::Client {
+    let lp_addr = deploy_lp_wasm(env, admin.clone(), token_a.clone(), token_b.clone());
+
+    let lp_client = lp_contract::Client::new(env, &lp_addr);
+
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
 
@@ -72,21 +89,15 @@ pub fn deploy_and_init_lp_client(
         stake_init_info,
     };
 
-    let lp_client = lp_contract::Client::new(
-        env,
-        &env.register(
-            lp_contract::WASM,
-            (
-                &stake_wasm_hash,
-                &token_wasm_hash,
-                lp_init_info,
-                &Address::generate(env),
-                String::from_str(env, "staked Phoenix"),
-                String::from_str(env, "sPHO"),
-                &100i64,
-                &1_000i64,
-            ),
-        ),
+    lp_client.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &lp_init_info,
+        &Address::generate(env),
+        &String::from_str(env, "staked Phoenix"),
+        &String::from_str(env, "sPHO"),
+        &100i64,
+        &1_000,
     );
 
     lp_client.provide_liquidity(
@@ -101,17 +112,6 @@ pub fn deploy_and_init_lp_client(
     lp_client
 }
 
-pub fn deploy_trader_client<'a>(
-    env: &Env,
-    admin: &Address,
-    contract_name: String,
-    token_tuple: &(Address, Address),
-    pho_token: &Address,
-) -> TraderClient<'a> {
-    let trader_client = TraderClient::new(
-        env,
-        &env.register(Trader, (admin, contract_name, token_tuple, pho_token)),
-    );
-
-    trader_client
+pub fn deploy_trader_client(env: &Env) -> TraderClient {
+    TraderClient::new(env, &env.register(Trader, ()))
 }

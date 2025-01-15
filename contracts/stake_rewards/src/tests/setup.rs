@@ -23,20 +23,15 @@ pub fn deploy_staking_rewards_contract<'a>(
     reward_token: &Address,
     staking_contract: &Address,
 ) -> StakingRewardsClient<'a> {
-    let staking_rewards = StakingRewardsClient::new(
-        env,
-        &env.register(
-            StakingRewards,
-            (
-                admin,
-                staking_contract,
-                reward_token,
-                &MAX_COMPLEXITY,
-                &MIN_REWARD,
-                &MIN_BOND,
-            ),
-        ),
-    );
+    let staking_rewards = StakingRewardsClient::new(env, &env.register(StakingRewards, ()));
 
+    staking_rewards.initialize(
+        admin,
+        staking_contract,
+        reward_token,
+        &MAX_COMPLEXITY,
+        &MIN_REWARD,
+        &MIN_BOND,
+    );
     staking_rewards
 }
