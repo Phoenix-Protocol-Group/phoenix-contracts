@@ -725,4 +725,13 @@ echo "Updated stake rewards config: $UPDATED_SR_CONFIG"
 echo "'updapte_stake_rewards' test replicated successfully!"
 echo "Old -> Updated stake rewards contract address: $OLD_STAKE_REWARDS_ADDR"
 
+# Check if the folder exists
+if [ -d "$FOLDER" ]; then
+    echo "Folder '$FOLDER' exists. Deleting it..."
+    rm -rf "$FOLDER"
+    echo "Folder '$FOLDER' has been deleted."
+else
+    echo "Folder '$FOLDER' does not exist."
+fi
+
 echo "Updates were successful"
