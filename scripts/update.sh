@@ -632,3 +632,97 @@ soroban contract invoke \
 
 echo "'upgrade_stake_contract' test replicated!"
 echo "Stake contract address: $OLD_STAKE_ADDR"
+
+echo "Running updapte_stake_rewards test"
+
+soroban keys generate stake_rewards_admin --network "$NETWORK" --fund
+soroban keys generate stake_rewards_staking --network "$NETWORK" --fund
+soroban keys generate stake_rewards_token --network "$NETWORK" --fund
+
+STAKE_REWARDS_ADMIN=$(soroban keys address stake_rewards_admin)
+STAKE_REWARDS_STAKING=$(soroban keys address stake_rewards_staking)
+STAKE_REWARDS_TOKEN=$(soroban keys address stake_rewards_token)
+
+echo "Stake Rewards Admin:     $STAKE_REWARDS_ADMIN"
+echo "Staking Contract (mock): $STAKE_REWARDS_STAKING"
+echo "Reward Token (mock):     $STAKE_REWARDS_TOKEN"
+
+OLD_STAKE_REWARDS_ADDR=$(soroban contract deploy \
+  --wasm-hash "$OLD_PHOENIX_STAKE_REWARDS_WASM_HASH" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK")
+
+echo "Old stake rewards contract deployed at: $OLD_STAKE_REWARDS_ADDR"
+
+MAX_COMPLEXITY="10"
+MIN_REWARD="5"
+MIN_BOND="5"
+
+echo "Initializing old stake rewards contract..."
+soroban contract invoke \
+  --id "$OLD_STAKE_REWARDS_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  initialize \
+  --admin "$STAKE_REWARDS_ADMIN" \
+  --staking_contract "$STAKE_REWARDS_STAKING" \
+  --reward_token "$STAKE_REWARDS_TOKEN" \
+  --max_complexity "$MAX_COMPLEXITY" \
+  --min_reward "$MIN_REWARD" \
+  --min_bond "$MIN_BOND"
+
+echo "Old stake rewards contract initialized."
+
+echo "Checking old stake rewards admin..."
+OLD_STAKE_REWARDS_ADMIN=$(soroban contract invoke \
+  --id "$OLD_STAKE_REWARDS_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  query_admin)
+echo "Admin in old stake rewards: $OLD_STAKE_REWARDS_ADMIN (expected \"$STAKE_REWARDS_ADMIN\")"
+
+echo "Querying old stake rewards config..."
+OLD_SR_CONFIG=$(soroban contract invoke \
+  --id "$OLD_STAKE_REWARDS_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  query_config)
+
+echo "Old stake rewards config: $OLD_SR_CONFIG"
+echo "Updating old stake rewards contract to latest code..."
+soroban contract invoke \
+  --id "$OLD_STAKE_REWARDS_ADDR" \
+  --source "$(soroban keys secret stake_rewards_admin)" \
+  --network "$NETWORK" \
+  -- \
+  update \
+  --new_wasm_hash "$LATEST_PHOENIX_STAKE_REWARDS_WASM_HASH"
+
+echo "Stake rewards contract updated."
+
+echo "Checking updated stake rewards admin..."
+UPDATED_STAKE_REWARDS_ADMIN=$(soroban contract invoke \
+  --id "$OLD_STAKE_REWARDS_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  query_admin)
+echo "Updated stake rewards admin is: $UPDATED_STAKE_REWARDS_ADMIN (expected \"$STAKE_REWARDS_ADMIN\")"
+
+echo "Querying updated stake rewards config..."
+UPDATED_SR_CONFIG=$(soroban contract invoke \
+  --id "$OLD_STAKE_REWARDS_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  query_config)
+
+echo "Updated stake rewards config: $UPDATED_SR_CONFIG"
+
+echo "'updapte_stake_rewards' test replicated successfully!"
+echo "Old -> Updated stake rewards contract address: $OLD_STAKE_REWARDS_ADDR"
+
+echo "Updates were successful"
