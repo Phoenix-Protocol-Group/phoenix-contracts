@@ -3,7 +3,6 @@ use crate::{
     token_contract,
 };
 use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
-use soroban_sdk::{testutils::Ledger, vec};
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
     token_contract::Client::new(
@@ -63,6 +62,8 @@ pub fn deploy_staking_contract<'a>(
 #[allow(deprecated)]
 #[cfg(feature = "upgrade")]
 fn upgrade_stake_contract() {
+    use soroban_sdk::{testutils::Ledger, vec};
+
     let env = Env::default();
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
