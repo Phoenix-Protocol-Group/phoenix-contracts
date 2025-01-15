@@ -7,6 +7,18 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+# Folder name to check and delete
+FOLDER=".stellar"
+
+# Check if the folder exists
+if [ -d "$FOLDER" ]; then
+    echo "Folder '$FOLDER' exists. Deleting it..."
+    rm -rf "$FOLDER"
+    echo "Folder '$FOLDER' has been deleted."
+else
+    echo "Folder '$FOLDER' does not exist."
+fi
+
 IDENTITY_STRING=$1
 ADMIN_ADDRESS=$(soroban keys address $IDENTITY_STRING)
 NETWORK="testnet"
@@ -125,139 +137,345 @@ echo "Installed latest multihop wasm: $LATEST_PHOENIX_MULTIHOP_WASM_HASH"
 echo "All old and latest WASMs have been installed successfully."
 
 
-echo "Deploying old factory contract..."
-FACTORY_ADDR=$(soroban contract deploy \
-  --wasm-hash "$OLD_PHOENIX_FACTORY_WASM_HASH" \
+# echo "Deploying old factory contract..."
+# FACTORY_ADDR=$(soroban contract deploy \
+#   --wasm-hash "$OLD_PHOENIX_FACTORY_WASM_HASH" \
+#   --source "$IDENTITY_STRING" \
+#   --network "$NETWORK")
+# echo "Old factory deployed at: $FACTORY_ADDR"
+#
+#
+# echo "Initializing old factory..."
+# soroban contract invoke \
+#   --id "$FACTORY_ADDR" \
+#   --source "$IDENTITY_STRING" \
+#   --network "$NETWORK" \
+#   -- \
+#   initialize \
+#   --admin "$ADMIN_ADDRESS" \
+#   --multihop_wasm_hash "$OLD_PHOENIX_MULTIHOP_WASM_HASH" \
+#   --lp_wasm_hash "$OLD_PHOENIX_POOL_WASM_HASH" \
+#   --stable_wasm_hash "$OLD_PHOENIX_POOL_STABLE_WASM_HASH" \
+#   --stake_wasm_hash "$OLD_PHOENIX_STAKE_WASM_HASH" \
+#   --token_wasm_hash "$OLD_SOROBAN_TOKEN_WASM_HASH" \
+#   --whitelisted_accounts "[ \"$ADMIN_ADDRESS\" ]" \
+#   --lp_token_decimals 7
+#
+# echo "Old factory initialized."
+#
+#
+# echo "Checking the admin of the old factory..."
+# FACTORY_ADMIN=$(soroban contract invoke \
+#   --id "$FACTORY_ADDR" \
+#   --source "$IDENTITY_STRING" \
+#   --network "$NETWORK" \
+#   -- \
+#   get_admin)
+#
+# echo "Factory admin is: $FACTORY_ADMIN (expected \"${ADMIN_ADDRESS}\")"
+# # Typically the returned value is in quotes, e.g. "\"GA...\""
+# if [ "$FACTORY_ADMIN" != "\"${ADMIN_ADDRESS}\"" ]; then
+#   echo "ERROR: Admin does not match expected address."
+#   exit 1
+# else
+#   echo "Factory admin matches as expected."
+# fi
+#
+#
+# echo "Updating old factory to new factory code..."
+#
+# soroban contract invoke \
+#   --id "$FACTORY_ADDR" \
+#   --source "$IDENTITY_STRING" \
+#   --network "$NETWORK" \
+#   -- \
+#   update \
+#   --new_wasm_hash "$LATEST_PHOENIX_FACTORY_WASM_HASH" \
+#   --new_stable_pool_hash "$LATEST_PHOENIX_POOL_STABLE_WASM_HASH"
+#
+# echo "Factory updated to the latest code."
+#
+#
+# echo "Checking the admin of the updated factory..."
+# UPDATED_FACTORY_ADMIN=$(soroban contract invoke \
+#   --id "$FACTORY_ADDR" \
+#   --source "$IDENTITY_STRING" \
+#   --network "$NETWORK" \
+#   -- \
+#   get_admin)
+#
+# echo "Updated factory admin is: $UPDATED_FACTORY_ADMIN (expected \"${ADMIN_ADDRESS}\")"
+# if [ "$UPDATED_FACTORY_ADMIN" != "\"${ADMIN_ADDRESS}\"" ]; then
+#   echo "ERROR: Admin changed after update."
+#   exit 1
+# else
+#   echo "Admin is still correct after factory update."
+# fi
+#
+#
+# echo "Updating wasm hashes on the updated factory..."
+#
+# LATEST_LP_WASM_HASH="$LATEST_PHOENIX_POOL_WASM_HASH"
+# LATEST_STAKE_WASM_HASH="$LATEST_PHOENIX_STAKE_WASM_HASH"
+# LATEST_TOKEN_WASM_HASH="$LATEST_SOROBAN_TOKEN_WASM_HASH"
+#
+# soroban contract invoke \
+#   --id "$FACTORY_ADDR" \
+#   --source "$IDENTITY_STRING" \
+#   --network "$NETWORK" \
+#   -- \
+#   update_wasm_hashes \
+#   --lp_wasm_hash "$LATEST_LP_WASM_HASH" \
+#   --stake_wasm_hash "$LATEST_STAKE_WASM_HASH" \
+#   --token_wasm_hash "$LATEST_TOKEN_WASM_HASH"
+#
+# echo "WASM hashes updated on the factory."
+#
+#
+# echo "'update_factory' test have been replicated via shell."
+#
+#
+# echo "Deploying old multihop contract..."
+#
+# OLD_MULTIHOP_ADDR=$(soroban contract deploy \
+#   --wasm-hash "$OLD_PHOENIX_MULTIHOP_WASM_HASH" \
+#   --source "$IDENTITY_STRING" \
+#   --network "$NETWORK")
+#
+# echo "Old multihop contract deployed at: $OLD_MULTIHOP_ADDR"
+#
+#
+# echo "Initializing old multihop contract..."
+#
+# soroban contract invoke \
+#   --id "$OLD_MULTIHOP_ADDR" \
+#   --source "$IDENTITY_STRING" \
+#   --network "$NETWORK" \
+#   -- \
+#   initialize \
+#   --admin "$ADMIN_ADDRESS" \
+#   --factory "$FACTORY_ADDR"
+#
+# echo "Old multihop initialized with admin=$ADMIN_ADDRESS factory=$FACTORY_ADDR."
+#
+# echo "Updating old multihop contract to latest multihop code..."
+#
+# soroban contract invoke \
+#   --id "$OLD_MULTIHOP_ADDR" \
+#   --source "$IDENTITY_STRING" \
+#   --network "$NETWORK" \
+#   -- \
+#   update \
+#   --new_wasm_hash "$LATEST_PHOENIX_MULTIHOP_WASM_HASH"
+#
+# echo "Multihop contract updated to the latest code."
+#
+# echo "'updapte_multihop' test have been replicated."
+# echo "Old -> Updated multihop contract address: $OLD_MULTIHOP_ADDR"
+
+soroban keys generate luke --network testnet --fund
+soroban keys generate obiwan --network testnet --fund
+soroban keys generate jarjar --network testnet --fund
+
+ADMIN=$(soroban keys address luke)
+USER=$(soroban keys address jarjar)
+
+
+echo "Deploying token contract 1 under admin..."
+TOKEN_ADDR1=$(soroban contract deploy \
+  --wasm-hash "$OLD_SOROBAN_TOKEN_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
-echo "Old factory deployed at: $FACTORY_ADDR"
+echo "token1 deployed at: $TOKEN_ADDR1"
 
-
-echo "Initializing old factory..."
+echo "Initializing token1 with admin=$ADMIN..."
 soroban contract invoke \
-  --id "$FACTORY_ADDR" \
+  --id "$TOKEN_ADDR1" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
   -- \
   initialize \
-  --admin "$ADMIN_ADDRESS" \
-  --multihop_wasm_hash "$OLD_PHOENIX_MULTIHOP_WASM_HASH" \
-  --lp_wasm_hash "$OLD_PHOENIX_POOL_WASM_HASH" \
-  --stable_wasm_hash "$OLD_PHOENIX_POOL_STABLE_WASM_HASH" \
-  --stake_wasm_hash "$OLD_PHOENIX_STAKE_WASM_HASH" \
-  --token_wasm_hash "$OLD_SOROBAN_TOKEN_WASM_HASH" \
-  --whitelisted_accounts "[ \"$ADMIN_ADDRESS\" ]" \
-  --lp_token_decimals 7
+  --admin "$IDENTITY_STRING" \
+  --decimal 7 \
+  --name "TestToken1" \
+  --symbol "TKN1"
 
-echo "Old factory initialized."
-
-
-echo "Checking the admin of the old factory..."
-FACTORY_ADMIN=$(soroban contract invoke \
-  --id "$FACTORY_ADDR" \
-  --source "$IDENTITY_STRING" \
-  --network "$NETWORK" \
-  -- \
-  get_admin)
-
-echo "Factory admin is: $FACTORY_ADMIN (expected \"${ADMIN_ADDRESS}\")"
-# Typically the returned value is in quotes, e.g. "\"GA...\""
-if [ "$FACTORY_ADMIN" != "\"${ADMIN_ADDRESS}\"" ]; then
-  echo "ERROR: Admin does not match expected address."
-  exit 1
-else
-  echo "Factory admin matches as expected."
-fi
-
-
-echo "Updating old factory to new factory code..."
-
-soroban contract invoke \
-  --id "$FACTORY_ADDR" \
-  --source "$IDENTITY_STRING" \
-  --network "$NETWORK" \
-  -- \
-  update \
-  --new_wasm_hash "$LATEST_PHOENIX_FACTORY_WASM_HASH" \
-  --new_stable_pool_hash "$LATEST_PHOENIX_POOL_STABLE_WASM_HASH"
-
-echo "Factory updated to the latest code."
-
-
-echo "Checking the admin of the updated factory..."
-UPDATED_FACTORY_ADMIN=$(soroban contract invoke \
-  --id "$FACTORY_ADDR" \
-  --source "$IDENTITY_STRING" \
-  --network "$NETWORK" \
-  -- \
-  get_admin)
-
-echo "Updated factory admin is: $UPDATED_FACTORY_ADMIN (expected \"${ADMIN_ADDRESS}\")"
-if [ "$UPDATED_FACTORY_ADMIN" != "\"${ADMIN_ADDRESS}\"" ]; then
-  echo "ERROR: Admin changed after update."
-  exit 1
-else
-  echo "Admin is still correct after factory update."
-fi
-
-
-echo "Updating wasm hashes on the updated factory..."
-
-LATEST_LP_WASM_HASH="$LATEST_PHOENIX_POOL_WASM_HASH"
-LATEST_STAKE_WASM_HASH="$LATEST_PHOENIX_STAKE_WASM_HASH"
-LATEST_TOKEN_WASM_HASH="$LATEST_SOROBAN_TOKEN_WASM_HASH"
-
-soroban contract invoke \
-  --id "$FACTORY_ADDR" \
-  --source "$IDENTITY_STRING" \
-  --network "$NETWORK" \
-  -- \
-  update_wasm_hashes \
-  --lp_wasm_hash "$LATEST_LP_WASM_HASH" \
-  --stake_wasm_hash "$LATEST_STAKE_WASM_HASH" \
-  --token_wasm_hash "$LATEST_TOKEN_WASM_HASH"
-
-echo "WASM hashes updated on the factory."
-
-
-echo "'update_factory' test have been replicated via shell."
-
-
-echo "Deploying old multihop contract..."
-
-OLD_MULTIHOP_ADDR=$(soroban contract deploy \
-  --wasm-hash "$OLD_PHOENIX_MULTIHOP_WASM_HASH" \
+echo "Deploying token contract 2 under admin..."
+TOKEN_ADDR2=$(soroban contract deploy \
+  --wasm-hash "$OLD_SOROBAN_TOKEN_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
+echo "token2 deployed at: $TOKEN_ADDR2"
 
-echo "Old multihop contract deployed at: $OLD_MULTIHOP_ADDR"
-
-
-echo "Initializing old multihop contract..."
-
+echo "Initializing token2 with admin=$ADMIN..."
 soroban contract invoke \
-  --id "$OLD_MULTIHOP_ADDR" \
+  --id "$TOKEN_ADDR2" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
   -- \
   initialize \
-  --admin "$ADMIN_ADDRESS" \
-  --factory "$FACTORY_ADDR"
+  --admin "$IDENTITY_STRING" \
+  --decimal 7 \
+  --name "TestToken2" \
+  --symbol "TKN2"
 
-echo "Old multihop initialized with admin=$ADMIN_ADDRESS factory=$FACTORY_ADDR."
+# Sort the token addresses alphabetically
+if [[ "$TOKEN_ADDR1" < "$TOKEN_ADDR2" ]]; then
+    TOKEN_ID1=$TOKEN_ADDR1
+    TOKEN_ID2=$TOKEN_ADDR2
+else
+    TOKEN_ID1=$TOKEN_ADDR2
+    TOKEN_ID2=$TOKEN_ADDR1
+fi
 
-echo "Updating old multihop contract to latest multihop code..."
+echo "Sorted token1: $TOKEN_ID1 (admin: $ADMIN)"
+echo "Sorted token2: $TOKEN_ID2 (admin: $ADMIN)"
+
+echo "Deploying old liquidity pool contract..."
+OLD_LP_ID=$(soroban contract deploy \
+  --wasm-hash "$OLD_PHOENIX_POOL_WASM_HASH" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK")
+echo "Old liquidity pool contract at: $OLD_LP_ID"
+
+
+STAKE_WASM_HASH="$OLD_PHOENIX_STAKE_WASM_HASH"
+TOKEN_WASM_HASH="$OLD_SOROBAN_TOKEN_WASM_HASH"
+
+echo "Initializing old liquidity pool..."
+soroban contract invoke \
+  --id "$OLD_LP_ID" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  initialize \
+  --stake_wasm_hash "$STAKE_WASM_HASH" \
+  --token_wasm_hash "$TOKEN_WASM_HASH" \
+  --lp_init_info "{ 
+       \"admin\": \"${ADMIN_ADDRESS}\",
+       \"swap_fee_bps\": 1000,
+       \"fee_recipient\": \"${ADMIN_ADDRESS}\",
+       \"max_allowed_slippage_bps\": 5000,
+       \"default_slippage_bps\": 2500,
+       \"max_allowed_spread_bps\": 10000,
+       \"max_referral_bps\": 5000,
+       \"token_init_info\": {
+         \"token_a\": \"${TOKEN_ID1}\",
+         \"token_b\": \"${TOKEN_ID2}\"
+       },
+       \"stake_init_info\": {
+         \"min_bond\": \"100\",
+         \"min_reward\": \"5\",
+         \"manager\": \"${ADMIN_ADDRESS}\",
+         \"max_complexity\": 7
+       }
+     }" \
+  --factory_addr "$ADMIN_ADDRESS" \
+  --share_token_decimals 7 \
+  --share_token_name "Pool" \
+  --share_token_symbol "PHOBTC" \
+  --default_slippage_bps 100 \
+  --max_allowed_fee_bps 1000
+
+echo "Old LP initialized."
+
+echo "Querying old LP config for fee_recipient..."
+FEE_RECIPIENT=$(soroban contract invoke \
+  --id "$OLD_LP_ID" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  query_config | jq -r '.fee_recipient')
+
+echo "Fee recipient in old LP: $FEE_RECIPIENT (expected ${ADMIN_ADDRESS})"
+
+
+echo "Minting big amounts of token1 and token2 for user..."
 
 soroban contract invoke \
-  --id "$OLD_MULTIHOP_ADDR" \
+  --id $TOKEN_ID1 \
+  --source $IDENTITY_STRING \
+  --network $NETWORK \
+  -- \
+  mint --to $USER --amount 10000000000 # 7 decimals, 1k tokens
+
+soroban contract invoke \
+  --id $TOKEN_ID2 \
+  --source $IDENTITY_STRING \
+  --network $NETWORK \
+  -- \
+  mint --to $USER --amount 10000000000 # 7 decimals, 1k tokens
+
+echo "User1 now has 1000 of each token."
+
+echo "User providing liquidity to old LP..."
+
+soroban contract invoke \
+  --id "$OLD_LP_ID" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  provide_liquidity \
+  --sender $USER \
+  --min_a 5000000000 \
+  --min_b 5000000000 \
+  --desired_a 5000000000 \
+  --desired_b 5000000000 \
+
+echo "Liquidity provided in old LP."
+
+soroban contract invoke \
+  --id "$OLD_LP_ID" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
   -- \
   update \
-  --new_wasm_hash "$LATEST_PHOENIX_MULTIHOP_WASM_HASH"
+  --new_wasm_hash "$LATEST_PHOENIX_POOL_WASM_HASH"
 
-echo "Multihop contract updated to the latest code."
+echo "Old LP updated to new code!"
 
-echo "'updapte_multihop' test have been replicated."
-echo "Old -> Updated multihop contract address: $OLD_MULTIHOP_ADDR"
+NEW_FEE_RECIPIENT=$(soroban contract invoke \
+  --id "$OLD_LP_ID" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  query_config | jq -r '.fee_recipient')
 
+echo "Fee recipient in new LP: $NEW_FEE_RECIPIENT (expected ${ADMIN})"
+
+
+echo "User1 withdrawing half of liquidity from new LP..."
+
+soroban contract invoke \
+  --id "$OLD_LP_ID" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  withdraw_liquidity \
+  --sender "$USER" \
+  --lp_amount 2500000000 \
+  --min_a_out 2500000000 \
+  --min_b_out 2500000000 \
+
+echo "Liquidity partially withdrawn."
+
+POOL_INFO=$(soroban contract invoke \
+  --id "$OLD_LP_ID" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  query_pool_info_for_factory)
+
+echo "Pool info after upgrade: $POOL_INFO"
+echo "Expected: asset_a.amount=2500000000, asset_b.amount=2500000000, etc."
+
+ASSET_A_AMOUNT=$(echo "$POOL_INFO" | jq -r '.pool_response.asset_a.amount')
+ASSET_B_AMOUNT=$(echo "$POOL_INFO" | jq -r '.pool_response.asset_b.amount')
+ASSET_LP_SHARE_AMOUNT=$(echo "$POOL_INFO" | jq -r '.pool_response.asset_lp_share.amount')
+
+echo "ASSET_A_AMOUNT: $ASSET_A_AMOUNT"
+echo "ASSET_B_AMOUNT: $ASSET_B_AMOUNT"
+echo "ASSET_LP_SHARE: $ASSET_LP_SHARE_AMOUNT"
+
+echo "All steps from 'update_liquidity_pool' test have been replicated via shell."
+echo "Liquidity Pool contract address: $OLD_LP_ID"
