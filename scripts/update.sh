@@ -222,3 +222,42 @@ echo "WASM hashes updated on the factory."
 
 echo "'update_factory' test have been replicated via shell."
 
+
+echo "Deploying old multihop contract..."
+
+OLD_MULTIHOP_ADDR=$(soroban contract deploy \
+  --wasm-hash "$OLD_PHOENIX_MULTIHOP_WASM_HASH" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK")
+
+echo "Old multihop contract deployed at: $OLD_MULTIHOP_ADDR"
+
+
+echo "Initializing old multihop contract..."
+
+soroban contract invoke \
+  --id "$OLD_MULTIHOP_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  initialize \
+  --admin "$ADMIN_ADDRESS" \
+  --factory "$FACTORY_ADDR"
+
+echo "Old multihop initialized with admin=$ADMIN_ADDRESS factory=$FACTORY_ADDR."
+
+echo "Updating old multihop contract to latest multihop code..."
+
+soroban contract invoke \
+  --id "$OLD_MULTIHOP_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  update \
+  --new_wasm_hash "$LATEST_PHOENIX_MULTIHOP_WASM_HASH"
+
+echo "Multihop contract updated to the latest code."
+
+echo "'updapte_multihop' test have been replicated."
+echo "Old -> Updated multihop contract address: $OLD_MULTIHOP_ADDR"
+
