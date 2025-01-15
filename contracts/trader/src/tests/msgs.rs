@@ -41,10 +41,10 @@ fn initialize() {
         &String::from_str(&env, "PHO"),
     );
 
-    let trader_client = deploy_trader_client(
-        &env,
+    let trader_client = deploy_trader_client(&env);
+    trader_client.initialize(
         &admin,
-        contract_name.clone(),
+        &contract_name,
         &(xlm_token.address.clone(), usdc_token.address.clone()),
         &pho_token.address,
     );
@@ -54,6 +54,61 @@ fn initialize() {
     assert_eq!(
         trader_client.query_trading_pairs(),
         (xlm_token.address, usdc_token.address)
+    );
+}
+
+#[test]
+#[should_panic(expected = "Trader: Initialize: Cannot initialize trader twice!")]
+fn initialize_twice_should_panic() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    let trader_client = deploy_trader_client(&env);
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &pho_token.address,
+    );
+
+    assert_eq!(trader_client.query_admin_address(), admin);
+    assert_eq!(trader_client.query_contract_name(), contract_name);
+    assert_eq!(
+        trader_client.query_trading_pairs(),
+        (xlm_token.address.clone(), usdc_token.address.clone())
+    );
+
+    // second time should fail
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &pho_token.address,
     );
 }
 
@@ -97,13 +152,7 @@ fn simple_trade_token_and_transfer_token() {
     xlm_token.mint(&admin, &1_000_000);
     output_token.mint(&admin, &2_000_000);
 
-    let trader_client = deploy_trader_client(
-        &env,
-        &admin,
-        contract_name,
-        &(xlm_token.address.clone(), usdc_token.address.clone()),
-        &output_token.address,
-    );
+    let trader_client = deploy_trader_client(&env);
 
     let xlm_pho_client: crate::lp_contract::Client<'_> = deploy_and_init_lp_client(
         &env,
@@ -113,6 +162,13 @@ fn simple_trade_token_and_transfer_token() {
         output_token.address.clone(),
         1_000_000,
         0,
+    );
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &output_token.address,
     );
 
     xlm_token.mint(&trader_client.address, &1_000);
@@ -214,13 +270,7 @@ fn extended_trade_and_transfer_token() {
     usdc_token.mint(&admin, &3_000_000);
     output_token.mint(&admin, &2_000_000);
 
-    let trader_client = deploy_trader_client(
-        &env,
-        &admin,
-        contract_name,
-        &(xlm_token.address.clone(), usdc_token.address.clone()),
-        &output_token.address,
-    );
+    let trader_client = deploy_trader_client(&env);
 
     // 1:1 xlm/pho pool
     let xlm_pho_client: crate::lp_contract::Client<'_> = deploy_and_init_lp_client(
@@ -242,6 +292,13 @@ fn extended_trade_and_transfer_token() {
         output_token.address.clone(),
         1_000_000,
         1_000, // 10% swap fee
+    );
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &output_token.address,
     );
 
     // collected fees from previous txs so we have something to trade against PHO token
@@ -371,7 +428,7 @@ fn extended_trade_and_transfer_token() {
         &admin.clone(),
         &usdc_token.address.clone(),
         &usdc_pho_client.address,
-        &Some(1_499),
+        &Some(1_500),
         &None::<i64>,
         &None,
         &None,
@@ -392,7 +449,7 @@ fn extended_trade_and_transfer_token() {
             },
             token_b: Asset {
                 symbol: usdc_token.symbol(),
-                amount: 1
+                amount: 0
             }
         }
     );
@@ -437,13 +494,7 @@ fn trade_token_should_fail_when_unauthorized() {
     xlm_token.mint(&admin, &1_000_000);
     pho_token.mint(&admin, &2_000_000);
 
-    let trader_client = deploy_trader_client(
-        &env,
-        &admin,
-        contract_name,
-        &(xlm_token.address.clone(), Address::generate(&env)),
-        &pho_token.address,
-    );
+    let trader_client = deploy_trader_client(&env);
 
     xlm_token.mint(&trader_client.address, &1_000);
 
@@ -455,6 +506,13 @@ fn trade_token_should_fail_when_unauthorized() {
         pho_token.address.clone(),
         1_000_000,
         0,
+    );
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), Address::generate(&env)),
+        &pho_token.address,
     );
 
     trader_client.trade_token(
@@ -503,13 +561,7 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
     xlm_token.mint(&admin, &1_000_000);
     pho_token.mint(&admin, &2_000_000);
 
-    let trader_client = deploy_trader_client(
-        &env,
-        &admin,
-        contract_name,
-        &(xlm_token.address.clone(), Address::generate(&env)),
-        &pho_token.address,
-    );
+    let trader_client = deploy_trader_client(&env);
 
     xlm_token.mint(&trader_client.address, &1_000);
 
@@ -521,6 +573,13 @@ fn trade_token_should_fail_when_offered_token_not_in_pair() {
         pho_token.address.clone(),
         1_000_000,
         0,
+    );
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), Address::generate(&env)),
+        &pho_token.address,
     );
 
     trader_client.trade_token(
@@ -570,13 +629,7 @@ fn transfer_should_fail_when_unauthorized() {
     xlm_token.mint(&admin, &1_000_000);
     pho_token.mint(&admin, &2_000_000);
 
-    let trader_client = deploy_trader_client(
-        &env,
-        &admin,
-        contract_name,
-        &(xlm_token.address.clone(), Address::generate(&env)),
-        &pho_token.address,
-    );
+    let trader_client = deploy_trader_client(&env);
 
     xlm_token.mint(&trader_client.address, &1_000);
 
@@ -588,6 +641,13 @@ fn transfer_should_fail_when_unauthorized() {
         pho_token.address.clone(),
         1_000_000,
         0,
+    );
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), Address::generate(&env)),
+        &pho_token.address,
     );
 
     trader_client.trade_token(
@@ -639,13 +699,7 @@ fn transfer_should_fail_with_invalid_spread_bps(max_spread_bps: i64) {
     xlm_token.mint(&admin, &1_000_000);
     pho_token.mint(&admin, &2_000_000);
 
-    let trader_client = deploy_trader_client(
-        &env,
-        &admin,
-        contract_name,
-        &(xlm_token.address.clone(), Address::generate(&env)),
-        &pho_token.address,
-    );
+    let trader_client = deploy_trader_client(&env);
 
     xlm_token.mint(&trader_client.address, &1_000);
 
@@ -657,6 +711,13 @@ fn transfer_should_fail_with_invalid_spread_bps(max_spread_bps: i64) {
         pho_token.address.clone(),
         1_000_000,
         0,
+    );
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), Address::generate(&env)),
+        &pho_token.address,
     );
 
     trader_client.trade_token(
@@ -711,13 +772,7 @@ fn simple_trade_token_and_transfer_token_with_some_ask_asset_min_amount() {
     xlm_token.mint(&admin, &1_000_000);
     output_token.mint(&admin, &2_000_000);
 
-    let trader_client = deploy_trader_client(
-        &env,
-        &admin,
-        contract_name,
-        &(xlm_token.address.clone(), usdc_token.address.clone()),
-        &output_token.address,
-    );
+    let trader_client = deploy_trader_client(&env);
 
     let xlm_pho_client: crate::lp_contract::Client<'_> = deploy_and_init_lp_client(
         &env,
@@ -727,6 +782,13 @@ fn simple_trade_token_and_transfer_token_with_some_ask_asset_min_amount() {
         output_token.address.clone(),
         1_000_000,
         0,
+    );
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &output_token.address,
     );
 
     xlm_token.mint(&trader_client.address, &1_000);

@@ -9,10 +9,11 @@ use soroban_sdk::{
 use crate::{
     error::ContractError,
     math::{calc_y, compute_current_amp, compute_d, scale_value, AMP_PRECISION},
+    stake_contract,
     storage::{
         get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
         save_greatest_precision,
-        utils::{self, get_admin_old},
+        utils::{self, get_admin_old, is_initialized, set_initialized},
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
         SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN,
     },
@@ -36,6 +37,21 @@ pub struct StableLiquidityPool;
 
 #[allow(dead_code)]
 pub trait StableLiquidityPoolTrait {
+    // Sets the token contract addresses for this pool
+    // token_wasm_hash is the WASM hash of the deployed token contract for the pool share token
+    #[allow(clippy::too_many_arguments)]
+    fn initialize(
+        env: Env,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        lp_init_info: LiquidityPoolInitInfo,
+        factory_addr: Address,
+        share_token_name: String,
+        share_token_symbol: String,
+        amp: u64,
+        max_allowed_fee_bps: i64,
+    );
+
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
     // is determined based on the difference between the reserves stored by this contract, and
     // the actual balance of token_a and token_b for this contract.
@@ -127,6 +143,134 @@ pub trait StableLiquidityPoolTrait {
 
 #[contractimpl]
 impl StableLiquidityPoolTrait for StableLiquidityPool {
+    #[allow(clippy::too_many_arguments)]
+    fn initialize(
+        env: Env,
+        stake_wasm_hash: BytesN<32>,
+        token_wasm_hash: BytesN<32>,
+        lp_init_info: LiquidityPoolInitInfo,
+        factory_addr: Address,
+        share_token_name: String,
+        share_token_symbol: String,
+        amp: u64,
+        max_allowed_fee_bps: i64,
+    ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Pool stable: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        let admin = lp_init_info.admin;
+        let swap_fee_bps = lp_init_info.swap_fee_bps;
+        let fee_recipient = lp_init_info.fee_recipient;
+        let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
+        let default_slippage_bps = lp_init_info.default_slippage_bps;
+        let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
+        let token_init_info = lp_init_info.token_init_info;
+        let stake_init_info = lp_init_info.stake_init_info;
+
+        validate_bps!(
+            swap_fee_bps,
+            max_allowed_slippage_bps,
+            max_allowed_spread_bps,
+            default_slippage_bps,
+            max_allowed_fee_bps
+        );
+
+        // if the swap_fee_bps is above the threshold, we throw an error
+        if swap_fee_bps > max_allowed_fee_bps {
+            log!(
+                &env,
+                "Pool: Initialize: swap fee is higher than the maximum allowed!"
+            );
+            panic_with_error!(&env, ContractError::SwapFeeBpsOverLimit);
+        }
+
+        set_initialized(&env);
+
+        // Token info
+        let token_a = token_init_info.token_a;
+        let token_b = token_init_info.token_b;
+        // Contract info
+        let min_bond = stake_init_info.min_bond;
+        let min_reward = stake_init_info.min_reward;
+        let manager = stake_init_info.manager;
+
+        // Token order validation to make sure only one instance of a pool can exist
+        if token_a >= token_b {
+            log!(
+                &env,
+                "Pool Stable: Initialize: First token must be alphabetically smaller than second token"
+            );
+            panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
+        }
+
+        let decimals = save_greatest_precision(&env, &token_a, &token_b);
+
+        // deploy and initialize token contract
+        let share_token_address = utils::deploy_token_contract(
+            &env,
+            token_wasm_hash,
+            &token_a,
+            &token_b,
+            env.current_contract_address(),
+            decimals,
+            share_token_name,
+            share_token_symbol,
+        );
+
+        let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);
+        stake_contract::Client::new(&env, &stake_contract_address).initialize(
+            &admin,
+            &share_token_address,
+            &min_bond,
+            &min_reward,
+            &manager,
+            &factory_addr,
+            &stake_init_info.max_complexity,
+        );
+
+        let config = Config {
+            token_a: token_a.clone(),
+            token_b: token_b.clone(),
+            share_token: share_token_address,
+            stake_contract: stake_contract_address,
+            pool_type: PairType::Stable,
+            total_fee_bps: swap_fee_bps,
+            fee_recipient,
+            max_allowed_slippage_bps,
+            default_slippage_bps,
+            max_allowed_spread_bps,
+        };
+        save_config(&env, config);
+        let current_time = env.ledger().timestamp();
+        if amp == 0 || amp > MAX_AMP {
+            log!(&env, "Pool Stable: Initialize: AMP parameter is incorrect");
+            panic_with_error!(&env, ContractError::InvalidAMP);
+        }
+        save_amp(
+            &env,
+            AmplifierParameters {
+                init_amp: amp * AMP_PRECISION,
+                init_amp_time: current_time,
+                next_amp: amp * AMP_PRECISION,
+                next_amp_time: current_time,
+            },
+        );
+        utils::save_admin_old(&env, admin);
+        utils::save_total_shares(&env, 0);
+        utils::save_pool_balance_a(&env, 0);
+        utils::save_pool_balance_b(&env, 0);
+
+        env.events()
+            .publish(("initialize", "XYK LP token_a"), token_a);
+        env.events()
+            .publish(("initialize", "XYK LP token_b"), token_b);
+    }
+
     fn provide_liquidity(
         env: Env,
         sender: Address,
@@ -682,124 +826,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
 #[contractimpl]
 impl StableLiquidityPool {
-    #[allow(clippy::too_many_arguments)]
-    pub fn __constructor(
-        env: Env,
-        stake_wasm_hash: BytesN<32>,
-        token_wasm_hash: BytesN<32>,
-        lp_init_info: LiquidityPoolInitInfo,
-        factory_addr: Address,
-        share_token_name: String,
-        share_token_symbol: String,
-        amp: u64,
-        max_allowed_fee_bps: i64,
-    ) {
-        let admin = lp_init_info.admin;
-        let swap_fee_bps = lp_init_info.swap_fee_bps;
-        let fee_recipient = lp_init_info.fee_recipient;
-        let max_allowed_slippage_bps = lp_init_info.max_allowed_slippage_bps;
-        let default_slippage_bps = lp_init_info.default_slippage_bps;
-        let max_allowed_spread_bps = lp_init_info.max_allowed_spread_bps;
-        let token_init_info = lp_init_info.token_init_info;
-        let stake_init_info = lp_init_info.stake_init_info;
-
-        validate_bps!(
-            swap_fee_bps,
-            max_allowed_slippage_bps,
-            max_allowed_spread_bps,
-            default_slippage_bps,
-            max_allowed_fee_bps
-        );
-
-        // if the swap_fee_bps is above the threshold, we throw an error
-        if swap_fee_bps > max_allowed_fee_bps {
-            log!(
-                &env,
-                "Pool: Initialize: swap fee is higher than the maximum allowed!"
-            );
-            panic_with_error!(&env, ContractError::SwapFeeBpsOverLimit);
-        }
-
-        // Token info
-        let token_a = token_init_info.token_a;
-        let token_b = token_init_info.token_b;
-        // Contract info
-        let min_bond = stake_init_info.min_bond;
-        let min_reward = stake_init_info.min_reward;
-        let manager = stake_init_info.manager;
-
-        // Token order validation to make sure only one instance of a pool can exist
-        if token_a >= token_b {
-            log!(
-                &env,
-                "Pool Stable: Initialize: First token must be alphabetically smaller than second token"
-            );
-            panic_with_error!(&env, ContractError::TokenABiggerThanTokenB);
-        }
-
-        let decimals = save_greatest_precision(&env, &token_a, &token_b);
-
-        // deploy and initialize token contract
-        let share_token_address = utils::deploy_token_contract(
-            &env,
-            token_wasm_hash,
-            &token_a,
-            &token_b,
-            env.current_contract_address(),
-            decimals,
-            share_token_name,
-            share_token_symbol,
-        );
-
-        let stake_contract_address = utils::deploy_stake_contract(
-            &env,
-            stake_wasm_hash,
-            &admin,
-            &share_token_address,
-            min_bond,
-            min_reward,
-            &manager,
-            &factory_addr,
-            stake_init_info.max_complexity,
-        );
-
-        let config = Config {
-            token_a: token_a.clone(),
-            token_b: token_b.clone(),
-            share_token: share_token_address,
-            stake_contract: stake_contract_address,
-            pool_type: PairType::Stable,
-            total_fee_bps: swap_fee_bps,
-            fee_recipient,
-            max_allowed_slippage_bps,
-            default_slippage_bps,
-            max_allowed_spread_bps,
-        };
-        save_config(&env, config);
-        let current_time = env.ledger().timestamp();
-        if amp == 0 || amp > MAX_AMP {
-            log!(&env, "Pool Stable: Initialize: AMP parameter is incorrect");
-            panic_with_error!(&env, ContractError::InvalidAMP);
-        }
-        save_amp(
-            &env,
-            AmplifierParameters {
-                init_amp: amp * AMP_PRECISION,
-                init_amp_time: current_time,
-                next_amp: amp * AMP_PRECISION,
-                next_amp_time: current_time,
-            },
-        );
-        utils::save_admin_old(&env, admin);
-        utils::save_total_shares(&env, 0);
-        utils::save_pool_balance_a(&env, 0);
-        utils::save_pool_balance_b(&env, 0);
-
-        env.events()
-            .publish(("initialize", "XYK LP token_a"), token_a);
-        env.events()
-            .publish(("initialize", "XYK LP token_b"), token_b);
-    }
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin_old(&env);

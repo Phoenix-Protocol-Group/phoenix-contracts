@@ -15,6 +15,7 @@ use crate::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
             self, add_distribution, get_admin_old, get_distributions, get_total_staked_counter,
+            is_initialized, set_initialized,
         },
         Config, Stake, ADMIN,
     },
@@ -32,6 +33,19 @@ pub struct Staking;
 
 #[allow(dead_code)]
 pub trait StakingTrait {
+    // Sets the token contract addresses for this pool
+    #[allow(clippy::too_many_arguments)]
+    fn initialize(
+        env: Env,
+        admin: Address,
+        lp_token: Address,
+        min_bond: i128,
+        min_reward: i128,
+        manager: Address,
+        owner: Address,
+        max_complexity: u32,
+    );
+
     fn bond(env: Env, sender: Address, tokens: i128);
 
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
@@ -65,6 +79,65 @@ pub trait StakingTrait {
 
 #[contractimpl]
 impl StakingTrait for Staking {
+    #[allow(clippy::too_many_arguments)]
+    fn initialize(
+        env: Env,
+        admin: Address,
+        lp_token: Address,
+        min_bond: i128,
+        min_reward: i128,
+        manager: Address,
+        owner: Address,
+        max_complexity: u32,
+    ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Stake: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        set_initialized(&env);
+
+        if min_bond <= 0 {
+            log!(
+                &env,
+                "Stake: initialize: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+            );
+            panic_with_error!(&env, ContractError::InvalidMinBond);
+        }
+        if min_reward <= 0 {
+            log!(&env, "Stake: initialize: min_reward must be bigger than 0!");
+            panic_with_error!(&env, ContractError::InvalidMinReward);
+        }
+
+        if max_complexity == 0 {
+            log!(
+                &env,
+                "Stake: initialize: max_complexity must be bigger than 0!"
+            );
+            panic_with_error!(&env, ContractError::InvalidMaxComplexity);
+        }
+
+        env.events()
+            .publish(("initialize", "LP Share token staking contract"), &lp_token);
+
+        let config = Config {
+            lp_token,
+            min_bond,
+            min_reward,
+            manager,
+            owner,
+            max_complexity,
+        };
+        save_config(&env, config);
+
+        utils::save_admin_old(&env, &admin);
+        utils::init_total_staked(&env);
+        save_total_staked_history(&env, map![&env]);
+    }
+
     fn bond(env: Env, sender: Address, tokens: i128) {
         sender.require_auth();
         env.storage()
@@ -320,55 +393,6 @@ impl StakingTrait for Staking {
 
 #[contractimpl]
 impl Staking {
-    #[allow(clippy::too_many_arguments)]
-    pub fn __constructor(
-        env: Env,
-        admin: Address,
-        lp_token: Address,
-        min_bond: i128,
-        min_reward: i128,
-        manager: Address,
-        owner: Address,
-        max_complexity: u32,
-    ) {
-        if min_bond <= 0 {
-            log!(
-                &env,
-                "Stake: initialize: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
-            );
-            panic_with_error!(&env, ContractError::InvalidMinBond);
-        }
-        if min_reward <= 0 {
-            log!(&env, "Stake: initialize: min_reward must be bigger than 0!");
-            panic_with_error!(&env, ContractError::InvalidMinReward);
-        }
-
-        if max_complexity == 0 {
-            log!(
-                &env,
-                "Stake: initialize: max_complexity must be bigger than 0!"
-            );
-            panic_with_error!(&env, ContractError::InvalidMaxComplexity);
-        }
-
-        env.events()
-            .publish(("initialize", "LP Share token staking contract"), &lp_token);
-
-        let config = Config {
-            lp_token,
-            min_bond,
-            min_reward,
-            manager,
-            owner,
-            max_complexity,
-        };
-        save_config(&env, config);
-
-        utils::save_admin_old(&env, &admin);
-        utils::init_total_staked(&env);
-        save_total_staked_history(&env, map![&env]);
-    }
-
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin_old(&env);

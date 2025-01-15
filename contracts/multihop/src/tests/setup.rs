@@ -1,16 +1,12 @@
 use crate::contract::{Multihop, MultihopClient};
 use crate::factory_contract::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
-use crate::{factory_contract, stable_pool, stake, token_contract, xyk_pool};
+use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
 
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
-    Address, BytesN, Env,
+    Address, Bytes, BytesN, Env,
 };
-use soroban_sdk::{vec, String, Vec};
-
-const FACTORY_WASM: &[u8] =
-    include_bytes!("../../../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm");
-
+use soroban_sdk::{vec, String};
 pub fn create_token_contract_with_metadata<'a>(
     env: &Env,
     admin: &Address,
@@ -49,7 +45,10 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 
 #[allow(clippy::too_many_arguments)]
 pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
-    env.deployer().upload_contract_wasm(stake::WASM)
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
+    );
+    env.deployer().upload_contract_wasm(WASM)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -60,6 +59,16 @@ pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
+    let factory_wasm = e.deployer().upload_contract_wasm(factory_contract::WASM);
+    let salt = Bytes::new(e);
+    let salt = e.crypto().sha256(&salt);
+
+    e.deployer()
+        .with_address(admin, salt)
+        .deploy_v2(factory_wasm, ())
+}
+
 pub fn deploy_multihop_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,
@@ -67,8 +76,9 @@ pub fn deploy_multihop_contract<'a>(
 ) -> MultihopClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
 
-    let multihop = MultihopClient::new(env, &env.register(Multihop, (&admin, factory)));
+    let multihop = MultihopClient::new(env, &env.register(Multihop, ()));
 
+    multihop.initialize(&admin, factory);
     multihop
 }
 
@@ -83,32 +93,27 @@ pub fn deploy_and_mint_tokens<'a>(
 }
 
 pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory_contract::Client {
+    let factory_addr = deploy_factory_contract(env, admin.clone());
+    let factory_client = factory_contract::Client::new(env, &factory_addr);
     let multihop_wasm_hash = install_multihop_wasm(env);
+    let whitelisted_accounts = vec![env, admin.clone()];
+
     let lp_wasm_hash = install_lp_contract(env);
     let stable_wasm_hash = install_stable_lp_contract(env);
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
 
-    let whitelisted_accounts: Vec<Address> = vec![env, admin.clone()];
-
-    let factory = factory_contract::Client::new(
-        env,
-        &env.register(
-            FACTORY_WASM,
-            (
-                &admin,
-                &multihop_wasm_hash,
-                &lp_wasm_hash,
-                &stable_wasm_hash,
-                &stake_wasm_hash,
-                &token_wasm_hash,
-                whitelisted_accounts,
-                10u32,
-            ),
-        ),
+    factory_client.initialize(
+        &admin.clone(),
+        &multihop_wasm_hash,
+        &lp_wasm_hash,
+        &stable_wasm_hash,
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &whitelisted_accounts,
+        &10u32,
     );
-
-    factory
+    factory_client
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -11,10 +11,9 @@ use crate::storage::{get_minter, save_minter, MinterInfo};
 use crate::{
     error::ContractError,
     storage::{
-        get_admin_old, get_all_vestings, get_config, get_max_vesting_complexity, get_token_info,
-        get_vesting, save_admin_old, save_config, save_max_vesting_complexity, save_token_info,
-        save_vesting, update_vesting, Config, VestingInfo, VestingSchedule, VestingTokenInfo,
-        ADMIN,
+        get_admin_old, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
+        is_initialized, save_admin_old, save_max_vesting_complexity, save_token_info, save_vesting,
+        set_initialized, update_vesting, VestingInfo, VestingSchedule, VestingTokenInfo, ADMIN,
     },
     token_contract,
     utils::{check_duplications, validate_vesting_schedule},
@@ -30,6 +29,13 @@ pub struct Vesting;
 
 #[allow(dead_code)]
 pub trait VestingTrait {
+    fn initialize(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        max_vesting_complexity: u32,
+    );
+
     fn create_vesting_schedules(env: Env, vesting_accounts: Vec<VestingSchedule>);
 
     fn claim(env: Env, sender: Address, index: u64);
@@ -48,7 +54,14 @@ pub trait VestingTrait {
 
     fn query_available_to_claim(env: Env, address: Address, index: u64) -> i128;
 
-    fn query_config(env: Env) -> Config;
+    #[cfg(feature = "minter")]
+    fn initialize_with_minter(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        max_vesting_complexity: u32,
+        minter_info: MinterInfo,
+    );
 
     #[cfg(feature = "minter")]
     fn burn(env: Env, sender: Address, amount: u128);
@@ -70,6 +83,73 @@ pub trait VestingTrait {
 
 #[contractimpl]
 impl VestingTrait for Vesting {
+    fn initialize(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        max_vesting_complexity: u32,
+    ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Stake: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        set_initialized(&env);
+
+        save_admin_old(&env, &admin);
+
+        let token_info = VestingTokenInfo {
+            name: vesting_token.name,
+            symbol: vesting_token.symbol,
+            decimals: vesting_token.decimals,
+            address: vesting_token.address,
+        };
+
+        save_token_info(&env, &token_info);
+        save_max_vesting_complexity(&env, &max_vesting_complexity);
+
+        env.events()
+            .publish(("Initialize", "Vesting contract with admin: "), admin);
+    }
+
+    #[cfg(feature = "minter")]
+    fn initialize_with_minter(
+        env: Env,
+        admin: Address,
+        vesting_token: VestingTokenInfo,
+        max_vesting_complexity: u32,
+        minter_info: MinterInfo,
+    ) {
+        if is_initialized(&env) {
+            log!(
+                &env,
+                "Stake: Initialize: initializing contract twice is not allowed"
+            );
+            panic_with_error!(&env, ContractError::AlreadyInitialized);
+        }
+
+        set_initialized(&env);
+        save_admin_old(&env, &admin);
+
+        save_minter(&env, &minter_info);
+
+        let token_info = VestingTokenInfo {
+            name: vesting_token.name,
+            symbol: vesting_token.symbol,
+            decimals: vesting_token.decimals,
+            address: vesting_token.address,
+        };
+
+        save_token_info(&env, &token_info);
+        save_max_vesting_complexity(&env, &max_vesting_complexity);
+
+        env.events()
+            .publish(("Initialize", "Vesting contract with admin: "), admin);
+    }
+
     fn create_vesting_schedules(env: Env, vesting_schedules: Vec<VestingSchedule>) {
         let admin = get_admin_old(&env);
         admin.require_auth();
@@ -184,14 +264,6 @@ impl VestingTrait for Vesting {
 
         env.events()
             .publish(("Claim", "Claimed tokens: "), available_to_claim);
-    }
-
-    fn query_config(env: Env) -> Config {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
-        get_config(&env)
     }
 
     #[cfg(feature = "minter")]
@@ -411,42 +483,5 @@ impl VestingTrait for Vesting {
         env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())
-    }
-}
-
-#[contractimpl]
-impl Vesting {
-    pub fn __constructor(
-        env: Env,
-        admin: Address,
-        vesting_token: VestingTokenInfo,
-        max_vesting_complexity: u32,
-        minter_info: Option<MinterInfo>,
-    ) {
-        save_admin_old(&env, &admin);
-
-        let token_info = VestingTokenInfo {
-            name: vesting_token.name,
-            symbol: vesting_token.symbol,
-            decimals: vesting_token.decimals,
-            address: vesting_token.address,
-        };
-
-        let mut config = Config {
-            is_with_minter: false,
-        };
-
-        save_token_info(&env, &token_info);
-        save_max_vesting_complexity(&env, &max_vesting_complexity);
-
-        if let Some(minter_info) = minter_info {
-            save_minter(&env, &minter_info);
-            config.is_with_minter = true;
-        }
-
-        save_config(&env, config);
-
-        env.events()
-            .publish(("Initialize", "Vesting contract with admin: "), admin);
     }
 }

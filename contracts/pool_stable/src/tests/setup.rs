@@ -51,6 +51,7 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
     init_amp: impl Into<Option<u64>>,
 ) -> StableLiquidityPoolClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
+    let pool = StableLiquidityPoolClient::new(env, &env.register(StableLiquidityPool, ()));
     let fee_recipient = fee_recipient
         .into()
         .unwrap_or_else(|| Address::generate(env));
@@ -82,22 +83,15 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
         stake_init_info,
     };
 
-    let pool = StableLiquidityPoolClient::new(
-        env,
-        &env.register(
-            StableLiquidityPool,
-            (
-                &stake_wasm_hash,
-                &token_wasm_hash,
-                lp_init_info,
-                &factory,
-                String::from_str(env, "LP_SHARE_TOKEN"),
-                String::from_str(env, "PHOBTCLP"),
-                &init_amp.into().unwrap_or(6u64),
-                &1_000i64,
-            ),
-        ),
+    pool.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &lp_init_info,
+        &factory,
+        &String::from_str(env, "LP_SHARE_TOKEN"),
+        &String::from_str(env, "PHOBTCLP"),
+        &init_amp.into().unwrap_or(6u64),
+        &1_000,
     );
-
     pool
 }

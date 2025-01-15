@@ -28,15 +28,11 @@ fn instantiate_contract_successfully_with_constant_curve_minter_info() {
         mint_capacity: 511223344,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
+    let vesting_client = instantiate_vesting_client(&env);
 
     token_client.mint(&admin, &240);
+
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
 
     assert_eq!(vesting_client.query_token_info(), vesting_token);
 }
@@ -64,14 +60,9 @@ fn mint_panics_when_over_the_cap() {
         mint_capacity: 100,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
+    let vesting_client = instantiate_vesting_client(&env);
 
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
     vesting_client.mint(&minter, &110i128);
 }
 
@@ -106,19 +97,12 @@ fn burn_works() {
         },
     ];
 
+    let vesting_client = instantiate_vesting_client(&env);
     let minter_info = MinterInfo {
         address: Address::generate(&env),
         mint_capacity: 10_000,
     };
-
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
-
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     env.ledger().with_mut(|li| li.timestamp = 100);
@@ -151,19 +135,12 @@ fn burn_should_panic_when_invalid_amount() {
         address: token.address.clone(),
     };
 
+    let vesting_client = instantiate_vesting_client(&env);
     let minter_info = MinterInfo {
         address: Address::generate(&env),
         mint_capacity: 10_000,
     };
-
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
-
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
     vesting_client.burn(&Address::generate(&env), &0);
 }
 
@@ -204,14 +181,8 @@ fn mint_works() {
         mint_capacity: 500,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
-
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info.clone());
     vesting_client.create_vesting_schedules(&vesting_schedules);
 
     // we start with 120 tokens minted to the contract
@@ -263,13 +234,8 @@ fn mint_should_panic_when_invalid_amount() {
         mint_capacity: 500,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
 
     vesting_client.mint(&Address::generate(&env), &0);
 }
@@ -299,13 +265,8 @@ fn mint_should_panic_when_not_authorized_to_mint() {
         mint_capacity: 500,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
 
     vesting_client.mint(&vester1, &100);
 }
@@ -335,13 +296,8 @@ fn mint_should_panic_when_mintet_does_not_have_enough_capacity() {
         mint_capacity: 500,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
 
     vesting_client.mint(&minter, &1_500);
 }
@@ -370,13 +326,8 @@ fn update_minter_works_correctly() {
         mint_capacity: 500,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info.clone()),
-    );
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info.clone());
 
     assert_eq!(vesting_client.query_minter(), minter_info);
 
@@ -418,13 +369,8 @@ fn update_minter_fails_when_not_authorized() {
         mint_capacity: 500,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info.clone());
 
     let new_minter_info = MinterInfo {
         address: new_minter.clone(),
@@ -458,13 +404,8 @@ fn update_minter_capacity_when_replacing_old_capacity() {
         mint_capacity: 50_000,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info.clone());
 
     let new_minter_capacity = 1_000;
     vesting_client.update_minter_capacity(&admin, &new_minter_capacity);
@@ -502,13 +443,8 @@ fn updating_minter_capacity_without_auth() {
         mint_capacity: 50_000,
     };
 
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
+    let vesting_client = instantiate_vesting_client(&env);
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info.clone());
 
     vesting_client.update_minter_capacity(&Address::generate(&env), &1_000);
 }
@@ -532,18 +468,12 @@ fn burning_more_than_balance() {
         address: token.address.clone(),
     };
 
+    let vesting_client = instantiate_vesting_client(&env);
     let minter_info = MinterInfo {
         address: Address::generate(&env),
         mint_capacity: 1_000,
     };
-
-    let vesting_client = instantiate_vesting_client(
-        &env,
-        &admin,
-        vesting_token.clone(),
-        10u32,
-        Some(minter_info),
-    );
+    vesting_client.initialize_with_minter(&admin, &vesting_token, &10u32, &minter_info);
 
     // vester1 tries to burn 121 tokens
     vesting_client.burn(&Address::generate(&env), &121);

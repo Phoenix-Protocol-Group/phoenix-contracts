@@ -55,7 +55,7 @@ pub mod utils {
     #[derive(Clone, Copy)]
     #[repr(u32)]
     pub enum DataKey {
-        Initialized = 0, // deprecated, do not remove for now
+        Initialized = 0,
         Admin = 1,
     }
 
@@ -65,6 +65,22 @@ pub mod utils {
         fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
             Ok((*v as u32).into())
         }
+    }
+
+    pub fn is_initialized(e: &Env) -> bool {
+        e.storage()
+            .persistent()
+            .get(&DataKey::Initialized)
+            .unwrap_or(false)
+    }
+
+    pub fn set_initialized(e: &Env) {
+        e.storage().persistent().set(&DataKey::Initialized, &true);
+        e.storage().persistent().extend_ttl(
+            &DataKey::Initialized,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn save_admin_old(e: &Env, address: &Address) {

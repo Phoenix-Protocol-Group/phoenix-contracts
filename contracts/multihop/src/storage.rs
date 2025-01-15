@@ -31,7 +31,7 @@ pub enum DataKey {
     PairKey(Pair),
     FactoryKey,
     Admin,
-    Initialized, // deprecated, do not remove for now
+    Initialized,
 }
 
 #[contracttype]
@@ -136,4 +136,20 @@ pub fn _get_admin(env: &Env) -> Address {
         .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
     admin
+}
+
+pub fn is_initialized(e: &Env) -> bool {
+    e.storage()
+        .persistent()
+        .get(&DataKey::Initialized)
+        .unwrap_or(false)
+}
+
+pub fn set_initialized(e: &Env) {
+    e.storage().persistent().set(&DataKey::Initialized, &true);
+    e.storage().persistent().extend_ttl(
+        &DataKey::Initialized,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
