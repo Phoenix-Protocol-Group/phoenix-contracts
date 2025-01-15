@@ -273,9 +273,9 @@ echo "Multihop contract updated to the latest code."
 echo "'updapte_multihop' test have been replicated."
 echo "Old -> Updated multihop contract address: $OLD_MULTIHOP_ADDR"
 
-soroban keys generate luke --network testnet --fund
-soroban keys generate obiwan --network testnet --fund
-soroban keys generate jarjar --network testnet --fund
+soroban keys generate luke --network $NETWORK --fund
+soroban keys generate obiwan --network $NETWORK --fund
+soroban keys generate jarjar --network $NETWORK --fund
 
 ADMIN=$(soroban keys address luke)
 USER=$(soroban keys address jarjar)
@@ -481,3 +481,154 @@ echo "ASSET_LP_SHARE: $ASSET_LP_SHARE_AMOUNT"
 
 echo "'update_liquidity_pool' test have been replicated via shell."
 echo "Liquidity Pool contract address: $OLD_LP_ID"
+
+soroban keys generate stake_admin --network "$NETWORK" --fund
+soroban keys generate stake_user --network "$NETWORK" --fund
+
+STAKE_ADMIN=$(soroban keys address stake_admin)
+STAKE_USER=$(soroban keys address stake_user)
+
+STAKE_ADMIN_SECRET=$(soroban keys secret stake_admin)
+STAKE_USER_SECRET=$(soroban keys secret stake_user)
+
+echo "Stake admin: $STAKE_ADMIN"
+echo "Stake user:  $STAKE_USER"
+echo "Stake admin: $STAKE_ADMIN_SECRET"
+echo "Stake user:  $STAKE_USER_SECRET"
+
+STAKE_TOKEN_ADDR=$(soroban contract deploy \
+  --wasm-hash "$OLD_SOROBAN_TOKEN_WASM_HASH" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK")
+
+echo "Token for stake deployed at: $STAKE_TOKEN_ADDR"
+
+echo "Initializing stake token with admin=$STAKE_ADMIN..."
+soroban contract invoke \
+  --id "$STAKE_TOKEN_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  initialize \
+  --admin "$STAKE_ADMIN" \
+  --decimal 7 \
+  --name "StakeToken" \
+  --symbol "STK"
+
+soroban contract invoke \
+  --id "$STAKE_TOKEN_ADDR" \
+  --source "$STAKE_ADMIN_SECRET" \
+  --network "$NETWORK" \
+  -- \
+  mint \
+  --to "$STAKE_USER" \
+  --amount 1000
+
+OLD_STAKE_ADDR=$(soroban contract deploy \
+  --wasm-hash "$OLD_PHOENIX_STAKE_WASM_HASH" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK")
+echo "Old stake contract deployed at: $OLD_STAKE_ADDR"
+
+soroban keys generate stake_manager --network "$NETWORK" --fund
+soroban keys generate stake_owner --network "$NETWORK" --fund
+
+MANAGER_ADDR=$(soroban keys address stake_manager)
+OWNER_ADDR=$(soroban keys address stake_owner)
+
+MANAGER_SECRET=$(soroban keys secret stake_manager)
+OWNER_SECRET=$(soroban keys secret stake_owner)
+
+echo "Manager: $MANAGER_ADDR"
+echo "Owner:   $OWNER_ADDR"
+
+soroban contract invoke \
+  --id "$OLD_STAKE_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  initialize \
+  --admin "$STAKE_ADMIN" \
+  --lp_token "$STAKE_TOKEN_ADDR" \
+  --min_bond "10" \
+  --min_reward "10" \
+  --manager "$MANAGER_ADDR" \
+  --owner "$OWNER_ADDR" \
+  --max_complexity "10"
+
+echo "Old stake initialized."
+
+echo "Bonding 1000 tokens from $STAKE_USER..."
+soroban contract invoke \
+  --id "$OLD_STAKE_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  bond \
+  --sender "$STAKE_USER_SECRET" \
+  --tokens 1000
+
+echo "Bonded 1000 tokens."
+
+echo "Checking staked info for user after bonding..."
+
+STAKED_INFO=$(soroban contract invoke \
+  --id "$OLD_STAKE_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  query_staked \
+  --address "$STAKE_USER")
+
+echo "Staked info: $STAKED_INFO"
+
+STAKE_AMOUNT=$(echo "$STAKED_INFO" | jq -r '.stakes[0].stake')
+STAKE_TIMESTAMP=$(echo "$STAKED_INFO" | jq -r '.stakes[0].stake_timestamp')
+LAST_REWARD_TIME=$(echo "$STAKED_INFO" | jq -r '.last_reward_time')
+TOTAL_STAKE=$(echo "$STAKED_INFO" | jq -r '.total_stake')
+
+if [ "$STAKE_AMOUNT" -eq 1000 ] \
+   && [ "$LAST_REWARD_TIME" -eq 0 ] \
+   && [ "$TOTAL_STAKE" -eq 1000 ]; then
+  echo "Staked info matches expected values!"
+else
+  echo "ERROR: Staked info mismatch."
+  echo "  stake=$STAKE_AMOUNT (expected 1000)"
+  echo "  last_reward_time=$LAST_REWARD_TIME (expected 0)"
+  echo "  total_stake=$TOTAL_STAKE (expected 1000)"
+  exit 1
+fi
+
+echo "Updating old stake contract to latest stake code..."
+soroban contract invoke \
+  --id "$OLD_STAKE_ADDR" \
+  --source "$STAKE_ADMIN_SECRET" \
+  --network "$NETWORK" \
+  -- \
+  update \
+  --new_wasm_hash "$LATEST_PHOENIX_STAKE_WASM_HASH"
+
+echo "Stake contract updated."
+
+UPDATED_STAKE_ADMIN=$(soroban contract invoke \
+  --id "$OLD_STAKE_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  query_admin)
+
+echo "Updated stake admin is: $UPDATED_STAKE_ADMIN (expected \"$STAKE_ADMIN\")"
+
+echo "Unbonding 1000 tokens from user..."
+soroban contract invoke \
+  --id "$OLD_STAKE_ADDR" \
+  --source "$IDENTITY_STRING" \
+  --network "$NETWORK" \
+  -- \
+  unbond \
+  --sender "$STAKE_USER_SECRET" \
+  --stake_amount 1000 \
+  --stake_timestamp $STAKE_TIMESTAMP
+
+echo "'upgrade_stake_contract' test replicated!"
+echo "Stake contract address: $OLD_STAKE_ADDR"
