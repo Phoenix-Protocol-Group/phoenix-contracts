@@ -16,7 +16,7 @@ pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub enum DataKey {
     Config = 1,
     LpVec = 2,
-    Initialized = 3,
+    Initialized = 3, // deprecated, do not remove for now
 }
 
 #[derive(Clone)]
@@ -229,23 +229,6 @@ pub fn save_lp_vec_with_tuple_as_key(
             token_a: tuple_pool.0.clone(),
             token_b: tuple_pool.1.clone(),
         },
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
-    );
-}
-
-pub fn is_initialized(e: &Env) -> bool {
-    e.storage()
-        .persistent()
-        .get(&DataKey::Initialized)
-        .unwrap_or(false)
-}
-
-pub fn set_initialized(e: &Env) {
-    e.storage().persistent().set(&DataKey::Initialized, &true);
-
-    e.storage().persistent().extend_ttl(
-        &DataKey::Initialized,
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
     );

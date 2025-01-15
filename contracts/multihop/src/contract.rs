@@ -8,8 +8,8 @@ use crate::factory_contract::PoolType;
 // FIXM: Disable Referral struct
 // use crate::lp_contract::Referral;
 use crate::storage::{
-    get_admin_old, get_factory, is_initialized, save_admin_old, save_factory, set_initialized,
-    SimulateReverseSwapResponse, SimulateSwapResponse, Swap, ADMIN,
+    get_admin_old, get_factory, save_admin_old, save_factory, SimulateReverseSwapResponse,
+    SimulateSwapResponse, Swap, ADMIN,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
@@ -25,8 +25,6 @@ pub struct Multihop;
 
 #[allow(dead_code)]
 pub trait MultihopTrait {
-    fn initialize(env: Env, admin: Address, factory: Address);
-
     #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
@@ -60,25 +58,6 @@ pub trait MultihopTrait {
 
 #[contractimpl]
 impl MultihopTrait for Multihop {
-    fn initialize(env: Env, admin: Address, factory: Address) {
-        if is_initialized(&env) {
-            log!(
-                &env,
-                "Multihop: Initialize: initializing contract twice is not allowed"
-            );
-            panic_with_error!(&env, ContractError::AlreadyInitialized);
-        }
-
-        set_initialized(&env);
-
-        save_admin_old(&env, &admin);
-
-        save_factory(&env, factory);
-
-        env.events()
-            .publish(("initialize", "Multihop factory with admin: "), admin);
-    }
-
     #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
@@ -298,6 +277,15 @@ impl MultihopTrait for Multihop {
 
 #[contractimpl]
 impl Multihop {
+    pub fn __constructor(env: Env, admin: Address, factory: Address) {
+        save_admin_old(&env, &admin);
+
+        save_factory(&env, factory);
+
+        env.events()
+            .publish(("initialize", "Multihop factory with admin: "), admin);
+    }
+
     #[allow(dead_code)]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin_old(&env);

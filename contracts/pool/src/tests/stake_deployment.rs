@@ -1,15 +1,11 @@
 extern crate std;
-use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{testutils::Address as _, Address, Env, String};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
     stake_contract,
     storage::{Config, PairType},
 };
-
-use crate::contract::{LiquidityPool, LiquidityPoolClient};
-use crate::tests::setup::{install_stake_wasm, install_token_wasm};
 
 #[test]
 fn confirm_stake_contract_deployment() {
@@ -75,77 +71,5 @@ fn confirm_stake_contract_deployment() {
                 max_complexity: 10,
             }
         }
-    );
-}
-
-#[test]
-#[should_panic(expected = "Pool: Initialize: initializing contract twice is not allowed")]
-fn second_pool_deployment_should_fail() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.cost_estimate().budget().reset_unlimited();
-
-    let mut admin1 = Address::generate(&env);
-    let mut admin2 = Address::generate(&env);
-    let user = Address::generate(&env);
-
-    let mut token1 = deploy_token_contract(&env, &admin1);
-    let mut token2 = deploy_token_contract(&env, &admin2);
-    if token2.address < token1.address {
-        std::mem::swap(&mut token1, &mut token2);
-        std::mem::swap(&mut admin1, &mut admin2);
-    }
-
-    let pool = LiquidityPoolClient::new(&env, &env.register(LiquidityPool, ()));
-
-    let token_wasm_hash = install_token_wasm(&env);
-    let stake_wasm_hash = install_stake_wasm(&env);
-    let fee_recipient = user;
-    let max_allowed_slippage = 5_000i64; // 50% if not specified
-    let max_allowed_spread = 500i64; // 5% if not specified
-
-    let token_init_info = TokenInitInfo {
-        token_a: token1.address.clone(),
-        token_b: token2.address.clone(),
-    };
-    let stake_init_info = StakeInitInfo {
-        min_bond: 10i128,
-        min_reward: 5i128,
-        manager: Address::generate(&env),
-        max_complexity: 10u32,
-    };
-
-    let lp_init_info = LiquidityPoolInitInfo {
-        admin: admin1,
-        swap_fee_bps: 0i64,
-        fee_recipient,
-        max_allowed_slippage_bps: max_allowed_slippage,
-        default_slippage_bps: 2_500,
-        max_allowed_spread_bps: max_allowed_spread,
-        max_referral_bps: 500,
-        token_init_info,
-        stake_init_info,
-    };
-
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-        &Address::generate(&env),
-        &String::from_str(&env, "Pool"),
-        &String::from_str(&env, "PHOBTC"),
-        &100i64,
-        &1_000,
-    );
-
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-        &Address::generate(&env),
-        &String::from_str(&env, "Pool"),
-        &String::from_str(&env, "PHOBTC"),
-        &100i64,
-        &1_000,
     );
 }
