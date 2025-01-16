@@ -193,6 +193,7 @@ impl VestingTrait for Vesting {
                 },
             );
 
+            //TODO: safe math
             total_vested_amount += vested_amount;
         });
 
@@ -251,6 +252,7 @@ impl VestingTrait for Vesting {
             &sender,
             index,
             &VestingInfo {
+                //TODO: safe math
                 balance: (sender_balance - convert_i128_to_u128(available_to_claim)),
                 ..vesting_info
             },
@@ -466,6 +468,7 @@ impl VestingTrait for Vesting {
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let vesting_info = get_vesting(&env, &address, index);
 
+        //TODO: safe math
         convert_u128_to_i128(
             vesting_info.balance - vesting_info.schedule.value(env.ledger().timestamp()),
         )

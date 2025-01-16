@@ -446,10 +446,11 @@ impl FactoryTrait for Factory {
                 &Symbol::new(&env, "query_staked"),
                 vec![&env, sender.into_val(&env)],
             );
-
+            //TODO: safe math
             let sum_of_lp_share_staked: i128 =
                 lp_share_staked.stakes.iter().map(|stake| stake.stake).sum();
 
+            //TODO: safe math
             let total_lp_share_for_user = lp_share_balance + sum_of_lp_share_staked;
 
             // query the balance of the liquidity tokens

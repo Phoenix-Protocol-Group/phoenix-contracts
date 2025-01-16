@@ -93,6 +93,7 @@ pub fn update_rewards(
     if old_rewards_power == new_rewards_power {
         return;
     }
+    //TODO: safe math
     let diff = new_rewards_power - old_rewards_power;
     // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
@@ -112,6 +113,7 @@ fn apply_points_correction(
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     let shares_correction = withdraw_adjustment.shares_correction;
+    //TODO: safe math
     withdraw_adjustment.shares_correction =
         shares_correction - convert_u128_to_i128(shares_per_point) * diff;
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
@@ -175,8 +177,10 @@ pub fn withdrawable_rewards(
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
     let points = calc_power(config, total_staked, Decimal::one(), TOKEN_PER_POWER);
+    //TODO: safe math
     let points = convert_u128_to_i128(ppw) * points;
 
+    //TODO: safe math
     let correction = adjustment.shares_correction;
     let points = points + correction;
     let amount = points >> SHARES_SHIFT;
@@ -253,7 +257,8 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
 
     for stake in stakes.iter() {
         // Calculate the number of days the stake has been active
-        let days_active = (dbg!(current_date) - dbg!(stake.stake_timestamp)) / SECONDS_PER_DAY;
+        //TODO: safe math
+        let days_active = (current_date - stake.stake_timestamp) / SECONDS_PER_DAY;
 
         // If stake is younger than 60 days, calculate its power
         let power = if days_active < 60 {
@@ -263,8 +268,10 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
         };
 
         // Add the weighted power to the sum
+        //TODO: safe math
         weighted_sum += power * convert_i128_to_u128(stake.stake);
         // Accumulate the total weight
+        //TODO: safe math
         total_weight += 60 * convert_i128_to_u128(stake.stake);
     }
 

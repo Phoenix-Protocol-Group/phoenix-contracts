@@ -172,6 +172,7 @@ impl StakingRewardsTrait for StakingRewards {
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
         let new_power = calc_power(
             &config,
+            //TODO: safe math
             stakes.total_stake + last_stake.stake,
             Decimal::one(),
             TOKEN_PER_POWER,
@@ -211,6 +212,7 @@ impl StakingRewardsTrait for StakingRewards {
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
         let new_power = calc_power(
             &config,
+            //TODO: safe math
             stakes.total_stake - removed_stake,
             Decimal::one(),
             TOKEN_PER_POWER,
@@ -261,6 +263,7 @@ impl StakingRewardsTrait for StakingRewards {
         // Calculate how much we have received since the last time Distributed was called,
         // including only the reward config amount that is eligible for distribution.
         // This is the amount we will distribute to all mem
+        //TODO: safe math
         let amount = undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
 
         if amount == 0 {
@@ -268,7 +271,9 @@ impl StakingRewardsTrait for StakingRewards {
         }
 
         let leftover: u128 = distribution.shares_leftover.into();
+        //TODO: safe math
         let points = (amount << SHARES_SHIFT) + leftover;
+        //TODO: safe math
         let points_per_share = points / total_rewards_power;
         distribution.shares_leftover = (points % total_rewards_power) as u64;
 
@@ -276,6 +281,7 @@ impl StakingRewardsTrait for StakingRewards {
         // Full amount is added here to total withdrawable, as it should not be considered on its own
         // on future distributions - even if because of calculation offsets it is not fully
         // distributed, the error is handled by leftover.
+        //TODO: safe math
         distribution.shares_per_point += points_per_share;
         distribution.distributed_total += amount;
         distribution.withdrawable_total += amount;
@@ -314,11 +320,13 @@ impl StakingRewardsTrait for StakingRewards {
 
         // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
+        //TODO: safe math
         let reward_amount = convert_u128_to_i128(reward_amount) * reward_multiplier;
 
         if reward_amount == 0 {
             return;
         }
+        //TODO: safe math
         withdraw_adjustment.withdrawn_rewards += reward_amount as u128;
         distribution.withdrawable_total -= reward_amount as u128;
 
@@ -378,6 +386,7 @@ impl StakingRewardsTrait for StakingRewards {
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         reward_token_client.transfer(&admin, &env.current_contract_address(), &token_amount);
 
+        //TODO: safe math
         let end_time = current_time + distribution_duration;
         // define a distribution curve starting at start_time with token_amount of tokens
         // and ending at end_time with 0 tokens
@@ -533,6 +542,7 @@ impl StakingRewardsTrait for StakingRewards {
         let distribution = get_distribution(&env, &asset);
         let reward_token_client = token_contract::Client::new(&env, &asset);
         let reward_token_balance = reward_token_client.balance(&env.current_contract_address());
+        //TODO: safe math
         convert_i128_to_u128(reward_token_balance) - distribution.withdrawable_total
     }
 

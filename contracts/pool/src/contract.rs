@@ -360,6 +360,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let final_balance_b = token_b_client.balance(&env.current_contract_address());
 
         // Calculate the actual received amounts
+        //TODO: safe math
         let actual_received_a = final_balance_a - initial_balance_a;
         let actual_received_b = final_balance_b - initial_balance_b;
 
@@ -373,11 +374,13 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
             // use 10_000 multiplier to acheieve a bit bigger precision
+            //TODO: safe math
             let shares_a = (balance_a * total_shares) / pool_balance_a;
             let shares_b = (balance_b * total_shares) / pool_balance_b;
             shares_a.min(shares_b)
         } else {
             // In case of empty pool, just produce X*Y shares
+            //TODO: safe math
             let shares = (amounts.0 * amounts.1).sqrt();
             if MINIMUM_LIQUIDITY_AMOUNT >= shares {
                 log!(env, "Pool: Provide Liquidity: Not enough liquidity!");
@@ -390,6 +393,7 @@ impl LiquidityPoolTrait for LiquidityPool {
                 &env.current_contract_address(),
                 MINIMUM_LIQUIDITY_AMOUNT,
             );
+            //TODO: safe math
             shares - MINIMUM_LIQUIDITY_AMOUNT
         };
 
@@ -397,6 +401,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             &env,
             &config.share_token,
             &sender,
+            //TODO: safe math
             new_total_shares - total_shares,
         );
 
@@ -497,6 +502,7 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let share_ratio = Decimal::from_ratio(share_amount, total_shares);
 
+        //TODO: safe math
         let return_amount_a = pool_balance_a * share_ratio;
         let return_amount_b = pool_balance_b * share_ratio;
 
@@ -699,6 +705,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             0i64,
         );
 
+        //TODO: safe math
         let total_return = compute_swap.return_amount
             + compute_swap.commission_amount
             + compute_swap.spread_amount;
@@ -760,6 +767,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             share_ratio = Decimal::from_ratio(amount, total_share);
         }
 
+        //TODO: safe math
         let amount_a = token_a_amount * share_ratio;
         let amount_b = token_b_amount * share_ratio;
         (
@@ -875,6 +883,7 @@ fn do_swap(
         }
     }
 
+    //TODO: safe math
     let total_return_amount = compute_swap.return_amount
         + compute_swap.commission_amount
         + compute_swap.referral_fee_amount;
@@ -905,6 +914,7 @@ fn do_swap(
     let balance_after_transfer = sell_token_client.balance(&env.current_contract_address());
 
     // calculate how much did the contract actually got
+    //TODO: safe math
     let actual_received_amount = balance_after_transfer - balance_before_transfer;
 
     let buy_token_client = token_contract::Client::new(&env, &buy_token);
@@ -938,6 +948,7 @@ fn do_swap(
 
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
+    //TODO: safe math
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
             pool_balance_a + actual_received_amount,
@@ -1025,7 +1036,9 @@ fn split_deposit_based_on_pool_ratio(
     let mut final_offer_amount = deposit; // amount of deposit tokens to be swapped
     let mut final_ask_amount = 0; // amount of other tokens to be received
 
+    //TODO: safe math
     while high - low > tolerance {
+        //TODO: safe math
         let mid = (low + high) / 2; // Calculate middle point
 
         // Simulate swap to get amount of other tokens to be received for `mid` amount of deposit tokens
@@ -1042,6 +1055,7 @@ fn split_deposit_based_on_pool_ratio(
 
         // Calculate the ratio that would result from swapping `mid` deposit tokens
         let ratio = if offer_asset == &config.token_a {
+            //TODO: safe math
             Decimal::from_ratio(ask_amount, deposit - mid)
         } else {
             Decimal::from_ratio(deposit - mid, ask_amount)
@@ -1102,11 +1116,13 @@ fn assert_slippage_tolerance(
     }
 
     // Calculate the limit below which the deposit-to-pool ratio must not fall for each token
+    //TODO: safe math
     let one_minus_slippage_tolerance = Decimal::one() - slippage_tolerance;
     let deposits: [i128; 2] = [deposits[0], deposits[1]];
     let pools: [i128; 2] = [pools[0], pools[1]];
 
     // Ensure each price does not change more than what the slippage tolerance allows
+    //TODO: safe math
     if deposits[0] * pools[1] * one_minus_slippage_tolerance
         > deposits[1] * pools[0] * Decimal::one()
         || deposits[1] * pools[0] * one_minus_slippage_tolerance
@@ -1217,6 +1233,7 @@ pub fn compute_offer_amount(
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
     // Calculate the cross product of offer_pool and ask_pool
+    //TODO: safe math
     let cp: i128 = offer_pool * ask_pool;
 
     // Calculate one minus the commission rate
@@ -1226,11 +1243,13 @@ pub fn compute_offer_amount(
     let inv_one_minus_commission = Decimal::one() / one_minus_commission;
 
     // Calculate the resulting amount of ask assets after the swap
+    //TODO: safe math
     let offer_amount: i128 = cp / (ask_pool - (ask_amount * inv_one_minus_commission)) - offer_pool;
 
     let ask_before_commission = ask_amount * inv_one_minus_commission;
 
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
+    //TODO: safe math
     let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_before_commission;
 
     // Calculate the commission amount

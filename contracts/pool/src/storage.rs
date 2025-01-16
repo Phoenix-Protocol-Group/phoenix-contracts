@@ -389,6 +389,7 @@ pub mod utils {
         }
 
         let amount_a = {
+            //TODO: safe math
             let mut amount_a = desired_b * pool_balance_a / pool_balance_b;
             if amount_a > desired_a {
                 // If the amount is within the desired amount of slippage, we accept it
@@ -422,6 +423,7 @@ pub mod utils {
         };
 
         let amount_b = {
+            //TODO: safe math
             let mut amount_b = desired_a * pool_balance_b / pool_balance_a;
             if amount_b > desired_b {
                 // If the amount is within the set threshold of the desired amount, we accept it

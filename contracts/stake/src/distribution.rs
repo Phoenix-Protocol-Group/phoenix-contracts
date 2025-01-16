@@ -99,6 +99,7 @@ pub fn calculate_pending_rewards(
                     // Calculate multiplier based on the age of each stake
                     for stake in user_info.stakes.iter() {
                         // Calculate the user's share of the total staked amount at the time
+                        //TODO: safe math
                         let user_share = stake.stake as u128 * daily_reward / total_staked;
                         let stake_age_days = (staking_reward_day
                             .saturating_sub(stake.stake_timestamp))
@@ -114,6 +115,7 @@ pub fn calculate_pending_rewards(
 
                         // Apply the multiplier and accumulate the rewards
                         let adjusted_reward = user_share as i128 * multiplier;
+                        //TODO: safe math
                         pending_rewards += adjusted_reward;
                     }
                 }

@@ -1,6 +1,7 @@
 // A lot of this code is taken from the cosmwasm-std crate, which is licensed under the Apache
 // License 2.0 - https://github.com/CosmWasm/cosmwasm.
 
+//TODO: safe math the whole thing
 use soroban_sdk::{Env, String};
 
 use core::{

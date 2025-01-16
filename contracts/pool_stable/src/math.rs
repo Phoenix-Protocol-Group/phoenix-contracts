@@ -1,4 +1,5 @@
 use soroban_sdk::{log, panic_with_error, Env, U256};
+//TODO: safe math the whole thing
 
 use crate::{error::ContractError, storage::AmplifierParameters, DECIMAL_PRECISION};
 

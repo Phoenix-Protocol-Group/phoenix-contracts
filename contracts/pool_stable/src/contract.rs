@@ -251,6 +251,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             log!(&env, "Pool Stable: Initialize: AMP parameter is incorrect");
             panic_with_error!(&env, ContractError::InvalidAMP);
         }
+        //TODO: safe math
         save_amp(
             &env,
             AmplifierParameters {
@@ -334,10 +335,12 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let balance_b_after = token_b_client.balance(&env.current_contract_address());
 
         // calculate actual amounts received
+        //TODO: safe math
         let actual_received_a = balance_a_after - balance_a_before;
         let actual_received_b = balance_b_after - balance_b_before;
 
         // Invariant (D) after deposit added
+        //TODO: safe math
         let new_balance_a = convert_i128_to_u128(actual_received_a + old_balance_a);
         let new_balance_b = convert_i128_to_u128(actual_received_b + old_balance_b);
 
@@ -353,6 +356,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
             let divisor = 10u128.pow(DECIMAL_PRECISION - greatest_precision);
+            //TODO: safe math
             let share = (new_invariant
                 .to_u128()
                 .expect("Pool stable: provide_liquidity: conversion to u128 failed")
@@ -390,6 +394,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .expect("Pool stable: provide_liquidity: conversion to u128 failed");
 
             // Calculate the proportion of the change in invariant
+            //TODO: safe math
             let invariant_delta = convert_u128_to_i128(
                 new_invariant
                     .to_u128()
@@ -724,6 +729,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             config.protocol_fee_rate(),
         );
 
+        //TODO: safe math
         let total_return = ask_amount + commission_amount + spread_amount;
 
         SimulateSwapResponse {
@@ -921,6 +927,7 @@ fn do_swap(
     assert_max_spread(
         &env,
         max_spread,
+        //TODO: safe math
         return_amount + commission_amount,
         spread_amount,
     );
@@ -941,6 +948,7 @@ fn do_swap(
         token_contract::Client::new(&env, &sell_token).balance(&env.current_contract_address());
 
     // calculate how much did the contract actually got
+    //TODO: safe math
     let actual_received_amount = balance_after_transfer - balance_before_transfer;
 
     // return swapped tokens to user
@@ -959,6 +967,7 @@ fn do_swap(
 
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
+    //TODO: safe math
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
             pool_balance_a + actual_received_amount,
@@ -1031,6 +1040,7 @@ pub fn compute_swap(
         env,
         amp as u128,
         scale_value(
+            //TODO: safe math
             env,
             offer_pool + offer_amount,
             greatest_precision,
@@ -1043,9 +1053,11 @@ pub fn compute_swap(
         greatest_precision,
     );
 
+    //TODO: safe math
     let return_amount = ask_pool - new_ask_pool;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = if offer_amount > return_amount {
+        //TODO: safe math
         convert_u128_to_i128(offer_amount - return_amount)
     } else {
         // saturating sub equivalent
@@ -1054,6 +1066,7 @@ pub fn compute_swap(
     let return_amount = convert_u128_to_i128(return_amount);
     let commission_amount = return_amount * commission_rate;
     // Because of issue #211
+    //TODO: safe math
     let return_amount = return_amount - commission_amount;
 
     (return_amount, spread_amount, commission_amount)
@@ -1087,6 +1100,7 @@ pub fn compute_offer_amount(
         env,
         amp as u128,
         scale_value(
+            //TODO: safe math
             env,
             ask_pool - convert_i128_to_u128(before_commission),
             greatest_precision,
@@ -1099,11 +1113,14 @@ pub fn compute_offer_amount(
         greatest_precision,
     );
 
+    //TODO: safe math
     let offer_amount = new_offer_pool - offer_pool;
 
+    //TODO: safe math
     let ask_before_commission = convert_u128_to_i128(ask_amount) * inv_one_minus_commission;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
     let spread_amount = if offer_amount > ask_amount {
+        //TODO: safe math
         offer_amount - ask_amount
     } else {
         // saturating sub equivalent

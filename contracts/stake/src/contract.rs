@@ -160,6 +160,7 @@ impl StakingTrait for Staking {
 
         let mut stakes = get_stakes(&env, &sender);
 
+        //TODO: safe math
         stakes.total_stake += tokens;
         let stake = Stake {
             stake: tokens,
@@ -187,6 +188,7 @@ impl StakingTrait for Staking {
         let mut stakes = get_stakes(&env, &sender);
 
         remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
+        //TODO: safe math
         stakes.total_stake -= stake_amount;
 
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
