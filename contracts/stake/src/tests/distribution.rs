@@ -1201,7 +1201,7 @@ fn distribute_rewards_daily_multiple_times_same_stakes() {
 fn consolidating_stakes_and_distribute_rewards() {
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
