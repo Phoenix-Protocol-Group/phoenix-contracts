@@ -401,10 +401,13 @@ fn simple_swap_millions_liquidity_swapping_half_milion_high_fee() {
         None,
     );
 
-    // minting 100 million tokens to user1
+    // minting 1_000_000_000_000_000 "units"
+    // equals 100_000_000 tokens
     token1.mint(&user1, &1_000_000_000_000_000);
     token2.mint(&user1, &1_000_000_000_000_000);
-    // providing 10 million tokens as liquidity from both token1 and token2
+
+    // providing 100_000_000_000_000 "units" of liquidity
+    // equals 10_000_000 tokens
     pool.provide_liquidity(
         &user1,
         &100_000_000_000_000,
@@ -414,26 +417,28 @@ fn simple_swap_millions_liquidity_swapping_half_milion_high_fee() {
         &None::<u128>,
     );
 
-    // at this point, the pool holds:
-    // token1: 100_000_000_000_000
-    // token2: 100_000_000_000_000
-    // total LP shares: 200_000_000_000_000
+    // at this point, the pool holds 100_000_000_000_000 "units"
+    // equals 10_000_000 tokens
+    // and total LP shares = 200_000_000_000_000 "units" => 20_000_000 LP shares.
+    //
+    // user1 is left with (100-000_000 - 10_000_000) = 90_000_000 tokens (i.e. 900_000_000_000_000 "units").
 
-    // user sells 500,000 tokens of token1 with a 10% max spread allowed.
-    // because the pool also charges a 10% fee, the user effectively gets only ~90% of the expected return in token2.
+    // user sells 10_000_000_000 "units" of token1
+    // equals 1_000 tokens, with a 10% max spread allowed.
+    // Because the pool charges a 10% fee, user gets ~90% of the ideal return in token2.
     let spread = 1_000i64;
     pool.swap(
         &user1,
         &token1.address,
-        &500_000,
+        &10_000_000_000,
         &None,
         &Some(spread),
         &None::<u64>,
         &None,
     );
     // after this swap:
-    // token1 in the pool increases by 500,000 (the amount user sold)
-    // token2 in the pool decreases by slightly less than 500,000 due to the 10% fee
+    // token1 in the pool increases by 1_000 tokens (10_000_000,000 "units")
+    // token2 in the pool decreases by slightly less than 1_000 tokens
     // total LP shares remain the same (no liquidity added/removed)
 
     let share_token_address = pool.query_share_token_address();
@@ -443,70 +448,67 @@ fn simple_swap_millions_liquidity_swapping_half_milion_high_fee() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 100000000500000i128,
+                amount: 100_010_000_000_000_i128,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 99999999500000i128,
+                amount: 99_990_000_142_855_i128,
             },
             asset_lp_share: Asset {
                 address: share_token_address.clone(),
-                amount: 199999999999000i128,
+                amount: 199_999_999_999_000_i128,
             },
             stake_address: pool.query_stake_contract_address(),
         }
     );
 
     // user's balances after the first swap:
-    // token1 decreases by 500,000
-    // token2 increases by ~450,000 (they pay 10% fee on the 500,000 trade)
-    assert_eq!(token1.balance(&user1), 899999999500000);
-    // the user got about 450,000 token2 net after fees.
-    assert_eq!(token2.balance(&user1), 900000000450000);
+    // token1 decreases by ~1_000 tokens.
+    // token2 increases by ~900 tokens net (10% fee).
+    assert_eq!(token1.balance(&user1), 899_990_000_000_000);
+    assert_eq!(token2.balance(&user1), 900_008_999_871_431);
 
-    // user now sells 100,000 tokens of token2
-    // again, there's a 10% swap fee, so the user will end up with ~90,000 in token1
+    // Now user sells 1_000_000_000 "units" of token2 => 100 tokens,
     let output_amount = pool.swap(
         &user1,
         &token2.address,
-        &100_000,
+        &1_000_000_000,
         &None,
         &Some(spread),
         &None::<u64>,
         &None,
     );
 
-    // after the second swap:
-    // token2 in the pool increases by 100,000
-    // token1 in the pool decreases by around 90,000 (10% fee again)
+    // after this second swap:
+    // token1 in the pool decreases by ~90 tokens (10% fee)
+    // token2 in the pool increases by ~100 tokens
     let result = pool.query_pool_info();
     assert_eq!(
         result,
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 100000000400000,
+                amount: 100_009_000_115_713,
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: 99999999600000,
+                amount: 99_991_000_142_855,
             },
             asset_lp_share: Asset {
                 address: share_token_address,
-                amount: 199999999999000
+                amount: 199_999_999_999_000
             },
             stake_address: pool.query_stake_contract_address(),
         }
     );
 
-    // the user receives ~90,000 in token1 for their 100,000 token2
-    assert_eq!(output_amount, 90_000);
+    assert_eq!(output_amount, 899_895_859);
 
     // final balances after the second swap:
-    // token1: originally 899,999,999,500,000 + ~90,000 = ~899,999,999,590,000
-    // token2: originally 900,000,000,450,000 - 100,000 = 900,000,000,350,000
-    assert_eq!(token1.balance(&user1), 899999999590000);
-    assert_eq!(token2.balance(&user1), 900000000350000);
+    // token1: 899_990_000_000_000 "units" + ~90 tokens in "units"
+    // token2: 900_008_999_871_431 "units" - 100 tokens in "units"
+    assert_eq!(token1.balance(&user1), 899_990_899_895_859);
+    assert_eq!(token2.balance(&user1), 900_007_999_871_431);
 }
 
 #[test]
