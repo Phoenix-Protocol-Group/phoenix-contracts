@@ -272,14 +272,22 @@ impl Add for Decimal {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        Decimal(self.0 + other.0)
+        Decimal(
+            self.0
+                .checked_add(other.0)
+                .expect("attempt to add with overflow"),
+        )
     }
 }
 impl Sub for Decimal {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        Decimal(self.0 - other.0)
+        Decimal(
+            self.0
+                .checked_sub(other.0)
+                .expect("Decimal subtraction underflowed."),
+        )
     }
 }
 
@@ -297,8 +305,14 @@ impl Mul for Decimal {
         // let other_numerator = other.numerator().to_bigint().unwrap();
 
         // Compute the product of the numerators and divide by DECIMAL_FRACTIONAL
-        let result = (self.numerator() * other.numerator()) / Self::DECIMAL_FRACTIONAL;
+        let product = self
+            .numerator()
+            .checked_mul(other.numerator())
+            .expect("attempt to multiply with overflow");
 
+        let result = product
+            .checked_div(Self::DECIMAL_FRACTIONAL)
+            .expect("attempt to divide with underflow");
         // Convert the result back to i128, and panic on overflow
         // let result = result
         //     .to_i128()
