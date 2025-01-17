@@ -389,8 +389,13 @@ pub mod utils {
         }
 
         let amount_a = {
-            //TODO: safe math
-            let mut amount_a = desired_b * pool_balance_a / pool_balance_b;
+            let mut amount_a = desired_b
+                .checked_mul(pool_balance_a)
+                .and_then(|result| result.checked_div(pool_balance_b))
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool: Get Deposit Amounts: overflow/underflow error");
+                    panic_with_error!(env, ContractError::ContractMathError);
+                });
             if amount_a > desired_a {
                 // If the amount is within the desired amount of slippage, we accept it
                 if Decimal::from_ratio(amount_a, desired_a) - Decimal::one() <= allowed_slippage {
@@ -423,8 +428,13 @@ pub mod utils {
         };
 
         let amount_b = {
-            //TODO: safe math
-            let mut amount_b = desired_a * pool_balance_b / pool_balance_a;
+            let mut amount_b = desired_a
+                .checked_mul(pool_balance_b)
+                .and_then(|result| result.checked_div(pool_balance_a))
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool: Get Deposit Amounts: overflow/underflow error");
+                    panic_with_error!(env, ContractError::ContractMathError);
+                });
             if amount_b > desired_b {
                 // If the amount is within the set threshold of the desired amount, we accept it
                 if Decimal::from_ratio(amount_b, desired_b) - Decimal::one() <= allowed_slippage {

@@ -36,4 +36,5 @@ pub enum ContractError {
     NotEnoughSharesToBeMinted = 26,
     NotEnoughLiquidityProvided = 27,
     AdminNotSet = 28,
+    ContractMathError = 29,
 }
