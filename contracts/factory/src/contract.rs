@@ -446,12 +446,29 @@ impl FactoryTrait for Factory {
                 &Symbol::new(&env, "query_staked"),
                 vec![&env, sender.into_val(&env)],
             );
-            //TODO: safe math
-            let sum_of_lp_share_staked: i128 =
-                lp_share_staked.stakes.iter().map(|stake| stake.stake).sum();
 
-            //TODO: safe math
-            let total_lp_share_for_user = lp_share_balance + sum_of_lp_share_staked;
+            let sum_of_lp_share_staked: i128 = lp_share_staked
+                .stakes
+                .iter()
+                .map(|stake| stake.stake)
+                .try_fold(0i128, |acc, stake| acc.checked_add(stake))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Factory: Query User Portfolio: Cannot addition more stakes"
+                    );
+                    panic_with_error!(env, ContractError::OverflowingOps);
+                });
+
+            let total_lp_share_for_user = lp_share_balance
+                .checked_add(sum_of_lp_share_staked)
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Factory: Query User Portfolio: Cannot add lp_share_balance with sum_of_lp_share_staked"
+                    );
+                    panic_with_error!(env, ContractError::OverflowingOps);
+                });
 
             // query the balance of the liquidity tokens
             let (asset_a, asset_b) = env.invoke_contract::<(Asset, Asset)>(

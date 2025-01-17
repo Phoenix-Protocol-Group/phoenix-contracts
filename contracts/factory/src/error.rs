@@ -12,4 +12,5 @@ pub enum ContractError {
     MinStakeInvalid = 6,
     MinRewardInvalid = 7,
     AdminNotSet = 8,
+    OverflowingOps = 9,
 }
