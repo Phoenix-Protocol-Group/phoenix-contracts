@@ -978,13 +978,14 @@ fn do_swap(
         }
     }
 
-    assert_max_spread(
-        &env,
-        max_spread,
-        //TODO: safe math
-        return_amount + commission_amount,
-        spread_amount,
-    );
+    let return_amount_result = return_amount
+        .checked_add(commission_amount)
+        .unwrap_or_else(|| {
+            log!(&env, "Pool Stable: Do Swap: overflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
+
+    assert_max_spread(&env, max_spread, return_amount_result, spread_amount);
 
     // we check the balance of the transferred token for the contract prior to the transfer
     let balance_before_transfer =
