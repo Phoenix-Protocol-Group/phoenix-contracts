@@ -345,8 +345,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             &env,
             amp as u128,
             &[
-                scale_value(new_balance_a, token_a_decimals, DECIMAL_PRECISION),
-                scale_value(new_balance_b, token_b_decimals, DECIMAL_PRECISION),
+                scale_value(&env, new_balance_a, token_a_decimals, DECIMAL_PRECISION),
+                scale_value(&env, new_balance_b, token_b_decimals, DECIMAL_PRECISION),
             ],
         );
 
@@ -373,11 +373,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
                 amp as u128,
                 &[
                     scale_value(
+                        &env,
                         convert_i128_to_u128(old_balance_a),
                         token_a_decimals,
                         DECIMAL_PRECISION,
                     ),
                     scale_value(
+                        &env,
                         convert_i128_to_u128(old_balance_b),
                         token_b_decimals,
                         DECIMAL_PRECISION,
@@ -1029,13 +1031,14 @@ pub fn compute_swap(
         env,
         amp as u128,
         scale_value(
+            env,
             offer_pool + offer_amount,
             greatest_precision,
             DECIMAL_PRECISION,
         ),
         &[
-            scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
-            scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
+            scale_value(env, offer_pool, offer_pool_precision, DECIMAL_PRECISION),
+            scale_value(env, ask_pool, ask_pool_precision, DECIMAL_PRECISION),
         ],
         greatest_precision,
     );
@@ -1084,13 +1087,14 @@ pub fn compute_offer_amount(
         env,
         amp as u128,
         scale_value(
+            env,
             ask_pool - convert_i128_to_u128(before_commission),
             greatest_precision,
             DECIMAL_PRECISION,
         ),
         &[
-            scale_value(offer_pool, offer_pool_precision, DECIMAL_PRECISION),
-            scale_value(ask_pool, ask_pool_precision, DECIMAL_PRECISION),
+            scale_value(env, offer_pool, offer_pool_precision, DECIMAL_PRECISION),
+            scale_value(env, ask_pool, ask_pool_precision, DECIMAL_PRECISION),
         ],
         greatest_precision,
     );

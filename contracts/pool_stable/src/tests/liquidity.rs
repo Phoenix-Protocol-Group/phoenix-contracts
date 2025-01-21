@@ -24,6 +24,7 @@ fn provide_liqudity() {
 
     let mut token1 = deploy_token_contract(&env, &admin);
     let mut token2 = deploy_token_contract(&env, &admin);
+
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
@@ -122,6 +123,127 @@ fn provide_liqudity() {
     );
 
     assert_eq!(pool.query_total_issued_lp(), 1000);
+}
+
+#[test]
+fn provide_liqudity_big_numbers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let token_share = token_contract::Client::new(&env, &share_token_address);
+
+    // minting 1_000_000 tokens to the user
+    token1.mint(&user1, &10_000_000_000_000);
+    assert_eq!(token1.balance(&user1), 10_000_000_000_000);
+
+    token2.mint(&user1, &10_000_000_000_000);
+    assert_eq!(token2.balance(&user1), 10_000_000_000_000);
+
+    // user1 provides 100_000 tokens
+    pool.provide_liquidity(
+        &user1,
+        &1_000_000_000_000,
+        &1_000_000_000_000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+    );
+
+    assert_eq!(
+        env.auths(),
+        [(
+            user1.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    Symbol::new(&env, "provide_liquidity"),
+                    (
+                        &user1,
+                        1_000_000_000_000_i128,
+                        1_000_000_000_000_i128,
+                        None::<i64>,
+                        None::<u64>,
+                        None::<u128>
+                    )
+                        .into_val(&env),
+                )),
+                sub_invocations: std::vec![
+                    AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            token1.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user1, &pool.address, 1_000_000_000_000_i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    },
+                    AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            token2.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user1, &pool.address, 1_000_000_000_000_i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    },
+                ],
+            }
+        ),]
+    );
+
+    assert_eq!(token_share.balance(&user1), 1999999999000);
+    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token1.balance(&user1), 9000000000000);
+    assert_eq!(token1.balance(&pool.address), 1000000000000);
+    assert_eq!(token2.balance(&user1), 9000000000000);
+    assert_eq!(token2.balance(&pool.address), 1000000000000);
+
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address,
+                amount: 1000000000000i128
+            },
+            asset_b: Asset {
+                address: token2.address,
+                amount: 1000000000000i128
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1999999999000i128
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+
+    assert_eq!(pool.query_total_issued_lp(), 1999999999000);
 }
 
 #[test]
