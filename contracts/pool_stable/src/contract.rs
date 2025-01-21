@@ -437,13 +437,19 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .expect("Pool stable: provide_liquidity: conversion to u128 failed");
 
             // Calculate the proportion of the change in invariant
-            //TODO: safe math
-            let invariant_delta = convert_u128_to_i128(
-                new_invariant
-                    .to_u128()
-                    .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                    - initial_invariant,
-            );
+            let new_inv = new_invariant
+                .to_u128()
+                .expect("Pool stable: provide_liquidity: conversion to u128 failed");
+
+            let diff = new_inv.checked_sub(initial_invariant).unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool stable: provide_liquidity: overflow or underflow occurred while calculating invariant_delta."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+
+            let invariant_delta = convert_u128_to_i128(diff);
 
             let initial_invariant = convert_u128_to_i128(initial_invariant);
             convert_i128_to_u128(
