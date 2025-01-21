@@ -393,12 +393,18 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
             let divisor = 10u128.pow(DECIMAL_PRECISION - greatest_precision);
-            //TODO: safe math
-            let share = (new_invariant
+            let share = new_invariant
                 .to_u128()
                 .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                / divisor)
-                - MINIMUM_LIQUIDITY_AMOUNT;
+                .checked_div(divisor)
+                .and_then(|quotient| quotient.checked_sub(MINIMUM_LIQUIDITY_AMOUNT))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool stable: provide_liquidity: overflow or underflow occurred while calculating share."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
             if share == 0 {
                 log!(
                     &env,
