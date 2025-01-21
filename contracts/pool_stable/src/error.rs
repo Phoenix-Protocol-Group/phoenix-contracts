@@ -28,4 +28,5 @@ pub enum ContractError {
     SwapFeeBpsOverLimit = 22,
     UserDeclinesPoolFee = 23,
     AdminNotSet = 24,
+    ContractMathError = 25,
 }

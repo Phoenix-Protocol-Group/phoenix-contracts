@@ -251,13 +251,17 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             log!(&env, "Pool Stable: Initialize: AMP parameter is incorrect");
             panic_with_error!(&env, ContractError::InvalidAMP);
         }
-        //TODO: safe math
+
+        let amp_precision = amp.checked_mul(AMP_PRECISION).unwrap_or_else(|| {
+            log!(&env, "Stable Pool: Initialize: Multiplication overflowed.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
         save_amp(
             &env,
             AmplifierParameters {
-                init_amp: amp * AMP_PRECISION,
+                init_amp: amp_precision,
                 init_amp_time: current_time,
-                next_amp: amp * AMP_PRECISION,
+                next_amp: amp_precision,
                 next_amp_time: current_time,
             },
         );
@@ -335,14 +339,47 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let balance_b_after = token_b_client.balance(&env.current_contract_address());
 
         // calculate actual amounts received
-        //TODO: safe math
-        let actual_received_a = balance_a_after - balance_a_before;
-        let actual_received_b = balance_b_after - balance_b_before;
+        let actual_received_a = balance_a_after
+            .checked_sub(balance_a_before)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Provide Liquidity: underflow when calculating actual_received_a."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
+        let actual_received_b = balance_b_after
+            .checked_sub(balance_b_before)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Provide Liquidity: underflow when calculating actual_received_b."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         // Invariant (D) after deposit added
-        //TODO: safe math
-        let new_balance_a = convert_i128_to_u128(actual_received_a + old_balance_a);
-        let new_balance_b = convert_i128_to_u128(actual_received_b + old_balance_b);
+        let new_balance_a = actual_received_a
+            .checked_add(old_balance_a)
+            .map(convert_i128_to_u128)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Provide Liquidity: overflow when calculating new_balance_a."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+
+        let new_balance_b = actual_received_b
+            .checked_add(old_balance_b)
+            .map(convert_i128_to_u128)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Provide Liquidity: overflow when calculating new_balance_b."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         let new_invariant = compute_d(
             &env,
