@@ -778,8 +778,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             config.protocol_fee_rate(),
         );
 
-        //TODO: safe math
-        let total_return = ask_amount + commission_amount + spread_amount;
+        let total_return = ask_amount
+            .checked_add(commission_amount)
+            .and_then(|sum| sum.checked_add(spread_amount))
+            .unwrap_or_else(|| {
+                log!(&env, "overflow occurred while calculating total_return.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         SimulateSwapResponse {
             ask_amount,
