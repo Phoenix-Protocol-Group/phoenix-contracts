@@ -278,8 +278,16 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
 
     for stake in stakes.iter() {
         // Calculate the number of days the stake has been active
-        //TODO: safe math
-        let days_active = (current_date - stake.stake_timestamp) / SECONDS_PER_DAY;
+        let days_active = current_date
+            .saturating_sub(stake.stake_timestamp)
+            .checked_div(SECONDS_PER_DAY)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Stake Rewards: Calc Withdraw Power: underflow/overflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         // If stake is younger than 60 days, calculate its power
         let power = if days_active < 60 {
@@ -289,11 +297,27 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
         };
 
         // Add the weighted power to the sum
-        //TODO: safe math
-        weighted_sum += power * convert_i128_to_u128(stake.stake);
+        weighted_sum = power
+            .checked_mul(convert_i128_to_u128(stake.stake))
+            .and_then(|product| weighted_sum.checked_add(product))
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Stake Rewards: Calc Withdraw Power: underflow/overflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         // Accumulate the total weight
-        //TODO: safe math
-        total_weight += 60 * convert_i128_to_u128(stake.stake);
+        total_weight = 60u128
+            .checked_mul(convert_i128_to_u128(stake.stake))
+            .and_then(|product| total_weight.checked_add(product))
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Stake Rewards: Calc Withdraw Power: underflow/overflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            })
     }
 
     // Calculate and return the average staking power
