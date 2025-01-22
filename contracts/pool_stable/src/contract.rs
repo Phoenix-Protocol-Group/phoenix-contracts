@@ -1025,7 +1025,6 @@ fn do_swap(
 
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
-    //TODO: safe math
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
             pool_balance_a
@@ -1186,13 +1185,22 @@ pub fn compute_offer_amount(
 
     let greatest_precision = get_greatest_precision(env);
 
+    let atomics = ask_pool
+        .checked_sub(convert_i128_to_u128(before_commission))
+        .unwrap_or_else(|| {
+            log!(
+                &env,
+                "Pool Stable: Compute Offer Amount: underflow occured."
+            );
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     let new_offer_pool = calc_y(
         env,
         amp as u128,
         scale_value(
             //TODO: safe math
             env,
-            ask_pool - convert_i128_to_u128(before_commission),
+            atomics,
             greatest_precision,
             DECIMAL_PRECISION,
         ),
@@ -1203,19 +1211,18 @@ pub fn compute_offer_amount(
         greatest_precision,
     );
 
-    //TODO: safe math
-    let offer_amount = new_offer_pool - offer_pool;
+    let offer_amount = new_offer_pool.checked_sub(offer_pool).unwrap_or_else(|| {
+        log!(
+            &env,
+            "Pool Stable: Compute Offer Amount: underflow occured."
+        );
+        panic_with_error!(&env, ContractError::ContractMathError);
+    });
 
-    //TODO: safe math
+    //safe math done in decimal
     let ask_before_commission = convert_u128_to_i128(ask_amount) * inv_one_minus_commission;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
-    let spread_amount = if offer_amount > ask_amount {
-        //TODO: safe math
-        offer_amount - ask_amount
-    } else {
-        // saturating sub equivalent
-        0
-    };
+    let spread_amount = offer_amount.saturating_sub(ask_amount);
 
     // Calculate the commission amount
     let commission_amount: i128 = ask_before_commission * commission_rate;
