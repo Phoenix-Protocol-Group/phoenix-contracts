@@ -1,10 +1,11 @@
 use phoenix::utils::convert_i128_to_u128;
-use soroban_sdk::{contracttype, Address, Env, Vec};
+use soroban_sdk::{contracttype, log, panic_with_error, Address, Env, Vec};
 
 use curve::Curve;
 use soroban_decimal::Decimal;
 
 use crate::{
+    error::ContractError,
     storage::{Config, Stake},
     TOKEN_PER_POWER,
 };
@@ -93,8 +94,12 @@ pub fn update_rewards(
     if old_rewards_power == new_rewards_power {
         return;
     }
-    //TODO: safe math
-    let diff = new_rewards_power - old_rewards_power;
+    let diff = new_rewards_power
+        .checked_sub(old_rewards_power)
+        .unwrap_or_else(|| {
+            log!(&env, "Stake Rewards: Update Rewards: underflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
     apply_points_correction(env, user, asset, diff, ppw);
@@ -113,9 +118,13 @@ fn apply_points_correction(
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     let shares_correction = withdraw_adjustment.shares_correction;
-    //TODO: safe math
-    withdraw_adjustment.shares_correction =
-        shares_correction - convert_u128_to_i128(shares_per_point) * diff;
+    withdraw_adjustment.shares_correction = convert_u128_to_i128(shares_per_point)
+        .checked_mul(diff)
+        .and_then(|product| shares_correction.checked_sub(product))
+        .unwrap_or_else(|| {
+            log!(&env, "Stake Rewards: underflow/overflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
