@@ -168,7 +168,7 @@ impl VestingTrait for Vesting {
         check_duplications(&env, vesting_schedules.clone());
         let max_vesting_complexity = get_max_vesting_complexity(&env);
 
-        let mut total_vested_amount = 0;
+        let mut total_vested_amount: u128 = 0;
 
         vesting_schedules.into_iter().for_each(|vesting_schedule| {
             let vested_amount = validate_vesting_schedule(&env, &vesting_schedule.curve)
@@ -193,8 +193,12 @@ impl VestingTrait for Vesting {
                 },
             );
 
-            //TODO: safe math
-            total_vested_amount += vested_amount;
+            total_vested_amount = total_vested_amount
+                .checked_add(vested_amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Vesting: Create Vesting Schedule: overflow ocurred.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
         });
 
         // check if the admin has enough tokens to start the vesting contract
@@ -247,13 +251,18 @@ impl VestingTrait for Vesting {
             panic_with_error!(env, ContractError::CantMoveVestingTokens);
         }
 
+        let updated_balance = sender_balance
+            .checked_sub(convert_i128_to_u128(available_to_claim))
+            .unwrap_or_else(|| {
+                log!(&env, "Vesting: Claim: underflow occured");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         update_vesting(
             &env,
             &sender,
             index,
             &VestingInfo {
-                //TODO: safe math
-                balance: (sender_balance - convert_i128_to_u128(available_to_claim)),
+                balance: updated_balance,
                 ..vesting_info
             },
         );
@@ -468,10 +477,17 @@ impl VestingTrait for Vesting {
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let vesting_info = get_vesting(&env, &address, index);
 
-        //TODO: safe math
-        convert_u128_to_i128(
-            vesting_info.balance - vesting_info.schedule.value(env.ledger().timestamp()),
-        )
+        let difference = vesting_info
+            .balance
+            .checked_sub(vesting_info.schedule.value(env.ledger().timestamp()))
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Vesting: Query Available To Claim: underflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+        convert_u128_to_i128(difference)
     }
 
     fn update(env: Env, new_wasm_hash: BytesN<32>) {
