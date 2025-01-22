@@ -1122,6 +1122,10 @@ pub fn compute_swap(
 
     let greatest_precision = get_greatest_precision(env);
 
+    let atomics = offer_pool.checked_add(offer_amount).unwrap_or_else(|| {
+        log!(&env, "Stable Pool: overflow occured for atomics.");
+        panic_with_error!(&env, ContractError::ContractMathError);
+    });
     let new_ask_pool = calc_y(
         env,
         amp as u128,
@@ -1139,21 +1143,21 @@ pub fn compute_swap(
         greatest_precision,
     );
 
-    //TODO: safe math
-    let return_amount = ask_pool - new_ask_pool;
+    let return_amount = ask_pool.checked_sub(new_ask_pool).unwrap_or_else(|| {
+        log!(&env, "Pool Stable: Compute Swap: underflow occured.");
+        panic_with_error!(&env, ContractError::ContractMathError);
+    });
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
-    let spread_amount = if offer_amount > return_amount {
-        //TODO: safe math
-        convert_u128_to_i128(offer_amount - return_amount)
-    } else {
-        // saturating sub equivalent
-        0
-    };
+    let spread_amount = convert_u128_to_i128(offer_amount.saturating_sub(return_amount));
     let return_amount = convert_u128_to_i128(return_amount);
     let commission_amount = return_amount * commission_rate;
     // Because of issue #211
-    //TODO: safe math
-    let return_amount = return_amount - commission_amount;
+    let return_amount = return_amount
+        .checked_sub(commission_amount)
+        .unwrap_or_else(|| {
+            log!(&env, "Pool Stable: Compute Swap: underflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
 
     (return_amount, spread_amount, commission_amount)
 }
