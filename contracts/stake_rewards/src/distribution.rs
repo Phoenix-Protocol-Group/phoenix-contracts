@@ -176,6 +176,7 @@ pub fn get_withdraw_adjustment(
 
 pub fn withdrawable_rewards(
     // total amount of staked tokens by given user
+    env: &Env,
     total_staked: i128,
     distribution: &Distribution,
     adjustment: &WithdrawAdjustment,
@@ -186,14 +187,25 @@ pub fn withdrawable_rewards(
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
     let points = calc_power(config, total_staked, Decimal::one(), TOKEN_PER_POWER);
-    //TODO: safe math
-    let points = convert_u128_to_i128(ppw) * points;
+    let points = convert_u128_to_i128(ppw)
+        .checked_mul(points)
+        .unwrap_or_else(|| {
+            log!(&env, "Stake Rewards: overflow");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
 
-    //TODO: safe math
     let correction = adjustment.shares_correction;
-    let points = points + correction;
-    let amount = points >> SHARES_SHIFT;
-    convert_i128_to_u128(amount) - adjustment.withdrawn_rewards
+    points
+        .checked_add(correction)
+        .and_then(|sum| {
+            let shifted = sum >> SHARES_SHIFT;
+            u128::try_from(shifted).ok()
+        })
+        .and_then(|converted| converted.checked_sub(adjustment.withdrawn_rewards))
+        .unwrap_or_else(|| {
+            log!(&env, "Stake Rewards: underflow/overflow occured");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        })
 }
 
 pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {

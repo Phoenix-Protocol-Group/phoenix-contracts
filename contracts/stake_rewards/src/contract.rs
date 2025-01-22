@@ -348,6 +348,7 @@ impl StakingRewardsTrait for StakingRewards {
         // calculate current reward amount given the distribution and subtracting withdraw
         // adjustments
         let reward_amount = withdrawable_rewards(
+            &env,
             stakes.total_stake,
             &distribution,
             &withdraw_adjustment,
@@ -561,6 +562,7 @@ impl StakingRewardsTrait for StakingRewards {
         // calculate current reward amount given the distribution and subtracting withdraw
         // adjustments
         let reward_amount = withdrawable_rewards(
+            &env,
             stakes.total_stake,
             &distribution,
             &withdraw_adjustment,
