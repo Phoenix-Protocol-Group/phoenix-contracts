@@ -170,13 +170,14 @@ impl StakingRewardsTrait for StakingRewards {
         let last_stake = stakes.stakes.last().unwrap();
 
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-        let new_power = calc_power(
-            &config,
-            //TODO: safe math
-            stakes.total_stake + last_stake.stake,
-            Decimal::one(),
-            TOKEN_PER_POWER,
-        );
+        let stakes_sum = stakes
+            .total_stake
+            .checked_add(last_stake.stake)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: calculate bond: overflow occured");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+        let new_power = calc_power(&config, stakes_sum, Decimal::one(), TOKEN_PER_POWER);
         update_rewards(
             &env,
             &sender,

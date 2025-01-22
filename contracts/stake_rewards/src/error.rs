@@ -17,4 +17,5 @@ pub enum ContractError {
     InvalidRewardAmount = 11,
     InvalidMaxComplexity = 12,
     AdminNotSet = 13,
+    ContractMathError = 14,
 }
