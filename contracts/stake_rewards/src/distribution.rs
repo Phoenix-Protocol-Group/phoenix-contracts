@@ -278,9 +278,10 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
 
     for stake in stakes.iter() {
         // Calculate the number of days the stake has been active
+
         let days_active = current_date
-            .saturating_sub(stake.stake_timestamp)
-            .checked_div(SECONDS_PER_DAY)
+            .checked_sub(stake.stake_timestamp)
+            .and_then(|diff| diff.checked_div(SECONDS_PER_DAY))
             .unwrap_or_else(|| {
                 log!(
                     &env,
