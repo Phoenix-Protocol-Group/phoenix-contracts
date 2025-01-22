@@ -1131,7 +1131,7 @@ pub fn compute_swap(
         scale_value(
             //TODO: safe math
             env,
-            offer_pool + offer_amount,
+            atomics,
             greatest_precision,
             DECIMAL_PRECISION,
         ),
