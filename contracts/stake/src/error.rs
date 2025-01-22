@@ -18,4 +18,5 @@ pub enum ContractError {
     InvalidMaxComplexity = 12,
     DistributionNotFound = 13,
     AdminNotSet = 14,
+    ContractMathError = 15,
 }
