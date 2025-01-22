@@ -211,13 +211,14 @@ impl StakingRewardsTrait for StakingRewards {
         let mut distribution = get_distribution(&env, &config.reward_token);
 
         let old_power = calc_power(&config, stakes.total_stake, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-        let new_power = calc_power(
-            &config,
-            //TODO: safe math
-            stakes.total_stake - removed_stake,
-            Decimal::one(),
-            TOKEN_PER_POWER,
-        );
+        let stakes_diff = stakes
+            .total_stake
+            .checked_sub(removed_stake)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: Calculate bond: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+        let new_power = calc_power(&config, stakes_diff, Decimal::one(), TOKEN_PER_POWER);
         update_rewards(
             &env,
             &sender,
@@ -264,28 +265,62 @@ impl StakingRewardsTrait for StakingRewards {
         // Calculate how much we have received since the last time Distributed was called,
         // including only the reward config amount that is eligible for distribution.
         // This is the amount we will distribute to all mem
-        //TODO: safe math
-        let amount = undistributed_rewards - withdrawable - curve.value(env.ledger().timestamp());
+        let amount = undistributed_rewards
+            .checked_sub(withdrawable)
+            .and_then(|diff| diff.checked_sub(curve.value(env.ledger().timestamp())))
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Stake Rewards: Distribute Rewards: underflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         if amount == 0 {
             return;
         }
 
         let leftover: u128 = distribution.shares_leftover.into();
-        //TODO: safe math
-        let points = (amount << SHARES_SHIFT) + leftover;
-        //TODO: safe math
-        let points_per_share = points / total_rewards_power;
+        let points = (amount << SHARES_SHIFT)
+            .checked_add(leftover)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: Distribute Rewards: overflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+        let points_per_share = points.checked_div(total_rewards_power).unwrap_or_else(|| {
+            log!(
+                &env,
+                "Stake Rewards: Distribute Rewards: underflow occured."
+            );
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
         distribution.shares_leftover = (points % total_rewards_power) as u64;
 
         // Everything goes back to 128-bits/16-bytes
         // Full amount is added here to total withdrawable, as it should not be considered on its own
         // on future distributions - even if because of calculation offsets it is not fully
         // distributed, the error is handled by leftover.
-        //TODO: safe math
-        distribution.shares_per_point += points_per_share;
-        distribution.distributed_total += amount;
-        distribution.withdrawable_total += amount;
+        distribution.shares_per_point = distribution
+            .shares_per_point
+            .checked_add(points_per_share)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: overflow occured");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+        distribution.distributed_total = distribution
+            .distributed_total
+            .checked_add(amount)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: overflow occured");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+        distribution.withdrawable_total = distribution
+            .withdrawable_total
+            .checked_add(amount)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: overflow occured");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         save_distribution(&env, &config.reward_token, &distribution);
 
@@ -321,15 +356,27 @@ impl StakingRewardsTrait for StakingRewards {
 
         // calculate the actual reward amounts - each stake is worth 1/60th per each staked day
         let reward_multiplier = calc_withdraw_power(&env, &stakes.stakes);
-        //TODO: safe math
+        //safe math implemented in decimal
         let reward_amount = convert_u128_to_i128(reward_amount) * reward_multiplier;
 
         if reward_amount == 0 {
             return;
         }
-        //TODO: safe math
-        withdraw_adjustment.withdrawn_rewards += reward_amount as u128;
-        distribution.withdrawable_total -= reward_amount as u128;
+        withdraw_adjustment.withdrawn_rewards = withdraw_adjustment
+            .withdrawn_rewards
+            .checked_add(reward_amount as u128)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: overflow occured");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+
+        distribution.withdrawable_total = distribution
+            .withdrawable_total
+            .checked_sub(reward_amount as u128)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: overflow occured");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         save_distribution(&env, &config.reward_token, &distribution);
         save_withdraw_adjustment(&env, &sender, &config.reward_token, &withdraw_adjustment);
@@ -387,8 +434,12 @@ impl StakingRewardsTrait for StakingRewards {
         let reward_token_client = token_contract::Client::new(&env, &config.reward_token);
         reward_token_client.transfer(&admin, &env.current_contract_address(), &token_amount);
 
-        //TODO: safe math
-        let end_time = current_time + distribution_duration;
+        let end_time = current_time
+            .checked_add(distribution_duration)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: overflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         // define a distribution curve starting at start_time with token_amount of tokens
         // and ending at end_time with 0 tokens
         let new_reward_distribution = Curve::saturating_linear(
@@ -543,8 +594,12 @@ impl StakingRewardsTrait for StakingRewards {
         let distribution = get_distribution(&env, &asset);
         let reward_token_client = token_contract::Client::new(&env, &asset);
         let reward_token_balance = reward_token_client.balance(&env.current_contract_address());
-        //TODO: safe math
-        convert_i128_to_u128(reward_token_balance) - distribution.withdrawable_total
+        convert_i128_to_u128(reward_token_balance)
+            .checked_sub(distribution.withdrawable_total)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake Rewards: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            })
     }
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
