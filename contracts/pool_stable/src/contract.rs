@@ -1028,13 +1028,41 @@ fn do_swap(
     //TODO: safe math
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
-            pool_balance_a + actual_received_amount,
-            pool_balance_b - commission_amount - return_amount,
+            pool_balance_a
+                .checked_add(actual_received_amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool Stable: overflow when adding to pool_balance_a.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                }),
+            pool_balance_b
+                .checked_sub(commission_amount)
+                .and_then(|res| res.checked_sub(return_amount))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool Stable: underflow when subtracting from pool_balance_b."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                }),
         )
     } else {
         (
-            pool_balance_a - commission_amount - return_amount,
-            pool_balance_b + actual_received_amount,
+            pool_balance_a
+                .checked_sub(commission_amount)
+                .and_then(|res| res.checked_sub(return_amount))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool Stable: Underflow in subtracting from pool_balance_a."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                }),
+            pool_balance_b
+                .checked_add(actual_received_amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool Stable: overflow in adding to pool_balance_b.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                }),
         )
     };
     utils::save_pool_balance_a(&env, balance_a);
