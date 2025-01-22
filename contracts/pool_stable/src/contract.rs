@@ -1003,9 +1003,12 @@ fn do_swap(
         token_contract::Client::new(&env, &sell_token).balance(&env.current_contract_address());
 
     // calculate how much did the contract actually got
-    //TODO: safe math
-    let actual_received_amount = balance_after_transfer - balance_before_transfer;
-
+    let actual_received_amount = balance_after_transfer
+        .checked_sub(balance_before_transfer)
+        .unwrap_or_else(|| {
+            log!(&env, "Pool Stable: Do Swap: underflow occurred.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     // return swapped tokens to user
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
