@@ -75,12 +75,38 @@ pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -
         let next_amp = amp_params.next_amp as u128;
 
         if next_amp > init_amp {
-            let amp_range = next_amp - init_amp;
-            let res = init_amp + (amp_range * elapsed_time) / time_range as u128;
+            let amp_range = next_amp.checked_sub(init_amp).unwrap_or_else(|| {
+                log!(&env, "Pool Stable: Compute Current Amp: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+            let res = amp_range
+                .checked_mul(elapsed_time)
+                .and_then(|product| product.checked_div(time_range as u128))
+                .and_then(|quotient| init_amp.checked_add(quotient))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool Stable: Compute Current Amp: overflow / division."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
             res as u64
         } else {
-            let amp_range = init_amp - next_amp;
-            let res = init_amp - (amp_range * elapsed_time) / time_range as u128;
+            let amp_range = init_amp.checked_sub(next_amp).unwrap_or_else(|| {
+                log!(&env, "Pool Stable: Compute Current Amp: underflow occured");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+            let res = amp_range
+                .checked_mul(elapsed_time)
+                .and_then(|product| product.checked_div(time_range.into())) // or time_range as u128
+                .and_then(|quotient| init_amp.checked_sub(quotient))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool Stable: Compute Current Amp: underflow or overflow occured."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
             res as u64
         }
     } else {
