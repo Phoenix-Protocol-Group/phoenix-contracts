@@ -31,11 +31,21 @@ pub fn scale_value(
     let atomics = U256::from_u128(env, atomics);
 
     let scaled_value = if decimal_places < target_decimal_places {
-        let power = target_decimal_places - decimal_places;
+        let power = target_decimal_places
+            .checked_sub(decimal_places)
+            .unwrap_or_else(|| {
+                log!(&env, "Pool Stable: Scale Value: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         let factor = ten.pow(power);
         atomics.mul(&factor)
     } else {
-        let power = decimal_places - target_decimal_places;
+        let power = decimal_places
+            .checked_sub(target_decimal_places)
+            .unwrap_or_else(|| {
+                log!(&env, "Pool Stable: Scale Value: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         let factor = ten.pow(power);
         atomics.div(&factor)
     };
