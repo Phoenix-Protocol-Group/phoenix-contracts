@@ -193,15 +193,11 @@ pub fn get_lp_vec(env: &Env) -> Vec<Address> {
         .get(&DataKey::LpVec)
         .expect("Factory: get_lp_vec: Liquidity Pool vector not found");
 
-    soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
-
     env.storage().persistent().extend_ttl(
         &DataKey::LpVec,
         PERSISTENT_LIFETIME_THRESHOLD,
         PERSISTENT_BUMP_AMOUNT,
     );
-
-    soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
 
     lp_vec
 }

@@ -419,11 +419,9 @@ impl FactoryTrait for Factory {
     }
 
     fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio {
-        soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
         let initialized_pools = get_lp_vec(&env);
         let mut lp_portfolio: Vec<LpPortfolio> = Vec::new(&env);
         let mut stake_portfolio: Vec<StakePortfolio> = Vec::new(&env);
