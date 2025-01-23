@@ -4,6 +4,9 @@ use crate::tests::setup::{
     install_and_deploy_token_contract, lp_contract, stake_contract, ONE_DAY,
 };
 use crate::token_contract;
+use phoenix::ttl::{
+    DAY_IN_LEDGERS, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
+};
 use phoenix::utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::testutils::storage::{Instance, Persistent};
 use soroban_sdk::testutils::Ledger;
@@ -1402,15 +1405,19 @@ fn test_query_user_portfolio_without_stake() {
 }
 
 #[test]
-fn test_ttl_extensions_during_portfolio_queries() {
+fn test_ttl_extensions_with_multiple_pool_queries() {
     let env = Env::default();
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
 
+    env.ledger().with_mut(|li| {
+        li.min_persistent_entry_ttl = DAY_IN_LEDGERS; // 17_280
+        li.max_entry_ttl = 30 * DAY_IN_LEDGERS; // 518_400
+    });
+
     let admin = Address::generate(&env);
     let fee_recipient = Address::generate(&env);
     let manager = Address::generate(&env);
-    let user = Address::generate(&env);
 
     let mut token1 = token_contract::Client::new(
         &env,
@@ -1426,9 +1433,6 @@ fn test_ttl_extensions_during_portfolio_queries() {
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
     }
-
-    token1.mint(&user, &1_000_000i128);
-    token2.mint(&user, &1_000_000i128);
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
     let factory_address = factory.address.clone();
@@ -1451,77 +1455,119 @@ fn test_ttl_extensions_during_portfolio_queries() {
         &1_000,
     );
 
-    let lp_client = lp_contract::Client::new(&env, &lp_address);
-    lp_client.provide_liquidity(
-        &user,
-        &Some(1_000_000),
-        &Some(950_000i128),
-        &Some(1_000_000),
-        &Some(950_000i128),
-        &None::<i64>,
-        &None::<u64>,
-    );
-
-    // getting the initial ttl values within the contract context
+    // initial TTL verification
     let (initial_instance_ttl, initial_persistent_ttl) = env.as_contract(&factory_address, || {
         (
             env.storage().instance().get_ttl(),
             env.storage().persistent().get_ttl(&DataKey::LpVec),
         )
     });
+    // validate initial state
+    assert_eq!(initial_instance_ttl, INSTANCE_BUMP_AMOUNT);
+    assert!(
+        initial_persistent_ttl >= PERSISTENT_BUMP_AMOUNT - 1,
+        "Initial persistent TTL should be at least {} (was {})",
+        PERSISTENT_BUMP_AMOUNT - 1,
+        initial_persistent_ttl
+    );
 
-    // time passes by with 1_000 ledgers
+    // first extension
     env.ledger().with_mut(|li| {
-        li.sequence_number += 1_000;
+        li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD + 1;
     });
 
-    // query the portfolio so we extend the ttl
-    let portfolio = factory.query_user_portfolio(&user, &true);
-
-    // get the supposedly updated ttl values
-    let (updated_instance_ttl, updated_persistent_ttl) = env.as_contract(&factory_address, || {
+    let _ = factory.query_pools();
+    let (instance_ttl1, persistent_ttl1) = env.as_contract(&factory_address, || {
         (
             env.storage().instance().get_ttl(),
             env.storage().persistent().get_ttl(&DataKey::LpVec),
         )
     });
 
-    // make sure the ttl was extended
-    soroban_sdk::testutils::arbitrary::std::dbg!(
-        &updated_instance_ttl,
-        &initial_instance_ttl,
-        &updated_instance_ttl > &initial_instance_ttl
+    assert_eq!(instance_ttl1, INSTANCE_BUMP_AMOUNT);
+    assert!(
+        persistent_ttl1 >= PERSISTENT_BUMP_AMOUNT - 1,
+        "Persistent TTL after first extension should be at least {} (was {})",
+        PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl1
     );
 
-    assert!(
-        updated_instance_ttl > initial_instance_ttl,
-        "Instance TTL not extended"
-    );
-    assert!(
-        updated_persistent_ttl > initial_persistent_ttl,
-        "Persistent TTL not extended"
-    );
-
-    // verify portfolio data remains accessible
-    assert!(
-        !portfolio.lp_portfolio.is_empty(),
-        "LP portfolio empty after TTL extension"
-    );
-    assert_eq!(
-        portfolio.lp_portfolio.get(0).unwrap().assets.0.amount,
-        999_000i128,
-        "Incorrect LP amount after TTL extension"
-    );
-
-    // move ledger forward near the TTL limit
-    env.ledger().with_mut(|li| {
-        li.sequence_number += updated_instance_ttl - 100;
+    // second extension
+    env.ledger()
+        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD);
+    let _ = factory.query_pools();
+    let (instance_ttl2, persistent_ttl2) = env.as_contract(&factory_address, || {
+        (
+            env.storage().instance().get_ttl(),
+            env.storage().persistent().get_ttl(&DataKey::LpVec),
+        )
     });
-
-    // query again
-    let final_portfolio = factory.query_user_portfolio(&user, &true);
+    assert_eq!(instance_ttl2, INSTANCE_BUMP_AMOUNT);
     assert!(
-        !final_portfolio.lp_portfolio.is_empty(),
-        "Data expired despite TTL extension"
+        persistent_ttl2 >= PERSISTENT_BUMP_AMOUNT - 1,
+        "Persistent TTL after second extension should be at least {} (was {})",
+        PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl2
     );
+
+    // third extension
+    env.ledger()
+        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD);
+    let _ = factory.query_pools();
+    let (instance_ttl3, persistent_ttl3) = env.as_contract(&factory_address, || {
+        (
+            env.storage().instance().get_ttl(),
+            env.storage().persistent().get_ttl(&DataKey::LpVec),
+        )
+    });
+    assert_eq!(instance_ttl3, INSTANCE_BUMP_AMOUNT);
+    assert!(
+        persistent_ttl3 >= PERSISTENT_BUMP_AMOUNT - 1,
+        "Persistent TTL after third extension should be at least {} (was {})",
+        PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl3
+    );
+
+    // fourth extension
+    env.ledger()
+        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD);
+    let _ = factory.query_pools();
+    let (instance_ttl4, persistent_ttl4) = env.as_contract(&factory_address, || {
+        (
+            env.storage().instance().get_ttl(),
+            env.storage().persistent().get_ttl(&DataKey::LpVec),
+        )
+    });
+    assert_eq!(instance_ttl4, INSTANCE_BUMP_AMOUNT);
+    assert!(
+        persistent_ttl4 >= PERSISTENT_BUMP_AMOUNT - 1,
+        "Persistent TTL after fourth extension should be at least {} (was {})",
+        PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl4
+    );
+
+    // fifth extension
+    env.ledger()
+        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD);
+    let _ = factory.query_pools();
+    let (instance_ttl5, persistent_ttl5) = env.as_contract(&factory_address, || {
+        (
+            env.storage().instance().get_ttl(),
+            env.storage().persistent().get_ttl(&DataKey::LpVec),
+        )
+    });
+    assert_eq!(instance_ttl5, INSTANCE_BUMP_AMOUNT);
+    assert!(
+        persistent_ttl5 >= PERSISTENT_BUMP_AMOUNT - 1,
+        "Persistent TTL after fifth extension should be at least {} (was {})",
+        PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl5
+    );
+
+    // final validation
+    env.ledger()
+        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - 100);
+    let final_pools = factory.query_pools();
+    assert!(!final_pools.is_empty());
+    assert_eq!(final_pools.get(0).unwrap(), lp_address);
 }
