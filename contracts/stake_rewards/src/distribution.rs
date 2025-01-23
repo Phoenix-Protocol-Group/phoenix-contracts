@@ -1,10 +1,11 @@
 use phoenix::utils::convert_i128_to_u128;
-use soroban_sdk::{contracttype, Address, Env, Vec};
+use soroban_sdk::{contracttype, log, panic_with_error, Address, Env, Vec};
 
 use curve::Curve;
 use soroban_decimal::Decimal;
 
 use crate::{
+    error::ContractError,
     storage::{Config, Stake},
     TOKEN_PER_POWER,
 };
@@ -93,7 +94,12 @@ pub fn update_rewards(
     if old_rewards_power == new_rewards_power {
         return;
     }
-    let diff = new_rewards_power - old_rewards_power;
+    let diff = new_rewards_power
+        .checked_sub(old_rewards_power)
+        .unwrap_or_else(|| {
+            log!(&env, "Stake Rewards: Update Rewards: underflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
     apply_points_correction(env, user, asset, diff, ppw);
@@ -112,8 +118,13 @@ fn apply_points_correction(
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     let shares_correction = withdraw_adjustment.shares_correction;
-    withdraw_adjustment.shares_correction =
-        shares_correction - convert_u128_to_i128(shares_per_point) * diff;
+    withdraw_adjustment.shares_correction = convert_u128_to_i128(shares_per_point)
+        .checked_mul(diff)
+        .and_then(|product| shares_correction.checked_sub(product))
+        .unwrap_or_else(|| {
+            log!(&env, "Stake Rewards: underflow/overflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
@@ -165,6 +176,7 @@ pub fn get_withdraw_adjustment(
 
 pub fn withdrawable_rewards(
     // total amount of staked tokens by given user
+    env: &Env,
     total_staked: i128,
     distribution: &Distribution,
     adjustment: &WithdrawAdjustment,
@@ -175,12 +187,25 @@ pub fn withdrawable_rewards(
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
     let points = calc_power(config, total_staked, Decimal::one(), TOKEN_PER_POWER);
-    let points = convert_u128_to_i128(ppw) * points;
+    let points = convert_u128_to_i128(ppw)
+        .checked_mul(points)
+        .unwrap_or_else(|| {
+            log!(&env, "Stake Rewards: overflow");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
 
     let correction = adjustment.shares_correction;
-    let points = points + correction;
-    let amount = points >> SHARES_SHIFT;
-    convert_i128_to_u128(amount) - adjustment.withdrawn_rewards
+    points
+        .checked_add(correction)
+        .and_then(|sum| {
+            let shifted = sum >> SHARES_SHIFT;
+            u128::try_from(shifted).ok()
+        })
+        .and_then(|converted| converted.checked_sub(adjustment.withdrawn_rewards))
+        .unwrap_or_else(|| {
+            log!(&env, "Stake Rewards: underflow/overflow occured");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        })
 }
 
 pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {
@@ -253,7 +278,17 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
 
     for stake in stakes.iter() {
         // Calculate the number of days the stake has been active
-        let days_active = (dbg!(current_date) - dbg!(stake.stake_timestamp)) / SECONDS_PER_DAY;
+
+        let days_active = current_date
+            .checked_sub(stake.stake_timestamp)
+            .and_then(|diff| diff.checked_div(SECONDS_PER_DAY))
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Stake Rewards: Calc Withdraw Power: underflow/overflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         // If stake is younger than 60 days, calculate its power
         let power = if days_active < 60 {
@@ -263,9 +298,27 @@ pub fn calc_withdraw_power(env: &Env, stakes: &Vec<Stake>) -> Decimal {
         };
 
         // Add the weighted power to the sum
-        weighted_sum += power * convert_i128_to_u128(stake.stake);
+        weighted_sum = power
+            .checked_mul(convert_i128_to_u128(stake.stake))
+            .and_then(|product| weighted_sum.checked_add(product))
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Stake Rewards: Calc Withdraw Power: underflow/overflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         // Accumulate the total weight
-        total_weight += 60 * convert_i128_to_u128(stake.stake);
+        total_weight = 60u128
+            .checked_mul(convert_i128_to_u128(stake.stake))
+            .and_then(|product| total_weight.checked_add(product))
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Stake Rewards: Calc Withdraw Power: underflow/overflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            })
     }
 
     // Calculate and return the average staking power

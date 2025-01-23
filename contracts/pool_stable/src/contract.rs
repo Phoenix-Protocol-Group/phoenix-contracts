@@ -251,12 +251,17 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             log!(&env, "Pool Stable: Initialize: AMP parameter is incorrect");
             panic_with_error!(&env, ContractError::InvalidAMP);
         }
+
+        let amp_precision = amp.checked_mul(AMP_PRECISION).unwrap_or_else(|| {
+            log!(&env, "Stable Pool: Initialize: Multiplication overflowed.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
         save_amp(
             &env,
             AmplifierParameters {
-                init_amp: amp * AMP_PRECISION,
+                init_amp: amp_precision,
                 init_amp_time: current_time,
-                next_amp: amp * AMP_PRECISION,
+                next_amp: amp_precision,
                 next_amp_time: current_time,
             },
         );
@@ -334,12 +339,47 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let balance_b_after = token_b_client.balance(&env.current_contract_address());
 
         // calculate actual amounts received
-        let actual_received_a = balance_a_after - balance_a_before;
-        let actual_received_b = balance_b_after - balance_b_before;
+        let actual_received_a = balance_a_after
+            .checked_sub(balance_a_before)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Provide Liquidity: underflow when calculating actual_received_a."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
+        let actual_received_b = balance_b_after
+            .checked_sub(balance_b_before)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Provide Liquidity: underflow when calculating actual_received_b."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         // Invariant (D) after deposit added
-        let new_balance_a = convert_i128_to_u128(actual_received_a + old_balance_a);
-        let new_balance_b = convert_i128_to_u128(actual_received_b + old_balance_b);
+        let new_balance_a = actual_received_a
+            .checked_add(old_balance_a)
+            .map(convert_i128_to_u128)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Provide Liquidity: overflow when calculating new_balance_a."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+
+        let new_balance_b = actual_received_b
+            .checked_add(old_balance_b)
+            .map(convert_i128_to_u128)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool Stable: Provide Liquidity: overflow when calculating new_balance_b."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         let new_invariant = compute_d(
             &env,
@@ -353,11 +393,18 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         let total_shares = utils::get_total_shares(&env);
         let shares = if total_shares == 0 {
             let divisor = 10u128.pow(DECIMAL_PRECISION - greatest_precision);
-            let share = (new_invariant
+            let share = new_invariant
                 .to_u128()
                 .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                / divisor)
-                - MINIMUM_LIQUIDITY_AMOUNT;
+                .checked_div(divisor)
+                .and_then(|quotient| quotient.checked_sub(MINIMUM_LIQUIDITY_AMOUNT))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool stable: provide_liquidity: overflow or underflow occurred while calculating share."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
             if share == 0 {
                 log!(
                     &env,
@@ -390,12 +437,19 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .expect("Pool stable: provide_liquidity: conversion to u128 failed");
 
             // Calculate the proportion of the change in invariant
-            let invariant_delta = convert_u128_to_i128(
-                new_invariant
-                    .to_u128()
-                    .expect("Pool stable: provide_liquidity: conversion to u128 failed")
-                    - initial_invariant,
-            );
+            let new_inv = new_invariant
+                .to_u128()
+                .expect("Pool stable: provide_liquidity: conversion to u128 failed");
+
+            let diff = new_inv.checked_sub(initial_invariant).unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool stable: provide_liquidity: overflow or underflow occurred while calculating invariant_delta."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+
+            let invariant_delta = convert_u128_to_i128(diff);
 
             let initial_invariant = convert_u128_to_i128(initial_invariant);
             convert_i128_to_u128(
@@ -724,7 +778,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             config.protocol_fee_rate(),
         );
 
-        let total_return = ask_amount + commission_amount + spread_amount;
+        let total_return = ask_amount
+            .checked_add(commission_amount)
+            .and_then(|sum| sum.checked_add(spread_amount))
+            .unwrap_or_else(|| {
+                log!(&env, "overflow occurred while calculating total_return.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         SimulateSwapResponse {
             ask_amount,
@@ -918,12 +978,14 @@ fn do_swap(
         }
     }
 
-    assert_max_spread(
-        &env,
-        max_spread,
-        return_amount + commission_amount,
-        spread_amount,
-    );
+    let return_amount_result = return_amount
+        .checked_add(commission_amount)
+        .unwrap_or_else(|| {
+            log!(&env, "Pool Stable: Do Swap: overflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
+
+    assert_max_spread(&env, max_spread, return_amount_result, spread_amount);
 
     // we check the balance of the transferred token for the contract prior to the transfer
     let balance_before_transfer =
@@ -941,8 +1003,12 @@ fn do_swap(
         token_contract::Client::new(&env, &sell_token).balance(&env.current_contract_address());
 
     // calculate how much did the contract actually got
-    let actual_received_amount = balance_after_transfer - balance_before_transfer;
-
+    let actual_received_amount = balance_after_transfer
+        .checked_sub(balance_before_transfer)
+        .unwrap_or_else(|| {
+            log!(&env, "Pool Stable: Do Swap: underflow occurred.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     // return swapped tokens to user
     token_contract::Client::new(&env, &buy_token).transfer(
         &env.current_contract_address(),
@@ -961,13 +1027,41 @@ fn do_swap(
     // A balance is bigger, B balance is smaller
     let (balance_a, balance_b) = if offer_asset == config.token_a {
         (
-            pool_balance_a + actual_received_amount,
-            pool_balance_b - commission_amount - return_amount,
+            pool_balance_a
+                .checked_add(actual_received_amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool Stable: overflow when adding to pool_balance_a.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                }),
+            pool_balance_b
+                .checked_sub(commission_amount)
+                .and_then(|res| res.checked_sub(return_amount))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool Stable: underflow when subtracting from pool_balance_b."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                }),
         )
     } else {
         (
-            pool_balance_a - commission_amount - return_amount,
-            pool_balance_b + actual_received_amount,
+            pool_balance_a
+                .checked_sub(commission_amount)
+                .and_then(|res| res.checked_sub(return_amount))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool Stable: Underflow in subtracting from pool_balance_a."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                }),
+            pool_balance_b
+                .checked_add(actual_received_amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool Stable: overflow in adding to pool_balance_b.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                }),
         )
     };
     utils::save_pool_balance_a(&env, balance_a);
@@ -1027,12 +1121,17 @@ pub fn compute_swap(
 
     let greatest_precision = get_greatest_precision(env);
 
+    let atomics = offer_pool.checked_add(offer_amount).unwrap_or_else(|| {
+        log!(&env, "Stable Pool: overflow occured for atomics.");
+        panic_with_error!(&env, ContractError::ContractMathError);
+    });
     let new_ask_pool = calc_y(
         env,
         amp as u128,
         scale_value(
+            //TODO: safe math
             env,
-            offer_pool + offer_amount,
+            atomics,
             greatest_precision,
             DECIMAL_PRECISION,
         ),
@@ -1043,18 +1142,21 @@ pub fn compute_swap(
         greatest_precision,
     );
 
-    let return_amount = ask_pool - new_ask_pool;
+    let return_amount = ask_pool.checked_sub(new_ask_pool).unwrap_or_else(|| {
+        log!(&env, "Pool Stable: Compute Swap: underflow occured.");
+        panic_with_error!(&env, ContractError::ContractMathError);
+    });
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
-    let spread_amount = if offer_amount > return_amount {
-        convert_u128_to_i128(offer_amount - return_amount)
-    } else {
-        // saturating sub equivalent
-        0
-    };
+    let spread_amount = convert_u128_to_i128(offer_amount.saturating_sub(return_amount));
     let return_amount = convert_u128_to_i128(return_amount);
     let commission_amount = return_amount * commission_rate;
     // Because of issue #211
-    let return_amount = return_amount - commission_amount;
+    let return_amount = return_amount
+        .checked_sub(commission_amount)
+        .unwrap_or_else(|| {
+            log!(&env, "Pool Stable: Compute Swap: underflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
 
     (return_amount, spread_amount, commission_amount)
 }
@@ -1083,12 +1185,22 @@ pub fn compute_offer_amount(
 
     let greatest_precision = get_greatest_precision(env);
 
+    let atomics = ask_pool
+        .checked_sub(convert_i128_to_u128(before_commission))
+        .unwrap_or_else(|| {
+            log!(
+                &env,
+                "Pool Stable: Compute Offer Amount: underflow occured."
+            );
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     let new_offer_pool = calc_y(
         env,
         amp as u128,
         scale_value(
+            //TODO: safe math
             env,
-            ask_pool - convert_i128_to_u128(before_commission),
+            atomics,
             greatest_precision,
             DECIMAL_PRECISION,
         ),
@@ -1099,16 +1211,18 @@ pub fn compute_offer_amount(
         greatest_precision,
     );
 
-    let offer_amount = new_offer_pool - offer_pool;
+    let offer_amount = new_offer_pool.checked_sub(offer_pool).unwrap_or_else(|| {
+        log!(
+            &env,
+            "Pool Stable: Compute Offer Amount: underflow occured."
+        );
+        panic_with_error!(&env, ContractError::ContractMathError);
+    });
 
+    //safe math done in decimal
     let ask_before_commission = convert_u128_to_i128(ask_amount) * inv_one_minus_commission;
     // We consider swap rate 1:1 in stable swap thus any difference is considered as spread.
-    let spread_amount = if offer_amount > ask_amount {
-        offer_amount - ask_amount
-    } else {
-        // saturating sub equivalent
-        0
-    };
+    let spread_amount = offer_amount.saturating_sub(ask_amount);
 
     // Calculate the commission amount
     let commission_amount: i128 = ask_before_commission * commission_rate;

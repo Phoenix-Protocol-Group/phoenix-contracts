@@ -1,4 +1,5 @@
 use soroban_sdk::{log, panic_with_error, Env, U256};
+//TODO: safe math the whole thing
 
 use crate::{error::ContractError, storage::AmplifierParameters, DECIMAL_PRECISION};
 
@@ -30,11 +31,21 @@ pub fn scale_value(
     let atomics = U256::from_u128(env, atomics);
 
     let scaled_value = if decimal_places < target_decimal_places {
-        let power = target_decimal_places - decimal_places;
+        let power = target_decimal_places
+            .checked_sub(decimal_places)
+            .unwrap_or_else(|| {
+                log!(&env, "Pool Stable: Scale Value: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         let factor = ten.pow(power);
         atomics.mul(&factor)
     } else {
-        let power = decimal_places - target_decimal_places;
+        let power = decimal_places
+            .checked_sub(target_decimal_places)
+            .unwrap_or_else(|| {
+                log!(&env, "Pool Stable: Scale Value: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
         let factor = ten.pow(power);
         atomics.div(&factor)
     };
@@ -64,12 +75,38 @@ pub(crate) fn compute_current_amp(env: &Env, amp_params: &AmplifierParameters) -
         let next_amp = amp_params.next_amp as u128;
 
         if next_amp > init_amp {
-            let amp_range = next_amp - init_amp;
-            let res = init_amp + (amp_range * elapsed_time) / time_range as u128;
+            let amp_range = next_amp.checked_sub(init_amp).unwrap_or_else(|| {
+                log!(&env, "Pool Stable: Compute Current Amp: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+            let res = amp_range
+                .checked_mul(elapsed_time)
+                .and_then(|product| product.checked_div(time_range as u128))
+                .and_then(|quotient| init_amp.checked_add(quotient))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool Stable: Compute Current Amp: overflow / division."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
             res as u64
         } else {
-            let amp_range = init_amp - next_amp;
-            let res = init_amp - (amp_range * elapsed_time) / time_range as u128;
+            let amp_range = init_amp.checked_sub(next_amp).unwrap_or_else(|| {
+                log!(&env, "Pool Stable: Compute Current Amp: underflow occured");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+            let res = amp_range
+                .checked_mul(elapsed_time)
+                .and_then(|product| product.checked_div(time_range.into())) // or time_range as u128
+                .and_then(|quotient| init_amp.checked_sub(quotient))
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool Stable: Compute Current Amp: underflow or overflow occured."
+                    );
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
             res as u64
         }
     } else {

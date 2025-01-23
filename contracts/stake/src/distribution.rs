@@ -1,7 +1,7 @@
 use soroban_decimal::Decimal;
-use soroban_sdk::{contracttype, Address, Env, Map};
+use soroban_sdk::{contracttype, log, panic_with_error, Address, Env, Map};
 
-use crate::storage::BondingInfo;
+use crate::{error::ContractError, storage::BondingInfo};
 use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 
 const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
@@ -99,7 +99,13 @@ pub fn calculate_pending_rewards(
                     // Calculate multiplier based on the age of each stake
                     for stake in user_info.stakes.iter() {
                         // Calculate the user's share of the total staked amount at the time
-                        let user_share = stake.stake as u128 * daily_reward / total_staked;
+                        let user_share = (stake.stake as u128)
+                            .checked_mul(daily_reward)
+                            .and_then(|product| product.checked_div(total_staked))
+                            .unwrap_or_else(|| {
+                                log!(&env, "Pool Stable: Math error in user share calculation");
+                                panic_with_error!(&env, ContractError::ContractMathError);
+                            });
                         let stake_age_days = (staking_reward_day
                             .saturating_sub(stake.stake_timestamp))
                             / SECONDS_PER_DAY;
@@ -114,7 +120,12 @@ pub fn calculate_pending_rewards(
 
                         // Apply the multiplier and accumulate the rewards
                         let adjusted_reward = user_share as i128 * multiplier;
-                        pending_rewards += adjusted_reward;
+                        pending_rewards = pending_rewards
+                            .checked_add(adjusted_reward)
+                            .unwrap_or_else(|| {
+                                log!(&env, "Pool Stable: overflow occured");
+                                panic_with_error!(&env, ContractError::ContractMathError);
+                            });
                     }
                 }
             }

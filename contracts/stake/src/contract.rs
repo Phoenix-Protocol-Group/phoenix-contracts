@@ -160,7 +160,10 @@ impl StakingTrait for Staking {
 
         let mut stakes = get_stakes(&env, &sender);
 
-        stakes.total_stake += tokens;
+        stakes.total_stake = stakes.total_stake.checked_add(tokens).unwrap_or_else(|| {
+            log!(&env, "Stake: Bond: overflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
         let stake = Stake {
             stake: tokens,
             stake_timestamp: ledger.timestamp(),
@@ -187,7 +190,13 @@ impl StakingTrait for Staking {
         let mut stakes = get_stakes(&env, &sender);
 
         remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
-        stakes.total_stake -= stake_amount;
+        stakes.total_stake = stakes
+            .total_stake
+            .checked_sub(stake_amount)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake: Unbond: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
 
         let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
         lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);

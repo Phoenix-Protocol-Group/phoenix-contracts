@@ -360,8 +360,25 @@ impl LiquidityPoolTrait for LiquidityPool {
         let final_balance_b = token_b_client.balance(&env.current_contract_address());
 
         // Calculate the actual received amounts
-        let actual_received_a = final_balance_a - initial_balance_a;
-        let actual_received_b = final_balance_b - initial_balance_b;
+        let actual_received_a = final_balance_a
+            .checked_sub(initial_balance_a)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool: Provide Liquidity: subtraction ended up in underflow/overflow for balance_a"
+                );
+                panic_with_error!(env, ContractError::ContractMathError);
+            });
+
+        let actual_received_b = final_balance_b
+            .checked_sub(initial_balance_b)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool: Provide Liquidity: subtraction ended up in underflow/overflow for balance_b"
+                );
+                panic_with_error!(env, ContractError::ContractMathError);
+            });
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
@@ -373,12 +390,42 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
             // use 10_000 multiplier to acheieve a bit bigger precision
-            let shares_a = (balance_a * total_shares) / pool_balance_a;
-            let shares_b = (balance_b * total_shares) / pool_balance_b;
+
+            let shares_a = balance_a
+                .checked_mul(total_shares)
+                .and_then(|result| result.checked_div(pool_balance_a))
+                .unwrap_or_else(|| {
+                    log!(
+                        env,
+                        "Pool: Provide Liquidity: overflow/underflow for shares_a"
+                    );
+                    panic_with_error!(env, ContractError::ContractMathError);
+                });
+            let shares_b = balance_b
+                .checked_mul(total_shares)
+                .and_then(|result| result.checked_div(pool_balance_b))
+                .unwrap_or_else(|| {
+                    log!(
+                        env,
+                        "Pool: Provide Liquidity: overflow/underflow for shares_b"
+                    );
+                    panic_with_error!(env, ContractError::ContractMathError);
+                });
             shares_a.min(shares_b)
         } else {
             // In case of empty pool, just produce X*Y shares
-            let shares = (amounts.0 * amounts.1).sqrt();
+            let shares = amounts
+                .0
+                .checked_mul(amounts.1)
+                .map(|product| product.sqrt())
+                .unwrap_or_else(|| {
+                    log!(
+                        env,
+                        "Pool: Provide Liquidity: multiplication overflow or invalid square root for shares"
+                    );
+                    panic_with_error!(env, ContractError::ContractMathError);
+                });
+
             if MINIMUM_LIQUIDITY_AMOUNT >= shares {
                 log!(env, "Pool: Provide Liquidity: Not enough liquidity!");
                 panic_with_error!(env, ContractError::TotalSharesEqualZero);
@@ -390,15 +437,28 @@ impl LiquidityPoolTrait for LiquidityPool {
                 &env.current_contract_address(),
                 MINIMUM_LIQUIDITY_AMOUNT,
             );
-            shares - MINIMUM_LIQUIDITY_AMOUNT
+            shares
+                .checked_sub(MINIMUM_LIQUIDITY_AMOUNT)
+                .unwrap_or_else(|| {
+                    log!(
+                        &env,
+                        "Pool: Provide Liquidity: subtraction got an underflow for shares"
+                    );
+                    panic_with_error!(env, ContractError::ContractMathError);
+                })
         };
 
-        utils::mint_shares(
-            &env,
-            &config.share_token,
-            &sender,
-            new_total_shares - total_shares,
-        );
+        let shares_amount = new_total_shares
+            .checked_sub(total_shares)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool: Provide Liquidity: subtraction got an underflow for shares_amount"
+                );
+                panic_with_error!(env, ContractError::ContractMathError);
+            });
+
+        utils::mint_shares(&env, &config.share_token, &sender, shares_amount);
 
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
@@ -497,6 +557,7 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let share_ratio = Decimal::from_ratio(share_amount, total_shares);
 
+        //safe math done in Decimal
         let return_amount_a = pool_balance_a * share_ratio;
         let return_amount_b = pool_balance_b * share_ratio;
 
@@ -699,9 +760,14 @@ impl LiquidityPoolTrait for LiquidityPool {
             0i64,
         );
 
-        let total_return = compute_swap.return_amount
-            + compute_swap.commission_amount
-            + compute_swap.spread_amount;
+        let total_return = compute_swap
+            .return_amount
+            .checked_add(compute_swap.commission_amount)
+            .and_then(|partial_sum| partial_sum.checked_add(compute_swap.spread_amount))
+            .unwrap_or_else(|| {
+                log!(&env, "Pool: Simulate Swap: addition overflowed");
+                panic_with_error!(env, ContractError::ContractMathError);
+            });
 
         SimulateSwapResponse {
             ask_amount: compute_swap.return_amount,
@@ -733,6 +799,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         };
 
         let (offer_amount, spread_amount, commission_amount) = compute_offer_amount(
+            &env,
             pool_balance_offer,
             pool_balance_ask,
             ask_amount,
@@ -760,6 +827,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             share_ratio = Decimal::from_ratio(amount, total_share);
         }
 
+        //safe math done in Decimal multiplication
         let amount_a = token_a_amount * share_ratio;
         let amount_b = token_b_amount * share_ratio;
         (
@@ -875,9 +943,14 @@ fn do_swap(
         }
     }
 
-    let total_return_amount = compute_swap.return_amount
-        + compute_swap.commission_amount
-        + compute_swap.referral_fee_amount;
+    let total_return_amount = compute_swap
+        .return_amount
+        .checked_add(compute_swap.commission_amount)
+        .and_then(|partial_sum| partial_sum.checked_add(compute_swap.referral_fee_amount))
+        .unwrap_or_else(|| {
+            log!(&env, "Pool: Do Swap: addition overflowed");
+            panic_with_error!(env, ContractError::ContractMathError);
+        });
 
     assert_max_spread(
         &env,
@@ -905,7 +978,12 @@ fn do_swap(
     let balance_after_transfer = sell_token_client.balance(&env.current_contract_address());
 
     // calculate how much did the contract actually got
-    let actual_received_amount = balance_after_transfer - balance_before_transfer;
+    let actual_received_amount = balance_after_transfer
+        .checked_sub(balance_before_transfer)
+        .unwrap_or_else(|| {
+            log!(&env, "Pool: Do Swap: Subtraction underflowed.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
 
     let buy_token_client = token_contract::Client::new(&env, &buy_token);
 
@@ -939,21 +1017,41 @@ fn do_swap(
     // user is offering to sell A, so they will receive B
     // A balance is bigger, B balance is smaller
     let (balance_a, balance_b) = if offer_asset == config.token_a {
-        (
-            pool_balance_a + actual_received_amount,
-            pool_balance_b
-                - compute_swap.commission_amount
-                - compute_swap.referral_fee_amount
-                - compute_swap.return_amount,
-        )
+        let balance_a = pool_balance_a
+            .checked_add(actual_received_amount)
+            .unwrap_or_else(|| {
+                log!(&env, "Pool: Do Swap: addition overflowed");
+                panic_with_error!(&env, ContractError::ContractMathError)
+            });
+
+        let balance_b = pool_balance_b
+            .checked_sub(compute_swap.commission_amount)
+            .and_then(|partial| partial.checked_sub(compute_swap.referral_fee_amount))
+            .and_then(|partial| partial.checked_sub(compute_swap.return_amount))
+            .unwrap_or_else(|| {
+                log!(&env, "Pool: Do Swap: subtraction underflowed");
+                panic_with_error!(&env, ContractError::ContractMathError)
+            });
+
+        (balance_a, balance_b)
     } else {
-        (
-            pool_balance_a
-                - compute_swap.commission_amount
-                - compute_swap.referral_fee_amount
-                - compute_swap.return_amount,
-            pool_balance_b + actual_received_amount,
-        )
+        let balance_a = pool_balance_a
+            .checked_sub(compute_swap.commission_amount)
+            .and_then(|partial| partial.checked_sub(compute_swap.referral_fee_amount))
+            .and_then(|partial| partial.checked_sub(compute_swap.return_amount))
+            .unwrap_or_else(|| {
+                log!(&env, "Pool: Do Swap: subtraction underflowed");
+                panic_with_error!(&env, ContractError::ContractMathError)
+            });
+
+        let balance_b = pool_balance_b
+            .checked_add(actual_received_amount)
+            .unwrap_or_else(|| {
+                log!(&env, "Pool: Do Swap: addition overflowed");
+                panic_with_error!(&env, ContractError::ContractMathError)
+            });
+
+        (balance_a, balance_b)
     };
     utils::save_pool_balance_a(&env, balance_a);
     utils::save_pool_balance_b(&env, balance_b);
@@ -1026,7 +1124,17 @@ fn split_deposit_based_on_pool_ratio(
     let mut final_ask_amount = 0; // amount of other tokens to be received
 
     while high - low > tolerance {
-        let mid = (low + high) / 2; // Calculate middle point
+        // Calculate middle point
+        let mid = low
+            .checked_add(high)
+            .and_then(|sum| sum.checked_div(2))
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool: Split Deposit Based On Pool Ratio: overflow/underflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError)
+            });
 
         // Simulate swap to get amount of other tokens to be received for `mid` amount of deposit tokens
         let SimulateSwapResponse {
@@ -1041,10 +1149,17 @@ fn split_deposit_based_on_pool_ratio(
         final_ask_amount = ask_amount;
 
         // Calculate the ratio that would result from swapping `mid` deposit tokens
+        let diff = deposit.checked_sub(mid).unwrap_or_else(|| {
+            log!(
+                &env,
+                "Pool: Split Deposit Baed On Pool Ratio: underflow occured."
+            );
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
         let ratio = if offer_asset == &config.token_a {
-            Decimal::from_ratio(ask_amount, deposit - mid)
+            Decimal::from_ratio(ask_amount, diff)
         } else {
-            Decimal::from_ratio(deposit - mid, ask_amount)
+            Decimal::from_ratio(diff, ask_amount)
         };
 
         // If the resulting ratio is approximately equal (1%) to the target ratio, break the loop
@@ -1102,11 +1217,13 @@ fn assert_slippage_tolerance(
     }
 
     // Calculate the limit below which the deposit-to-pool ratio must not fall for each token
+    //safe math division done in Decimal
     let one_minus_slippage_tolerance = Decimal::one() - slippage_tolerance;
     let deposits: [i128; 2] = [deposits[0], deposits[1]];
     let pools: [i128; 2] = [pools[0], pools[1]];
 
     // Ensure each price does not change more than what the slippage tolerance allows
+    //safe math done in Decimal
     if deposits[0] * pools[1] * one_minus_slippage_tolerance
         > deposits[1] * pools[0] * Decimal::one()
         || deposits[1] * pools[0] * one_minus_slippage_tolerance
@@ -1211,13 +1328,20 @@ pub fn compute_swap(
 /// * **ask_amount** amount of ask assets to swap to.
 /// * **commission_rate** total amount of fees charged for the swap.
 pub fn compute_offer_amount(
+    env: &Env,
     offer_pool: i128,
     ask_pool: i128,
     ask_amount: i128,
     commission_rate: Decimal,
 ) -> (i128, i128, i128) {
     // Calculate the cross product of offer_pool and ask_pool
-    let cp: i128 = offer_pool * ask_pool;
+    let cp: i128 = offer_pool.checked_mul(ask_pool).unwrap_or_else(|| {
+        log!(
+            env,
+            "Pool: Compute Offer Amount: checked multiplication overflowed."
+        );
+        panic_with_error!(env, ContractError::ContractMathError);
+    });
 
     // Calculate one minus the commission rate
     let one_minus_commission = Decimal::one() - commission_rate;
@@ -1231,7 +1355,17 @@ pub fn compute_offer_amount(
     let ask_before_commission = ask_amount * inv_one_minus_commission;
 
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount: i128 = (offer_amount * ask_pool / offer_pool) - ask_before_commission;
+    let spread_amount: i128 = offer_amount
+        .checked_mul(ask_pool)
+        .and_then(|product| product.checked_div(offer_pool))
+        .and_then(|result| result.checked_sub(ask_before_commission))
+        .unwrap_or_else(|| {
+            log!(
+                env,
+                "Pool: Compute Offer Amount: overflow/underflow occured."
+            );
+            panic_with_error!(env, ContractError::ContractMathError)
+        });
 
     // Calculate the commission amount
     let commission_amount: i128 = ask_before_commission * commission_rate;
@@ -1386,12 +1520,13 @@ mod tests {
 
     #[test]
     fn test_compute_offer_amount() {
+        let env = Env::default();
         let offer_pool = 1000000;
         let ask_pool = 1000000;
         let commission_rate = Decimal::percent(10);
         let ask_amount = 1000;
 
-        let result = compute_offer_amount(offer_pool, ask_pool, ask_amount, commission_rate);
+        let result = compute_offer_amount(&env, offer_pool, ask_pool, ask_amount, commission_rate);
 
         // Test that the offer amount is less than the original pool size, due to commission
         assert!(result.0 < offer_pool);
