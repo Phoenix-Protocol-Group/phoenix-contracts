@@ -1,10 +1,11 @@
 use super::setup::{deploy_factory_contract, generate_lp_init_info};
-use crate::storage::{Asset, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
+use crate::storage::{Asset, DataKey, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
 use crate::tests::setup::{
     install_and_deploy_token_contract, lp_contract, stake_contract, ONE_DAY,
 };
 use crate::token_contract;
 use phoenix::utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
+use soroban_sdk::testutils::storage::{Instance, Persistent};
 use soroban_sdk::testutils::Ledger;
 use soroban_sdk::vec;
 use soroban_sdk::{
@@ -1397,5 +1398,130 @@ fn test_query_user_portfolio_without_stake() {
             ],
             stake_portfolio: vec![&env]
         }
+    );
+}
+
+#[test]
+fn test_ttl_extensions_during_portfolio_queries() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let fee_recipient = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    let mut token1 = token_contract::Client::new(
+        &env,
+        &env.register_stellar_asset_contract_v2(admin.clone())
+            .address(),
+    );
+    let mut token2 = token_contract::Client::new(
+        &env,
+        &env.register_stellar_asset_contract_v2(admin.clone())
+            .address(),
+    );
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    token1.mint(&user, &1_000_000i128);
+    token2.mint(&user, &1_000_000i128);
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+    let factory_address = factory.address.clone();
+    let lp_init_info = generate_lp_init_info(
+        token1.address.clone(),
+        token2.address.clone(),
+        manager,
+        admin.clone(),
+        fee_recipient,
+    );
+
+    let lp_address = factory.create_liquidity_pool(
+        &admin,
+        &lp_init_info,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHO/BTC"),
+        &PoolType::Xyk,
+        &None::<u64>,
+        &100i64,
+        &1_000,
+    );
+
+    let lp_client = lp_contract::Client::new(&env, &lp_address);
+    lp_client.provide_liquidity(
+        &user,
+        &Some(1_000_000),
+        &Some(950_000i128),
+        &Some(1_000_000),
+        &Some(950_000i128),
+        &None::<i64>,
+        &None::<u64>,
+    );
+
+    // getting the initial ttl values within the contract context
+    let (initial_instance_ttl, initial_persistent_ttl) = env.as_contract(&factory_address, || {
+        (
+            env.storage().instance().get_ttl(),
+            env.storage().persistent().get_ttl(&DataKey::LpVec),
+        )
+    });
+
+    // time passes by with 1_000 ledgers
+    env.ledger().with_mut(|li| {
+        li.sequence_number += 1_000;
+    });
+
+    // query the portfolio so we extend the ttl
+    let portfolio = factory.query_user_portfolio(&user, &true);
+
+    // get the supposedly updated ttl values
+    let (updated_instance_ttl, updated_persistent_ttl) = env.as_contract(&factory_address, || {
+        (
+            env.storage().instance().get_ttl(),
+            env.storage().persistent().get_ttl(&DataKey::LpVec),
+        )
+    });
+
+    // make sure the ttl was extended
+    soroban_sdk::testutils::arbitrary::std::dbg!(
+        &updated_instance_ttl,
+        &initial_instance_ttl,
+        &updated_instance_ttl > &initial_instance_ttl
+    );
+
+    assert!(
+        updated_instance_ttl > initial_instance_ttl,
+        "Instance TTL not extended"
+    );
+    assert!(
+        updated_persistent_ttl > initial_persistent_ttl,
+        "Persistent TTL not extended"
+    );
+
+    // verify portfolio data remains accessible
+    assert!(
+        !portfolio.lp_portfolio.is_empty(),
+        "LP portfolio empty after TTL extension"
+    );
+    assert_eq!(
+        portfolio.lp_portfolio.get(0).unwrap().assets.0.amount,
+        999_000i128,
+        "Incorrect LP amount after TTL extension"
+    );
+
+    // move ledger forward near the TTL limit
+    env.ledger().with_mut(|li| {
+        li.sequence_number += updated_instance_ttl - 100;
+    });
+
+    // query again
+    let final_portfolio = factory.query_user_portfolio(&user, &true);
+    assert!(
+        !final_portfolio.lp_portfolio.is_empty(),
+        "Data expired despite TTL extension"
     );
 }
