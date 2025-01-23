@@ -2,6 +2,7 @@ use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
+pub const STAKE_REWARDS_KEY: Symbol = symbol_short!("S_REWARDS");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]

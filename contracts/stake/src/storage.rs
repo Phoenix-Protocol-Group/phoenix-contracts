@@ -3,6 +3,7 @@ use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 use crate::stake_rewards_contract;
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
+pub const STAKE_KEY: Symbol = symbol_short!("STAKE");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -8,6 +8,7 @@ use crate::{error::ContractError, token_contract};
 use soroban_decimal::Decimal;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
+pub const XYK_POOL_KEY: Symbol = symbol_short!("XYK_POOL");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]

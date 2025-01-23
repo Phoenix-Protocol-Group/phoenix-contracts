@@ -17,7 +17,7 @@ use crate::{
             self, add_distribution, get_admin_old, get_distributions, get_total_staked_counter,
             is_initialized, set_initialized,
         },
-        Config, Stake, ADMIN,
+        Config, Stake, ADMIN, STAKE_KEY,
     },
     token_contract,
 };
@@ -136,6 +136,10 @@ impl StakingTrait for Staking {
         utils::save_admin_old(&env, &admin);
         utils::init_total_staked(&env);
         save_total_staked_history(&env, map![&env]);
+        env.storage().persistent().set(&STAKE_KEY, &true);
+
+        env.events()
+            .publish(("Stake", "Initialized with admin: "), admin);
     }
 
     fn bond(env: Env, sender: Address, tokens: i128) {
@@ -398,6 +402,13 @@ impl Staking {
         let admin = get_admin_old(&env);
         admin.require_auth();
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    #[allow(dead_code)]
+    //TODO: Remove after we've added the key to storage
+    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+        env.storage().persistent().set(&STAKE_KEY, &true);
+        Ok(())
     }
 }
 

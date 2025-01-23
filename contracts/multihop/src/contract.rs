@@ -9,7 +9,7 @@ use crate::factory_contract::PoolType;
 // use crate::lp_contract::Referral;
 use crate::storage::{
     get_admin_old, get_factory, is_initialized, save_admin_old, save_factory, set_initialized,
-    SimulateReverseSwapResponse, SimulateSwapResponse, Swap, ADMIN,
+    SimulateReverseSwapResponse, SimulateSwapResponse, Swap, ADMIN, MULTIHOP_KEY,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
@@ -74,6 +74,8 @@ impl MultihopTrait for Multihop {
         save_admin_old(&env, &admin);
 
         save_factory(&env, factory);
+
+        env.storage().persistent().set(&MULTIHOP_KEY, &true);
 
         env.events()
             .publish(("initialize", "Multihop factory with admin: "), admin);
@@ -304,5 +306,12 @@ impl Multihop {
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    #[allow(dead_code)]
+    //TODO: Remove after we've added the key to storage
+    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+        env.storage().persistent().set(&MULTIHOP_KEY, &true);
+        Ok(())
     }
 }

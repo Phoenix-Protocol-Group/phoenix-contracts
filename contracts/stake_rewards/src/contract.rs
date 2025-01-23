@@ -6,7 +6,7 @@ use soroban_sdk::{
 };
 
 use crate::distribution::calc_power;
-use crate::storage::ADMIN;
+use crate::storage::{ADMIN, STAKE_REWARDS_KEY};
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
@@ -134,6 +134,10 @@ impl StakingRewardsTrait for StakingRewards {
             .publish(("create_distribution_flow", "asset"), &reward_token);
 
         utils::save_admin_old(&env, &admin);
+        env.storage().persistent().set(&STAKE_REWARDS_KEY, &true);
+
+        env.events()
+            .publish(("Stake Rewards", "Initialized with admin: "), &admin);
     }
 
     fn add_user(env: Env, user: Address, stakes: BondingInfo) {
@@ -552,5 +556,12 @@ impl StakingRewards {
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    #[allow(dead_code)]
+    //TODO: Remove after we've added the key to storage
+    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+        env.storage().persistent().set(&STAKE_REWARDS_KEY, &true);
+        Ok(())
     }
 }

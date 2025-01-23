@@ -5,6 +5,7 @@ use crate::{
         get_config, get_lp_vec, get_stable_wasm_hash, is_initialized, save_config, save_lp_vec,
         save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
         LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
+        FACTORY_KEY,
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
     ConvertVec,
@@ -134,6 +135,8 @@ impl FactoryTrait for Factory {
         save_stable_wasm_hash(&env, stable_wasm_hash);
 
         save_lp_vec(&env, Vec::new(&env));
+
+        env.storage().persistent().set(&FACTORY_KEY, &true);
 
         env.events()
             .publish(("initialize", "LP factory contract"), admin);
@@ -508,6 +511,13 @@ impl Factory {
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
         save_stable_wasm_hash(&env, new_stable_pool_hash);
+    }
+
+    #[allow(dead_code)]
+    //TODO: Remove after we've added the key to storage
+    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+        env.storage().persistent().set(&FACTORY_KEY, &true);
+        Ok(())
     }
 }
 

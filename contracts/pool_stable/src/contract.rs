@@ -15,7 +15,7 @@ use crate::{
         save_greatest_precision,
         utils::{self, get_admin_old, is_initialized, set_initialized},
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
-        SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN,
+        SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN, STABLE_POOL_KEY,
     },
     token_contract, DECIMAL_PRECISION,
 };
@@ -264,6 +264,8 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
+
+        env.storage().persistent().set(&STABLE_POOL_KEY, &true);
 
         env.events()
             .publish(("initialize", "XYK LP token_a"), token_a);
@@ -834,6 +836,13 @@ impl StableLiquidityPool {
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    #[allow(dead_code)]
+    //TODO: Remove after we've added the key to storage
+    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+        env.storage().persistent().set(&STABLE_POOL_KEY, &true);
+        Ok(())
     }
 }
 

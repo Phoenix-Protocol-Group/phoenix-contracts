@@ -11,7 +11,7 @@ use crate::{
         get_config, get_default_slippage_bps, save_config, save_default_slippage_bps,
         utils::{self, get_admin_old, is_initialized, set_initialized},
         Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse, ADMIN,
+        SimulateReverseSwapResponse, SimulateSwapResponse, ADMIN, XYK_POOL_KEY,
     },
     token_contract,
 };
@@ -265,6 +265,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::save_total_shares(&env, 0);
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
+
+        env.storage().persistent().set(&XYK_POOL_KEY, &true);
 
         env.events()
             .publish(("initialize", "XYK LP token_a"), token_a);
@@ -796,6 +798,13 @@ impl LiquidityPool {
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    #[allow(dead_code)]
+    //TODO: Remove after we've added the key to storage
+    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+        env.storage().persistent().set(&XYK_POOL_KEY, &true);
+        Ok(())
     }
 }
 

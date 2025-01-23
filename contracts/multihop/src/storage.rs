@@ -9,6 +9,7 @@ use soroban_sdk::{
 use crate::error::ContractError;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
+pub const MULTIHOP_KEY: Symbol = symbol_short!("MULTIHOP");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
