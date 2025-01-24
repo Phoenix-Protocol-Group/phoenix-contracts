@@ -29,4 +29,5 @@ pub enum ContractError {
     UserDeclinesPoolFee = 23,
     AdminNotSet = 24,
     ContractMathError = 25,
+    InvalidNumberOfTokenDecimals = 26,
 }

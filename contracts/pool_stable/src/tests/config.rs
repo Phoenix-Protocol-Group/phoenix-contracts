@@ -1,8 +1,11 @@
 extern crate std;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
-use crate::storage::{Config, PairType};
+use crate::{
+    storage::{Config, PairType},
+    token_contract,
+};
 
 #[test]
 fn update_config() {
@@ -391,5 +394,59 @@ fn create_stable_pool_with_too_high_swap_fee_bps_should_panic() {
         &Some(admin2.clone()),
         &None,
         &None,
+    );
+}
+
+#[test]
+#[should_panic] // not using any exact matches intentionally
+fn should_fail_to_initialize_pool_with_more_than_18_decimals_numbers() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
+    let token_addr1 = env.register(
+        token_contract::WASM,
+        (
+            Address::generate(&env),
+            20u32, // no more than 18 allowed
+            String::from_str(&env, "United States Crypto Dollar"),
+            String::from_str(&env, "USDc"),
+        ),
+    );
+    let mut token1 = token_contract::Client::new(&env, &token_addr1);
+    soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
+
+    let token_addr2 = env.register(
+        token_contract::WASM,
+        (
+            admin.clone(),
+            7,
+            String::from_str(&env, "European Token"),
+            String::from_str(&env, "EURx"),
+        ),
+    );
+    let mut token2 = token_contract::Client::new(&env, &token_addr2);
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let swap_fees = 0i64;
+    let _ = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
     );
 }
