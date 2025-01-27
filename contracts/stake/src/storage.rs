@@ -18,9 +18,11 @@ pub struct Config {
     pub max_complexity: u32,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
 
 pub fn get_config(env: &Env) -> Config {
-    env.storage()
+    let config = env
+        .storage()
         .persistent()
         .get(&CONFIG)
         .expect("Stake: Config not set");
@@ -43,7 +45,7 @@ pub fn save_config(env: &Env, config: Config) {
 }
 
 #[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Default)]
 pub struct Stake {
     /// The amount of staked tokens
     pub stake: i128,
@@ -112,6 +114,7 @@ pub mod utils {
         TotalStaked = 1,
         Distributions = 2,
         Initialized = 3,
+        StakeRewards = 4, // maybe deprecated
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -124,7 +127,7 @@ pub mod utils {
 
     pub fn is_initialized(e: &Env) -> bool {
         e.storage()
-            .persistent()
+            .instance()
             .get(&DataKey::Initialized)
             .unwrap_or(false)
     }
