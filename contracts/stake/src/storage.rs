@@ -1,3 +1,4 @@
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 #[contracttype]
@@ -14,20 +15,34 @@ pub struct Config {
     pub max_complexity: u32,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
 
 pub fn get_config(env: &Env) -> Config {
-    env.storage()
+    let config = env
+        .storage()
         .persistent()
         .get(&CONFIG)
-        .expect("Stake: Config not set")
+        .expect("Stake: Config not set");
+    env.storage().persistent().extend_ttl(
+        &CONFIG,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
+
+    config
 }
 
 pub fn save_config(env: &Env, config: Config) {
     env.storage().persistent().set(&CONFIG, &config);
+    env.storage().persistent().extend_ttl(
+        &CONFIG,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 #[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Default)]
 pub struct Stake {
     /// The amount of staked tokens
     pub stake: i128,
@@ -52,7 +67,7 @@ pub struct BondingInfo {
 }
 
 pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
-    match env.storage().persistent().get::<_, BondingInfo>(key) {
+    let bonding_info = match env.storage().persistent().get::<_, BondingInfo>(key) {
         Some(stake) => stake,
         None => BondingInfo {
             stakes: Vec::new(env),
@@ -60,11 +75,25 @@ pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
             last_reward_time: 0u64,
             total_stake: 0i128,
         },
-    }
+    };
+    env.storage().persistent().has(&key).then(|| {
+        env.storage().persistent().extend_ttl(
+            &key,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+    });
+
+    bonding_info
 }
 
 pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
     env.storage().persistent().set(key, bonding_info);
+    env.storage().persistent().extend_ttl(
+        &key,
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub mod utils {
@@ -72,6 +101,7 @@ pub mod utils {
 
     use super::*;
 
+    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
     use soroban_sdk::{log, panic_with_error, ConversionError, TryFromVal, Val};
 
     #[derive(Clone, Copy)]
@@ -81,6 +111,7 @@ pub mod utils {
         TotalStaked = 1,
         Distributions = 2,
         Initialized = 3,
+        StakeRewards = 4, // maybe deprecated
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -93,25 +124,63 @@ pub mod utils {
 
     pub fn is_initialized(e: &Env) -> bool {
         e.storage()
-            .persistent()
+            .instance()
             .get(&DataKey::Initialized)
             .unwrap_or(false)
     }
 
     pub fn set_initialized(e: &Env) {
-        e.storage().persistent().set(&DataKey::Initialized, &true);
+        e.storage().instance().set(&DataKey::Initialized, &true);
+        e.storage()
+            .instance()
+            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
     }
 
-    pub fn save_admin(e: &Env, address: &Address) {
-        e.storage().persistent().set(&DataKey::Admin, address)
+    pub fn save_admin_old(e: &Env, address: &Address) {
+        e.storage().persistent().set(&DataKey::Admin, address);
+        e.storage().persistent().extend_ttl(
+            &DataKey::Admin,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
-    pub fn get_admin(e: &Env) -> Address {
-        e.storage().persistent().get(&DataKey::Admin).unwrap()
+    pub fn _save_admin(e: &Env, address: &Address) {
+        e.storage().instance().set(&ADMIN, &address);
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+    }
+
+    pub fn get_admin_old(e: &Env) -> Address {
+        let admin = e.storage().persistent().get(&DataKey::Admin).unwrap();
+        e.storage().persistent().extend_ttl(
+            &DataKey::Admin,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+
+        admin
+    }
+
+    pub fn _get_admin(e: &Env) -> Address {
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        e.storage().instance().get(&ADMIN).unwrap_or_else(|| {
+            log!(e, "Stake: Admin not set");
+            panic_with_error!(&e, ContractError::AdminNotSet)
+        })
     }
 
     pub fn init_total_staked(e: &Env) {
         e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn increase_total_staked(e: &Env, amount: &i128) {
@@ -119,6 +188,12 @@ pub mod utils {
         e.storage()
             .persistent()
             .set(&DataKey::TotalStaked, &(count + amount));
+
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn decrease_total_staked(e: &Env, amount: &i128) {
@@ -126,13 +201,27 @@ pub mod utils {
         e.storage()
             .persistent()
             .set(&DataKey::TotalStaked, &(count - amount));
+
+        e.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
     }
 
     pub fn get_total_staked_counter(env: &Env) -> i128 {
-        env.storage()
+        let total_staked = env
+            .storage()
             .persistent()
             .get(&DataKey::TotalStaked)
-            .unwrap()
+            .unwrap();
+        env.storage().persistent().extend_ttl(
+            &DataKey::TotalStaked,
+            PERSISTENT_LIFETIME_THRESHOLD,
+            PERSISTENT_BUMP_AMOUNT,
+        );
+
+        total_staked
     }
 
     // Keep track of all distributions to be able to iterate over them
@@ -149,9 +238,22 @@ pub mod utils {
     }
 
     pub fn get_distributions(e: &Env) -> Vec<Address> {
-        e.storage()
+        let distributions = e
+            .storage()
             .persistent()
             .get(&DataKey::Distributions)
-            .unwrap_or_else(|| soroban_sdk::vec![e])
+            .unwrap_or_else(|| soroban_sdk::vec![e]);
+        e.storage()
+            .persistent()
+            .has(&DataKey::Distributions)
+            .then(|| {
+                e.storage().persistent().extend_ttl(
+                    &DataKey::Distributions,
+                    PERSISTENT_LIFETIME_THRESHOLD,
+                    PERSISTENT_BUMP_AMOUNT,
+                )
+            });
+
+        distributions
     }
 }
