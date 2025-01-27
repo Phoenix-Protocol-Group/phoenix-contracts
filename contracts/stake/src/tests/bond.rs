@@ -346,7 +346,7 @@ fn initialize_staking_contract_should_panic_when_min_bond_invalid() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let staking = StakingClient::new(&env, &env.register_contract(None, Staking {}));
+    let staking = StakingClient::new(&env, &env.register(Staking, ()));
 
     staking.initialize(
         &Address::generate(&env),
@@ -365,7 +365,7 @@ fn initialize_staking_contract_should_panic_when_min_rewards_invalid() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let staking = StakingClient::new(&env, &env.register_contract(None, Staking {}));
+    let staking = StakingClient::new(&env, &env.register(Staking, ()));
 
     staking.initialize(
         &Address::generate(&env),
@@ -384,7 +384,7 @@ fn initialize_staking_contract_should_panic_when_max_complexity_invalid() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let staking = StakingClient::new(&env, &env.register_contract(None, Staking {}));
+    let staking = StakingClient::new(&env, &env.register(Staking, ()));
 
     staking.initialize(
         &Address::generate(&env),
