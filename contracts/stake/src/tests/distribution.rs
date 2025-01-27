@@ -8,8 +8,9 @@ use super::setup::{deploy_staking_contract, deploy_token_contract};
 use pretty_assertions::assert_eq;
 
 use crate::{
+    contract::{Staking, StakingClient},
     msg::{WithdrawableReward, WithdrawableRewardsResponse},
-    tests::setup::SIXTY_DAYS,
+    tests::setup::{ONE_WEEK, SIXTY_DAYS},
 };
 
 #[test]
@@ -1193,4 +1194,91 @@ fn distribute_rewards_daily_multiple_times_same_stakes() {
     assert_eq!(reward_token.balance(&user4), 1_600_000);
 
     assert_eq!(reward_token.balance(&staking.address), 0);
+}
+
+// test should behave as `add_distribution_and_distribute_reward` but with consolidating the stakes
+#[test]
+fn consolidating_stakes_and_distribute_rewards() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let lp_token = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    let staking = StakingClient::new(&env, &env.register(Staking, ()));
+
+    staking.initialize(
+        &admin,
+        &lp_token.address,
+        &50,
+        &1_000,
+        &manager,
+        &admin,
+        &50u32,
+    );
+
+    staking.create_distribution_flow(&admin, &reward_token.address);
+
+    let reward_amount: i128 = 100_000;
+    reward_token.mint(&admin, &reward_amount);
+
+    lp_token.mint(&user, &1_000);
+
+    // first 30 days
+    for _ in 0..3 {
+        staking.bond(&user, &100);
+        env.ledger().with_mut(|li| {
+            li.timestamp += ONE_WEEK;
+        });
+    }
+
+    // second 30 days
+    env.ledger().with_mut(|li| {
+        li.timestamp += ONE_WEEK * 2;
+    });
+
+    for _ in 0..4 {
+        staking.bond(&user, &100);
+        env.ledger().with_mut(|li| {
+            li.timestamp += ONE_WEEK;
+        });
+    }
+
+    // one month forward
+    env.ledger().with_mut(|li| {
+        li.timestamp += SIXTY_DAYS;
+    });
+
+    staking.consolidate_stakes(
+        &user,
+        &vec![&env, 3024000u64, 3628800u64, 4233600u64, 4838400u64],
+    );
+
+    for _ in 0..60 {
+        staking.distribute_rewards(&admin, &(reward_amount / 60i128), &reward_token.address);
+        env.ledger().with_mut(|li| {
+            li.timestamp += 3600 * 24;
+        });
+    }
+
+    assert_eq!(
+        staking.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 99_960_u128
+                }
+            ]
+        }
+    );
+
+    staking.withdraw_rewards(&user);
+
+    assert_eq!(reward_token.balance(&user), 99_960);
 }
