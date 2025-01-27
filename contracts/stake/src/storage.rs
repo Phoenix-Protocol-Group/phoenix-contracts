@@ -4,7 +4,6 @@ use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 use crate::stake_rewards_contract;
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const STAKE_KEY: Symbol = symbol_short!("STAKE");
-
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
@@ -21,8 +20,7 @@ pub struct Config {
 const CONFIG: Symbol = symbol_short!("CONFIG");
 
 pub fn get_config(env: &Env) -> Config {
-    let config = env
-        .storage()
+    env.storage()
         .persistent()
         .get(&CONFIG)
         .expect("Stake: Config not set");
@@ -45,7 +43,7 @@ pub fn save_config(env: &Env, config: Config) {
 }
 
 #[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq, Default)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Stake {
     /// The amount of staked tokens
     pub stake: i128,
@@ -114,7 +112,6 @@ pub mod utils {
         TotalStaked = 1,
         Distributions = 2,
         Initialized = 3,
-        StakeRewards = 4,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -127,7 +124,7 @@ pub mod utils {
 
     pub fn is_initialized(e: &Env) -> bool {
         e.storage()
-            .instance()
+            .persistent()
             .get(&DataKey::Initialized)
             .unwrap_or(false)
     }
@@ -230,11 +227,9 @@ pub mod utils {
     // Keep track of all distributions to be able to iterate over them
     pub fn add_distribution(e: &Env, asset: &Address) {
         let mut distributions = get_distributions(e);
-        for old_asset in distributions.clone() {
-            if &old_asset == asset {
-                log!(&e, "Stake: Add distribution: Distribution already added");
-                panic_with_error!(&e, ContractError::DistributionExists);
-            }
+        if distributions.contains(asset) {
+            log!(&e, "Stake: Add distribution: Distribution already added");
+            panic_with_error!(&e, ContractError::DistributionExists);
         }
         distributions.push_back(asset.clone());
         e.storage()
