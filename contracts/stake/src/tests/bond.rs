@@ -220,6 +220,21 @@ fn unbond_simple() {
     let stake_timestamp = 4000;
     staking.unbond(&user, &10_000, &stake_timestamp);
 
+    assert_eq!(
+        env.auths(),
+        [(
+            user.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    staking.address.clone(),
+                    Symbol::new(&env, "unbond"),
+                    (&user.clone(), 10_000i128, (stake_timestamp)).into_val(&env),
+                )),
+                sub_invocations: std::vec![],
+            }
+        ),]
+    );
+
     let bonds = staking.query_staked(&user).stakes;
     assert_eq!(
         bonds,
