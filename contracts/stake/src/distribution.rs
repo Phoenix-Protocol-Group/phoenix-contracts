@@ -1,3 +1,4 @@
+use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
 use soroban_sdk::{contracttype, Address, Env};
 
 use curve::Curve;
@@ -37,15 +38,35 @@ pub enum DistributionDataKey {
 
 // one reward distribution curve over one denom
 pub fn save_reward_curve(env: &Env, asset: Address, distribution_curve: &Curve) {
-    env.storage()
-        .persistent()
-        .set(&DistributionDataKey::Curve(asset), distribution_curve);
+    env.storage().persistent().set(
+        &DistributionDataKey::Curve(asset.clone()),
+        distribution_curve,
+    );
+    env.storage().persistent().extend_ttl(
+        &DistributionDataKey::Curve(asset),
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_reward_curve(env: &Env, asset: &Address) -> Option<Curve> {
+    let result = env
+        .storage()
+        .persistent()
+        .get(&DistributionDataKey::Curve(asset.clone()));
+
     env.storage()
         .persistent()
-        .get(&DistributionDataKey::Curve(asset.clone()))
+        .has(&DistributionDataKey::Curve(asset.clone()))
+        .then(|| {
+            env.storage().persistent().extend_ttl(
+                &DistributionDataKey::Curve(asset.clone()),
+                PERSISTENT_LIFETIME_THRESHOLD,
+                PERSISTENT_BUMP_AMOUNT,
+            )
+        });
+
+    result
 }
 
 #[contracttype]
@@ -70,13 +91,33 @@ pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution
         &DistributionDataKey::Distribution(asset.clone()),
         distribution,
     );
+
+    env.storage().persistent().extend_ttl(
+        &DistributionDataKey::Distribution(asset.clone()),
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    )
 }
 
 pub fn get_distribution(env: &Env, asset: &Address) -> Distribution {
-    env.storage()
+    let distribution = env
+        .storage()
         .persistent()
         .get(&DistributionDataKey::Distribution(asset.clone()))
-        .unwrap()
+        .unwrap();
+
+    env.storage()
+        .persistent()
+        .has(&DistributionDataKey::Distribution(asset.clone()))
+        .then(|| {
+            env.storage().persistent().extend_ttl(
+                &DistributionDataKey::Distribution(asset.clone()),
+                PERSISTENT_LIFETIME_THRESHOLD,
+                PERSISTENT_BUMP_AMOUNT,
+            )
+        });
+
+    distribution
 }
 
 pub fn update_rewards(
@@ -141,6 +182,14 @@ pub fn save_withdraw_adjustment(
         }),
         adjustment,
     );
+    env.storage().persistent().extend_ttl(
+        &DistributionDataKey::WithdrawAdjustment(WithdrawAdjustmentKey {
+            user: user.clone(),
+            asset: distribution.clone(),
+        }),
+        PERSISTENT_LIFETIME_THRESHOLD,
+        PERSISTENT_BUMP_AMOUNT,
+    );
 }
 
 pub fn get_withdraw_adjustment(
@@ -148,7 +197,8 @@ pub fn get_withdraw_adjustment(
     user: &Address,
     distribution: &Address,
 ) -> WithdrawAdjustment {
-    env.storage()
+    let result = env
+        .storage()
         .persistent()
         .get(&DistributionDataKey::WithdrawAdjustment(
             WithdrawAdjustmentKey {
@@ -156,7 +206,28 @@ pub fn get_withdraw_adjustment(
                 asset: distribution.clone(),
             },
         ))
-        .unwrap_or_default()
+        .unwrap_or_default();
+
+    env.storage()
+        .persistent()
+        .has(&DistributionDataKey::WithdrawAdjustment(
+            WithdrawAdjustmentKey {
+                user: user.clone(),
+                asset: distribution.clone(),
+            },
+        ))
+        .then(|| {
+            env.storage().persistent().extend_ttl(
+                &DistributionDataKey::WithdrawAdjustment(WithdrawAdjustmentKey {
+                    user: user.clone(),
+                    asset: distribution.clone(),
+                }),
+                PERSISTENT_LIFETIME_THRESHOLD,
+                PERSISTENT_BUMP_AMOUNT,
+            );
+        });
+
+    result
 }
 
 pub fn withdrawable_rewards(
