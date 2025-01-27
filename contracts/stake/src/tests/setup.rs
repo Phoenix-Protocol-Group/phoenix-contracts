@@ -6,7 +6,11 @@ use crate::{
 };
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
-    token_contract::Client::new(env, &env.register_stellar_asset_contract(admin.clone()))
+    token_contract::Client::new(
+        env,
+        &env.register_stellar_asset_contract_v2(admin.clone())
+            .address(),
+    )
 }
 
 const MIN_BOND: i128 = 1000;
@@ -21,7 +25,7 @@ pub fn deploy_staking_contract<'a>(
     max_complexity: &u32,
 ) -> StakingClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
-    let staking = StakingClient::new(env, &env.register_contract(None, Staking {}));
+    let staking = StakingClient::new(env, &env.register(Staking, ()));
 
     staking.initialize(
         &admin,
