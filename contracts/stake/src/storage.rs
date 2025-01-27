@@ -18,7 +18,8 @@ pub struct Config {
     pub max_complexity: u32,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
-pub const _ADMIN: Symbol = symbol_short!("ADMIN");
+#[allow(dead_code)]
+pub const ADMIN: Symbol = symbol_short!("ADMIN");
 
 pub fn get_config(env: &Env) -> Config {
     let config = env
