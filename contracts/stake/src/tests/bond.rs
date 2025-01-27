@@ -1,7 +1,10 @@
+extern crate std;
+
 use pretty_assertions::assert_eq;
 use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    vec, Address, Env,
+    symbol_short,
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
+    vec, Address, Env, IntoVal, Symbol,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
@@ -132,6 +135,28 @@ fn bond_simple() {
     lp_token.mint(&user, &10_000);
 
     staking.bond(&user, &10_000);
+
+    assert_eq!(
+        env.auths(),
+        [(
+            user.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    staking.address.clone(),
+                    Symbol::new(&env, "bond"),
+                    (&user.clone(), 10_000i128,).into_val(&env),
+                )),
+                sub_invocations: std::vec![AuthorizedInvocation {
+                    function: AuthorizedFunction::Contract((
+                        lp_token.address.clone(),
+                        symbol_short!("transfer"),
+                        (&user, &staking.address.clone(), 10_000i128).into_val(&env)
+                    )),
+                    sub_invocations: std::vec![],
+                },],
+            }
+        ),]
+    );
 
     let bonds = staking.query_staked(&user).stakes;
     assert_eq!(
