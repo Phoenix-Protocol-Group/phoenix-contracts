@@ -227,7 +227,11 @@ pub mod utils {
             .storage()
             .persistent()
             .get(&DataKey::TotalStaked)
-            .unwrap();
+            // or maybe .unwrap_or(0)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake: Get Total Staked Counter: No value found");
+                panic_with_error!(&env, ContractError::StakeNotFound);
+            });
         env.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
             PERSISTENT_RENEWAL_THRESHOLD,
