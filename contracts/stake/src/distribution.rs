@@ -1,10 +1,14 @@
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
-use soroban_sdk::{contracttype, Address, Env};
+use phoenix::{
+    ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD},
+    utils::{convert_i128_to_u128, convert_u128_to_i128},
+};
+use soroban_sdk::{contracttype, log, panic_with_error, Address, Env};
 
 use curve::Curve;
 use soroban_decimal::Decimal;
 
 use crate::{
+    error::ContractError,
     storage::{get_stakes, Config},
     TOKEN_PER_POWER,
 };
@@ -131,7 +135,12 @@ pub fn update_rewards(
     if old_rewards_power == new_rewards_power {
         return;
     }
-    let diff = new_rewards_power - old_rewards_power;
+    let diff = new_rewards_power
+        .checked_sub(old_rewards_power)
+        .unwrap_or_else(|| {
+            log!(&env, "Stake: Update Rewards: Underflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     // Apply the points correction with the calculated difference.
     let ppw = distribution.shares_per_point;
     apply_points_correction(env, user, asset, diff, ppw);
@@ -150,7 +159,16 @@ fn apply_points_correction(
 ) {
     let mut withdraw_adjustment = get_withdraw_adjustment(env, user, asset);
     let shares_correction = withdraw_adjustment.shares_correction;
-    withdraw_adjustment.shares_correction = shares_correction - shares_per_point as i128 * diff;
+    withdraw_adjustment.shares_correction = (shares_per_point as i128)
+        .checked_mul(diff)
+        .and_then(|result| shares_correction.checked_sub(result))
+        .unwrap_or_else(|| {
+            log!(
+                &env,
+                "Stake: Apply Points Correction: Underflow/Overflow occured."
+            );
+            panic_with_error!(&env, ContractError::ContractMathError);
+        });
     save_withdraw_adjustment(env, user, asset, &withdraw_adjustment);
 }
 
@@ -243,12 +261,29 @@ pub fn withdrawable_rewards(
     // Decimal::one() represents the standart multiplier per token
     // 1_000 represents the contsant token per power. TODO: make it configurable
     let points = calc_power(config, stakes as i128, Decimal::one(), TOKEN_PER_POWER);
-    let points = (ppw * points as u128) as i128;
+    let points = convert_u128_to_i128(
+        ppw.checked_mul(convert_i128_to_u128(points))
+            .unwrap_or_else(|| {
+                log!(&env, "Stake: Withdrawable Rewards: Overflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            }),
+    );
 
     let correction = adjustment.shares_correction;
-    let points = points + correction;
-    let amount = points >> SHARES_SHIFT;
-    amount as u128 - adjustment.withdrawn_rewards
+    let points = points.checked_add(correction).unwrap_or_else(|| {
+        log!(&env, "Stake: Withdrawable Rewards: Underflow occured.");
+        panic_with_error!(&env, ContractError::ContractMathError);
+    });
+    let amount = points.checked_shr(SHARES_SHIFT.into()).unwrap_or_else(|| {
+        log!(&env, "Stake Withdrawable Rewards: Underflow occured.");
+        panic_with_error!(&env, ContractError::ContractMathError);
+    });
+    convert_i128_to_u128(amount)
+        .checked_sub(adjustment.withdrawn_rewards)
+        .unwrap_or_else(|| {
+            log!(&env, "Stake: Withdrawable Rewards: Underflow occured.");
+            panic_with_error!(&env, ContractError::ContractMathError);
+        })
 }
 
 pub fn calculate_annualized_payout(reward_curve: Option<Curve>, now: u64) -> Decimal {
