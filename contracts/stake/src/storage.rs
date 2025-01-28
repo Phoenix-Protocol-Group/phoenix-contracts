@@ -189,9 +189,13 @@ pub mod utils {
 
     pub fn increase_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
+        let new_sum = count.checked_add(*amount).unwrap_or_else(|| {
+            log!(&e, "Stake: Increase Total Staked: Overflow occured.");
+            panic_with_error!(&e, ContractError::ContractMathError);
+        });
         e.storage()
             .persistent()
-            .set(&DataKey::TotalStaked, &(count + amount));
+            .set(&DataKey::TotalStaked, &new_sum);
 
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
@@ -202,9 +206,14 @@ pub mod utils {
 
     pub fn decrease_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
+
+        let new_diff = count.checked_sub(*amount).unwrap_or_else(|| {
+            log!(&e, "Stake: Increase Total Staked: Overflow occured.");
+            panic_with_error!(&e, ContractError::ContractMathError);
+        });
         e.storage()
             .persistent()
-            .set(&DataKey::TotalStaked, &(count - amount));
+            .set(&DataKey::TotalStaked, &new_diff);
 
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
