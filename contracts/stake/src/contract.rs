@@ -266,8 +266,8 @@ impl StakingTrait for Staking {
         utils::decrease_total_staked(&env, &stake_amount);
 
         env.events().publish(("unbond", "user"), &sender);
-        env.events().publish(("bond", "token"), &config.lp_token);
-        env.events().publish(("bond", "amount"), stake_amount);
+        env.events().publish(("unbond", "token"), &config.lp_token);
+        env.events().publish(("unbond", "amount"), stake_amount);
     }
 
     fn create_distribution_flow(env: Env, sender: Address, asset: Address) {
