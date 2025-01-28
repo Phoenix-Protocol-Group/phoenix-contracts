@@ -19,4 +19,5 @@ pub enum ContractError {
     DistributionNotFound = 414,
     AdminNotSet = 415,
     ContractMathError = 416,
+    RewardCurveDoesNotExist = 417,
 }
