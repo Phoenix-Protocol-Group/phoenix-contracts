@@ -283,7 +283,7 @@ fn swap_single_pool_no_fees() {
 
 #[test]
 /// Asserting HostError, because of panic messages are not propagated and IIUC are normally compiled out
-#[should_panic(expected = "HostError: Error(Contract, #1)")]
+#[should_panic(expected = "HostError: Error(Contract, #200)")]
 fn swap_should_fail_when_spread_exceeds_the_limit() {
     let env = Env::default();
     let admin = Address::generate(&env);
@@ -726,7 +726,7 @@ fn test_v_phx_vul_013_add_belief_price_for_every_swap() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #21)")]
+#[should_panic(expected = "Error(Contract, #220)")]
 fn test_swap_with_ask_asset_min_amount() {
     let env = Env::default();
     let admin = Address::generate(&env);

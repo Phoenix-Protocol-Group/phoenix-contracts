@@ -101,3 +101,15 @@ sequenceDiagram
 By using these contracts together, users can trade tokens, provide liquidity to the AMM, stake LP tokens and earn rewards within the PHOENIX ecosystem.
 
 Please note that this design document provides a high-level overview of the contracts and their primary functions. The actual implementation may require additional functions, modifiers, and security considerations to ensure the contracts' robustness and reliability.
+
+## Error Enums
+
+The `error.rs` mod in each smart contract show the `Error` enum's values for the different contracts. Due to Stellar's way of handling error messages when such occur, we are using number sets for the different contracts. That way the number ranges follow this structure:
+
+```
+Factory     <-> 1-99
+Multihop    <-> 100-199
+Xyk_Pool    <-> 200-299
+Stable_Pool <-> 300-399
+Stake       <-> 400-499
+```
