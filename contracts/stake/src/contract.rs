@@ -543,13 +543,13 @@ impl StakingTrait for Staking {
         save_reward_curve(&env, token_address.clone(), &new_reward_curve);
 
         env.events()
-            .publish(("fund_reward_distribution", "asset"), &token_address);
+            .publish(("fund_distribution", "asset"), &token_address);
         env.events()
-            .publish(("fund_reward_distribution", "amount"), token_amount);
+            .publish(("fund_distribution", "amount"), token_amount);
         env.events()
-            .publish(("fund_reward_distribution", "start_time"), start_time);
+            .publish(("fund_distribution", "start_time"), start_time);
         env.events()
-            .publish(("fund_reward_distribution", "end_time"), end_time);
+            .publish(("fund_distribution", "end_time"), end_time);
     }
 
     // QUERIES
