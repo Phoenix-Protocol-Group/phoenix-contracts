@@ -5,7 +5,7 @@ use soroban_sdk::{
     Vec,
 };
 
-use crate::distribution::calc_power;
+use crate::distribution::{calc_power, calculate_pending_rewards_deprecated};
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
@@ -62,6 +62,8 @@ pub trait StakingTrait {
     fn distribute_rewards(env: Env);
 
     fn withdraw_rewards(env: Env, sender: Address);
+
+    fn withdraw_rewards_deprecated(env: Env, sender: Address);
 
     fn fund_distribution(
         env: Env,
@@ -458,6 +460,30 @@ impl StakingTrait for Staking {
             env.events()
                 .publish(("withdraw_rewards", "reward_amount"), reward_amount);
         }
+    }
+
+    fn withdraw_rewards_deprecated(env: Env, sender: Address) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        env.events().publish(("withdraw_rewards", "user"), &sender);
+
+        let mut stakes = get_stakes(&env, &sender);
+
+        for asset in get_distributions(&env) {
+            let pending_reward = calculate_pending_rewards_deprecated(&env, &asset, &stakes);
+            env.events()
+                .publish(("withdraw_rewards", "reward_token"), &asset);
+
+            token_contract::Client::new(&env, &asset).transfer(
+                &env.current_contract_address(),
+                &sender,
+                &pending_reward,
+            );
+        }
+        stakes.last_reward_time = env.ledger().timestamp();
+        save_stakes(&env, &sender, &stakes);
     }
 
     fn fund_distribution(
