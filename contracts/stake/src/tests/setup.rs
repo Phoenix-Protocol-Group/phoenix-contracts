@@ -108,7 +108,7 @@ mod tests {
         );
 
         let reward_token_client = token::Client::new(&env, &reward_token_addr);
-        reward_token_client.mint(&old_stake_client.address, &10_000_000_000_000);
+        reward_token_client.mint(&manager, &10_000_000_000_000);
 
         old_stake_client.initialize(
             &admin,
