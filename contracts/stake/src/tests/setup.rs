@@ -1,4 +1,4 @@
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 use crate::{
     contract::{Staking, StakingClient},
@@ -11,6 +11,14 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
         &env.register_stellar_asset_contract_v2(admin.clone())
             .address(),
     )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
+    );
+    env.deployer().upload_contract_wasm(WASM)
 }
 
 const MIN_BOND: i128 = 1000;
@@ -65,6 +73,9 @@ mod tests {
     use soroban_sdk::{testutils::Address as _, Address};
     use soroban_sdk::{vec, Env, String};
 
+    use crate::contract::StakingClient;
+    use crate::tests::setup::install_stake_wasm;
+
     #[test]
     fn upgrade_staking_contract_and_remove_stake_rewards() {
         const DAY_AS_SECONDS: u64 = 86_400;
@@ -79,8 +90,8 @@ mod tests {
         let user_2 = Address::generate(&env);
         let user_3 = Address::generate(&env);
 
-        let factory_addr = env.register(old_stake::WASM, ());
-        let old_stake_client = old_stake::Client::new(&env, &factory_addr);
+        let stake_addr = env.register(old_stake::WASM, ());
+        let old_stake_client = old_stake::Client::new(&env, &stake_addr);
 
         let lp_token_addr = env.register(
             token::WASM,
@@ -259,5 +270,21 @@ mod tests {
                 ]
             }
         );
+
+        let new_stake_wasm = install_stake_wasm(&env);
+
+        old_stake_client.update(&new_stake_wasm);
+        old_stake_client.update(&new_stake_wasm);
+
+        let latest_stake_client = StakingClient::new(&env, &stake_addr);
+        latest_stake_client.update(&new_stake_wasm);
+
+        let result = latest_stake_client.query_withdrawable_rewards(&user_1);
+        soroban_sdk::testutils::arbitrary::std::dbg!(result);
+        soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
+
+        //soroban_sdk::testutils::arbitrary::std::dbg!(reward_token_client.balance(&user_1));
+        latest_stake_client.withdraw_rewards_deprecated(&user_1);
+        //soroban_sdk::testutils::arbitrary::std::dbg!(reward_token_client.balance(&user_1));
     }
 }
