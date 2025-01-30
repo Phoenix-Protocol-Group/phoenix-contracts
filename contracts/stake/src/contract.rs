@@ -88,6 +88,8 @@ pub trait StakingTrait {
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
 
+    fn query_withdrawable_rewards_dep(env: Env, address: Address) -> WithdrawableRewardsResponse;
+
     fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
     fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
@@ -467,7 +469,7 @@ impl StakingTrait for Staking {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        env.events().publish(("withdraw_rewards", "user"), &sender);
+        env.events().publish(("withdraw_rewards", "DBG"), &sender);
 
         let mut stakes = get_stakes(&env, &sender);
 
@@ -649,6 +651,7 @@ impl StakingTrait for Staking {
     }
 
     fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
+        soroban_sdk::testutils::arbitrary::std::dbg!("INSIDE");
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
@@ -667,6 +670,25 @@ impl StakingTrait for Staking {
             rewards.push_back(WithdrawableReward {
                 reward_address: distribution_address,
                 reward_amount,
+            });
+        }
+
+        WithdrawableRewardsResponse { rewards }
+    }
+
+    fn query_withdrawable_rewards_dep(env: Env, user: Address) -> WithdrawableRewardsResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        let stakes = get_stakes(&env, &user);
+        // iterate over all distributions and calculate withdrawable rewards
+        let mut rewards = vec![&env];
+        for asset in get_distributions(&env) {
+            let pending_reward = calculate_pending_rewards_deprecated(&env, &asset, &stakes);
+
+            rewards.push_back(WithdrawableReward {
+                reward_address: asset,
+                reward_amount: pending_reward as u128,
             });
         }
 
