@@ -43,10 +43,6 @@ pub fn deploy_staking_contract<'a>(
 #[allow(clippy::too_many_arguments)]
 mod tests {
 
-    const TOKEN_WASM: &[u8] = include_bytes!(
-        "../../../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
-    );
-
     pub mod token {
         // The import will code generate:
         // - A ContractClient type that can be used to invoke functions on the contract.
@@ -58,7 +54,9 @@ mod tests {
 
     #[allow(clippy::too_many_arguments)]
     pub mod old_stake {
-        soroban_sdk::contractimport!(file = "../../artifacts/old_phoenix_stake.wasm");
+        soroban_sdk::contractimport!(
+            file = "../../.artifacts_stake_migration_test/old_phoenix_stake.wasm"
+        );
     }
 
     use old_stake::StakedResponse;
@@ -100,7 +98,7 @@ mod tests {
         lp_token_client.mint(&user_3, &10_000_000_000_000);
 
         let reward_token_addr = env.register(
-            TOKEN_WASM,
+            token::WASM,
             (
                 Address::generate(&env),
                 7u32,
@@ -185,6 +183,8 @@ mod tests {
         let user_1_withdrawable_rewards = old_stake_client.query_withdrawable_rewards(&user_1);
         let user_2_withdrawable_rewards = old_stake_client.query_withdrawable_rewards(&user_2);
         let user_3_withdrawable_rewards = old_stake_client.query_withdrawable_rewards(&user_3);
+
+        old_stake_client.distribute_rewards(&manager, &100, &reward_token_addr);
 
         soroban_sdk::testutils::arbitrary::std::dbg!(
             user_1_withdrawable_rewards,
