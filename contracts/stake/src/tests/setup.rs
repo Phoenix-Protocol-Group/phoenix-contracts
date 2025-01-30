@@ -74,6 +74,7 @@ mod tests {
     use soroban_sdk::{vec, Env, String};
 
     use crate::contract::StakingClient;
+    use crate::msg;
     use crate::tests::setup::install_stake_wasm;
 
     #[test]
@@ -89,6 +90,8 @@ mod tests {
         let user_1 = Address::generate(&env);
         let user_2 = Address::generate(&env);
         let user_3 = Address::generate(&env);
+
+        let new_user = Address::generate(&env);
 
         let stake_addr = env.register(old_stake::WASM, ());
         let old_stake_client = old_stake::Client::new(&env, &stake_addr);
@@ -271,20 +274,116 @@ mod tests {
             }
         );
 
+        // we upgrade
         let new_stake_wasm = install_stake_wasm(&env);
 
         old_stake_client.update(&new_stake_wasm);
-        old_stake_client.update(&new_stake_wasm);
+        //old_stake_client.update(&new_stake_wasm);
 
         let latest_stake_client = StakingClient::new(&env, &stake_addr);
-        latest_stake_client.update(&new_stake_wasm);
 
-        let result = latest_stake_client.query_withdrawable_rewards(&user_1);
-        soroban_sdk::testutils::arbitrary::std::dbg!(result);
+        // check the rewards again, this time with the old deprecated method
+        assert_eq!(
+            latest_stake_client.query_withdrawable_rewards_dep(&user_1),
+            msg::WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    msg::WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 1_111_111,
+                    }
+                ]
+            }
+        );
+
+        assert_eq!(
+            latest_stake_client.query_withdrawable_rewards_dep(&user_2),
+            msg::WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    msg::WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 2_222_222,
+                    }
+                ]
+            }
+        );
+
+        assert_eq!(
+            latest_stake_client.query_withdrawable_rewards_dep(&user_3),
+            msg::WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    msg::WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 1_666_666,
+                    }
+                ]
+            }
+        );
+
+        latest_stake_client.withdraw_rewards_deprecated(&user_1);
+        latest_stake_client.withdraw_rewards_deprecated(&user_2);
+        latest_stake_client.withdraw_rewards_deprecated(&user_3);
+
+        // we make sure that there are no more rewards
+        assert_eq!(
+            latest_stake_client.query_withdrawable_rewards_dep(&user_1),
+            msg::WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    msg::WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 0,
+                    }
+                ]
+            }
+        );
+
+        assert_eq!(
+            latest_stake_client.query_withdrawable_rewards_dep(&user_2),
+            msg::WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    msg::WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 0,
+                    }
+                ]
+            }
+        );
+
+        assert_eq!(
+            latest_stake_client.query_withdrawable_rewards_dep(&user_3),
+            msg::WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    msg::WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 0,
+                    }
+                ]
+            }
+        );
+
+        assert_eq!(reward_token_client.balance(&user_1), 1_111_111);
+        assert_eq!(reward_token_client.balance(&user_2), 2_222_222);
+        assert_eq!(reward_token_client.balance(&user_3), 1_666_666);
+
+        // one more day passes by and new_user decides to stake
+        env.ledger().with_mut(|li| li.timestamp += DAY_AS_SECONDS);
+
+        lp_token_client.mint(&new_user, &10_000_000_000_000);
+
+        soroban_sdk::testutils::arbitrary::std::dbg!("BEFORE");
+        latest_stake_client.bond(&new_user, &10_000_000_000); // new_user also bonds 1,000 tokens
         soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
 
-        //soroban_sdk::testutils::arbitrary::std::dbg!(reward_token_client.balance(&user_1));
-        latest_stake_client.withdraw_rewards_deprecated(&user_1);
-        //soroban_sdk::testutils::arbitrary::std::dbg!(reward_token_client.balance(&user_1));
+        // two months pass by
+        env.ledger()
+            .with_mut(|li| li.timestamp += 60 * DAY_AS_SECONDS);
+
+        // distribute the rewards
+        latest_stake_client.distribute_rewards();
     }
 }
