@@ -59,7 +59,7 @@ mod tests {
         );
     }
 
-    use old_stake::StakedResponse;
+    use old_stake::{StakedResponse, WithdrawableReward, WithdrawableRewardsResponse};
     use pretty_assertions::assert_eq;
     use soroban_sdk::testutils::Ledger;
     use soroban_sdk::{testutils::Address as _, Address};
@@ -108,7 +108,7 @@ mod tests {
         );
 
         let reward_token_client = token::Client::new(&env, &reward_token_addr);
-        reward_token_client.mint(&manager, &10_000_000_000_000);
+        reward_token_client.mint(&manager, &100_000_000_000_000);
 
         old_stake_client.initialize(
             &admin,
@@ -176,20 +176,88 @@ mod tests {
             }
         );
 
-        // 100 days forward after staking let's check the rewards
+        // 30 days forward after staking let's check the rewards
         env.ledger()
-            .with_mut(|li| li.timestamp += 100 * DAY_AS_SECONDS);
+            .with_mut(|li| li.timestamp += 30 * DAY_AS_SECONDS);
 
-        let user_1_withdrawable_rewards = old_stake_client.query_withdrawable_rewards(&user_1);
-        let user_2_withdrawable_rewards = old_stake_client.query_withdrawable_rewards(&user_2);
-        let user_3_withdrawable_rewards = old_stake_client.query_withdrawable_rewards(&user_3);
+        assert_eq!(
+            old_stake_client.query_withdrawable_rewards(&user_1),
+            WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 0,
+                    }
+                ]
+            }
+        );
 
-        old_stake_client.distribute_rewards(&manager, &100, &reward_token_addr);
+        assert_eq!(
+            old_stake_client.query_withdrawable_rewards(&user_2),
+            WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 0,
+                    }
+                ]
+            }
+        );
 
-        soroban_sdk::testutils::arbitrary::std::dbg!(
-            user_1_withdrawable_rewards,
-            user_2_withdrawable_rewards,
-            user_3_withdrawable_rewards
+        assert_eq!(
+            old_stake_client.query_withdrawable_rewards(&user_3),
+            WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 0,
+                    }
+                ]
+            }
+        );
+
+        old_stake_client.distribute_rewards(&manager, &10_000_000, &reward_token_addr);
+
+        assert_eq!(
+            old_stake_client.query_withdrawable_rewards(&user_1),
+            WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 1_111_111,
+                    }
+                ]
+            }
+        );
+
+        assert_eq!(
+            old_stake_client.query_withdrawable_rewards(&user_2),
+            WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 2_222_222,
+                    }
+                ]
+            }
+        );
+
+        assert_eq!(
+            old_stake_client.query_withdrawable_rewards(&user_3),
+            WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 1_666_666,
+                    }
+                ]
+            }
         );
     }
 }
