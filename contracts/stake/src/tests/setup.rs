@@ -375,24 +375,14 @@ mod tests {
         assert_eq!(reward_token_client.balance(&user_2), 2_222_222);
         assert_eq!(reward_token_client.balance(&user_3), 1_666_666);
 
-        // 30 days pass by and this time users directly unbond 1/2 which should also get their
-        //    rewards
-        env.ledger()
-            .with_mut(|li| li.timestamp += 30 * DAY_AS_SECONDS);
-
-        soroban_sdk::testutils::arbitrary::std::dbg!("BEFORE");
-        latest_stake_client.unbond_deprecated(&user_1, &5_000_000_000, &(DAY_AS_SECONDS * 2));
-        latest_stake_client.unbond_deprecated(&user_2, &10_000_000_000, &(DAY_AS_SECONDS * 2));
-        latest_stake_client.unbond_deprecated(&user_3, &7_500_000_000, &(DAY_AS_SECONDS * 2));
-
-        soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
+        // query the staked before unbonding
         assert_eq!(
             latest_stake_client.query_staked(&user_1),
             latest_stake::StakedResponse {
                 stakes: vec![
                     &env,
                     latest_stake::Stake {
-                        stake: 5_000_000_000,
+                        stake: 10000000000,
                         stake_timestamp: DAY_AS_SECONDS * 2
                     }
                 ]
@@ -405,7 +395,7 @@ mod tests {
                 stakes: vec![
                     &env,
                     latest_stake::Stake {
-                        stake: 10_000_000_000,
+                        stake: 20_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2
                     }
                 ]
@@ -418,10 +408,40 @@ mod tests {
                 stakes: vec![
                     &env,
                     latest_stake::Stake {
-                        stake: 7_500_000_000,
+                        stake: 15_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2
                     }
                 ]
+            }
+        );
+
+        // 30 days pass by and this time users directly unbond 1/2 which should also get their
+        //    rewards
+        env.ledger()
+            .with_mut(|li| li.timestamp += 30 * DAY_AS_SECONDS);
+
+        latest_stake_client.unbond_deprecated(&user_1, &10000000000, &(172800));
+        latest_stake_client.unbond_deprecated(&user_2, &20000000000, &(172800));
+        latest_stake_client.unbond_deprecated(&user_3, &15000000000, &(172800));
+
+        assert_eq!(
+            latest_stake_client.query_staked(&user_1),
+            latest_stake::StakedResponse {
+                stakes: vec![&env,]
+            }
+        );
+
+        assert_eq!(
+            latest_stake_client.query_staked(&user_2),
+            latest_stake::StakedResponse {
+                stakes: vec![&env,]
+            }
+        );
+
+        assert_eq!(
+            latest_stake_client.query_staked(&user_3),
+            latest_stake::StakedResponse {
+                stakes: vec![&env,]
             }
         );
 
@@ -430,7 +450,9 @@ mod tests {
 
         lp_token_client.mint(&new_user, &10_000_000_000_000);
 
+        soroban_sdk::testutils::arbitrary::std::dbg!("BEFORE");
         latest_stake_client.bond(&new_user, &10_000_000_000); // new_user also bonds 1,000 tokens
+        soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
 
         // two months pass by
         env.ledger()

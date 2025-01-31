@@ -199,12 +199,10 @@ impl StakingTrait for Staking {
             let mut distribution = get_distribution(&env, &distribution_address);
             let stakes: i128 = get_stakes(&env, &sender).total_stake;
             let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-
             let stakes_sum = stakes.checked_add(tokens).unwrap_or_else(|| {
                 log!(&env, "Stake: Bond: Overflow occured.");
                 panic_with_error!(&env, ContractError::ContractMathError);
             });
-
             let new_power = calc_power(&config, stakes_sum, Decimal::one(), TOKEN_PER_POWER);
             update_rewards(
                 &env,
@@ -511,11 +509,8 @@ impl StakingTrait for Staking {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        env.events().publish(("withdraw_rewards", "536"), &sender);
-
         let mut stakes = get_stakes(&env, &sender);
 
-        env.events().publish(("withdraw_rewards", "540"), &sender);
         for asset in get_distributions(&env) {
             let pending_reward = calculate_pending_rewards_deprecated(&env, &asset, &stakes);
             env.events()
@@ -528,7 +523,6 @@ impl StakingTrait for Staking {
             );
         }
 
-        env.events().publish(("withdraw_rewards", "553"), &sender);
         stakes.last_reward_time = env.ledger().timestamp();
         save_stakes(&env, &sender, &stakes);
     }
