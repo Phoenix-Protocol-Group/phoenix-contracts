@@ -80,9 +80,6 @@ mod tests {
     use soroban_sdk::{testutils::Address as _, Address};
     use soroban_sdk::{vec, Env, String};
 
-    use crate::contract::StakingClient;
-    use crate::msg;
-    use crate::storage::Stake;
     use crate::tests::setup::{install_stake_wasm, latest_stake};
 
     #[test]
@@ -386,7 +383,7 @@ mod tests {
         soroban_sdk::testutils::arbitrary::std::dbg!("BEFORE");
         latest_stake_client.unbond_deprecated(&user_1, &5_000_000_000, &(DAY_AS_SECONDS * 2));
         latest_stake_client.unbond_deprecated(&user_2, &10_000_000_000, &(DAY_AS_SECONDS * 2));
-        latest_stake_client.unbond(&user_3, &7_500_000_000, &(DAY_AS_SECONDS * 2));
+        latest_stake_client.unbond_deprecated(&user_3, &7_500_000_000, &(DAY_AS_SECONDS * 2));
 
         soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
         assert_eq!(

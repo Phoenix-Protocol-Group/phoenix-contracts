@@ -286,20 +286,26 @@ impl StakingTrait for Staking {
     }
 
     fn unbond_deprecated(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
+        env.events().publish(("unbond_deprecated", "280"), &sender);
         sender.require_auth();
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
+        env.events().publish(("unbond_deprecated", "286"), &sender);
         let config = get_config(&env);
 
         // check for rewards and withdraw them
+        env.events().publish(("unbond_deprecated", "290"), &sender);
         let found_rewards: WithdrawableRewardsResponse =
             Self::query_withdrawable_rewards_dep(env.clone(), sender.clone());
 
+        env.events().publish(("unbond_deprecated", "294"), &sender);
         if !found_rewards.rewards.is_empty() {
+            env.events().publish(("unbond_deprecated", "296"), &sender);
             Self::withdraw_rewards_deprecated(env.clone(), sender.clone());
         }
+        env.events().publish(("unbond_deprecated", "299"), &sender);
 
         for distribution_address in get_distributions(&env) {
             let mut distribution = get_distribution(&env, &distribution_address);
@@ -536,10 +542,11 @@ impl StakingTrait for Staking {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        env.events().publish(("withdraw_rewards", "DBG"), &sender);
+        env.events().publish(("withdraw_rewards", "536"), &sender);
 
         let mut stakes = get_stakes(&env, &sender);
 
+        env.events().publish(("withdraw_rewards", "540"), &sender);
         for asset in get_distributions(&env) {
             let pending_reward = calculate_pending_rewards_deprecated(&env, &asset, &stakes);
             env.events()
@@ -551,6 +558,8 @@ impl StakingTrait for Staking {
                 &pending_reward,
             );
         }
+
+        env.events().publish(("withdraw_rewards", "553"), &sender);
         stakes.last_reward_time = env.ledger().timestamp();
         save_stakes(&env, &sender, &stakes);
     }
