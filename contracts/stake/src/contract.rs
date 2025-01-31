@@ -661,7 +661,6 @@ impl StakingTrait for Staking {
     }
 
     fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
-        soroban_sdk::testutils::arbitrary::std::dbg!("INSIDE");
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
