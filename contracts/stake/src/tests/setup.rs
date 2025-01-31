@@ -75,6 +75,7 @@ mod tests {
 
     use crate::contract::StakingClient;
     use crate::msg;
+    use crate::storage::Stake;
     use crate::tests::setup::install_stake_wasm;
 
     #[test]
@@ -370,20 +371,68 @@ mod tests {
         assert_eq!(reward_token_client.balance(&user_2), 2_222_222);
         assert_eq!(reward_token_client.balance(&user_3), 1_666_666);
 
+        // 30 days pass by and this time users directly unbond 1/2 which should also get their
+        //    rewards
+        env.ledger()
+            .with_mut(|li| li.timestamp += 30 * DAY_AS_SECONDS);
+
+        soroban_sdk::testutils::arbitrary::std::dbg!("BEFORE");
+        latest_stake_client.unbond(&user_1, &5_000_000_000, &(DAY_AS_SECONDS * 2));
+        latest_stake_client.unbond(&user_2, &10_000_000_000, &(DAY_AS_SECONDS * 2));
+        latest_stake_client.unbond(&user_3, &7_500_000_000, &(DAY_AS_SECONDS * 2));
+
+        soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
+        assert_eq!(
+            latest_stake_client.query_staked(&user_1),
+            msg::StakedResponse {
+                stakes: vec![
+                    &env,
+                    Stake {
+                        stake: 5_000_000_000,
+                        stake_timestamp: DAY_AS_SECONDS * 2
+                    }
+                ]
+            }
+        );
+
+        assert_eq!(
+            latest_stake_client.query_staked(&user_2),
+            msg::StakedResponse {
+                stakes: vec![
+                    &env,
+                    Stake {
+                        stake: 10_000_000_000,
+                        stake_timestamp: DAY_AS_SECONDS * 2
+                    }
+                ]
+            }
+        );
+
+        assert_eq!(
+            latest_stake_client.query_staked(&user_3),
+            msg::StakedResponse {
+                stakes: vec![
+                    &env,
+                    Stake {
+                        stake: 7_500_000_000,
+                        stake_timestamp: DAY_AS_SECONDS * 2
+                    }
+                ]
+            }
+        );
+
         // one more day passes by and new_user decides to stake
         env.ledger().with_mut(|li| li.timestamp += DAY_AS_SECONDS);
 
         lp_token_client.mint(&new_user, &10_000_000_000_000);
 
-        soroban_sdk::testutils::arbitrary::std::dbg!("BEFORE");
         latest_stake_client.bond(&new_user, &10_000_000_000); // new_user also bonds 1,000 tokens
-        soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
 
         // two months pass by
         env.ledger()
             .with_mut(|li| li.timestamp += 60 * DAY_AS_SECONDS);
 
-        // distribute the rewards
+        // distribute and take the rewards
         latest_stake_client.distribute_rewards();
     }
 }
