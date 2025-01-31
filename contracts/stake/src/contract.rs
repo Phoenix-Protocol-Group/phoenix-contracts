@@ -57,6 +57,8 @@ pub trait StakingTrait {
 
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
 
+    fn unbond_deprecated(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
+
     fn create_distribution_flow(env: Env, sender: Address, asset: Address);
 
     fn distribute_rewards(env: Env);
@@ -241,6 +243,62 @@ impl StakingTrait for Staking {
 
         if !found_rewards.rewards.is_empty() {
             Self::withdraw_rewards(env.clone(), sender.clone());
+        }
+
+        for distribution_address in get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address);
+            let stakes = get_stakes(&env, &sender).total_stake;
+            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let stakes_diff = stakes.checked_sub(stake_amount).unwrap_or_else(|| {
+                log!(&env, "Stake: Unbond: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+            let new_power = calc_power(&config, stakes_diff, Decimal::one(), TOKEN_PER_POWER);
+            update_rewards(
+                &env,
+                &sender,
+                &distribution_address,
+                &mut distribution,
+                old_power,
+                new_power,
+            );
+        }
+
+        let mut stakes = get_stakes(&env, &sender);
+        remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
+        stakes.total_stake = stakes
+            .total_stake
+            .checked_sub(stake_amount)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake: Unbond: Underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+
+        let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
+        lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
+
+        save_stakes(&env, &sender, &stakes);
+        utils::decrease_total_staked(&env, &stake_amount);
+
+        env.events().publish(("unbond", "user"), &sender);
+        env.events().publish(("unbond", "token"), &config.lp_token);
+        env.events().publish(("unbond", "amount"), stake_amount);
+    }
+
+    fn unbond_deprecated(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
+        sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let config = get_config(&env);
+
+        // check for rewards and withdraw them
+        let found_rewards: WithdrawableRewardsResponse =
+            Self::query_withdrawable_rewards_dep(env.clone(), sender.clone());
+
+        if !found_rewards.rewards.is_empty() {
+            Self::withdraw_rewards_deprecated(env.clone(), sender.clone());
         }
 
         for distribution_address in get_distributions(&env) {

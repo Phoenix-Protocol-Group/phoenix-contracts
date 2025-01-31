@@ -21,6 +21,13 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+#[allow(clippy::too_many_arguments)]
+mod latest_stake {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
+    );
+}
+
 const MIN_BOND: i128 = 1000;
 const MIN_REWARD: i128 = 1000;
 
@@ -76,7 +83,7 @@ mod tests {
     use crate::contract::StakingClient;
     use crate::msg;
     use crate::storage::Stake;
-    use crate::tests::setup::install_stake_wasm;
+    use crate::tests::setup::{install_stake_wasm, latest_stake};
 
     #[test]
     fn upgrade_staking_contract_and_remove_stake_rewards() {
@@ -281,15 +288,15 @@ mod tests {
         old_stake_client.update(&new_stake_wasm);
         //old_stake_client.update(&new_stake_wasm);
 
-        let latest_stake_client = StakingClient::new(&env, &stake_addr);
+        let latest_stake_client = latest_stake::Client::new(&env, &stake_addr);
 
         // check the rewards again, this time with the old deprecated method
         assert_eq!(
             latest_stake_client.query_withdrawable_rewards_dep(&user_1),
-            msg::WithdrawableRewardsResponse {
+            latest_stake::WithdrawableRewardsResponse {
                 rewards: vec![
                     &env,
-                    msg::WithdrawableReward {
+                    latest_stake::WithdrawableReward {
                         reward_address: reward_token_addr.clone(),
                         reward_amount: 1_111_111,
                     }
@@ -299,10 +306,10 @@ mod tests {
 
         assert_eq!(
             latest_stake_client.query_withdrawable_rewards_dep(&user_2),
-            msg::WithdrawableRewardsResponse {
+            latest_stake::WithdrawableRewardsResponse {
                 rewards: vec![
                     &env,
-                    msg::WithdrawableReward {
+                    latest_stake::WithdrawableReward {
                         reward_address: reward_token_addr.clone(),
                         reward_amount: 2_222_222,
                     }
@@ -312,10 +319,10 @@ mod tests {
 
         assert_eq!(
             latest_stake_client.query_withdrawable_rewards_dep(&user_3),
-            msg::WithdrawableRewardsResponse {
+            latest_stake::WithdrawableRewardsResponse {
                 rewards: vec![
                     &env,
-                    msg::WithdrawableReward {
+                    latest_stake::WithdrawableReward {
                         reward_address: reward_token_addr.clone(),
                         reward_amount: 1_666_666,
                     }
@@ -330,10 +337,10 @@ mod tests {
         // we make sure that there are no more rewards
         assert_eq!(
             latest_stake_client.query_withdrawable_rewards_dep(&user_1),
-            msg::WithdrawableRewardsResponse {
+            latest_stake::WithdrawableRewardsResponse {
                 rewards: vec![
                     &env,
-                    msg::WithdrawableReward {
+                    latest_stake::WithdrawableReward {
                         reward_address: reward_token_addr.clone(),
                         reward_amount: 0,
                     }
@@ -343,10 +350,10 @@ mod tests {
 
         assert_eq!(
             latest_stake_client.query_withdrawable_rewards_dep(&user_2),
-            msg::WithdrawableRewardsResponse {
+            latest_stake::WithdrawableRewardsResponse {
                 rewards: vec![
                     &env,
-                    msg::WithdrawableReward {
+                    latest_stake::WithdrawableReward {
                         reward_address: reward_token_addr.clone(),
                         reward_amount: 0,
                     }
@@ -356,10 +363,10 @@ mod tests {
 
         assert_eq!(
             latest_stake_client.query_withdrawable_rewards_dep(&user_3),
-            msg::WithdrawableRewardsResponse {
+            latest_stake::WithdrawableRewardsResponse {
                 rewards: vec![
                     &env,
-                    msg::WithdrawableReward {
+                    latest_stake::WithdrawableReward {
                         reward_address: reward_token_addr.clone(),
                         reward_amount: 0,
                     }
@@ -377,17 +384,17 @@ mod tests {
             .with_mut(|li| li.timestamp += 30 * DAY_AS_SECONDS);
 
         soroban_sdk::testutils::arbitrary::std::dbg!("BEFORE");
-        latest_stake_client.unbond(&user_1, &5_000_000_000, &(DAY_AS_SECONDS * 2));
-        latest_stake_client.unbond(&user_2, &10_000_000_000, &(DAY_AS_SECONDS * 2));
+        latest_stake_client.unbond_deprecated(&user_1, &5_000_000_000, &(DAY_AS_SECONDS * 2));
+        latest_stake_client.unbond_deprecated(&user_2, &10_000_000_000, &(DAY_AS_SECONDS * 2));
         latest_stake_client.unbond(&user_3, &7_500_000_000, &(DAY_AS_SECONDS * 2));
 
         soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
         assert_eq!(
             latest_stake_client.query_staked(&user_1),
-            msg::StakedResponse {
+            latest_stake::StakedResponse {
                 stakes: vec![
                     &env,
-                    Stake {
+                    latest_stake::Stake {
                         stake: 5_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2
                     }
@@ -397,10 +404,10 @@ mod tests {
 
         assert_eq!(
             latest_stake_client.query_staked(&user_2),
-            msg::StakedResponse {
+            latest_stake::StakedResponse {
                 stakes: vec![
                     &env,
-                    Stake {
+                    latest_stake::Stake {
                         stake: 10_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2
                     }
@@ -410,10 +417,10 @@ mod tests {
 
         assert_eq!(
             latest_stake_client.query_staked(&user_3),
-            msg::StakedResponse {
+            latest_stake::StakedResponse {
                 stakes: vec![
                     &env,
-                    Stake {
+                    latest_stake::Stake {
                         stake: 7_500_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2
                     }
