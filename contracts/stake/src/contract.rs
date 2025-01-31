@@ -286,53 +286,22 @@ impl StakingTrait for Staking {
     }
 
     fn unbond_deprecated(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
-        env.events().publish(("unbond_deprecated", "280"), &sender);
         sender.require_auth();
+
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        env.events().publish(("unbond_deprecated", "286"), &sender);
         let config = get_config(&env);
 
-        // check for rewards and withdraw them
-        env.events().publish(("unbond_deprecated", "290"), &sender);
-        let found_rewards: WithdrawableRewardsResponse =
-            Self::query_withdrawable_rewards_dep(env.clone(), sender.clone());
-
-        env.events().publish(("unbond_deprecated", "294"), &sender);
-        if !found_rewards.rewards.is_empty() {
-            env.events().publish(("unbond_deprecated", "296"), &sender);
-            Self::withdraw_rewards_deprecated(env.clone(), sender.clone());
-        }
-        env.events().publish(("unbond_deprecated", "299"), &sender);
-
-        for distribution_address in get_distributions(&env) {
-            let mut distribution = get_distribution(&env, &distribution_address);
-            let stakes = get_stakes(&env, &sender).total_stake;
-            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
-            let stakes_diff = stakes.checked_sub(stake_amount).unwrap_or_else(|| {
-                log!(&env, "Stake: Unbond: underflow occured.");
-                panic_with_error!(&env, ContractError::ContractMathError);
-            });
-            let new_power = calc_power(&config, stakes_diff, Decimal::one(), TOKEN_PER_POWER);
-            update_rewards(
-                &env,
-                &sender,
-                &distribution_address,
-                &mut distribution,
-                old_power,
-                new_power,
-            );
-        }
-
         let mut stakes = get_stakes(&env, &sender);
+
         remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
         stakes.total_stake = stakes
             .total_stake
             .checked_sub(stake_amount)
             .unwrap_or_else(|| {
-                log!(&env, "Stake: Unbond: Underflow occured.");
+                log!(&env, "Stake: Unbond: underflow occured.");
                 panic_with_error!(&env, ContractError::ContractMathError);
             });
 
