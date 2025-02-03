@@ -779,11 +779,32 @@ impl Staking {
         String::from_str(&env, env!("CARGO_PKG_VERSION"))
     }
 
-    #[allow(dead_code)]
     //TODO: Remove after we've added the key to storage
+    #[allow(dead_code)]
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&STAKE_KEY, &true);
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn migrate_distributions(env: Env) {
+        let distributions = get_distributions(&env);
+
+        distributions.iter().for_each(|distribution_addr| {
+            save_distribution(
+                &env,
+                &distribution_addr,
+                &Distribution {
+                    shares_per_point: 1u128,
+                    shares_leftover: 0u64,
+                    distributed_total: 0u128,
+                    withdrawable_total: 0u128,
+                    max_bonus_bps: 0u64,
+                    bonus_per_day_bps: 0u64,
+                },
+            );
+            save_reward_curve(&env, distribution_addr, &Curve::Constant(0));
+        })
     }
 }
 

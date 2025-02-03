@@ -283,9 +283,11 @@ mod tests {
         let new_stake_wasm = install_stake_wasm(&env);
 
         old_stake_client.update(&new_stake_wasm);
-        //old_stake_client.update(&new_stake_wasm);
 
         let latest_stake_client = latest_stake::Client::new(&env, &stake_addr);
+
+        // now we migrate the distributions
+        latest_stake_client.migrate_distributions();
 
         // check the rewards again, this time with the old deprecated method
         assert_eq!(
@@ -450,9 +452,7 @@ mod tests {
 
         lp_token_client.mint(&new_user, &10_000_000_000_000);
 
-        soroban_sdk::testutils::arbitrary::std::dbg!("BEFORE");
         latest_stake_client.bond(&new_user, &10_000_000_000); // new_user also bonds 1,000 tokens
-        soroban_sdk::testutils::arbitrary::std::dbg!("AFTER");
 
         // two months pass by
         env.ledger()
@@ -460,5 +460,21 @@ mod tests {
 
         // distribute and take the rewards
         latest_stake_client.distribute_rewards();
+
+        assert_eq!(
+            latest_stake_client.query_withdrawable_rewards(&new_user),
+            latest_stake::WithdrawableRewardsResponse {
+                rewards: vec![
+                    &env,
+                    latest_stake::WithdrawableReward {
+                        reward_address: reward_token_addr.clone(),
+                        reward_amount: 5_000_000,
+                    }
+                ]
+            }
+        );
+
+        latest_stake_client.withdraw_rewards(&new_user);
+        assert_eq!(reward_token_client.balance(&new_user), 5_000_000);
     }
 }
