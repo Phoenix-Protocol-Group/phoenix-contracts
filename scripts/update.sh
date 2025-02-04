@@ -31,32 +31,32 @@ echo "Contracts compiled."
 echo "Optimize contracts..."
 
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
-soroban contract optimize --wasm .artifacts/old_soroban_token_contract.wasm
+soroban contract optimize --wasm .artifacts_sdk_update/old_soroban_token_contract.wasm
 
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_factory.wasm
-soroban contract optimize --wasm .artifacts/old_phoenix_factory.wasm
+soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_factory.wasm
 
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_pool.wasm
-soroban contract optimize --wasm .artifacts/old_phoenix_pool.wasm
+soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_pool.wasm
 
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_pool_stable.wasm
-soroban contract optimize --wasm .artifacts/old_phoenix_pool_stable.wasm
+soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_pool_stable.wasm
 
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_stake.wasm
-soroban contract optimize --wasm .artifacts/old_phoenix_stake.wasm
+soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_stake.wasm
 
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_stake_rewards.wasm
-soroban contract optimize --wasm .artifacts/old_phoenix_stake_rewards.wasm
+soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_stake_rewards.wasm
 
 soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_multihop.wasm
-soroban contract optimize --wasm .artifacts/old_phoenix_multihop.wasm
+soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_multihop.wasm
 
 echo "Contracts optimized."
 
 echo "installing old and latest wasm hashes"
 
 OLD_SOROBAN_TOKEN_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts/old_soroban_token_contract.wasm \
+    --wasm .artifacts_sdk_update/old_soroban_token_contract.wasm \
     --source $IDENTITY_STRING \
     --network $NETWORK)
 
@@ -69,7 +69,7 @@ echo "Installed old token wasm: $OLD_SOROBAN_TOKEN_WASM_HASH"
 echo "Installed latest token wasm: $LATEST_SOROBAN_TOKEN_WASM_HASH"
 
 OLD_PHOENIX_FACTORY_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts/old_phoenix_factory.wasm \
+    --wasm .artifacts_sdk_update/old_phoenix_factory.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 LATEST_PHOENIX_FACTORY_WASM_HASH=$(soroban contract install \
@@ -80,7 +80,7 @@ echo "Installed old factory wasm: $OLD_PHOENIX_FACTORY_WASM_HASH"
 echo "Installed latest factory wasm: $LATEST_PHOENIX_FACTORY_WASM_HASH"
 
 OLD_PHOENIX_POOL_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts/old_phoenix_pool.wasm \
+    --wasm .artifacts_sdk_update/old_phoenix_pool.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 LATEST_PHOENIX_POOL_WASM_HASH=$(soroban contract install \
@@ -91,7 +91,7 @@ echo "Installed old pool wasm: $OLD_PHOENIX_POOL_WASM_HASH"
 echo "Installed latest pool wasm: $LATEST_PHOENIX_POOL_WASM_HASH"
 
 OLD_PHOENIX_POOL_STABLE_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts/old_phoenix_pool_stable.wasm \
+    --wasm .artifacts_sdk_update/old_phoenix_pool_stable.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 LATEST_PHOENIX_POOL_STABLE_WASM_HASH=$(soroban contract install \
@@ -102,7 +102,7 @@ echo "Installed old stable pool wasm: $OLD_PHOENIX_POOL_STABLE_WASM_HASH"
 echo "Installed latest stable pool wasm: $LATEST_PHOENIX_POOL_STABLE_WASM_HASH"
 
 OLD_PHOENIX_STAKE_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts/old_phoenix_stake.wasm \
+    --wasm .artifacts_sdk_update/old_phoenix_stake.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 LATEST_PHOENIX_STAKE_WASM_HASH=$(soroban contract install \
@@ -113,7 +113,7 @@ echo "Installed old stake wasm: $OLD_PHOENIX_STAKE_WASM_HASH"
 echo "Installed latest stake wasm: $LATEST_PHOENIX_STAKE_WASM_HASH"
 
 OLD_PHOENIX_STAKE_REWARDS_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts/old_phoenix_stake_rewards.wasm \
+    --wasm .artifacts_sdk_update/old_phoenix_stake_rewards.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 LATEST_PHOENIX_STAKE_REWARDS_WASM_HASH=$(soroban contract install \
@@ -124,7 +124,7 @@ echo "Installed old stake rewards wasm: $OLD_PHOENIX_STAKE_REWARDS_WASM_HASH"
 echo "Installed latest stake rewards wasm: $LATEST_PHOENIX_STAKE_REWARDS_WASM_HASH"
 
 OLD_PHOENIX_MULTIHOP_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts/old_phoenix_multihop.wasm \
+    --wasm .artifacts_sdk_update/old_phoenix_multihop.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 LATEST_PHOENIX_MULTIHOP_WASM_HASH=$(soroban contract install \
