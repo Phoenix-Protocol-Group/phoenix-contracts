@@ -452,6 +452,7 @@ mod tests {
 
         lp_token_client.mint(&new_user, &10_000_000_000_000);
 
+        let time_of_bond = env.ledger().timestamp();
         latest_stake_client.bond(&new_user, &10_000_000_000); // new_user also bonds 1,000 tokens
 
         // two months pass by
@@ -476,5 +477,7 @@ mod tests {
 
         latest_stake_client.withdraw_rewards(&new_user);
         assert_eq!(reward_token_client.balance(&new_user), 5_000_000);
+
+        latest_stake_client.unbond(&new_user, &10_000_000_000, &time_of_bond);
     }
 }
