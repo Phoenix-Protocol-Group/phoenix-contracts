@@ -479,5 +479,6 @@ mod tests {
         assert_eq!(reward_token_client.balance(&new_user), 5_000_000);
 
         latest_stake_client.unbond(&new_user, &10_000_000_000, &time_of_bond);
+        assert_eq!(lp_token_client.balance(&new_user), 10_000_000_000);
     }
 }
