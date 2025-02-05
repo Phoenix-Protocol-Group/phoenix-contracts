@@ -1,6 +1,6 @@
 use phoenix::ttl::{
-    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
-    PERSISTENT_LIFETIME_THRESHOLD,
+    INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
+    PERSISTENT_TARGET_TTL,
 };
 use soroban_sdk::{
     contracttype, log, panic_with_error, symbol_short, Address, ConversionError, Env, String,
@@ -60,8 +60,8 @@ pub fn save_admin_old(env: &Env, address: &Address) {
     env.storage().persistent().set(&DataKey::Admin, address);
     env.storage().persistent().extend_ttl(
         &DataKey::Admin,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -69,7 +69,7 @@ pub fn _save_admin(env: &Env, address: &Address) {
     env.storage().instance().set(&ADMIN, address);
     env.storage()
         .instance()
-        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 pub fn get_admin_old(env: &Env) -> Address {
@@ -83,8 +83,8 @@ pub fn get_admin_old(env: &Env) -> Address {
         });
     env.storage().persistent().extend_ttl(
         &DataKey::Admin,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     admin
@@ -93,7 +93,7 @@ pub fn get_admin_old(env: &Env) -> Address {
 pub fn _get_admin(env: &Env) -> Address {
     env.storage()
         .instance()
-        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
         log!(env, "Trader: Admin not set");
@@ -107,8 +107,8 @@ pub fn save_name(env: &Env, contract_id: &String) {
         .set(&DataKey::ContractId, contract_id);
     env.storage().persistent().extend_ttl(
         &DataKey::ContractId,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -123,8 +123,8 @@ pub fn get_name(env: &Env) -> String {
         });
     env.storage().persistent().extend_ttl(
         &DataKey::ContractId,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     name
@@ -134,8 +134,8 @@ pub fn save_pair(env: &Env, pair: &(Address, Address)) {
     env.storage().persistent().set(&DataKey::Pair, pair);
     env.storage().persistent().extend_ttl(
         &DataKey::Pair,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -150,8 +150,8 @@ pub fn get_pair(env: &Env) -> (Address, Address) {
         });
     env.storage().persistent().extend_ttl(
         &DataKey::Pair,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     pair
@@ -161,8 +161,8 @@ pub fn save_output_token(env: &Env, token: &Address) {
     env.storage().persistent().set(&DataKey::Token, token);
     env.storage().persistent().extend_ttl(
         &DataKey::Token,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -177,8 +177,8 @@ pub fn get_output_token(env: &Env) -> Address {
         });
     env.storage().persistent().extend_ttl(
         &DataKey::Token,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     token_addr
@@ -190,8 +190,8 @@ pub fn set_initialized(env: &Env) {
         .set(&DataKey::IsInitialized, &true);
     env.storage().persistent().extend_ttl(
         &DataKey::IsInitialized,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 

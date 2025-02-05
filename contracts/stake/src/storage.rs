@@ -1,4 +1,4 @@
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
+use phoenix::ttl::{PERSISTENT_RENEWAL_THRESHOLD, PERSISTENT_TARGET_TTL};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 use crate::stake_rewards_contract;
@@ -27,8 +27,8 @@ pub fn get_config(env: &Env) -> Config {
         .expect("Stake: Config not set");
     env.storage().persistent().extend_ttl(
         &CONFIG,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     config
@@ -38,8 +38,8 @@ pub fn save_config(env: &Env, config: Config) {
     env.storage().persistent().set(&CONFIG, &config);
     env.storage().persistent().extend_ttl(
         &CONFIG,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -81,8 +81,8 @@ pub fn get_stakes(env: &Env, key: &Address) -> BondingInfo {
     env.storage().persistent().has(&key).then(|| {
         env.storage().persistent().extend_ttl(
             &key,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     });
 
@@ -93,8 +93,8 @@ pub fn save_stakes(env: &Env, key: &Address, bonding_info: &BondingInfo) {
     env.storage().persistent().set(key, bonding_info);
     env.storage().persistent().extend_ttl(
         &key,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -103,7 +103,7 @@ pub mod utils {
 
     use super::*;
 
-    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+    use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
     use soroban_sdk::{log, panic_with_error, ConversionError, TryFromVal, Val};
 
     #[derive(Clone, Copy)]
@@ -135,15 +135,15 @@ pub mod utils {
         e.storage().instance().set(&DataKey::Initialized, &true);
         e.storage()
             .instance()
-            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn save_admin_old(e: &Env, address: &Address) {
         e.storage().persistent().set(&DataKey::Admin, address);
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -151,15 +151,15 @@ pub mod utils {
         e.storage().instance().set(&ADMIN, &address);
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn get_admin_old(e: &Env) -> Address {
         let admin = e.storage().persistent().get(&DataKey::Admin).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
 
         admin
@@ -168,7 +168,7 @@ pub mod utils {
     pub fn _get_admin(e: &Env) -> Address {
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         e.storage().instance().get(&ADMIN).unwrap_or_else(|| {
             log!(e, "Stake: Admin not set");
@@ -180,8 +180,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::TotalStaked, &0i128);
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -193,8 +193,8 @@ pub mod utils {
 
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -206,8 +206,8 @@ pub mod utils {
 
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -219,8 +219,8 @@ pub mod utils {
             .unwrap();
         env.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
 
         total_staked
@@ -241,8 +241,8 @@ pub mod utils {
             .set(&DataKey::Distributions, &distributions);
         e.storage().persistent().extend_ttl(
             &DataKey::Distributions,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -258,8 +258,8 @@ pub mod utils {
             .then(|| {
                 e.storage().persistent().extend_ttl(
                     &DataKey::Distributions,
-                    PERSISTENT_LIFETIME_THRESHOLD,
-                    PERSISTENT_BUMP_AMOUNT,
+                    PERSISTENT_RENEWAL_THRESHOLD,
+                    PERSISTENT_TARGET_TTL,
                 )
             });
 

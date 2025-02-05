@@ -2,7 +2,7 @@ use soroban_decimal::Decimal;
 use soroban_sdk::{contracttype, log, panic_with_error, Address, Env, Map};
 
 use crate::{error::ContractError, storage::BondingInfo};
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
+use phoenix::ttl::{PERSISTENT_RENEWAL_THRESHOLD, PERSISTENT_TARGET_TTL};
 
 const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
 
@@ -20,8 +20,8 @@ pub fn save_reward_history(e: &Env, reward_token: &Address, reward_history: Map<
     );
     e.storage().persistent().extend_ttl(
         &DistributionDataKey::RewardHistory(reward_token.clone()),
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -33,8 +33,8 @@ pub fn get_reward_history(e: &Env, reward_token: &Address) -> Map<u64, u128> {
         .unwrap();
     e.storage().persistent().extend_ttl(
         &DistributionDataKey::RewardHistory(reward_token.clone()),
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     reward_history
@@ -47,8 +47,8 @@ pub fn save_total_staked_history(e: &Env, total_staked_history: Map<u64, u128>) 
     );
     e.storage().persistent().extend_ttl(
         &DistributionDataKey::TotalStakedHistory,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -60,8 +60,8 @@ pub fn get_total_staked_history(e: &Env) -> Map<u64, u128> {
         .unwrap();
     e.storage().persistent().extend_ttl(
         &DistributionDataKey::TotalStakedHistory,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     total_staked_history

@@ -1,7 +1,7 @@
 use curve::Curve;
 use phoenix::ttl::{
-    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
-    PERSISTENT_LIFETIME_THRESHOLD,
+    INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
+    PERSISTENT_TARGET_TTL,
 };
 use soroban_sdk::{
     contracttype, log, panic_with_error, symbol_short, vec, Address, ConversionError, Env, String,
@@ -78,8 +78,8 @@ pub fn save_admin_old(env: &Env, admin: &Address) {
     env.storage().persistent().set(&DataKey::Admin, admin);
     env.storage().persistent().extend_ttl(
         &DataKey::Admin,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -87,7 +87,7 @@ pub fn _save_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&ADMIN, admin);
     env.storage()
         .instance()
-        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 pub fn get_admin_old(env: &Env) -> Address {
@@ -101,8 +101,8 @@ pub fn get_admin_old(env: &Env) -> Address {
         });
     env.storage().persistent().extend_ttl(
         &DataKey::Admin,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     admin_addr
@@ -111,7 +111,7 @@ pub fn get_admin_old(env: &Env) -> Address {
 pub fn _get_admin(env: &Env) -> Address {
     env.storage()
         .instance()
-        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
         log!(&env, "Vesting: Admin not set");
@@ -145,8 +145,8 @@ pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
     env.storage().persistent().set(&vesting_key, vesting_info);
     env.storage().persistent().extend_ttl(
         &vesting_key,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -158,8 +158,8 @@ pub fn update_vesting(env: &Env, address: &Address, index: u64, vesting_info: &V
     env.storage().persistent().set(&vesting_key, vesting_info);
     env.storage().persistent().extend_ttl(
         &vesting_key,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -174,8 +174,8 @@ pub fn get_vesting(env: &Env, recipient: &Address, index: u64) -> VestingInfo {
     });
     env.storage().persistent().extend_ttl(
         &vesting_key,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     vesting_info
@@ -196,8 +196,8 @@ pub fn get_all_vestings(env: &Env, address: &Address) -> Vec<VestingInfo> {
             index += 1;
             env.storage().persistent().extend_ttl(
                 &vesting_key,
-                PERSISTENT_LIFETIME_THRESHOLD,
-                PERSISTENT_BUMP_AMOUNT,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
             );
         } else {
             break;
@@ -212,17 +212,17 @@ pub fn save_minter(env: &Env, minter: &MinterInfo) {
     env.storage().instance().set(&DataKey::Minter, minter);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 #[cfg(feature = "minter")]
 pub fn get_minter(env: &Env) -> Option<MinterInfo> {
-    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+    use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
 
     let minter_info = env.storage().instance().get(&DataKey::Minter);
     env.storage()
         .instance()
-        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     minter_info
 }
@@ -233,7 +233,7 @@ pub fn save_token_info(env: &Env, token_info: &VestingTokenInfo) {
         .set(&DataKey::VestingTokenInfo, token_info);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 pub fn get_token_info(env: &Env) -> VestingTokenInfo {
@@ -250,7 +250,7 @@ pub fn get_token_info(env: &Env) -> VestingTokenInfo {
         });
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     vesting_token_info
 }
@@ -261,7 +261,7 @@ pub fn save_max_vesting_complexity(env: &Env, max_vesting_complexity: &u32) {
         .set(&DataKey::MaxVestingComplexity, max_vesting_complexity);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 pub fn get_max_vesting_complexity(env: &Env) -> u32 {
@@ -272,7 +272,7 @@ pub fn get_max_vesting_complexity(env: &Env) -> u32 {
         .unwrap();
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     vesting_complexity
 }
@@ -288,5 +288,5 @@ pub fn set_initialized(e: &Env) {
     e.storage().instance().set(&DataKey::IsInitialized, &true);
     e.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
