@@ -14,6 +14,7 @@ use crate::{
         get_admin_old, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
         is_initialized, save_admin_old, save_max_vesting_complexity, save_token_info, save_vesting,
         set_initialized, update_vesting, VestingInfo, VestingSchedule, VestingTokenInfo, ADMIN,
+        VESTING_KEY,
     },
     token_contract,
     utils::{check_duplications, validate_vesting_schedule},
@@ -110,6 +111,8 @@ impl VestingTrait for Vesting {
 
         save_token_info(&env, &token_info);
         save_max_vesting_complexity(&env, &max_vesting_complexity);
+
+        env.storage().persistent().set(&VESTING_KEY, &true);
 
         env.events()
             .publish(("Initialize", "Vesting contract with admin: "), admin);
@@ -501,6 +504,16 @@ impl VestingTrait for Vesting {
         let admin = get_admin_old(&env);
         env.storage().instance().set(&ADMIN, &admin);
 
+        Ok(())
+    }
+}
+
+#[contractimpl]
+impl Vesting {
+    #[allow(dead_code)]
+    //TODO: Remove after we've added the key to storage
+    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+        env.storage().persistent().set(&VESTING_KEY, &true);
         Ok(())
     }
 }

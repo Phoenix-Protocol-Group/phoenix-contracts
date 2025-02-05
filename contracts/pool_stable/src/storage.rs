@@ -8,6 +8,7 @@ use crate::token_contract;
 use soroban_decimal::Decimal;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
+pub const STABLE_POOL_KEY: Symbol = symbol_short!("STABLE_P");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]

@@ -10,6 +10,7 @@ use soroban_sdk::{
 use crate::error::ContractError;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
+pub const FACTORY_KEY: Symbol = symbol_short!("FACTORY");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]

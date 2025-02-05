@@ -11,6 +11,7 @@ use soroban_sdk::{
 use crate::error::ContractError;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
+pub const VESTING_KEY: Symbol = symbol_short!("VESTING");
 
 impl TryFromVal<Env, DataKey> for Val {
     type Error = ConversionError;

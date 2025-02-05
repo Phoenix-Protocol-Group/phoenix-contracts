@@ -1,6 +1,6 @@
 use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, Address, Env, String,
+    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
 };
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
     storage::{
         get_admin_old, get_name, get_output_token, get_pair, is_initialized, save_admin_old,
         save_name, save_output_token, save_pair, set_initialized, Asset, BalanceInfo,
-        OutputTokenInfo, ADMIN,
+        OutputTokenInfo, ADMIN, TRADER_KEY,
     },
     token_contract,
 };
@@ -91,6 +91,8 @@ impl TraderTrait for Trader {
         save_output_token(&env, &output_token);
 
         set_initialized(&env);
+
+        env.storage().persistent().set(&TRADER_KEY, &true);
 
         env.events()
             .publish(("Trader: Initialize", "admin: "), &admin);
@@ -275,6 +277,24 @@ impl TraderTrait for Trader {
         let admin = get_admin_old(&env);
         env.storage().instance().set(&ADMIN, &admin);
 
+        Ok(())
+    }
+}
+
+#[contractimpl]
+impl Trader {
+    #[allow(dead_code)]
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
+        let admin = get_admin_old(&env);
+        admin.require_auth();
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    #[allow(dead_code)]
+    //TODO: Remove after we've added the key to storage
+    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+        env.storage().persistent().set(&TRADER_KEY, &true);
         Ok(())
     }
 }
