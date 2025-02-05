@@ -1,4 +1,4 @@
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
+use phoenix::ttl::{PERSISTENT_RENEWAL_THRESHOLD, PERSISTENT_TARGET_TTL};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
@@ -28,8 +28,8 @@ pub fn get_config(env: &Env) -> Config {
 
     env.storage().persistent().extend_ttl(
         &CONFIG,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     config
@@ -39,8 +39,8 @@ pub fn save_config(env: &Env, config: Config) {
     env.storage().persistent().set(&CONFIG, &config);
     env.storage().persistent().extend_ttl(
         &CONFIG,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -49,7 +49,7 @@ pub mod utils {
 
     use super::*;
 
-    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+    use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
     use soroban_sdk::{log, panic_with_error, ConversionError, TryFromVal, Val};
 
     #[derive(Clone, Copy)]
@@ -78,8 +78,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::Initialized, &true);
         e.storage().persistent().extend_ttl(
             &DataKey::Initialized,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -87,8 +87,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::Admin, address);
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -96,15 +96,15 @@ pub mod utils {
         e.storage().instance().set(&ADMIN, &address);
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn get_admin_old(e: &Env) -> Address {
         let admin = e.storage().persistent().get(&DataKey::Admin).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
 
         admin
@@ -113,7 +113,7 @@ pub mod utils {
     pub fn _get_admin(e: &Env) -> Address {
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         e.storage().instance().get(&ADMIN).unwrap_or_else(|| {
             log!(e, "Stake Rewards: Admin not set");

@@ -1,5 +1,5 @@
 use phoenix::{
-    ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
+    ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL},
     utils::{convert_i128_to_u128, convert_u128_to_i128},
 };
 use soroban_sdk::{
@@ -155,7 +155,7 @@ impl VestingTrait for Vesting {
         admin.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         if vesting_schedules.is_empty() {
             log!(
@@ -224,7 +224,7 @@ impl VestingTrait for Vesting {
         sender.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         let available_to_claim = Self::query_available_to_claim(env.clone(), sender.clone(), index);
 
@@ -282,7 +282,7 @@ impl VestingTrait for Vesting {
         sender.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         if amount == 0 {
             log!(&env, "Vesting: Burn: Invalid burn amount");
@@ -302,7 +302,7 @@ impl VestingTrait for Vesting {
         sender.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         if amount <= 0 {
             log!(&env, "Vesting: Mint: Invalid mint amount");
@@ -357,7 +357,7 @@ impl VestingTrait for Vesting {
         sender.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         let current_minter = get_minter(&env);
 
@@ -393,7 +393,7 @@ impl VestingTrait for Vesting {
         sender.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         if sender != get_admin_old(&env) {
             log!(
@@ -425,28 +425,28 @@ impl VestingTrait for Vesting {
     fn query_balance(env: Env, address: Address) -> i128 {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
     fn query_vesting_info(env: Env, address: Address, index: u64) -> VestingInfo {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         get_vesting(&env, &address, index)
     }
 
     fn query_all_vesting_info(env: Env, address: Address) -> Vec<VestingInfo> {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         get_all_vestings(&env, &address)
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         get_token_info(&env)
     }
 
@@ -454,7 +454,7 @@ impl VestingTrait for Vesting {
     fn query_minter(env: Env) -> MinterInfo {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         if let Some(minter) = get_minter(&env) {
             minter
         } else {
@@ -466,7 +466,7 @@ impl VestingTrait for Vesting {
     fn query_vesting_contract_balance(env: Env) -> i128 {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         let token_address = get_token_info(&env).address;
         token_contract::Client::new(&env, &token_address).balance(&env.current_contract_address())
     }
@@ -474,7 +474,7 @@ impl VestingTrait for Vesting {
     fn query_available_to_claim(env: Env, address: Address, index: u64) -> i128 {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         let vesting_info = get_vesting(&env, &address, index);
 
         let difference = vesting_info

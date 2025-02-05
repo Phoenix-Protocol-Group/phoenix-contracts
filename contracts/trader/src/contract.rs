@@ -1,4 +1,4 @@
-use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, Env, String,
 };
@@ -117,7 +117,7 @@ impl TraderTrait for Trader {
         sender.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         if sender != get_admin_old(&env) {
             log!(&env, "Trader: Trade_token: Unauthorized trade");
@@ -183,7 +183,7 @@ impl TraderTrait for Trader {
         sender.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         if sender != get_admin_old(&env) {
             log!(&env, "Trader: Transfer: Unauthorized transfer");
@@ -204,7 +204,7 @@ impl TraderTrait for Trader {
     fn query_balances(env: Env) -> BalanceInfo {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         let output_token = get_output_token(&env);
         let (token_a, token_b) = get_pair(&env);
 
@@ -238,28 +238,28 @@ impl TraderTrait for Trader {
     fn query_trading_pairs(env: Env) -> (Address, Address) {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         get_pair(&env)
     }
 
     fn query_admin_address(env: Env) -> Address {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         get_admin_old(&env)
     }
 
     fn query_contract_name(env: Env) -> String {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         get_name(&env)
     }
 
     fn query_output_token_info(env: Env) -> OutputTokenInfo {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         let output_token = get_output_token(&env);
         let output_token_client = token_contract::Client::new(&env, &output_token);
 

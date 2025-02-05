@@ -5,7 +5,7 @@ use crate::tests::setup::{
 };
 use crate::token_contract;
 use phoenix::ttl::{
-    DAY_IN_LEDGERS, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
+    DAY_IN_LEDGERS, INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_TARGET_TTL,
 };
 use phoenix::utils::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::testutils::storage::{Instance, Persistent};
@@ -1463,17 +1463,17 @@ fn test_ttl_extensions_with_multiple_pool_queries() {
         )
     });
     // validate initial state
-    assert_eq!(initial_instance_ttl, INSTANCE_BUMP_AMOUNT);
+    assert_eq!(initial_instance_ttl, INSTANCE_TARGET_TTL);
     assert!(
-        initial_persistent_ttl >= PERSISTENT_BUMP_AMOUNT - 1,
+        initial_persistent_ttl >= PERSISTENT_TARGET_TTL - 1,
         "Initial persistent TTL should be at least {} (was {})",
-        PERSISTENT_BUMP_AMOUNT - 1,
+        PERSISTENT_TARGET_TTL - 1,
         initial_persistent_ttl
     );
 
     // first extension
     env.ledger().with_mut(|li| {
-        li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD + 1;
+        li.sequence_number += INSTANCE_TARGET_TTL - INSTANCE_RENEWAL_THRESHOLD + 1;
     });
 
     let _ = factory.query_pools();
@@ -1484,17 +1484,17 @@ fn test_ttl_extensions_with_multiple_pool_queries() {
         )
     });
 
-    assert_eq!(instance_ttl1, INSTANCE_BUMP_AMOUNT);
+    assert_eq!(instance_ttl1, INSTANCE_TARGET_TTL);
     assert!(
-        persistent_ttl1 >= PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl1 >= PERSISTENT_TARGET_TTL - 1,
         "Persistent TTL after first extension should be at least {} (was {})",
-        PERSISTENT_BUMP_AMOUNT - 1,
+        PERSISTENT_TARGET_TTL - 1,
         persistent_ttl1
     );
 
     // second extension
     env.ledger()
-        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD);
+        .with_mut(|li| li.sequence_number += INSTANCE_TARGET_TTL - INSTANCE_RENEWAL_THRESHOLD);
     let _ = factory.query_pools();
     let (instance_ttl2, persistent_ttl2) = env.as_contract(&factory_address, || {
         (
@@ -1502,17 +1502,17 @@ fn test_ttl_extensions_with_multiple_pool_queries() {
             env.storage().persistent().get_ttl(&DataKey::LpVec),
         )
     });
-    assert_eq!(instance_ttl2, INSTANCE_BUMP_AMOUNT);
+    assert_eq!(instance_ttl2, INSTANCE_TARGET_TTL);
     assert!(
-        persistent_ttl2 >= PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl2 >= PERSISTENT_TARGET_TTL - 1,
         "Persistent TTL after second extension should be at least {} (was {})",
-        PERSISTENT_BUMP_AMOUNT - 1,
+        PERSISTENT_TARGET_TTL - 1,
         persistent_ttl2
     );
 
     // third extension
     env.ledger()
-        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD);
+        .with_mut(|li| li.sequence_number += INSTANCE_TARGET_TTL - INSTANCE_RENEWAL_THRESHOLD);
     let _ = factory.query_pools();
     let (instance_ttl3, persistent_ttl3) = env.as_contract(&factory_address, || {
         (
@@ -1520,17 +1520,17 @@ fn test_ttl_extensions_with_multiple_pool_queries() {
             env.storage().persistent().get_ttl(&DataKey::LpVec),
         )
     });
-    assert_eq!(instance_ttl3, INSTANCE_BUMP_AMOUNT);
+    assert_eq!(instance_ttl3, INSTANCE_TARGET_TTL);
     assert!(
-        persistent_ttl3 >= PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl3 >= PERSISTENT_TARGET_TTL - 1,
         "Persistent TTL after third extension should be at least {} (was {})",
-        PERSISTENT_BUMP_AMOUNT - 1,
+        PERSISTENT_TARGET_TTL - 1,
         persistent_ttl3
     );
 
     // fourth extension
     env.ledger()
-        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD);
+        .with_mut(|li| li.sequence_number += INSTANCE_TARGET_TTL - INSTANCE_RENEWAL_THRESHOLD);
     let _ = factory.query_pools();
     let (instance_ttl4, persistent_ttl4) = env.as_contract(&factory_address, || {
         (
@@ -1538,17 +1538,17 @@ fn test_ttl_extensions_with_multiple_pool_queries() {
             env.storage().persistent().get_ttl(&DataKey::LpVec),
         )
     });
-    assert_eq!(instance_ttl4, INSTANCE_BUMP_AMOUNT);
+    assert_eq!(instance_ttl4, INSTANCE_TARGET_TTL);
     assert!(
-        persistent_ttl4 >= PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl4 >= PERSISTENT_TARGET_TTL - 1,
         "Persistent TTL after fourth extension should be at least {} (was {})",
-        PERSISTENT_BUMP_AMOUNT - 1,
+        PERSISTENT_TARGET_TTL - 1,
         persistent_ttl4
     );
 
     // fifth extension
     env.ledger()
-        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - INSTANCE_LIFETIME_THRESHOLD);
+        .with_mut(|li| li.sequence_number += INSTANCE_TARGET_TTL - INSTANCE_RENEWAL_THRESHOLD);
     let _ = factory.query_pools();
     let (instance_ttl5, persistent_ttl5) = env.as_contract(&factory_address, || {
         (
@@ -1556,17 +1556,17 @@ fn test_ttl_extensions_with_multiple_pool_queries() {
             env.storage().persistent().get_ttl(&DataKey::LpVec),
         )
     });
-    assert_eq!(instance_ttl5, INSTANCE_BUMP_AMOUNT);
+    assert_eq!(instance_ttl5, INSTANCE_TARGET_TTL);
     assert!(
-        persistent_ttl5 >= PERSISTENT_BUMP_AMOUNT - 1,
+        persistent_ttl5 >= PERSISTENT_TARGET_TTL - 1,
         "Persistent TTL after fifth extension should be at least {} (was {})",
-        PERSISTENT_BUMP_AMOUNT - 1,
+        PERSISTENT_TARGET_TTL - 1,
         persistent_ttl5
     );
 
     // final validation
     env.ledger()
-        .with_mut(|li| li.sequence_number += INSTANCE_BUMP_AMOUNT - 100);
+        .with_mut(|li| li.sequence_number += INSTANCE_TARGET_TTL - 100);
     let final_pools = factory.query_pools();
     assert!(!final_pools.is_empty());
     assert_eq!(final_pools.get(0).unwrap(), lp_address);
