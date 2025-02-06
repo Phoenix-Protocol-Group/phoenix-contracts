@@ -1,6 +1,6 @@
 use phoenix::ttl::{
-    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
-    PERSISTENT_LIFETIME_THRESHOLD,
+    INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
+    PERSISTENT_TARGET_TTL,
 };
 use soroban_sdk::{
     contracttype, log, panic_with_error, symbol_short, Address, Env, String, Symbol, Vec,
@@ -78,7 +78,7 @@ pub fn save_factory(env: &Env, factory: Address) {
     env.storage().instance().set(&DataKey::FactoryKey, &factory);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 pub fn get_factory(env: &Env) -> Address {
@@ -90,7 +90,7 @@ pub fn get_factory(env: &Env) -> Address {
 
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     address
 }
@@ -99,14 +99,14 @@ pub fn save_admin_old(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, admin);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 pub fn _save_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&ADMIN, admin);
     env.storage()
         .instance()
-        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 pub fn get_admin_old(env: &Env) -> Address {
@@ -121,7 +121,7 @@ pub fn get_admin_old(env: &Env) -> Address {
 
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     address
 }
@@ -134,7 +134,7 @@ pub fn _get_admin(env: &Env) -> Address {
 
     env.storage()
         .instance()
-        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     admin
 }
@@ -150,7 +150,7 @@ pub fn set_initialized(e: &Env) {
     e.storage().persistent().set(&DataKey::Initialized, &true);
     e.storage().persistent().extend_ttl(
         &DataKey::Initialized,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }

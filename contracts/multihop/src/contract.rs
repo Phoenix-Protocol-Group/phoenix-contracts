@@ -1,4 +1,4 @@
-use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, Vec,
 };
@@ -103,7 +103,7 @@ impl MultihopTrait for Multihop {
         recipient.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         // first offer amount is an input from the user,
         // subsequent are the results of the previous swap
@@ -160,7 +160,7 @@ impl MultihopTrait for Multihop {
         verify_swap(&env, &operations);
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         let mut next_offer_amount: i128 = amount;
 
@@ -232,7 +232,7 @@ impl MultihopTrait for Multihop {
         verify_reverse_swap(&env, &operations);
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         let mut next_ask_amount: i128 = amount;
 

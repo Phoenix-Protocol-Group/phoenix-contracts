@@ -1,6 +1,6 @@
 use phoenix::ttl::{
-    INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT,
-    PERSISTENT_LIFETIME_THRESHOLD,
+    INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
+    PERSISTENT_TARGET_TTL,
 };
 use soroban_sdk::{
     contracttype, log, panic_with_error, symbol_short, Address, BytesN, ConversionError, Env,
@@ -53,8 +53,8 @@ pub fn save_stable_wasm_hash(env: &Env, hash: BytesN<32>) {
     env.storage().persistent().set(&STABLE_WASM_HASH, &hash);
     env.storage().persistent().extend_ttl(
         &STABLE_WASM_HASH,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -67,8 +67,8 @@ pub fn get_stable_wasm_hash(env: &Env) -> BytesN<32> {
 
     env.storage().persistent().extend_ttl(
         &STABLE_WASM_HASH,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     hash
@@ -145,8 +145,8 @@ pub fn save_config(env: &Env, config: Config) {
     env.storage().persistent().set(&DataKey::Config, &config);
     env.storage().persistent().extend_ttl(
         &DataKey::Config,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -159,8 +159,8 @@ pub fn get_config(env: &Env) -> Config {
 
     env.storage().persistent().extend_ttl(
         &DataKey::Config,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     config
@@ -171,7 +171,7 @@ pub fn _save_admin(env: &Env, admin_addr: Address) {
 
     env.storage()
         .instance()
-        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 pub fn _get_admin(env: &Env) -> Address {
@@ -182,7 +182,7 @@ pub fn _get_admin(env: &Env) -> Address {
 
     env.storage()
         .instance()
-        .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     admin_addr
 }
@@ -196,8 +196,8 @@ pub fn get_lp_vec(env: &Env) -> Vec<Address> {
 
     env.storage().persistent().extend_ttl(
         &DataKey::LpVec,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     lp_vec
@@ -207,8 +207,8 @@ pub fn save_lp_vec(env: &Env, lp_info: Vec<Address>) {
     env.storage().persistent().set(&DataKey::LpVec, &lp_info);
     env.storage().persistent().extend_ttl(
         &DataKey::LpVec,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -230,8 +230,8 @@ pub fn save_lp_vec_with_tuple_as_key(
             token_a: tuple_pool.0.clone(),
             token_b: tuple_pool.1.clone(),
         },
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -247,7 +247,7 @@ pub fn set_initialized(e: &Env) {
 
     e.storage().persistent().extend_ttl(
         &DataKey::Initialized,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }

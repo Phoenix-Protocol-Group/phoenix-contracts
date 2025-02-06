@@ -1,4 +1,7 @@
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
+use phoenix::ttl::{
+    INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
+    PERSISTENT_TARGET_TTL,
+};
 use soroban_sdk::{
     contracttype, symbol_short, xdr::ToXdr, Address, Bytes, BytesN, ConversionError, Env, Symbol,
     TryFromVal, Val,
@@ -74,7 +77,7 @@ pub fn get_config(env: &Env) -> Config {
     let config = env.storage().instance().get(&CONFIG).unwrap();
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     config
 }
@@ -83,7 +86,7 @@ pub fn save_config(env: &Env, config: Config) {
     env.storage().instance().set(&CONFIG, &config);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 pub fn get_greatest_precision(env: &Env) -> u32 {
@@ -94,7 +97,7 @@ pub fn get_greatest_precision(env: &Env) -> u32 {
         .unwrap();
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     greatest_precision
 }
@@ -107,7 +110,7 @@ pub fn get_precisions(env: &Env, token: &Address) -> u32 {
         .unwrap();
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     precision
 }
@@ -125,21 +128,21 @@ pub fn save_greatest_precision(env: &Env, token1: &Address, token2: &Address) ->
         .set(&DataKey::MaxPrecision, &max_precision);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     env.storage()
         .instance()
         .set(&(DataKey::TokenPrecision, token1), &precision1);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     env.storage()
         .instance()
         .set(&(DataKey::TokenPrecision, token2), &precision2);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     max_precision
 }
@@ -157,7 +160,7 @@ pub fn get_amp(env: &Env) -> AmplifierParameters {
     let amp = env.storage().instance().get(&DataKey::Amp).unwrap();
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
     amp
 }
@@ -166,7 +169,7 @@ pub fn save_amp(env: &Env, amp: AmplifierParameters) {
     env.storage().instance().set(&DataKey::Amp, &amp);
     env.storage()
         .instance()
-        .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+        .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
 #[contracttype]
@@ -219,7 +222,7 @@ pub struct SimulateReverseSwapResponse {
 
 pub mod utils {
 
-    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+    use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
     use soroban_sdk::String;
     use soroban_sdk::{log, panic_with_error};
 
@@ -260,35 +263,35 @@ pub mod utils {
         e.storage().instance().set(&DataKey::Admin, &address);
         e.storage()
             .instance()
-            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn _save_admin(e: &Env, address: Address) {
         e.storage().instance().set(&ADMIN, &address);
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn save_total_shares(e: &Env, amount: i128) {
         e.storage().instance().set(&DataKey::TotalShares, &amount);
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn save_pool_balance_a(e: &Env, amount: i128) {
         e.storage().instance().set(&DataKey::ReserveA, &amount);
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn save_pool_balance_b(e: &Env, amount: i128) {
         e.storage().instance().set(&DataKey::ReserveB, &amount);
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn mint_shares(e: &Env, share_token: &Address, to: &Address, amount: i128) {
@@ -312,7 +315,7 @@ pub mod utils {
         let admin = e.storage().instance().get(&DataKey::Admin).unwrap();
         e.storage()
             .instance()
-            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         admin
     }
@@ -320,7 +323,7 @@ pub mod utils {
     pub fn _get_admin(e: &Env) -> Address {
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         e.storage().instance().get(&ADMIN).unwrap_or_else(|| {
             log!(e, "Stable Pool: Admin not set");
@@ -332,7 +335,7 @@ pub mod utils {
         let total_shares = e.storage().instance().get(&DataKey::TotalShares).unwrap();
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         total_shares
     }
@@ -340,7 +343,7 @@ pub mod utils {
         let balance_a = e.storage().instance().get(&DataKey::ReserveA).unwrap();
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         balance_a
     }
@@ -349,7 +352,7 @@ pub mod utils {
         let balance_b = e.storage().instance().get(&DataKey::ReserveB).unwrap();
         e.storage()
             .instance()
-            .extend_ttl(PERSISTENT_LIFETIME_THRESHOLD, PERSISTENT_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         balance_b
     }
@@ -369,8 +372,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::Initialized, &true);
         e.storage().persistent().extend_ttl(
             &DataKey::Initialized,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 }

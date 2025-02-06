@@ -1,4 +1,4 @@
-use phoenix::ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD};
+use phoenix::ttl::{PERSISTENT_RENEWAL_THRESHOLD, PERSISTENT_TARGET_TTL};
 use soroban_sdk::{
     contracttype, log, panic_with_error, symbol_short, xdr::ToXdr, Address, Bytes, BytesN,
     ConversionError, Env, Symbol, TryFromVal, Val,
@@ -61,8 +61,8 @@ pub fn save_default_slippage_bps(env: &Env, bps: i64) {
     env.storage().persistent().set(&DEFAULT_SLIPPAGE_BPS, &bps);
     env.storage().persistent().extend_ttl(
         &DEFAULT_SLIPPAGE_BPS,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     )
 }
 
@@ -75,8 +75,8 @@ pub fn get_default_slippage_bps(env: &Env) -> i64 {
 
     env.storage().persistent().extend_ttl(
         &DEFAULT_SLIPPAGE_BPS,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
     bps
 }
@@ -95,8 +95,8 @@ pub fn get_config(env: &Env) -> Config {
     let config = env.storage().persistent().get(&CONFIG).unwrap();
     env.storage().persistent().extend_ttl(
         &CONFIG,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
     config
 }
@@ -105,8 +105,8 @@ pub fn save_config(env: &Env, config: Config) {
     env.storage().persistent().set(&CONFIG, &config);
     env.storage().persistent().extend_ttl(
         &CONFIG,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -183,7 +183,7 @@ pub struct SimulateReverseSwapResponse {
 }
 
 pub mod utils {
-    use phoenix::ttl::{INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+    use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
     use soroban_sdk::String;
 
     use super::*;
@@ -221,8 +221,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::Admin, &address);
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -230,15 +230,15 @@ pub mod utils {
         e.storage().instance().set(&ADMIN, &address);
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn save_total_shares(e: &Env, amount: i128) {
         e.storage().persistent().set(&DataKey::TotalShares, &amount);
         e.storage().persistent().extend_ttl(
             &DataKey::TotalShares,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -246,8 +246,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::ReserveA, &amount);
         e.storage().persistent().extend_ttl(
             &DataKey::ReserveA,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -255,8 +255,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::ReserveB, &amount);
         e.storage().persistent().extend_ttl(
             &DataKey::ReserveB,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 
@@ -281,8 +281,8 @@ pub mod utils {
         let admin = e.storage().persistent().get(&DataKey::Admin).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
 
         admin
@@ -291,7 +291,7 @@ pub mod utils {
     pub fn _get_admin(e: &Env) -> Address {
         e.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         e.storage().instance().get(&ADMIN).unwrap_or_else(|| {
             log!(e, "XYZ Pool: Admin not set");
@@ -303,8 +303,8 @@ pub mod utils {
         let total_shares = e.storage().persistent().get(&DataKey::TotalShares).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::TotalShares,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
 
         total_shares
@@ -313,8 +313,8 @@ pub mod utils {
         let balance_a = e.storage().persistent().get(&DataKey::ReserveA).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::ReserveA,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
 
         balance_a
@@ -324,8 +324,8 @@ pub mod utils {
         let balance_b = e.storage().persistent().get(&DataKey::ReserveB).unwrap();
         e.storage().persistent().extend_ttl(
             &DataKey::ReserveB,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
 
         balance_b
@@ -481,8 +481,8 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::Initialized, &true);
         e.storage().persistent().extend_ttl(
             &DataKey::Initialized,
-            PERSISTENT_LIFETIME_THRESHOLD,
-            PERSISTENT_BUMP_AMOUNT,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
         );
     }
 }
