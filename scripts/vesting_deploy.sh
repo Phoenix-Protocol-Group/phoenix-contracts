@@ -34,7 +34,7 @@ VESTING_ADDR=$(soroban contract deploy \
     --network $NETWORK)
 echo "Vesting contract deployed at: $VESTING_ADDR"
 
-echo "Deploying Vesting Token contract..."
+echo "Deploying Vesting Token ..."
 VESTING_TOKEN_ADDR=$(soroban contract deploy \
     --wasm soroban_token_contract.optimized.wasm \
     --source $IDENTITY_STRING \
@@ -46,7 +46,7 @@ VESTING_TOKEN_ADDR=$(soroban contract deploy \
     --symbol VEST
 )
 
-echo "Vesting Token contract deployed at: $VESTING_TOKEN_ADDR"
+echo "Vesting Token deployed at: $VESTING_TOKEN_ADDR"
 echo "Minting additional vesting tokens to admin..."
 soroban contract invoke \
     --id $VESTING_TOKEN_ADDR \
@@ -112,5 +112,5 @@ echo "Vesting schedule successfully created."
 echo "######################################"
 echo "Admin address: $ADMIN_ADDRESS"
 echo "Vesting rcpt: $SECOND_WALLET"
-echo "Vesting contract deployed at: $VESTING_ADDR"
+echo "Vesting deployed at: $VESTING_ADDR"
 echo "Vesting Token address: $VESTING_TOKEN_ADDR"
