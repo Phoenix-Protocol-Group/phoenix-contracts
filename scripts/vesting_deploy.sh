@@ -109,3 +109,8 @@ soroban contract invoke \
     --vesting_schedules "$VESTING_SCHEDULE_JSON"
 
 echo "Vesting schedule successfully created."
+echo "######################################"
+echo "Admin address: $ADMIN_ADDRESS"
+echo "Vesting rcpt: $SECOND_WALLET"
+echo "Vesting contract deployed at: $VESTING_ADDR"
+echo "Vesting Token address: $VESTING_TOKEN_ADDR"
