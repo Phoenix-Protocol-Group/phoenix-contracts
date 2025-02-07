@@ -63,7 +63,8 @@ fn instantiate_contract_successfully() {
                     min_y: 120,
                     max_x: 60,
                     max_y: 0,
-                })
+                }),
+                index: 0,
             }
         ]
     );

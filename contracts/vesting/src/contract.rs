@@ -189,10 +189,12 @@ impl VestingTrait for Vesting {
             save_vesting(
                 &env,
                 &vesting_schedule.recipient.clone(),
-                &VestingInfo {
+                VestingInfo {
                     balance: vested_amount,
                     recipient: vesting_schedule.recipient,
                     schedule: vesting_schedule.curve.clone(),
+                    index: 0, // just used as a placeholder, `save_vesting` will overwrite this
+                              // value
                 },
             );
 

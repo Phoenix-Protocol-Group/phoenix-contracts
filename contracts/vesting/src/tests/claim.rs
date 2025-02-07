@@ -664,7 +664,8 @@ fn claim_tokens_from_two_distributions() {
                     min_y: 1_500,
                     max_x: 100,
                     max_y: 0,
-                })
+                }),
+                index: 0,
             },
             VestingInfo {
                 recipient: vester1.clone(),
@@ -685,7 +686,8 @@ fn claim_tokens_from_two_distributions() {
                             value: 0,
                         },
                     ],
-                })
+                }),
+                index: 1,
             }
         ]
     );
@@ -772,6 +774,7 @@ fn first_mainnet_simulation() {
                 max_x: 1716820800,
                 max_y: 0,
             }),
+            index: 0,
         },
     );
 
