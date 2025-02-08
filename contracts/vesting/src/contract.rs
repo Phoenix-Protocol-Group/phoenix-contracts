@@ -3,7 +3,7 @@ use phoenix::{
     utils::{convert_i128_to_u128, convert_u128_to_i128},
 };
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, Vec,
 };
 
 #[cfg(feature = "minter")]
@@ -11,10 +11,10 @@ use crate::storage::{get_minter, save_minter, MinterInfo};
 use crate::{
     error::ContractError,
     storage::{
-        get_admin_old, get_all_vestings, get_max_vesting_complexity, get_token_info, get_vesting,
-        is_initialized, save_admin_old, save_max_vesting_complexity, save_token_info, save_vesting,
-        set_initialized, update_vesting, VestingInfo, VestingSchedule, VestingTokenInfo, ADMIN,
-        VESTING_KEY,
+        get_admin_old, get_max_vesting_complexity, get_token_info, get_vesting, is_initialized,
+        save_admin_old, save_max_vesting_complexity, save_token_info, save_vesting,
+        set_initialized, update_vesting, VestingCounterKey, VestingInfo, VestingInfoKey,
+        VestingInfoResponse, VestingSchedule, VestingTokenInfo, ADMIN, VESTING_KEY,
     },
     token_contract,
     utils::{check_duplications, validate_vesting_schedule},
@@ -45,9 +45,9 @@ pub trait VestingTrait {
 
     fn query_balance(env: Env, address: Address) -> i128;
 
-    fn query_vesting_info(env: Env, address: Address, index: u64) -> VestingInfo;
+    fn query_vesting_info(env: Env, address: Address, index: u64) -> VestingInfoResponse;
 
-    fn query_all_vesting_info(env: Env, address: Address) -> Vec<VestingInfo>;
+    fn query_all_vesting_info(env: Env, address: Address) -> Vec<VestingInfoResponse>;
 
     fn query_token_info(env: Env) -> VestingTokenInfo;
 
@@ -193,8 +193,6 @@ impl VestingTrait for Vesting {
                     balance: vested_amount,
                     recipient: vesting_schedule.recipient,
                     schedule: vesting_schedule.curve.clone(),
-                    index: 0, // just used as a placeholder, `save_vesting` will overwrite this
-                              // value
                 },
             );
 
@@ -434,18 +432,46 @@ impl VestingTrait for Vesting {
         token_contract::Client::new(&env, &get_token_info(&env).address).balance(&address)
     }
 
-    fn query_vesting_info(env: Env, address: Address, index: u64) -> VestingInfo {
+    fn query_vesting_info(env: Env, address: Address, index: u64) -> VestingInfoResponse {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-        get_vesting(&env, &address, index)
+        let vesting_info = get_vesting(&env, &address, index);
+        VestingInfoResponse {
+            balance: vesting_info.balance,
+            recipient: vesting_info.recipient,
+            schedule: vesting_info.schedule,
+            index, // use the query parameter index
+        }
     }
 
-    fn query_all_vesting_info(env: Env, address: Address) -> Vec<VestingInfo> {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-        get_all_vestings(&env, &address)
+    fn query_all_vesting_info(env: Env, address: Address) -> Vec<VestingInfoResponse> {
+        let counter_key = VestingCounterKey {
+            recipient: address.clone(),
+        };
+        let count: u64 = env.storage().persistent().get(&counter_key).unwrap_or(0);
+        let mut responses = vec![&env];
+
+        for i in 0..count {
+            if env
+                .storage()
+                .persistent()
+                .get::<VestingInfoKey, VestingInfo>(&VestingInfoKey {
+                    recipient: address.clone(),
+                    index: i,
+                })
+                .is_some()
+            {
+                let vesting = get_vesting(&env, &address, i);
+                responses.push_back(VestingInfoResponse {
+                    balance: vesting.balance,
+                    recipient: vesting.recipient,
+                    schedule: vesting.schedule,
+                    index: i,
+                });
+            }
+        }
+        responses
     }
 
     fn query_token_info(env: Env) -> VestingTokenInfo {

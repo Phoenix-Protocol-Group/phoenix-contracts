@@ -5,7 +5,7 @@ use phoenix::ttl::{
 };
 use soroban_sdk::{
     contracttype, log, panic_with_error, symbol_short, Address, ConversionError, Env, String,
-    Symbol, TryFromVal, Val, Vec,
+    Symbol, TryFromVal, Val,
 };
 
 use crate::error::ContractError;
@@ -58,7 +58,6 @@ pub struct VestingInfo {
     pub balance: u128,
     pub recipient: Address,
     pub schedule: Curve,
-    pub index: u64,
 }
 
 #[contracttype]
@@ -134,7 +133,16 @@ pub struct VestingInfoKey {
     pub index: u64,
 }
 
-pub fn save_vesting(env: &Env, address: &Address, mut vesting_info: VestingInfo) {
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingInfoResponse {
+    pub balance: u128,
+    pub recipient: Address,
+    pub schedule: Curve,
+    pub index: u64,
+}
+
+pub fn save_vesting(env: &Env, address: &Address, vesting_info: VestingInfo) {
     let counter_key = VestingCounterKey {
         recipient: address.clone(),
     };
@@ -145,8 +153,6 @@ pub fn save_vesting(env: &Env, address: &Address, mut vesting_info: VestingInfo)
         recipient: address.clone(),
         index: next_index,
     };
-
-    vesting_info.index = next_index;
 
     env.storage().persistent().set(&vesting_key, &vesting_info);
     env.storage().persistent().extend_ttl(
@@ -189,32 +195,6 @@ pub fn get_vesting(env: &Env, recipient: &Address, index: u64) -> VestingInfo {
     );
 
     vesting_info
-}
-
-pub fn get_all_vestings(env: &Env, address: &Address) -> Vec<VestingInfo> {
-    let counter_key = VestingCounterKey {
-        recipient: address.clone(),
-    };
-
-    let count: u64 = env.storage().persistent().get(&counter_key).unwrap_or(0);
-    let mut vestings = Vec::<VestingInfo>::new(env);
-
-    for index in 0..count {
-        let vesting_key = VestingInfoKey {
-            recipient: address.clone(),
-            index,
-        };
-
-        if let Some(vesting_info) = env.storage().persistent().get(&vesting_key) {
-            vestings.push_back(vesting_info);
-            env.storage().persistent().extend_ttl(
-                &vesting_key,
-                PERSISTENT_RENEWAL_THRESHOLD,
-                PERSISTENT_TARGET_TTL,
-            );
-        }
-    }
-    vestings
 }
 
 #[cfg(feature = "minter")]
