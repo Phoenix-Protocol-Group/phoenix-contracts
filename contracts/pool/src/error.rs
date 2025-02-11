@@ -37,4 +37,5 @@ pub enum ContractError {
     NotEnoughLiquidityProvided = 226,
     AdminNotSet = 227,
     ContractMathError = 228,
+    NegativeInputProvided = 229,
 }

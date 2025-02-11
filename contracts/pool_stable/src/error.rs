@@ -29,4 +29,5 @@ pub enum ContractError {
     UserDeclinesPoolFee = 322,
     AdminNotSet = 323,
     ContractMathError = 324,
+    NegativeInputProvided = 325,
 }
