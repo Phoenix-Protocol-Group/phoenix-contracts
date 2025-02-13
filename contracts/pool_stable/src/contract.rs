@@ -547,7 +547,15 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             }
         }
 
-        validate_int_parameters!(share_amount, min_a, min_b);
+        if min_a.is_negative() || min_b.is_negative() {
+            log!(
+                env,
+                "Pool: Withdraw Liquidity: Negative value for min_a or min_b"
+            );
+            panic_with_error!(env, ContractError::NegativeInputProvided)
+        }
+
+        validate_int_parameters!(share_amount);
 
         sender.require_auth();
         env.storage()
