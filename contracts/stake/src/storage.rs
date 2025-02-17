@@ -1,9 +1,10 @@
 use phoenix::ttl::{PERSISTENT_RENEWAL_THRESHOLD, PERSISTENT_TARGET_TTL};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
-use crate::stake_rewards_contract;
+#[allow(dead_code)]
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const STAKE_KEY: Symbol = symbol_short!("STAKE");
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
@@ -18,8 +19,6 @@ pub struct Config {
     pub max_complexity: u32,
 }
 const CONFIG: Symbol = symbol_short!("CONFIG");
-#[allow(dead_code)]
-pub const ADMIN: Symbol = symbol_short!("ADMIN");
 
 pub fn get_config(env: &Env) -> Config {
     let config = env
@@ -277,55 +276,5 @@ pub mod utils {
             });
 
         distributions
-    }
-}
-
-// Implement `From` trait for conversion between `BondingInfo` structs
-impl From<BondingInfo> for stake_rewards_contract::BondingInfo {
-    fn from(info: BondingInfo) -> Self {
-        let mut stakes = Vec::new(info.stakes.env());
-        for stake in info.stakes.iter() {
-            stakes.push_back(stake.into());
-        }
-        stake_rewards_contract::BondingInfo {
-            stakes,
-            reward_debt: info.reward_debt,
-            last_reward_time: info.last_reward_time,
-            total_stake: info.total_stake,
-        }
-    }
-}
-
-impl From<stake_rewards_contract::BondingInfo> for BondingInfo {
-    fn from(info: stake_rewards_contract::BondingInfo) -> Self {
-        let mut stakes = Vec::new(info.stakes.env());
-        for stake in info.stakes.iter() {
-            stakes.push_back(stake.into());
-        }
-        BondingInfo {
-            stakes,
-            reward_debt: info.reward_debt,
-            last_reward_time: info.last_reward_time,
-            total_stake: info.total_stake,
-        }
-    }
-}
-
-// Implement `From` trait for conversion between `Stake` structs
-impl From<Stake> for stake_rewards_contract::Stake {
-    fn from(stake: Stake) -> Self {
-        stake_rewards_contract::Stake {
-            stake: stake.stake,
-            stake_timestamp: stake.stake_timestamp,
-        }
-    }
-}
-
-impl From<stake_rewards_contract::Stake> for Stake {
-    fn from(stake: stake_rewards_contract::Stake) -> Self {
-        Stake {
-            stake: stake.stake,
-            stake_timestamp: stake.stake_timestamp,
-        }
     }
 }

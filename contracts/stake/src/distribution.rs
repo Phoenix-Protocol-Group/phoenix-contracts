@@ -1,13 +1,9 @@
-use phoenix::{
-    ttl::{PERSISTENT_BUMP_AMOUNT, PERSISTENT_LIFETIME_THRESHOLD},
-    utils::{convert_i128_to_u128, convert_u128_to_i128},
-};
+use phoenix::utils::{convert_i128_to_u128, convert_u128_to_i128};
 use soroban_sdk::{contracttype, log, panic_with_error, Address, Env, Map};
 
 use curve::Curve;
 use soroban_decimal::Decimal;
 
-use crate::{error::ContractError, storage::BondingInfo};
 use crate::{
     error::ContractError,
     storage::{get_stakes, BondingInfo, Config},
@@ -53,8 +49,8 @@ pub fn save_reward_curve(env: &Env, asset: Address, distribution_curve: &Curve) 
     );
     env.storage().persistent().extend_ttl(
         &DistributionDataKey::Curve(asset),
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -70,8 +66,8 @@ pub fn get_reward_curve(env: &Env, asset: &Address) -> Option<Curve> {
         .then(|| {
             env.storage().persistent().extend_ttl(
                 &DistributionDataKey::Curve(asset.clone()),
-                PERSISTENT_LIFETIME_THRESHOLD,
-                PERSISTENT_BUMP_AMOUNT,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
             )
         });
 
@@ -103,8 +99,8 @@ pub fn save_distribution(env: &Env, asset: &Address, distribution: &Distribution
 
     env.storage().persistent().extend_ttl(
         &DistributionDataKey::Distribution(asset.clone()),
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     )
 }
 
@@ -121,8 +117,8 @@ pub fn get_distribution(env: &Env, asset: &Address) -> Distribution {
         .then(|| {
             env.storage().persistent().extend_ttl(
                 &DistributionDataKey::Distribution(asset.clone()),
-                PERSISTENT_LIFETIME_THRESHOLD,
-                PERSISTENT_BUMP_AMOUNT,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
             )
         });
 
@@ -210,8 +206,8 @@ pub fn save_withdraw_adjustment(
             user: user.clone(),
             asset: distribution.clone(),
         }),
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 }
 
@@ -245,8 +241,8 @@ pub fn get_withdraw_adjustment(
                     user: user.clone(),
                     asset: distribution.clone(),
                 }),
-                PERSISTENT_LIFETIME_THRESHOLD,
-                PERSISTENT_BUMP_AMOUNT,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
             );
         });
 
@@ -426,8 +422,8 @@ pub fn get_reward_history_deprecated(e: &Env, reward_token: &Address) -> Map<u64
         .unwrap();
     e.storage().persistent().extend_ttl(
         &DistributionDataKey::RewardHistory(reward_token.clone()),
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     reward_history
@@ -441,8 +437,8 @@ pub fn get_total_staked_history_deprecated(e: &Env) -> Map<u64, u128> {
         .unwrap();
     e.storage().persistent().extend_ttl(
         &DistributionDataKey::TotalStakedHistory,
-        PERSISTENT_LIFETIME_THRESHOLD,
-        PERSISTENT_BUMP_AMOUNT,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
     );
 
     total_staked_history

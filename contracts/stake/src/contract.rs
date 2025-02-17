@@ -24,7 +24,7 @@ use crate::{
             self, add_distribution, get_admin_old, get_distributions, get_total_staked_counter,
             is_initialized, set_initialized,
         },
-        Config, Stake, ADMIN, STAKE_KEY,
+        Config, Stake, STAKE_KEY,
     },
     token_contract,
 };
@@ -155,7 +155,7 @@ impl StakingTrait for Staking {
 
         utils::save_admin_old(&env, &admin);
         utils::init_total_staked(&env);
-        save_total_staked_history(&env, map![&env]);
+
         env.storage().persistent().set(&STAKE_KEY, &true);
 
         env.events()
@@ -227,7 +227,7 @@ impl StakingTrait for Staking {
         sender.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         env.storage()
             .instance()
@@ -288,7 +288,7 @@ impl StakingTrait for Staking {
 
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         let config = get_config(&env);
 
@@ -352,7 +352,7 @@ impl StakingTrait for Staking {
     fn distribute_rewards(env: Env) {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         let total_staked_amount = get_total_staked_counter(&env);
         let total_rewards_power = calc_power(
@@ -507,7 +507,7 @@ impl StakingTrait for Staking {
     fn withdraw_rewards_deprecated(env: Env, sender: Address) {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         let mut stakes = get_stakes(&env, &sender);
 
@@ -538,7 +538,7 @@ impl StakingTrait for Staking {
         sender.require_auth();
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         // Load previous reward curve; it must exist if the distribution exists
         // In case of first time funding, it will be a constant 0 curve
@@ -641,7 +641,6 @@ impl StakingTrait for Staking {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-        let stakes = get_stakes(&env, &address);
         StakedResponse {
             stakes: get_stakes(&env, &address).stakes,
         }
@@ -657,7 +656,7 @@ impl StakingTrait for Staking {
     fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         let now = env.ledger().timestamp();
         let mut aprs = vec![&env];
         let config = get_config(&env);
@@ -694,7 +693,7 @@ impl StakingTrait for Staking {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-        let stakes = get_stakes(&env, &user);
+
         let config = get_config(&env);
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
@@ -719,7 +718,7 @@ impl StakingTrait for Staking {
     fn query_withdrawable_rewards_dep(env: Env, user: Address) -> WithdrawableRewardsResponse {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         let stakes = get_stakes(&env, &user);
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
@@ -738,7 +737,7 @@ impl StakingTrait for Staking {
     fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         let distribution = get_distribution(&env, &asset);
         distribution.distributed_total
     }
@@ -746,7 +745,7 @@ impl StakingTrait for Staking {
     fn query_undistributed_rewards(env: Env, asset: Address) -> u128 {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         let distribution = get_distribution(&env, &asset);
         let reward_token_client = token_contract::Client::new(&env, &asset);
         let reward_token_balance =
