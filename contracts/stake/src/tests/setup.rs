@@ -22,7 +22,7 @@ mod stake_latest {
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 mod old_stake {
-    soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_stake.wasm");
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_stake.wasm");
 }
 
 #[allow(dead_code)]

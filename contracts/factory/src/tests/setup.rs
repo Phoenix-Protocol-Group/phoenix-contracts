@@ -14,20 +14,20 @@ const TOKEN_WASM: &[u8] =
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub mod old_factory {
-    soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_factory.wasm");
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_factory.wasm");
 }
 
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn old_lp_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_pool.wasm");
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_pool.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn old_stake_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_stake.wasm");
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_stake.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
