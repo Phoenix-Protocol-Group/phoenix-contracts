@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
 pub mod old_stake_rewards {
     soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_stake_rewards.wasm");
 }

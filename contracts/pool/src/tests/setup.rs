@@ -19,6 +19,7 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 }
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
 pub mod old_liquidity_pool {
     soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_pool.wasm");
 }

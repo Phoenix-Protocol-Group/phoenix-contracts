@@ -12,6 +12,7 @@ const TOKEN_WASM: &[u8] =
     include_bytes!("../../../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm");
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
 pub mod old_factory {
     soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_factory.wasm");
 }
