@@ -4,8 +4,8 @@ use phoenix::ttl::{
     PERSISTENT_TARGET_TTL,
 };
 use soroban_sdk::{
-    contracttype, log, panic_with_error, symbol_short, vec, Address, ConversionError, Env, String,
-    Symbol, TryFromVal, Val, Vec,
+    contracttype, log, panic_with_error, symbol_short, Address, ConversionError, Env, String,
+    Symbol, TryFromVal, Val,
 };
 
 use crate::error::ContractError;
@@ -58,6 +58,12 @@ pub struct VestingInfo {
     pub balance: u128,
     pub recipient: Address,
     pub schedule: Curve,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingCounterKey {
+    pub recipient: Address,
 }
 
 #[cfg(feature = "minter")]
@@ -127,28 +133,37 @@ pub struct VestingInfoKey {
     pub index: u64,
 }
 
-pub fn save_vesting(env: &Env, address: &Address, vesting_info: &VestingInfo) {
-    let mut index = 0u64;
-    let mut vesting_key = VestingInfoKey {
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VestingInfoResponse {
+    pub balance: u128,
+    pub recipient: Address,
+    pub schedule: Curve,
+    pub index: u64,
+}
+
+pub fn save_vesting(env: &Env, address: &Address, vesting_info: VestingInfo) {
+    let counter_key = VestingCounterKey {
         recipient: address.clone(),
-        index,
     };
 
-    // Find the next available index
-    while env.storage().persistent().has(&vesting_key) {
-        index += 1;
-        vesting_key = VestingInfoKey {
-            recipient: address.clone(),
-            index,
-        };
-    }
+    let next_index: u64 = env.storage().persistent().get(&counter_key).unwrap_or(0);
 
-    env.storage().persistent().set(&vesting_key, vesting_info);
+    let vesting_key = VestingInfoKey {
+        recipient: address.clone(),
+        index: next_index,
+    };
+
+    env.storage().persistent().set(&vesting_key, &vesting_info);
     env.storage().persistent().extend_ttl(
         &vesting_key,
         PERSISTENT_RENEWAL_THRESHOLD,
         PERSISTENT_TARGET_TTL,
     );
+
+    env.storage()
+        .persistent()
+        .set(&counter_key, &(next_index + 1));
 }
 
 pub fn update_vesting(env: &Env, address: &Address, index: u64, vesting_info: &VestingInfo) {
@@ -180,32 +195,6 @@ pub fn get_vesting(env: &Env, recipient: &Address, index: u64) -> VestingInfo {
     );
 
     vesting_info
-}
-
-pub fn get_all_vestings(env: &Env, address: &Address) -> Vec<VestingInfo> {
-    let mut vestings = vec![&env];
-    let mut index = 0u64;
-
-    loop {
-        let vesting_key = VestingInfoKey {
-            recipient: address.clone(),
-            index,
-        };
-
-        if let Some(vesting_info) = env.storage().persistent().get(&vesting_key) {
-            vestings.push_back(vesting_info);
-            index += 1;
-            env.storage().persistent().extend_ttl(
-                &vesting_key,
-                PERSISTENT_RENEWAL_THRESHOLD,
-                PERSISTENT_TARGET_TTL,
-            );
-        } else {
-            break;
-        }
-    }
-
-    vestings
 }
 
 #[cfg(feature = "minter")]

@@ -1,5 +1,5 @@
 use crate::{
-    storage::{VestingInfo, VestingSchedule, VestingTokenInfo},
+    storage::{VestingInfoResponse, VestingSchedule, VestingTokenInfo},
     tests::setup::instantiate_vesting_client,
 };
 use curve::{Curve, PiecewiseLinear, SaturatingLinear, Step};
@@ -656,7 +656,7 @@ fn claim_tokens_from_two_distributions() {
         vesting_client.query_all_vesting_info(&vester1),
         vec![
             &env,
-            VestingInfo {
+            VestingInfoResponse {
                 recipient: vester1.clone(),
                 balance: 750, // balance is deducted because it was already once claimed
                 schedule: Curve::SaturatingLinear(SaturatingLinear {
@@ -664,9 +664,10 @@ fn claim_tokens_from_two_distributions() {
                     min_y: 1_500,
                     max_x: 100,
                     max_y: 0,
-                })
+                }),
+                index: 0,
             },
-            VestingInfo {
+            VestingInfoResponse {
                 recipient: vester1.clone(),
                 balance: 500,
                 schedule: Curve::PiecewiseLinear(PiecewiseLinear {
@@ -685,7 +686,8 @@ fn claim_tokens_from_two_distributions() {
                             value: 0,
                         },
                     ],
-                })
+                }),
+                index: 1,
             }
         ]
     );
@@ -762,7 +764,7 @@ fn first_mainnet_simulation() {
 
     assert_eq!(
         vesting_client.query_vesting_info(&vester1, &0),
-        VestingInfo {
+        VestingInfoResponse {
             recipient: vester1.clone(),
             balance: 66_666_667,
             schedule: Curve::SaturatingLinear(SaturatingLinear {
@@ -772,6 +774,7 @@ fn first_mainnet_simulation() {
                 max_x: 1716820800,
                 max_y: 0,
             }),
+            index: 0,
         },
     );
 

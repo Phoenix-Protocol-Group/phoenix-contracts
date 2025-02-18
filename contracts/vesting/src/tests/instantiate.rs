@@ -1,7 +1,7 @@
 use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 use crate::{
-    storage::{VestingInfo, VestingSchedule, VestingTokenInfo},
+    storage::{VestingInfoResponse, VestingSchedule, VestingTokenInfo},
     tests::setup::{deploy_token_contract, instantiate_vesting_client},
 };
 use curve::{Curve, SaturatingLinear};
@@ -55,7 +55,7 @@ fn instantiate_contract_successfully() {
         vesting_client.query_all_vesting_info(&vester1),
         vec![
             &env,
-            VestingInfo {
+            VestingInfoResponse {
                 recipient: vester1,
                 balance: 120,
                 schedule: Curve::SaturatingLinear(SaturatingLinear {
@@ -63,7 +63,8 @@ fn instantiate_contract_successfully() {
                     min_y: 120,
                     max_x: 60,
                     max_y: 0,
-                })
+                }),
+                index: 0,
             }
         ]
     );
