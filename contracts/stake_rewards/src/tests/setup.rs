@@ -8,7 +8,9 @@ use crate::{
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub mod old_stake_rewards {
-    soroban_sdk::contractimport!(file = "../../.artifacts/old_phoenix_stake_rewards.wasm");
+    soroban_sdk::contractimport!(
+        file = "../../.artifacts_sdk_update/old_phoenix_stake_rewards.wasm"
+    );
 }
 
 #[allow(clippy::too_many_arguments)]
