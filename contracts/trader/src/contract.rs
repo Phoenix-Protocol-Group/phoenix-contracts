@@ -292,6 +292,11 @@ impl Trader {
     }
 
     #[allow(dead_code)]
+    pub fn query_version(env: Env) -> String {
+        String::from_str(&env, env!("CARGO_PKG_VERSION"))
+    }
+
+    #[allow(dead_code)]
     //TODO: Remove after we've added the key to storage
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&TRADER_KEY, &true);

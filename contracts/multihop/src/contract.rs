@@ -1,6 +1,7 @@
 use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
+    Vec,
 };
 
 use crate::error::ContractError;
@@ -306,6 +307,11 @@ impl Multihop {
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    #[allow(dead_code)]
+    pub fn query_version(env: Env) -> String {
+        String::from_str(&env, env!("CARGO_PKG_VERSION"))
     }
 
     #[allow(dead_code)]
