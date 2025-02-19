@@ -13,4 +13,6 @@ pub enum ContractError {
     MinRewardInvalid = 7,
     AdminNotSet = 8,
     OverflowingOps = 9,
+    KeyNotFound = 10,
+    TryFromValErr = 11,
 }
