@@ -23,6 +23,7 @@ pub mod stable_pool {
 
 #[allow(clippy::too_many_arguments)]
 pub mod factory_contract {
+    use crate::storage::DataKey;
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"
     );

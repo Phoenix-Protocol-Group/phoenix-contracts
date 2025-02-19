@@ -16,4 +16,6 @@ pub enum ContractError {
     SameAdmin = 109,
     NoAdminChangeInPlace = 110,
     AdminChangeExpired = 111,
+    KeyNotFound = 112,
+    TryFromValErr = 113,
 }

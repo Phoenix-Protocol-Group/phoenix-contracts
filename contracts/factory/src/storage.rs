@@ -22,6 +22,20 @@ pub enum DataKey {
     Initialized = 3,
 }
 
+impl TryFromVal<Env, Val> for DataKey {
+    type Error = crate::storage::ContractError;
+
+    fn try_from_val(_env: &Env, v: &Val) -> Result<Self, Self::Error> {
+        let u32_val: u32 = v.try_into().map_err(|_| ContractError::TryFromValErr)?;
+        match u32_val {
+            1 => Ok(DataKey::Config),
+            2 => Ok(DataKey::LpVec),
+            3 => Ok(DataKey::Initialized),
+            _ => Err(ContractError::TryFromValErr),
+        }
+    }
+}
+
 #[derive(Clone)]
 #[contracttype]
 pub struct PairTupleKey {

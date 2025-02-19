@@ -631,6 +631,60 @@ impl Factory {
         env.storage().persistent().set(&FACTORY_KEY, &true);
         Ok(())
     }
+
+    #[allow(dead_code)]
+    pub fn extend_datakey_storage_ttl(env: Env, key: DataKey) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        if env.storage().persistent().has(&key) {
+            env.storage().persistent().extend_ttl(
+                &key,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+            return Ok(());
+        }
+
+        Err(ContractError::KeyNotFound)
+    }
+
+    #[allow(dead_code)]
+    pub fn extend_stable_wasm_hash_storage(
+        env: Env,
+        hash: BytesN<32>,
+    ) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        if env.storage().persistent().has(&hash) {
+            env.storage().persistent().extend_ttl(
+                &hash,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+            return Ok(());
+        }
+
+        Err(ContractError::KeyNotFound)
+    }
+
+    #[allow(dead_code)]
+    pub fn extend_tuple_storage(env: Env, tuple_key: PairTupleKey) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        if env.storage().persistent().has(&tuple_key) {
+            env.storage().persistent().extend_ttl(
+                &tuple_key,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+            return Ok(());
+        }
+
+        Err(ContractError::KeyNotFound)
+    }
 }
 
 fn validate_token_info(
