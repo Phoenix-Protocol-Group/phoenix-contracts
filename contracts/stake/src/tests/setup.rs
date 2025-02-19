@@ -1,9 +1,8 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
-
 use crate::{
     contract::{Staking, StakingClient},
     token_contract,
 };
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::Client<'a> {
     token_contract::Client::new(
@@ -18,6 +17,12 @@ mod stake_latest {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
+}
+
+#[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
+mod old_stake {
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_stake.wasm");
 }
 
 #[allow(dead_code)]
@@ -54,29 +59,29 @@ pub fn deploy_staking_contract<'a>(
     staking
 }
 
-#[cfg(feature = "upgrade")]
-use soroban_sdk::{testutils::Ledger, vec};
-
 #[test]
+#[allow(deprecated)]
 #[cfg(feature = "upgrade")]
 fn upgrade_stake_contract() {
+    use soroban_sdk::{testutils::Ledger, vec};
+
     let env = Env::default();
     env.mock_all_auths();
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
 
     let token_client = deploy_token_contract(&env, &admin);
     token_client.mint(&user, &1_000);
 
-    let stake_addr = env.register_contract_wasm(None, stake_v_1_0_0::WASM);
+    let stake_addr = env.register_contract_wasm(None, old_stake::WASM);
 
-    let stake_v_1_0_0_client = stake_v_1_0_0::Client::new(&env, &stake_addr);
+    let old_stake_client = old_stake::Client::new(&env, &stake_addr);
 
     let manager = Address::generate(&env);
     let owner = Address::generate(&env);
 
-    stake_v_1_0_0_client.initialize(
+    old_stake_client.initialize(
         &admin,
         &token_client.address,
         &10,
@@ -86,45 +91,47 @@ fn upgrade_stake_contract() {
         &10,
     );
 
-    assert_eq!(stake_v_1_0_0_client.query_admin(), admin);
+    assert_eq!(old_stake_client.query_admin(), admin);
 
     env.ledger().with_mut(|li| li.timestamp = 100);
-    stake_v_1_0_0_client.bond(&user, &1_000);
+    old_stake_client.bond(&user, &1_000);
     assert_eq!(
-        stake_v_1_0_0_client.query_staked(&user),
-        stake_v_1_0_0::StakedResponse {
+        old_stake_client.query_staked(&user),
+        old_stake::StakedResponse {
             stakes: vec![
                 &env,
-                stake_v_1_0_0::Stake {
+                old_stake::Stake {
                     stake: 1_000i128,
                     stake_timestamp: 100
                 }
-            ]
+            ],
+            last_reward_time: 0u64,
+            total_stake: 1_000i128,
         }
     );
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
 
     let new_stake_wasm = install_stake_latest_wasm(&env);
-    stake_v_1_0_0_client.update(&new_stake_wasm);
-    stake_v_1_0_0_client.update(&new_stake_wasm);
+    old_stake_client.update(&new_stake_wasm);
 
-    let upgraded_stake_client = stake_latest::Client::new(&env, &stake_addr);
+    let new_stake_client = stake_latest::Client::new(&env, &stake_addr);
 
-    assert_eq!(upgraded_stake_client.query_admin(), admin);
+    assert_eq!(new_stake_client.query_admin(), admin);
 
     env.ledger().with_mut(|li| li.timestamp = 20_000);
 
-    upgraded_stake_client.unbond(&user, &1_000, &100);
+    new_stake_client.unbond(&user, &1_000, &100);
     assert_eq!(
-        upgraded_stake_client.query_staked(&user),
+        new_stake_client.query_staked(&user),
         stake_latest::StakedResponse {
             stakes: vec![&env,],
-            total_stake: 0i128
+            total_stake: 0i128,
+            last_reward_time: 0u64,
         }
     );
 
-    upgraded_stake_client.create_distribution_flow(&owner, &token_client.address);
+    new_stake_client.create_distribution_flow(&owner, &token_client.address);
     token_client.mint(&owner, &1_000);
-    upgraded_stake_client.distribute_rewards(&owner, &1_000, &token_client.address);
+    new_stake_client.distribute_rewards(&owner, &1_000, &token_client.address);
 }
