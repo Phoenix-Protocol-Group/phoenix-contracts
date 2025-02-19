@@ -3,7 +3,8 @@ use phoenix::{
     utils::{convert_i128_to_u128, convert_u128_to_i128},
 };
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
+    Vec,
 };
 
 #[cfg(feature = "minter")]
@@ -543,5 +544,10 @@ impl Vesting {
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&VESTING_KEY, &true);
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn query_version(env: Env) -> String {
+        String::from_str(&env, env!("CARGO_PKG_VERSION"))
     }
 }

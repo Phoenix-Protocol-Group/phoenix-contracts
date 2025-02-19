@@ -531,6 +531,10 @@ impl Factory {
         save_stable_wasm_hash(&env, new_stable_pool_hash);
     }
 
+    pub fn query_version(env: Env) -> String {
+        String::from_str(&env, env!("CARGO_PKG_VERSION"))
+    }
+
     #[allow(dead_code)]
     //TODO: Remove after we've added the key to storage
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
