@@ -980,7 +980,7 @@ impl LiquidityPool {
 
     #[allow(dead_code)]
     //TODO: Remove after we've added the key to storage
-    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+    pub fn add_contract_name_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&XYK_POOL_KEY, &true);
         Ok(())
     }
