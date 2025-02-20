@@ -7,7 +7,7 @@ use self::setup::{
 
 mod admin_change;
 mod config;
-mod setup;
+pub mod setup;
 
 mod queries;
 #[test]
