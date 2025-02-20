@@ -10,14 +10,18 @@ use crate::{
     storage::{
         get_config, get_default_slippage_bps, save_config, save_default_slippage_bps,
         utils::{self, get_admin_old, is_initialized, set_initialized},
-        Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse, ADMIN, PENDING_ADMIN, XYK_POOL_KEY,
+        Asset, ComputeSwap, Config, DataKey, LiquidityPoolInfo, PairType, PoolResponse,
+        SimulateReverseSwapResponse, SimulateSwapResponse, ADMIN, CONFIG, DEFAULT_SLIPPAGE_BPS,
+        XYK_POOL_KEY,
     },
-    token_contract,
+    token_contract::{self, DataKey},
 };
 use phoenix::{
-    ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL},
-    utils::{convert_i128_to_u128, is_approx_ratio, AdminChange, LiquidityPoolInitInfo},
+    ttl::{
+        INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
+    },
+    utils::{convert_i128_to_u128, is_approx_ratio, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
 use soroban_decimal::Decimal;
@@ -982,6 +986,47 @@ impl LiquidityPool {
     //TODO: Remove after we've added the key to storage
     pub fn add_contract_name_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&XYK_POOL_KEY, &true);
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn extend_all_tll(env: Env) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        env.storage().persistent().extend_ttl(
+            &DEFAULT_SLIPPAGE_BPS,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        env.storage().persistent().extend_ttl(
+            &CONFIG,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        for val in &[
+            DataKey::TotalShares,
+            DataKey::ReserveA,
+            DataKey::ReserveB,
+            DataKey::Admin,
+            DataKey::Initialized,
+        ] {
+            env.storage().persistent().extend_ttl(
+                val,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            )
+        }
+
+        env.storage().persistent().extend_ttl(
+            &XYK_POOL_KEY,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
         Ok(())
     }
 }
