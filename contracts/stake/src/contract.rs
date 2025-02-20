@@ -1,6 +1,9 @@
-use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
 use phoenix::utils::AdminChange;
 use soroban_decimal::Decimal;
+use phoenix::ttl::{
+    INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
+    PERSISTENT_TARGET_TTL,
+};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
     Vec,
@@ -24,7 +27,7 @@ use crate::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
             self, add_distribution, get_admin_old, get_distributions, get_total_staked_counter,
-            is_initialized, set_initialized,
+            is_initialized, set_initialized, DataKey,
         },
         Config, Stake, STAKE_KEY,
     },
@@ -869,7 +872,7 @@ impl Staking {
 
     //TODO: Remove after we've added the key to storage
     #[allow(dead_code)]
-    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+    pub fn add_contract_name_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&STAKE_KEY, &true);
         Ok(())
     }
@@ -893,6 +896,47 @@ impl Staking {
             );
             save_reward_curve(&env, distribution_addr, &Curve::Constant(0));
         })
+    pub fn extend_all_ttl(env: Env) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        // DataKey
+        for key in &[
+            DataKey::Admin,
+            DataKey::TotalStaked,
+            DataKey::Distributions,
+            DataKey::Initialized,
+            DataKey::StakeRewards,
+        ] {
+            env.storage().persistent().extend_ttl(
+                key,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            )
+        }
+
+        env.storage().persistent().extend_ttl(
+            &DistributionDataKey::TotalStakedHistory,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn extend_distribution_reward_ttl(env: Env, address: Address) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        env.storage().persistent().extend_ttl(
+            &DistributionDataKey::RewardHistory(address),
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        Ok(())
     }
 }
 
