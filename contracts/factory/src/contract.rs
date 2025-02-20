@@ -593,6 +593,12 @@ impl Factory {
             );
         });
 
+        env.storage().persistent().extend_ttl(
+            &FACTORY_KEY,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
         Ok(())
     }
 }
