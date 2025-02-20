@@ -6,7 +6,7 @@ use self::setup::{
 };
 
 mod config;
-mod setup;
+pub mod setup;
 
 mod queries;
 #[test]
