@@ -14,7 +14,7 @@ use crate::{
         SimulateReverseSwapResponse, SimulateSwapResponse, ADMIN, CONFIG, DEFAULT_SLIPPAGE_BPS,
         XYK_POOL_KEY,
     },
-    token_contract::{self, DataKey},
+    token_contract,
 };
 use phoenix::{
     ttl::{
