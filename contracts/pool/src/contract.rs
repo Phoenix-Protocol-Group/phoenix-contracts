@@ -1021,11 +1021,13 @@ impl LiquidityPool {
             )
         }
 
-        env.storage().persistent().extend_ttl(
-            &XYK_POOL_KEY,
-            PERSISTENT_RENEWAL_THRESHOLD,
-            PERSISTENT_TARGET_TTL,
-        );
+        env.storage().persistent().has(&XYK_POOL_KEY).then(|| {
+            env.storage().persistent().extend_ttl(
+                &XYK_POOL_KEY,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            )
+        });
 
         Ok(())
     }
