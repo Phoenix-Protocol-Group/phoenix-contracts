@@ -12,7 +12,7 @@ use crate::error::ContractError;
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const FACTORY_KEY: Symbol = symbol_short!("FACTORY");
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(u32)]
 pub enum DataKey {
     Config = 1,
@@ -264,4 +264,50 @@ pub fn set_initialized(e: &Env) {
         PERSISTENT_RENEWAL_THRESHOLD,
         PERSISTENT_TARGET_TTL,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use soroban_sdk::{Env, Val};
+
+    #[test]
+    fn test_try_from_val_valid_config() {
+        let env = Env::default();
+        let val: Val = 1u32.into();
+        let result = DataKey::try_from_val(&env, &val);
+        assert_eq!(result, Ok(DataKey::Config));
+    }
+
+    #[test]
+    fn test_try_from_val_valid_lp_vec() {
+        let env = Env::default();
+        let val: Val = 2u32.into();
+        let result = DataKey::try_from_val(&env, &val);
+        assert_eq!(result, Ok(DataKey::LpVec));
+    }
+
+    #[test]
+    fn test_try_from_val_valid_initialized() {
+        let env = Env::default();
+        let val: Val = 3u32.into();
+        let result = DataKey::try_from_val(&env, &val);
+        assert_eq!(result, Ok(DataKey::Initialized));
+    }
+
+    #[test]
+    fn test_try_from_val_invalid_value() {
+        let env = Env::default();
+        let val: Val = 4u32.into();
+        let result = DataKey::try_from_val(&env, &val);
+        assert_eq!(result, Err(crate::storage::ContractError::TryFromValErr));
+    }
+
+    #[test]
+    fn test_try_from_val_zero() {
+        let env = Env::default();
+        let val: Val = 0u32.into();
+        let result = DataKey::try_from_val(&env, &val);
+        assert_eq!(result, Err(crate::storage::ContractError::TryFromValErr));
+    }
 }
