@@ -1,6 +1,9 @@
 use phoenix::{
-    ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL},
-    utils::{convert_i128_to_u128, convert_u128_to_i128, AdminChange, LiquidityPoolInitInfo},
+    ttl::{
+        INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
+    },
+    utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo},
 };
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
@@ -14,8 +17,9 @@ use crate::{
         get_amp, get_config, get_greatest_precision, get_precisions, save_amp, save_config,
         save_greatest_precision,
         utils::{self, get_admin_old, is_initialized, set_initialized},
-        AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
-        SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN, PENDING_ADMIN, STABLE_POOL_KEY,
+        AmplifierParameters, Asset, Config, DataKey, PairType, PoolResponse,
+        SimulateReverseSwapResponse, SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN,
+        STABLE_POOL_KEY,
     },
     token_contract, DECIMAL_PRECISION,
 };
@@ -1013,8 +1017,31 @@ impl StableLiquidityPool {
 
     #[allow(dead_code)]
     //TODO: Remove after we've added the key to storage
-    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+    pub fn add_contract_name_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&STABLE_POOL_KEY, &true);
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn extend_all_tll(env: Env) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        env.storage().persistent().extend_ttl(
+            &DataKey::Initialized,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        env.storage().persistent().has(&STABLE_POOL_KEY).then(|| {
+            env.storage().persistent().extend_ttl(
+                &STABLE_POOL_KEY,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            )
+        });
+
         Ok(())
     }
 }
