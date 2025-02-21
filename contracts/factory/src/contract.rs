@@ -640,15 +640,11 @@ impl Factory {
 
         // extend all datakeys
         for key in &[DataKey::Config, DataKey::LpVec, DataKey::Initialized] {
-            if env.storage().persistent().has(key) {
-                env.storage().persistent().extend_ttl(
-                    key,
-                    PERSISTENT_RENEWAL_THRESHOLD,
-                    PERSISTENT_TARGET_TTL,
-                );
-            } else {
-                return Err(ContractError::KeyNotFound);
-            }
+            env.storage().persistent().extend_ttl(
+                key,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
         }
 
         // extend the stable wasm hash storage
