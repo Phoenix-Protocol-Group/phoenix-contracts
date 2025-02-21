@@ -2,9 +2,7 @@ extern crate std;
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
-use super::setup::{
-    deploy_stable_liquidity_pool_contract, deploy_token_contract, install_stake_rewards_wasm,
-};
+use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::contract::{StableLiquidityPool, StableLiquidityPoolClient};
 use crate::tests::setup::{install_stake_wasm, install_token_wasm};
 use crate::{
@@ -101,7 +99,6 @@ fn second_pool_stable_deployment_should_fail() {
 
     let token_wasm_hash = install_token_wasm(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
-    let _stake_reward_wasm_hash = install_stake_rewards_wasm(&env);
     let fee_recipient = user;
     let max_allowed_slippage = 5_000i64; // 50% if not specified
     let max_allowed_spread = 500i64; // 5% if not specified
@@ -178,7 +175,6 @@ fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
 
     let token_wasm_hash = install_token_wasm(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
-    let _stake_reward_wasm_hash = install_stake_rewards_wasm(&env);
     let fee_recipient = user;
     let max_allowed_slippage = 5_000i64; // 50% if not specified
     let max_allowed_spread = 500i64; // 5% if not specified

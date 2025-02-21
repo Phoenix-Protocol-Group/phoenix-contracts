@@ -4,16 +4,15 @@ use pretty_assertions::assert_eq;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    vec, Address, Env, IntoVal, Symbol, Vec,
+    vec, Address, Env, IntoVal, Symbol,
 };
 
 use super::setup::{deploy_staking_contract, deploy_token_contract};
 
 use crate::{
     contract::{Staking, StakingClient},
-    msg::{ConfigResponse, StakedResponse},
+    msg::ConfigResponse,
     storage::{Config, Stake},
-    tests::setup::{ONE_DAY, ONE_WEEK},
 };
 
 const DEFAULT_COMPLEXITY: u32 = 7;
@@ -133,10 +132,6 @@ fn bond_simple() {
         &DEFAULT_COMPLEXITY,
     );
 
-    env.ledger().with_mut(|li| {
-        li.timestamp = ONE_WEEK;
-    });
-
     lp_token.mint(&user, &10_000);
 
     staking.bond(&user, &10_000);
@@ -170,7 +165,7 @@ fn bond_simple() {
             &env,
             Stake {
                 stake: 10_000,
-                stake_timestamp: ONE_WEEK,
+                stake_timestamp: 0,
             }
         ]
     );
@@ -205,16 +200,16 @@ fn unbond_simple() {
     lp_token.mint(&user2, &10_000);
 
     env.ledger().with_mut(|li| {
-        li.timestamp += ONE_DAY;
+        li.timestamp = 2000;
     });
     staking.bond(&user, &10_000);
     env.ledger().with_mut(|li| {
-        li.timestamp += ONE_DAY;
+        li.timestamp = 4000;
     });
     staking.bond(&user, &10_000);
     staking.bond(&user2, &10_000);
     env.ledger().with_mut(|li| {
-        li.timestamp += ONE_DAY;
+        li.timestamp = 4000;
     });
     staking.bond(&user, &15_000);
 
@@ -222,7 +217,8 @@ fn unbond_simple() {
     assert_eq!(lp_token.balance(&user), 0);
     assert_eq!(lp_token.balance(&staking.address), 45_000);
 
-    staking.unbond(&user, &10_000, &(ONE_DAY + ONE_DAY));
+    let stake_timestamp = 4000;
+    staking.unbond(&user, &10_000, &stake_timestamp);
 
     assert_eq!(
         env.auths(),
@@ -232,7 +228,7 @@ fn unbond_simple() {
                 function: AuthorizedFunction::Contract((
                     staking.address.clone(),
                     Symbol::new(&env, "unbond"),
-                    (&user.clone(), 10_000i128, (ONE_DAY + ONE_DAY)).into_val(&env),
+                    (&user.clone(), 10_000i128, (stake_timestamp)).into_val(&env),
                 )),
                 sub_invocations: std::vec![],
             }
@@ -246,11 +242,11 @@ fn unbond_simple() {
             &env,
             Stake {
                 stake: 10_000,
-                stake_timestamp: ONE_DAY,
+                stake_timestamp: 2_000,
             },
             Stake {
                 stake: 15_000,
-                stake_timestamp: 3 * ONE_DAY,
+                stake_timestamp: 4_000,
             }
         ]
     );
@@ -309,11 +305,11 @@ fn unbond_wrong_user_stake_not_found() {
     lp_token.mint(&user2, &10_000);
 
     env.ledger().with_mut(|li| {
-        li.timestamp = ONE_DAY;
+        li.timestamp = 2_000;
     });
     staking.bond(&user, &10_000);
     env.ledger().with_mut(|li| {
-        li.timestamp += ONE_DAY;
+        li.timestamp = 4_000;
     });
     staking.bond(&user, &10_000);
     staking.bond(&user2, &10_000);
@@ -322,21 +318,19 @@ fn unbond_wrong_user_stake_not_found() {
     assert_eq!(lp_token.balance(&user2), 0);
     assert_eq!(lp_token.balance(&staking.address), 30_000);
 
-    let non_existing_timestamp = ONE_DAY / 2;
-    staking.unbond(&user2, &10_000, &non_existing_timestamp);
+    staking.unbond(&user2, &10_000, &2_000);
 }
 
 #[test]
 fn pay_rewards_during_unbond() {
+    const STAKED_AMOUNT: i128 = 1_000;
     let env = Env::default();
     env.mock_all_auths();
-    env.cost_estimate().budget().reset_unlimited();
-
-    let full_bonding_multiplier = ONE_DAY * 60;
 
     let admin = Address::generate(&env);
     let user = Address::generate(&env);
     let manager = Address::generate(&env);
+    let owner = Address::generate(&env);
 
     let lp_token = deploy_token_contract(&env, &admin);
     let reward_token = deploy_token_contract(&env, &admin);
@@ -345,31 +339,30 @@ fn pay_rewards_during_unbond() {
         admin.clone(),
         &lp_token.address,
         &manager,
-        &admin,
+        &owner,
         &DEFAULT_COMPLEXITY,
     );
 
     lp_token.mint(&user, &10_000);
-    reward_token.mint(&admin, &20_000);
+    reward_token.mint(&admin, &10_000);
 
-    let staked = 1_000;
-    staking.bond(&user, &staked);
+    staking.create_distribution_flow(&manager, &reward_token.address);
+    staking.fund_distribution(&admin, &0u64, &10_000u64, &reward_token.address, &10_000);
 
-    // Move so that user would have 100% APR from bonding after 60 days
+    staking.bond(&user, &STAKED_AMOUNT);
+
     env.ledger().with_mut(|li| {
-        li.timestamp = full_bonding_multiplier;
+        li.timestamp = 5_000;
     });
+    staking.distribute_rewards();
 
-    staking.create_distribution_flow(&admin, &reward_token.address);
-
-    // simulate passing 20 days and distributing 1000 tokens each day
-    for _ in 0..20 {
-        staking.distribute_rewards(&admin, &1_000, &reward_token.address);
-        env.ledger().with_mut(|li| {
-            li.timestamp += 3600 * 24;
-        });
-    }
-
+    // user has bonded for 5_000 time, initial rewards are 10_000
+    // so user should have 5_000 rewards
+    // 5_000 rewards are still undistributed
+    assert_eq!(
+        staking.query_undistributed_rewards(&reward_token.address),
+        5_000
+    );
     assert_eq!(
         staking
             .query_withdrawable_rewards(&user)
@@ -377,28 +370,12 @@ fn pay_rewards_during_unbond() {
             .iter()
             .map(|reward| reward.reward_amount)
             .sum::<u128>(),
-        20_000
+        5_000
     );
+
     assert_eq!(reward_token.balance(&user), 0);
-
-    // we first have to withdraw_rewards _before_ unbonding
-    // as this messes up with the reward calculation
-    // if we unbond first then we get no rewards
-    staking.withdraw_rewards(&user);
-    assert_eq!(reward_token.balance(&user), 20_000);
-
-    // user bonded at timestamp 0
-    staking.unbond(&user, &staked, &0);
-    assert_eq!(lp_token.balance(&staking.address), 0);
-    assert_eq!(lp_token.balance(&user), 9000 + staked);
-    assert_eq!(
-        staking.query_staked(&user),
-        StakedResponse {
-            stakes: Vec::new(&env),
-            total_stake: 0i128,
-            last_reward_time: 6_912_000
-        }
-    );
+    staking.unbond(&user, &STAKED_AMOUNT, &0);
+    assert_eq!(reward_token.balance(&user), 5_000);
 }
 
 #[should_panic(

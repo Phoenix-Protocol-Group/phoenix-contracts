@@ -30,13 +30,6 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-pub fn install_stake_rewards_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/phoenix_stake_rewards.wasm"
-    );
-    env.deployer().upload_contract_wasm(WASM)
-}
-
 #[allow(clippy::too_many_arguments)]
 pub fn deploy_stable_liquidity_pool_contract<'a>(
     env: &Env,
@@ -69,7 +62,6 @@ pub fn deploy_stable_liquidity_pool_contract<'a>(
 
     let token_wasm_hash = install_token_wasm(env);
     let stake_wasm_hash = install_stake_wasm(env);
-    let _stake_rewards_wasm_hash = install_stake_rewards_wasm(env);
 
     let lp_init_info = LiquidityPoolInitInfo {
         admin,

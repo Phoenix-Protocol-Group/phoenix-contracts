@@ -19,3 +19,4 @@ target/
 cobertura.xml
 
 **/test_snapshots
+.stellar/

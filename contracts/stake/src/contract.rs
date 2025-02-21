@@ -1,26 +1,34 @@
 use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
+use soroban_decimal::Decimal;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    String, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
+    Vec,
 };
 
+use crate::distribution::{calc_power, calculate_pending_rewards_deprecated};
+use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
-        calculate_pending_rewards, get_reward_history, get_total_staked_history,
-        save_reward_history, save_total_staked_history,
+        calculate_annualized_payout, get_distribution, get_reward_curve, get_withdraw_adjustment,
+        save_distribution, save_reward_curve, save_withdraw_adjustment, update_rewards,
+        withdrawable_rewards, Distribution, SHARES_SHIFT,
     },
     error::ContractError,
-    msg::{ConfigResponse, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse},
+    msg::{
+        AnnualizedReward, AnnualizedRewardsResponse, ConfigResponse, StakedResponse,
+        WithdrawableReward, WithdrawableRewardsResponse,
+    },
     storage::{
         get_config, get_stakes, save_config, save_stakes,
         utils::{
             self, add_distribution, get_admin_old, get_distributions, get_total_staked_counter,
             is_initialized, set_initialized,
         },
-        Config, Stake, ADMIN, STAKE_KEY,
+        Config, Stake, STAKE_KEY,
     },
     token_contract,
 };
+use curve::Curve;
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -31,7 +39,6 @@ contractmeta!(
 #[contract]
 pub struct Staking;
 
-#[allow(dead_code)]
 pub trait StakingTrait {
     // Sets the token contract addresses for this pool
     #[allow(clippy::too_many_arguments)]
@@ -50,11 +57,24 @@ pub trait StakingTrait {
 
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
 
+    fn unbond_deprecated(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64);
+
     fn create_distribution_flow(env: Env, sender: Address, asset: Address);
 
-    fn distribute_rewards(env: Env, sender: Address, amount: i128, reward_token: Address);
+    fn distribute_rewards(env: Env);
 
     fn withdraw_rewards(env: Env, sender: Address);
+
+    fn withdraw_rewards_deprecated(env: Env, sender: Address);
+
+    fn fund_distribution(
+        env: Env,
+        sender: Address,
+        start_time: u64,
+        distribution_duration: u64,
+        token_address: Address,
+        token_amount: i128,
+    );
 
     // QUERIES
 
@@ -66,15 +86,15 @@ pub trait StakingTrait {
 
     fn query_total_staked(env: Env) -> i128;
 
-    // fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
+    fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse;
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
 
-    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
+    fn query_withdrawable_rewards_dep(env: Env, address: Address) -> WithdrawableRewardsResponse;
 
-    // fn query_distributed_rewards(env: Env, asset: Address) -> u128;
+    fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
-    // fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
+    fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
 }
 
 #[contractimpl]
@@ -135,7 +155,7 @@ impl StakingTrait for Staking {
 
         utils::save_admin_old(&env, &admin);
         utils::init_total_staked(&env);
-        save_total_staked_history(&env, map![&env]);
+
         env.storage().persistent().set(&STAKE_KEY, &true);
 
         env.events()
@@ -163,17 +183,38 @@ impl StakingTrait for Staking {
         lp_token_client.transfer(&sender, &env.current_contract_address(), &tokens);
 
         let mut stakes = get_stakes(&env, &sender);
+        let stake = Stake {
+            stake: tokens,
+            stake_timestamp: ledger.timestamp(),
+        };
 
         stakes.total_stake = stakes.total_stake.checked_add(tokens).unwrap_or_else(|| {
             log!(&env, "Stake: Bond: overflow occured.");
             panic_with_error!(&env, ContractError::ContractMathError);
         });
-        let stake = Stake {
-            stake: tokens,
-            stake_timestamp: ledger.timestamp(),
-        };
-        stakes.stakes.push_back(stake);
+        // TODO: Discuss: Add implementation to add stake if another is present in +-24h timestamp to avoid
+        // creating multiple stakes the same day
 
+        for distribution_address in get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address);
+            let stakes: i128 = get_stakes(&env, &sender).total_stake;
+            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let stakes_sum = stakes.checked_add(tokens).unwrap_or_else(|| {
+                log!(&env, "Stake: Bond: Overflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+            let new_power = calc_power(&config, stakes_sum, Decimal::one(), TOKEN_PER_POWER);
+            update_rewards(
+                &env,
+                &sender,
+                &distribution_address,
+                &mut distribution,
+                old_power,
+                new_power,
+            );
+        }
+
+        stakes.stakes.push_back(stake);
         save_stakes(&env, &sender, &stakes);
         utils::increase_total_staked(&env, &tokens);
 
@@ -183,6 +224,66 @@ impl StakingTrait for Staking {
     }
 
     fn unbond(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
+        sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let config = get_config(&env);
+
+        // check for rewards and withdraw them
+        let found_rewards: WithdrawableRewardsResponse =
+            Self::query_withdrawable_rewards(env.clone(), sender.clone());
+
+        if !found_rewards.rewards.is_empty() {
+            Self::withdraw_rewards(env.clone(), sender.clone());
+        }
+
+        for distribution_address in get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address);
+            let stakes = get_stakes(&env, &sender).total_stake;
+            let old_power = calc_power(&config, stakes, Decimal::one(), TOKEN_PER_POWER); // while bonding we use Decimal::one()
+            let stakes_diff = stakes.checked_sub(stake_amount).unwrap_or_else(|| {
+                log!(&env, "Stake: Unbond: underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+            let new_power = calc_power(&config, stakes_diff, Decimal::one(), TOKEN_PER_POWER);
+            update_rewards(
+                &env,
+                &sender,
+                &distribution_address,
+                &mut distribution,
+                old_power,
+                new_power,
+            );
+        }
+
+        let mut stakes = get_stakes(&env, &sender);
+        remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
+        stakes.total_stake = stakes
+            .total_stake
+            .checked_sub(stake_amount)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake: Unbond: Underflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+
+        let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
+        lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
+
+        save_stakes(&env, &sender, &stakes);
+        utils::decrease_total_staked(&env, &stake_amount);
+
+        env.events().publish(("unbond", "user"), &sender);
+        env.events().publish(("unbond", "token"), &config.lp_token);
+        env.events().publish(("unbond", "amount"), stake_amount);
+    }
+
+    fn unbond_deprecated(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
         sender.require_auth();
 
         env.storage()
@@ -219,59 +320,132 @@ impl StakingTrait for Staking {
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
-        let config = get_config(&env);
-        if sender != config.manager && sender != config.owner {
+        let manager = get_config(&env).manager;
+        let owner = get_config(&env).owner;
+        if sender != manager && sender != owner {
             log!(env, "Stake: create distribution: Non-authorized creation!");
             panic_with_error!(&env, ContractError::Unauthorized);
         }
 
-        add_distribution(&env, &asset);
-        save_reward_history(&env, &asset, map![&env]);
+        let distribution = Distribution {
+            shares_per_point: 1u128,
+            shares_leftover: 0u64,
+            distributed_total: 0u128,
+            withdrawable_total: 0u128,
+            max_bonus_bps: 0u64,
+            bonus_per_day_bps: 0u64,
+        };
 
-        env.events()
-            .publish(("create_distribution_flow", "asset"), &asset);
+        let reward_token_client = token_contract::Client::new(&env, &asset);
+        // add distribution to the vector of distributions
+        add_distribution(&env, &reward_token_client.address);
+        save_distribution(&env, &reward_token_client.address, &distribution);
+        // Create the default reward distribution curve which is just a flat 0 const
+        save_reward_curve(&env, asset, &Curve::Constant(0));
+
+        env.events().publish(
+            ("create_distribution_flow", "asset"),
+            &reward_token_client.address,
+        );
     }
 
-    fn distribute_rewards(env: Env, sender: Address, amount: i128, reward_token: Address) {
-        sender.require_auth();
-
+    fn distribute_rewards(env: Env) {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
-        let config = get_config(&env);
-        if sender != config.manager && sender != config.owner {
-            log!(env, "Stake: create distribution: Non-authorized creation!");
-            panic_with_error!(&env, ContractError::Unauthorized);
-        }
-
-        if !get_distributions(&env).contains(&reward_token) {
-            log!(
-                env,
-                "Stake: Distribute rewards: No distribution for this reward token exists!"
-            );
-            panic_with_error!(&env, ContractError::DistributionNotFound);
-        }
-
-        let current_timestamp = env.ledger().timestamp();
         let total_staked_amount = get_total_staked_counter(&env);
+        let total_rewards_power = calc_power(
+            &get_config(&env),
+            total_staked_amount,
+            Decimal::one(),
+            TOKEN_PER_POWER,
+        ) as u128;
 
-        let mut total_staked_history = get_total_staked_history(&env);
-        total_staked_history.set(current_timestamp, total_staked_amount as u128);
-        save_total_staked_history(&env, total_staked_history);
+        if total_rewards_power == 0 {
+            log!(&env, "Stake: No rewards to distribute!");
+            return;
+        }
+        for distribution_address in get_distributions(&env) {
+            let mut distribution = get_distribution(&env, &distribution_address);
+            let withdrawable = distribution.withdrawable_total;
 
-        let mut reward_history = get_reward_history(&env, &reward_token);
-        reward_history.set(current_timestamp, amount as u128);
-        save_reward_history(&env, &reward_token, reward_history);
+            let reward_token_client = token_contract::Client::new(&env, &distribution_address);
+            // Undistributed rewards are simply all tokens left on the contract
+            let undistributed_rewards =
+                reward_token_client.balance(&env.current_contract_address()) as u128;
 
-        token_contract::Client::new(&env, &reward_token).transfer(
-            &sender,
-            &env.current_contract_address(),
-            &amount,
-        );
+            let curve = get_reward_curve(&env, &distribution_address).unwrap_or_else(|| {
+                log!(&env, "Stake: Distribute reward: Not reward curve exists, probably distribution haven't been created");
+                panic_with_error!(&env, ContractError::RewardCurveDoesNotExist);
+            });
 
-        env.events()
-            .publish(("distribute_rewards", "asset"), &reward_token);
+            // Calculate how much we have received since the last time Distributed was called,
+            // including only the reward config amount that is eligible for distribution.
+            // This is the amount we will distribute to all mem
+            let amount = undistributed_rewards
+                .checked_sub(withdrawable)
+                .and_then(|diff| diff.checked_sub(curve.value(env.ledger().timestamp())))
+                .unwrap_or_else(|| {
+                    log!(&env, "Stake: Distribute Rewards: Underflow occured.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
+
+            if amount == 0 {
+                continue;
+            }
+
+            let leftover: u128 = distribution.shares_leftover.into();
+            let shifted_left = amount.checked_shl(SHARES_SHIFT.into()).unwrap_or_else(|| {
+                log!(&env, "Stake: Distribute Rewards: Overflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+
+            let points = shifted_left.checked_add(leftover).unwrap_or_else(|| {
+                log!(&env, "Stake: Distribute Rewards: Overflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+            let points_per_share = points.checked_div(total_rewards_power).unwrap_or_else(|| {
+                log!(&env, "Stake: Distribute Rewards: Overflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+            distribution.shares_leftover = (points % total_rewards_power) as u64;
+
+            // Everything goes back to 128-bits/16-bytes
+            // Full amount is added here to total withdrawable, as it should not be considered on its own
+            // on future distributions - even if because of calculation offsets it is not fully
+            // distributed, the error is handled by leftover.
+            distribution.shares_per_point = distribution
+                .shares_per_point
+                .checked_add(points_per_share)
+                .unwrap_or_else(|| {
+                    log!(&env, "Stake: Distribute Rewards: Overflow occured.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
+            distribution.distributed_total = distribution
+                .distributed_total
+                .checked_add(amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Stake: Distribute Rewards: Overflow occured.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
+            distribution.withdrawable_total = distribution
+                .withdrawable_total
+                .checked_add(amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Stake: Distribute Rewards: Overflow occured.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
+
+            save_distribution(&env, &distribution_address, &distribution);
+
+            env.events().publish(
+                ("distribute_rewards", "asset"),
+                &reward_token_client.address,
+            );
+            env.events()
+                .publish(("distribute_rewards", "amount"), amount);
+        }
     }
 
     fn withdraw_rewards(env: Env, sender: Address) {
@@ -280,11 +454,65 @@ impl StakingTrait for Staking {
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         env.events().publish(("withdraw_rewards", "user"), &sender);
+        let config = get_config(&env);
+
+        for distribution_address in get_distributions(&env) {
+            // get distribution data for the given reward
+            let mut distribution = get_distribution(&env, &distribution_address);
+            // get withdraw adjustment for the given distribution
+            let mut withdraw_adjustment =
+                get_withdraw_adjustment(&env, &sender, &distribution_address);
+            // calculate current reward amount given the distribution and subtracting withdraw
+            // adjustments
+            let reward_amount =
+                withdrawable_rewards(&env, &sender, &distribution, &withdraw_adjustment, &config);
+
+            if reward_amount == 0 {
+                continue;
+            }
+            withdraw_adjustment.withdrawn_rewards = withdraw_adjustment
+                .withdrawn_rewards
+                .checked_add(reward_amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Stake: Withdraw Rewards: Overflow occured.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
+            distribution.withdrawable_total = distribution
+                .withdrawable_total
+                .checked_sub(reward_amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Stake: Withdraw Rewards: Underflow occured.");
+                    panic_with_error!(&env, ContractError::ContractMathError);
+                });
+
+            save_distribution(&env, &distribution_address, &distribution);
+            save_withdraw_adjustment(&env, &sender, &distribution_address, &withdraw_adjustment);
+
+            let reward_token_client = token_contract::Client::new(&env, &distribution_address);
+            reward_token_client.transfer(
+                &env.current_contract_address(),
+                &sender,
+                &(reward_amount as i128),
+            );
+
+            env.events().publish(
+                ("withdraw_rewards", "reward_token"),
+                &reward_token_client.address,
+            );
+            env.events()
+                .publish(("withdraw_rewards", "reward_amount"), reward_amount);
+        }
+    }
+
+    fn withdraw_rewards_deprecated(env: Env, sender: Address) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         let mut stakes = get_stakes(&env, &sender);
 
         for asset in get_distributions(&env) {
-            let pending_reward = calculate_pending_rewards(&env, &asset, &stakes);
+            let pending_reward = calculate_pending_rewards_deprecated(&env, &asset, &stakes);
             env.events()
                 .publish(("withdraw_rewards", "reward_token"), &asset);
 
@@ -294,8 +522,101 @@ impl StakingTrait for Staking {
                 &pending_reward,
             );
         }
+
         stakes.last_reward_time = env.ledger().timestamp();
         save_stakes(&env, &sender, &stakes);
+    }
+
+    fn fund_distribution(
+        env: Env,
+        sender: Address,
+        start_time: u64,
+        distribution_duration: u64,
+        token_address: Address,
+        token_amount: i128,
+    ) {
+        sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        // Load previous reward curve; it must exist if the distribution exists
+        // In case of first time funding, it will be a constant 0 curve
+        let previous_reward_curve = get_reward_curve(&env, &token_address).expect("Stake: Fund distribution: Not reward curve exists, probably distribution haven't been created");
+        let max_complexity = get_config(&env).max_complexity;
+
+        let current_time = env.ledger().timestamp();
+        if start_time < current_time {
+            log!(
+                &env,
+                "Stake: Fund distribution: Fund distribution start time is too early"
+            );
+            panic_with_error!(&env, ContractError::InvalidTime);
+        }
+
+        let config = get_config(&env);
+        if config.min_reward > token_amount {
+            log!(
+                &env,
+                "Stake: Fund distribution: minimum reward amount not reached",
+            );
+            panic_with_error!(&env, ContractError::MinRewardNotEnough);
+        }
+
+        // transfer tokens to fund distribution
+        let reward_token_client = token_contract::Client::new(&env, &token_address);
+        reward_token_client.transfer(&sender, &env.current_contract_address(), &token_amount);
+
+        let end_time = current_time
+            .checked_add(distribution_duration)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake: Fund Distribution: Overflow occured.");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+        // define a distribution curve starting at start_time with token_amount of tokens
+        // and ending at end_time with 0 tokens
+        let new_reward_distribution =
+            Curve::saturating_linear((start_time, token_amount as u128), (end_time, 0));
+
+        // Validate the the curve locks at most the amount provided and
+        // also fully unlocks all rewards sent
+        let (min, max) = new_reward_distribution.range();
+        if min != 0 || max > token_amount as u128 {
+            log!(&env, "Stake: Fund distribution: Rewards validation failed");
+            panic_with_error!(&env, ContractError::RewardsInvalid);
+        }
+
+        let new_reward_curve: Curve;
+        // if the previous reward curve has ended, we can just use the new curve
+        match previous_reward_curve.end() {
+            Some(end_distribution_timestamp) if end_distribution_timestamp < current_time => {
+                new_reward_curve = new_reward_distribution;
+            }
+            _ => {
+                // if the previous distribution is still ongoing, we need to combine the two
+                new_reward_curve = previous_reward_curve.combine(&env, &new_reward_distribution);
+                new_reward_curve
+                    .validate_complexity(max_complexity)
+                    .unwrap_or_else(|_| {
+                        log!(
+                            &env,
+                            "Stake: Fund distribution: Curve complexity validation failed"
+                        );
+                        panic_with_error!(&env, ContractError::InvalidMaxComplexity);
+                    });
+            }
+        }
+
+        save_reward_curve(&env, token_address.clone(), &new_reward_curve);
+
+        env.events()
+            .publish(("fund_distribution", "asset"), &token_address);
+        env.events()
+            .publish(("fund_distribution", "amount"), token_amount);
+        env.events()
+            .publish(("fund_distribution", "start_time"), start_time);
+        env.events()
+            .publish(("fund_distribution", "end_time"), end_time);
     }
 
     // QUERIES
@@ -320,11 +641,8 @@ impl StakingTrait for Staking {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-        let stakes = get_stakes(&env, &address);
         StakedResponse {
-            stakes: stakes.stakes,
-            total_stake: stakes.total_stake,
-            last_reward_time: stakes.last_reward_time,
+            stakes: get_stakes(&env, &address).stakes,
         }
     }
 
@@ -335,28 +653,69 @@ impl StakingTrait for Staking {
         get_total_staked_counter(&env)
     }
 
-    // fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
-    //     let mut aprs = vec![&env];
-    //     let total_stake_amount = get_total_staked_counter(&env);
-    //     let apr_fn_arg: Val = total_stake_amount.into_val(&env);
+    fn query_annualized_rewards(env: Env) -> AnnualizedRewardsResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        let now = env.ledger().timestamp();
+        let mut aprs = vec![&env];
+        let config = get_config(&env);
+        let total_stake_amount = get_total_staked_counter(&env);
 
-    //     for asset in get_distributions(&env) {
-    //         let apr: AnnualizedReward = env.invoke_contract(
-    //             &distribution_address,
-    //             &Symbol::new(&env, "query_annualized_reward"),
-    //             vec![&env, apr_fn_arg],
-    //         );
+        for distribution_address in get_distributions(&env) {
+            let total_stake_power =
+                calc_power(&config, total_stake_amount, Decimal::one(), TOKEN_PER_POWER);
+            if total_stake_power == 0 {
+                aprs.push_back(AnnualizedReward {
+                    asset: distribution_address.clone(),
+                    amount: String::from_str(&env, "0"),
+                });
+                continue;
+            }
 
-    //         aprs.push_back(AnnualizedReward {
-    //             asset,
-    //             amount: apr.amount,
-    //         });
-    //     }
+            // get distribution data for the given reward
+            let distribution = get_distribution(&env, &distribution_address);
+            let curve = get_reward_curve(&env, &distribution_address);
+            let annualized_payout = calculate_annualized_payout(curve, now);
+            let apr = annualized_payout
+                / (total_stake_power as u128 * distribution.shares_per_point) as i128;
 
-    //     AnnualizedRewardsResponse { rewards: aprs }
-    // }
+            aprs.push_back(AnnualizedReward {
+                asset: distribution_address.clone(),
+                amount: apr.to_string(&env),
+            });
+        }
+
+        AnnualizedRewardsResponse { rewards: aprs }
+    }
 
     fn query_withdrawable_rewards(env: Env, user: Address) -> WithdrawableRewardsResponse {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let config = get_config(&env);
+        // iterate over all distributions and calculate withdrawable rewards
+        let mut rewards = vec![&env];
+        for distribution_address in get_distributions(&env) {
+            // get distribution data for the given reward
+            let distribution = get_distribution(&env, &distribution_address);
+            // get withdraw adjustment for the given distribution
+            let withdraw_adjustment = get_withdraw_adjustment(&env, &user, &distribution_address);
+            // calculate current reward amount given the distribution and subtracting withdraw
+            // adjustments
+            let reward_amount =
+                withdrawable_rewards(&env, &user, &distribution, &withdraw_adjustment, &config);
+            rewards.push_back(WithdrawableReward {
+                reward_address: distribution_address,
+                reward_amount,
+            });
+        }
+
+        WithdrawableRewardsResponse { rewards }
+    }
+
+    fn query_withdrawable_rewards_dep(env: Env, user: Address) -> WithdrawableRewardsResponse {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
@@ -364,7 +723,7 @@ impl StakingTrait for Staking {
         // iterate over all distributions and calculate withdrawable rewards
         let mut rewards = vec![&env];
         for asset in get_distributions(&env) {
-            let pending_reward = calculate_pending_rewards(&env, &asset, &stakes);
+            let pending_reward = calculate_pending_rewards_deprecated(&env, &asset, &stakes);
 
             rewards.push_back(WithdrawableReward {
                 reward_address: asset,
@@ -374,34 +733,34 @@ impl StakingTrait for Staking {
 
         WithdrawableRewardsResponse { rewards }
     }
-    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
-        let admin = get_admin_old(&env);
-        env.storage().instance().set(&ADMIN, &admin);
 
-        Ok(())
+    fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        let distribution = get_distribution(&env, &asset);
+        distribution.distributed_total
     }
 
-    // fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
-    //     let staking_rewards = find_stake_rewards_by_asset(&env, &asset).unwrap();
-    //     let unds_rew_fn_arg: Val = asset.into_val(&env);
-    //     let ret: u128 = env.invoke_contract(
-    //         &staking_rewards,
-    //         &Symbol::new(&env, "query_distributed_reward"),
-    //         vec![&env, unds_rew_fn_arg],
-    //     );
-    //     ret
-    // }
+    fn query_undistributed_rewards(env: Env, asset: Address) -> u128 {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        let distribution = get_distribution(&env, &asset);
+        let reward_token_client = token_contract::Client::new(&env, &asset);
+        let reward_token_balance =
+            reward_token_client.balance(&env.current_contract_address()) as u128;
 
-    // fn query_undistributed_rewards(env: Env, asset: Address) -> u128 {
-    //     let staking_rewards = find_stake_rewards_by_asset(&env, &asset).unwrap();
-    //     let unds_rew_fn_arg: Val = asset.into_val(&env);
-    //     let ret: u128 = env.invoke_contract(
-    //         &staking_rewards,
-    //         &Symbol::new(&env, "query_undistributed_reward"),
-    //         vec![&env, unds_rew_fn_arg],
-    //     );
-    //     ret
-    // }
+        reward_token_balance
+            .checked_sub(distribution.withdrawable_total)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Stake: Query Undistributed Rewards: underflow occured."
+                );
+                panic_with_error!(&env, ContractError::ContractMathError);
+            })
+    }
 }
 
 #[contractimpl]
@@ -410,6 +769,7 @@ impl Staking {
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin_old(&env);
         admin.require_auth();
+
         env.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 
@@ -418,11 +778,32 @@ impl Staking {
         String::from_str(&env, env!("CARGO_PKG_VERSION"))
     }
 
-    #[allow(dead_code)]
     //TODO: Remove after we've added the key to storage
+    #[allow(dead_code)]
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&STAKE_KEY, &true);
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn migrate_distributions(env: Env) {
+        let distributions = get_distributions(&env);
+
+        distributions.iter().for_each(|distribution_addr| {
+            save_distribution(
+                &env,
+                &distribution_addr,
+                &Distribution {
+                    shares_per_point: 1u128,
+                    shares_leftover: 0u64,
+                    distributed_total: 0u128,
+                    withdrawable_total: 0u128,
+                    max_bonus_bps: 0u64,
+                    bonus_per_day_bps: 0u64,
+                },
+            );
+            save_reward_curve(&env, distribution_addr, &Curve::Constant(0));
+        })
     }
 }
 

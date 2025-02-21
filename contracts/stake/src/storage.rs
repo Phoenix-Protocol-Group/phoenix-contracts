@@ -1,7 +1,7 @@
 use phoenix::ttl::{PERSISTENT_RENEWAL_THRESHOLD, PERSISTENT_TARGET_TTL};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
-use crate::stake_rewards_contract;
+#[allow(dead_code)]
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const STAKE_KEY: Symbol = symbol_short!("STAKE");
 
@@ -114,7 +114,7 @@ pub mod utils {
         TotalStaked = 1,
         Distributions = 2,
         Initialized = 3,
-        StakeRewards = 4,
+        StakeRewards = 4, // maybe deprecated
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -188,9 +188,13 @@ pub mod utils {
 
     pub fn increase_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
+        let new_sum = count.checked_add(*amount).unwrap_or_else(|| {
+            log!(&e, "Stake: Increase Total Staked: Overflow occured.");
+            panic_with_error!(&e, ContractError::ContractMathError);
+        });
         e.storage()
             .persistent()
-            .set(&DataKey::TotalStaked, &(count + amount));
+            .set(&DataKey::TotalStaked, &new_sum);
 
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
@@ -201,9 +205,14 @@ pub mod utils {
 
     pub fn decrease_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
+
+        let new_diff = count.checked_sub(*amount).unwrap_or_else(|| {
+            log!(&e, "Stake: Increase Total Staked: Overflow occured.");
+            panic_with_error!(&e, ContractError::ContractMathError);
+        });
         e.storage()
             .persistent()
-            .set(&DataKey::TotalStaked, &(count - amount));
+            .set(&DataKey::TotalStaked, &new_diff);
 
         e.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
@@ -217,7 +226,11 @@ pub mod utils {
             .storage()
             .persistent()
             .get(&DataKey::TotalStaked)
-            .unwrap();
+            // or maybe .unwrap_or(0)
+            .unwrap_or_else(|| {
+                log!(&env, "Stake: Get Total Staked Counter: No value found");
+                panic_with_error!(&env, ContractError::StakeNotFound);
+            });
         env.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
             PERSISTENT_RENEWAL_THRESHOLD,
@@ -230,11 +243,9 @@ pub mod utils {
     // Keep track of all distributions to be able to iterate over them
     pub fn add_distribution(e: &Env, asset: &Address) {
         let mut distributions = get_distributions(e);
-        for old_asset in distributions.clone() {
-            if &old_asset == asset {
-                log!(&e, "Stake: Add distribution: Distribution already added");
-                panic_with_error!(&e, ContractError::DistributionExists);
-            }
+        if distributions.contains(asset) {
+            log!(&e, "Stake: Add distribution: Distribution already added");
+            panic_with_error!(&e, ContractError::DistributionExists);
         }
         distributions.push_back(asset.clone());
         e.storage()
@@ -265,55 +276,5 @@ pub mod utils {
             });
 
         distributions
-    }
-}
-
-// Implement `From` trait for conversion between `BondingInfo` structs
-impl From<BondingInfo> for stake_rewards_contract::BondingInfo {
-    fn from(info: BondingInfo) -> Self {
-        let mut stakes = Vec::new(info.stakes.env());
-        for stake in info.stakes.iter() {
-            stakes.push_back(stake.into());
-        }
-        stake_rewards_contract::BondingInfo {
-            stakes,
-            reward_debt: info.reward_debt,
-            last_reward_time: info.last_reward_time,
-            total_stake: info.total_stake,
-        }
-    }
-}
-
-impl From<stake_rewards_contract::BondingInfo> for BondingInfo {
-    fn from(info: stake_rewards_contract::BondingInfo) -> Self {
-        let mut stakes = Vec::new(info.stakes.env());
-        for stake in info.stakes.iter() {
-            stakes.push_back(stake.into());
-        }
-        BondingInfo {
-            stakes,
-            reward_debt: info.reward_debt,
-            last_reward_time: info.last_reward_time,
-            total_stake: info.total_stake,
-        }
-    }
-}
-
-// Implement `From` trait for conversion between `Stake` structs
-impl From<Stake> for stake_rewards_contract::Stake {
-    fn from(stake: Stake) -> Self {
-        stake_rewards_contract::Stake {
-            stake: stake.stake,
-            stake_timestamp: stake.stake_timestamp,
-        }
-    }
-}
-
-impl From<stake_rewards_contract::Stake> for Stake {
-    fn from(stake: stake_rewards_contract::Stake) -> Self {
-        Stake {
-            stake: stake.stake,
-            stake_timestamp: stake.stake_timestamp,
-        }
     }
 }
