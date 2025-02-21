@@ -2,12 +2,13 @@ use phoenix::ttl::{
     INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
     PERSISTENT_TARGET_TTL,
 };
+use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
     Vec,
 };
 
-use crate::distribution::{calc_power, calculate_pending_rewards_deprecated};
+use crate::distribution::{calc_power, calculate_pending_rewards_deprecated, DistributionDataKey};
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
@@ -806,6 +807,9 @@ impl Staking {
             );
             save_reward_curve(&env, distribution_addr, &Curve::Constant(0));
         })
+    }
+
+    #[allow(dead_code)]
     pub fn extend_all_ttl(env: Env) -> Result<(), ContractError> {
         env.storage()
             .instance()
