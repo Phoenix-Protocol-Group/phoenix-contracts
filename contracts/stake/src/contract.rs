@@ -1,8 +1,8 @@
 use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
 use soroban_decimal::Decimal;
 use soroban_sdk::{
-    contract, contractimpl, contractmeta, log, map, panic_with_error, vec, Address, BytesN, Env,
-    String, Vec,
+    contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
+    Vec,
 };
 
 use crate::distribution::{calc_power, calculate_pending_rewards_deprecated};
