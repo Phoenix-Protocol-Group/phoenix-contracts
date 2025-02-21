@@ -27,8 +27,8 @@ const SECONDS_PER_YEAR: u64 = 365 * 24 * 60 * 60;
 #[derive(Clone)]
 #[contracttype]
 pub struct WithdrawAdjustmentKey {
-    user: Address,
-    asset: Address,
+    pub user: Address,
+    pub asset: Address,
 }
 
 #[derive(Clone)]

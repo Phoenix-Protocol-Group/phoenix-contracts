@@ -10,7 +10,10 @@ use soroban_sdk::{
     Vec,
 };
 
-use crate::distribution::{calc_power, calculate_pending_rewards_deprecated, DistributionDataKey};
+use crate::distribution::{
+    calc_power, calculate_pending_rewards_deprecated, DistributionDataKey, WithdrawAdjustmentKey,
+};
+use crate::storage::CONFIG;
 use crate::storage::PENDING_ADMIN;
 use crate::TOKEN_PER_POWER;
 use crate::{
@@ -904,6 +907,13 @@ impl Staking {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        env.storage().persistent().extend_ttl(
+            &CONFIG,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
         // DataKey
         for key in &[
             DataKey::Admin,
@@ -929,6 +939,21 @@ impl Staking {
     }
 
     #[allow(dead_code)]
+    pub fn extend_stakes_for_addr(env: Env, key: Address) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        env.storage().persistent().extend_ttl(
+            &key,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
     pub fn extend_distribution_reward_ttl(env: Env, address: Address) -> Result<(), ContractError> {
         env.storage()
             .instance()
@@ -936,6 +961,57 @@ impl Staking {
 
         env.storage().persistent().extend_ttl(
             &DistributionDataKey::RewardHistory(address),
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn extend_curve_ttl(env: Env, address: Address) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        env.storage().persistent().extend_ttl(
+            &DistributionDataKey::Curve(address),
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn extend_distribution_ttl(env: Env, address: Address) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        env.storage().persistent().extend_ttl(
+            &DistributionDataKey::Distribution(address),
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn extend_withdraw_adjustment_ttl(
+        env: Env,
+        user: Address,
+        asset: Address,
+    ) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let key = WithdrawAdjustmentKey { user, asset };
+
+        env.storage().persistent().extend_ttl(
+            &DistributionDataKey::WithdrawAdjustment(key),
             PERSISTENT_RENEWAL_THRESHOLD,
             PERSISTENT_TARGET_TTL,
         );
