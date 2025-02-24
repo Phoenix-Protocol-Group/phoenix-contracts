@@ -935,6 +935,16 @@ impl Staking {
             PERSISTENT_TARGET_TTL,
         );
 
+        let distribution_list = get_distributions(&env);
+
+        for distribution_addr in distribution_list {
+            env.storage().persistent().extend_ttl(
+                &DistributionDataKey::Distribution(distribution_addr),
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+        }
+
         Ok(())
     }
 
@@ -976,21 +986,6 @@ impl Staking {
 
         env.storage().persistent().extend_ttl(
             &DistributionDataKey::Curve(address),
-            PERSISTENT_RENEWAL_THRESHOLD,
-            PERSISTENT_TARGET_TTL,
-        );
-
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub fn extend_distribution_ttl(env: Env, address: Address) -> Result<(), ContractError> {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-
-        env.storage().persistent().extend_ttl(
-            &DistributionDataKey::Distribution(address),
             PERSISTENT_RENEWAL_THRESHOLD,
             PERSISTENT_TARGET_TTL,
         );
