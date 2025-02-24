@@ -4,8 +4,8 @@ use crate::{
     storage::{
         get_config, get_lp_vec, get_stable_wasm_hash, is_initialized, save_config, save_lp_vec,
         save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
-        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
-        FACTORY_KEY,
+        DataKey, LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio,
+        ADMIN, FACTORY_KEY, STABLE_WASM_HASH,
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
     ConvertVec,
@@ -537,8 +537,64 @@ impl Factory {
 
     #[allow(dead_code)]
     //TODO: Remove after we've added the key to storage
-    pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
+    pub fn add_contract_name_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&FACTORY_KEY, &true);
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn extend_all_ttl(env: Env) -> Result<(), ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        // extend all datakeys
+        for key in &[DataKey::Config, DataKey::LpVec, DataKey::Initialized] {
+            env.storage().persistent().extend_ttl(
+                key,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+        }
+
+        // extend the stable wasm hash storage
+        env.storage().persistent().extend_ttl(
+            &STABLE_WASM_HASH,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
+        // extend all Pair Tuple Keys
+        let vec_of_pool_infos = Self::query_all_pools_details(env.clone());
+
+        // get all the keys we have created
+        let mut vec_of_pair_tuple_keys: Vec<(Address, Address)> = Vec::new(&env);
+        for pool_info in vec_of_pool_infos.iter() {
+            let asset_a_address = pool_info.pool_response.asset_a.address.clone();
+            let asset_b_address = pool_info.pool_response.asset_b.address.clone();
+
+            vec_of_pair_tuple_keys.push_back((asset_a_address, asset_b_address));
+        }
+
+        //extend them
+        vec_of_pair_tuple_keys.iter().for_each(|tuple| {
+            let current_key = PairTupleKey {
+                token_a: tuple.0.clone(),
+                token_b: tuple.1.clone(),
+            };
+            env.storage().persistent().extend_ttl(
+                &current_key,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+        });
+
+        env.storage().persistent().extend_ttl(
+            &FACTORY_KEY,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+
         Ok(())
     }
 }
@@ -585,6 +641,7 @@ fn validate_pool_info(pool_type: &PoolType, amp: &Option<u64>) {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use soroban_sdk::{testutils::Address as _, Address, String};
 

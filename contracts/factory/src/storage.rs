@@ -47,7 +47,7 @@ pub struct Config {
     pub lp_token_decimals: u32,
 }
 
-const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
+pub const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
 
 pub fn save_stable_wasm_hash(env: &Env, hash: BytesN<32>) {
     env.storage().persistent().set(&STABLE_WASM_HASH, &hash);

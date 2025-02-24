@@ -9,6 +9,8 @@ use soroban_decimal::Decimal;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const XYK_POOL_KEY: Symbol = symbol_short!("XYK_POOL");
+pub const CONFIG: Symbol = symbol_short!("CONFIG");
+pub const DEFAULT_SLIPPAGE_BPS: Symbol = symbol_short!("DSLIPBPS");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -54,9 +56,7 @@ pub struct Config {
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
 }
-const CONFIG: Symbol = symbol_short!("CONFIG");
 
-const DEFAULT_SLIPPAGE_BPS: Symbol = symbol_short!("DSLIPBPS");
 pub fn save_default_slippage_bps(env: &Env, bps: i64) {
     env.storage().persistent().set(&DEFAULT_SLIPPAGE_BPS, &bps);
     env.storage().persistent().extend_ttl(
