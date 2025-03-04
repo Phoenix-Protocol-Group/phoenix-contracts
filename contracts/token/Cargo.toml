@@ -11,5 +11,30 @@ crate-type = ["cdylib"]
 soroban-sdk = { workspace = true }
 soroban-token-sdk = { workspace = true }
 
+cvlr = {git = "https://github.com/Certora/cvlr.git",  default-features=false}
+cvlr-soroban = {git = "https://github.com/Certora/cvlr-soroban.git"}
+cvlr-soroban-derive = {git = "https://github.com/Certora/cvlr-soroban.git"}
+cvlr-soroban-macros = {git = "https://github.com/Certora/cvlr-soroban.git"}
+
+certora = {git = "https://github.com/Certora/solana-cvt.git", branch="dev-soroban", default-features=false, features=[]}
+certora-soroban = {git = "https://github.com/Certora/solana-cvt.git", branch="dev-soroban", default-features=false}
+certora-soroban-macros = {git = "https://github.com/Certora/solana-cvt.git", branch="dev-soroban", default-features=false}
+
+[features]
+certora = []
+
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+
+[profile.release-with-logs]
+inherits = "release"
+debug-assertions = true
