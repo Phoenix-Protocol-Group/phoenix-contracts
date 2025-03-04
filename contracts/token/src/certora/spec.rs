@@ -1,7 +1,8 @@
 #![no_std]
 use soroban_sdk::{Address, Env};
 
-use crate::Token;
+use crate::contract::Token;
+use soroban_sdk::token::TokenInterface;
 
 use cvlr::asserts::{cvlr_assert, cvlr_assume, cvlr_satisfy};
 use cvlr_soroban_derive::rule;
@@ -13,7 +14,7 @@ use certora_soroban::{certora_print_i64, is_auth, CERTORA_calltrace_print_c_i64}
 // Exercise 0
 #[rule]
 fn sanity(e: Env, addr: Address) {
-    let balance = Token::balance(&e, addr);
+    let balance = Token::balance(e, addr);
     cvlr_satisfy!(true);
 }
 
@@ -27,9 +28,9 @@ fn sanity(e: Env, addr: Address) {
 fn init_balance(e: Env, addr: Address) {
     // precondition macro
     cvlr_assume!(!e.storage().persistent().has(&addr));
-    let balance = Token::balance(&e, addr);
+    let balance = Token::balance(e, addr);
     // use this macro to see additional information in the calltrace
-    certora_print_i64!("value of balance is:", balance);
+    certora_print_i64!("value of balance is:", balance as i64);
     // postcondition macro
     cvlr_assert!(balance == 1);
 }
