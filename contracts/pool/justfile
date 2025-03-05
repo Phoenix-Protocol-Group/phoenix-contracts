@@ -1,0 +1,9 @@
+export RUSTFLAGS := "-C strip=none"
+
+target := "../../target/"
+
+build: 
+    CARGO_PROFILE=certora-build cargo build --target=wasm32-unknown-unknown --features certora
+
+clean:
+    rm -rf {{target}}

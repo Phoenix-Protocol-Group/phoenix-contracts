@@ -11,12 +11,22 @@ crate-type = ["cdylib"]
 
 [features]
 testutils = ["soroban-sdk/testutils"]
+certora = []
 
 [dependencies]
 soroban-decimal = { workspace = true }
 phoenix = { workspace = true }
 num-integer = { workspace = true }
 soroban-sdk = { workspace = true }
+
+cvlr = { workspace = true }
+cvlr-soroban = { workspace = true }
+cvlr-soroban-derive = { workspace = true }
+cvlr-soroban-macros = { workspace = true }
+
+certora = { workspace = true }
+certora-soroban = { workspace = true }
+certora-soroban-macros = { workspace = true }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
