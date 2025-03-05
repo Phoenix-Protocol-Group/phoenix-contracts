@@ -43,13 +43,7 @@ lto = true
 inherits = "release"
 debug-assertions = true
 
-[profile.certora-build]
+[profile.certora]
 inherits = "release"
-opt-level = "z"
-overflow-checks = true
-debug = 0
-debug-assertions = false
-panic = "abort"
-codegen-units = 1
-lto = true
-
+strip = false
+debug = 2
