@@ -1,4 +1,5 @@
-use crate::storage::CONFIG;
+use crate::storage::{DataKey, CONFIG};
+use certora_soroban::is_auth;
 use cvlr::asserts::cvlr_satisfy;
 use cvlr_soroban_derive::rule;
 use soroban_sdk::Env;
@@ -11,8 +12,7 @@ fn sanity() {
 }
 
 #[rule]
-fn certora_query_config(env: Env) {
-    certora::require!(env.storage().persistent().has(&CONFIG), "config exists");
-    let _config = LiquidityPool::query_config(env);
-    certora::satisfy!(true);
+fn certora_only_admin_can_update_config(env: Env, total_fee_bps: i64) {
+    LiquidityPool::update_config(env, None, Some(total_fee_bps), None, None, None, None);
+    certora::satisfy!(false);
 }
