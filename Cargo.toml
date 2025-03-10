@@ -46,4 +46,3 @@ debug-assertions = true
 [profile.certora]
 inherits = "release"
 strip = false
-debug = 2

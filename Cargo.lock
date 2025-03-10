@@ -1521,6 +1521,13 @@ dependencies = [
 name = "soroban-token-contract"
 version = "0.0.6"
 dependencies = [
+ "certora",
+ "certora-soroban",
+ "certora-soroban-macros",
+ "cvlr",
+ "cvlr-soroban",
+ "cvlr-soroban-derive",
+ "cvlr-soroban-macros",
  "soroban-sdk",
  "soroban-token-sdk",
 ]
