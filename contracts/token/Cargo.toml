@@ -7,9 +7,22 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+certora = []
+
 [dependencies]
 soroban-sdk = { workspace = true }
 soroban-token-sdk = { workspace = true }
+
+cvlr = { workspace = true }
+cvlr-soroban = { workspace = true }
+cvlr-soroban-derive = { workspace = true }
+cvlr-soroban-macros = { workspace = true }
+
+certora = { workspace = true }
+certora-soroban = { workspace = true }
+certora-soroban-macros = { workspace = true }
+
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
