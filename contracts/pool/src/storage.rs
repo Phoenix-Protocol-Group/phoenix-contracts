@@ -54,7 +54,7 @@ pub struct Config {
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
 }
-const CONFIG: Symbol = symbol_short!("CONFIG");
+pub(crate) const CONFIG: Symbol = symbol_short!("CONFIG");
 
 const DEFAULT_SLIPPAGE_BPS: Symbol = symbol_short!("DSLIPBPS");
 pub fn save_default_slippage_bps(env: &Env, bps: i64) {

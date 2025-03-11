@@ -1,4 +1,5 @@
 #![no_std]
+mod certora;
 mod contract;
 mod error;
 mod storage;
