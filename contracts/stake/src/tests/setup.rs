@@ -35,7 +35,7 @@ mod old_stake {
 
 #[allow(dead_code)]
 fn install_stake_latest_wasm(env: &Env) -> BytesN<32> {
-    env.deployer().upload_contract_wasm(stake_latest::WASM)
+    env.deployer().upload_contract_wasm(latest_stake::WASM)
 }
 
 const MIN_BOND: i128 = 1000;
