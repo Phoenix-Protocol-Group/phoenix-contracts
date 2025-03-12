@@ -1657,7 +1657,7 @@ fn simple_swap_with_biggest_possible_decimal_precision() {
 }
 
 #[test]
-fn simple_swap_replica_of_live_pools_xlm_usdc() {
+fn swap_with_smaller_amounts() {
     let env = Env::default();
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
@@ -1783,13 +1783,127 @@ fn simple_swap_replica_of_live_pools_xlm_usdc() {
     assert_eq!(usdc_client.balance(&user), usdc_received);
 
     // This time swapping 0.1 tokens of $USDC to $XLM
+    usdc_client.mint(&user, &10_000_000); // minting 1 $USDC to user before the swap
+
+    // just the reverse swap should work
     let _ = pool.swap(
         &user,
         &usdc_client.address,
         &swap_amount,
         &None,
-        &Some(200), // 2% spread as allowed
+        &Some(200),
         &None::<u64>,
         &None,
+    );
+}
+
+#[test]
+fn simple_swap_replica_of_live_pools_xlm_usdc() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let mut xlm_client = deploy_token_contract(&env, &Address::generate(&env));
+    let mut usdc_client = deploy_token_contract(&env, &Address::generate(&env));
+    if usdc_client.address < xlm_client.address {
+        std::mem::swap(&mut xlm_client, &mut usdc_client);
+    }
+
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+    let liquidity_provider = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    // liquidity pool with 1% swap fees (100 bps)
+    let swap_fees = 100i64; // 1% bps
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&xlm_client.address, &usdc_client.address),
+        swap_fees,
+        Address::generate(&env),
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    let initial_liquidity = 2_500_000_000_000_i128;
+    xlm_client.mint(&liquidity_provider, &(4 * initial_liquidity));
+    usdc_client.mint(&liquidity_provider, &initial_liquidity);
+
+    // Provide liquidity to the pool
+    pool.provide_liquidity(
+        &liquidity_provider,
+        &Some(4 * initial_liquidity), // 1_000_000 XLM
+        &Some(4 * initial_liquidity), // 250_000 USDC
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &None,
+        &None::<u64>,
+    );
+
+    // swap 100_000 units (0.1) of XLM in a 1:4 pool with 1% protocol fee
+    let offer_amount = 100_000i128;
+    xlm_client.mint(&user, &offer_amount);
+
+    let result = pool.swap(
+        &user,
+        &xlm_client.address,
+        &offer_amount,
+        &None,
+        &None,
+        &None::<u64>,
+        &None,
+    );
+
+    // calculate the expected output amount using the constant product formula:
+    // Y_new = (X_in * Y_old) / (X_in + X_old)
+    // X_in = 100_000 (offer amount)
+    // X_old = 4 * initial_liquidity = 10_000_000_000_000 (XLM reserve)
+    // Y_old = initial_liquidity = 2_500_000_000_000 (USDC reserve)
+    // Y_new = (100_000 * 2_500_000_000_000) / (100_000 + 10_000_000_000_000)
+    // Y_new = 272_727.27 (rounded to 272_728 due to integer division)
+    let output_amount = (offer_amount * initial_liquidity) / (offer_amount + 4 * initial_liquidity);
+
+    let fees = Decimal::percent(1) * output_amount;
+
+    let expected_net_amount = output_amount - fees;
+    assert_eq!(
+        result, expected_net_amount,
+        "First swap result does not match expected net amount"
+    );
+
+    usdc_client.mint(&user, &(output_amount - fees));
+
+    // reverse swap (USDC -> XLM)
+    let result = pool.swap(
+        &user,
+        &usdc_client.address,
+        &(output_amount - fees),
+        &None,
+        &None,
+        &None::<u64>,
+        &None,
+    );
+
+    // X_new = (Y_in * X_old) / (Y_in + Y_old)
+    // Y_in = output_amount - fees (USDC being swapped)
+    // Y_old = initial_liquidity - output_amount (remaining USDC reserve after first swap)
+    // X_old = 4 * initial_liquidity + offer_amount (updated XLM reserve after first swap)
+    // X_new = ((output_amount - fees) * (4 * initial_liquidity + offer_amount)) / ((output_amount - fees) + (initial_liquidity - output_amount))
+    let y_in = output_amount - fees;
+    let y_old = initial_liquidity - output_amount;
+    let x_old = 4 * initial_liquidity + offer_amount;
+    let reverse_output_amount = (y_in * x_old) / (y_in + y_old);
+
+    let reverse_fees = Decimal::percent(1) * reverse_output_amount;
+
+    // Assert the result of the second swap with rounding
+    let reverse_expected_net_amount = reverse_output_amount - reverse_fees + 1;
+    assert_eq!(
+        result,
+        reverse_expected_net_amount, // due to rounding
+        "Second swap result does not match expected net amount"
     );
 }
