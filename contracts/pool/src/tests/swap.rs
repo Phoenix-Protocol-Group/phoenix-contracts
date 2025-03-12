@@ -1655,3 +1655,141 @@ fn simple_swap_with_biggest_possible_decimal_precision() {
     assert_eq!(token1.balance(&user1), 349_000_000_000_001_000i128);
     assert_eq!(token2.balance(&user1), 687_461_538_461_539_462i128);
 }
+
+#[test]
+fn simple_swap_replica_of_live_pools_xlm_usdc() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let mut usdc_client = deploy_token_contract(&env, &admin);
+    let mut xlm_client = deploy_token_contract(&env, &admin);
+
+    if xlm_client.address < usdc_client.address {
+        std::mem::swap(&mut usdc_client, &mut xlm_client);
+    }
+
+    let user = Address::generate(&env);
+    let lp_provider = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&usdc_client.address, &xlm_client.address),
+        100i64, // like the real pool
+        None,
+        None, // like the real pool
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    let liquidity_amount = 10_000_000_000_000_i128; // 1 million with 7 decimal places
+    usdc_client.mint(&lp_provider, &liquidity_amount); // 1,000,000.0000000
+    xlm_client.mint(&lp_provider, &liquidity_amount); // 1,000,000.0000000
+
+    let user_initial_xlm_balance = 100_000_000;
+    xlm_client.mint(&user, &user_initial_xlm_balance); // 10.0000000
+
+    pool.provide_liquidity(
+        &lp_provider,
+        &Some(liquidity_amount),
+        &Some(liquidity_amount),
+        &Some(liquidity_amount),
+        &Some(liquidity_amount),
+        &None,
+        &None::<u64>,
+    );
+
+    // Swapping 0.1 $XLM tokens with 7 decimal places
+    let swap_amount = 1_000_000i128; // 0.1000000 with 7 decimals
+
+    // Execute the swap
+    let usdc_received = pool.swap(
+        &user,
+        &xlm_client.address,
+        &swap_amount,
+        &None,
+        &Some(100), // 1% spread as allowed
+        &None::<u64>,
+        &None,
+    );
+
+    assert_eq!(
+        env.auths(),
+        [(
+            user.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    symbol_short!("swap"),
+                    (
+                        &user,
+                        // FIXM: Disable Referral struct
+                        // None::<Referral>,
+                        xlm_client.address.clone(),
+                        1_000_000i128,
+                        None::<i64>,
+                        Some(100i64),
+                        None::<u64>,
+                        None::<i64>
+                    )
+                        .into_val(&env)
+                )),
+                sub_invocations: std::vec![
+                    (AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            xlm_client.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user, &pool.address, 1_000_000i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    }),
+                ],
+            }
+        )]
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: usdc_client.address.clone(),
+                amount: liquidity_amount - swap_amount,
+            },
+            asset_b: Asset {
+                address: xlm_client.address.clone(),
+                amount: liquidity_amount + swap_amount
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: liquidity_amount,
+            },
+            stake_address: result.stake_address.clone(),
+        }
+    );
+
+    assert_eq!(
+        xlm_client.balance(&user),
+        user_initial_xlm_balance - swap_amount
+    ); // 10.0000000 - 0.1000000
+    assert_eq!(usdc_client.balance(&user), usdc_received);
+
+    // This time swapping 0.1 tokens of $USDC to $XLM
+    let _ = pool.swap(
+        &user,
+        &usdc_client.address,
+        &swap_amount,
+        &None,
+        &Some(200), // 2% spread as allowed
+        &None::<u64>,
+        &None,
+    );
+}
