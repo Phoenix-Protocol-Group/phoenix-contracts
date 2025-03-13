@@ -1798,7 +1798,7 @@ fn swap_with_smaller_amounts() {
 }
 
 #[test]
-fn simple_swap_replica_of_live_pools_xlm_usdc() {
+fn small_swap_replica_of_live_pools_xlm_usdc() {
     let env = Env::default();
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
