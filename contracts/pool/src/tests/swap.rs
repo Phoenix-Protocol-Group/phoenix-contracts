@@ -1655,3 +1655,255 @@ fn simple_swap_with_biggest_possible_decimal_precision() {
     assert_eq!(token1.balance(&user1), 349_000_000_000_001_000i128);
     assert_eq!(token2.balance(&user1), 687_461_538_461_539_462i128);
 }
+
+#[test]
+fn swap_with_smaller_amounts() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let mut usdc_client = deploy_token_contract(&env, &admin);
+    let mut xlm_client = deploy_token_contract(&env, &admin);
+
+    if xlm_client.address < usdc_client.address {
+        std::mem::swap(&mut usdc_client, &mut xlm_client);
+    }
+
+    let user = Address::generate(&env);
+    let lp_provider = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&usdc_client.address, &xlm_client.address),
+        100i64, // like the real pool
+        None,
+        None, // like the real pool
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    let liquidity_amount = 10_000_000_000_000_i128; // 1 million with 7 decimal places
+    usdc_client.mint(&lp_provider, &liquidity_amount); // 1,000,000.0000000
+    xlm_client.mint(&lp_provider, &liquidity_amount); // 1,000,000.0000000
+
+    let user_initial_xlm_balance = 100_000_000;
+    xlm_client.mint(&user, &user_initial_xlm_balance); // 10.0000000
+
+    pool.provide_liquidity(
+        &lp_provider,
+        &Some(liquidity_amount),
+        &Some(liquidity_amount),
+        &Some(liquidity_amount),
+        &Some(liquidity_amount),
+        &None,
+        &None::<u64>,
+    );
+
+    // Swapping 0.1 $XLM tokens with 7 decimal places
+    let swap_amount = 1_000_000i128; // 0.1000000 with 7 decimals
+
+    // Execute the swap
+    let usdc_received = pool.swap(
+        &user,
+        &xlm_client.address,
+        &swap_amount,
+        &None,
+        &Some(100), // 1% spread as allowed
+        &None::<u64>,
+        &None,
+    );
+
+    assert_eq!(
+        env.auths(),
+        [(
+            user.clone(),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    pool.address.clone(),
+                    symbol_short!("swap"),
+                    (
+                        &user,
+                        // FIXM: Disable Referral struct
+                        // None::<Referral>,
+                        xlm_client.address.clone(),
+                        1_000_000i128,
+                        None::<i64>,
+                        Some(100i64),
+                        None::<u64>,
+                        None::<i64>
+                    )
+                        .into_val(&env)
+                )),
+                sub_invocations: std::vec![
+                    (AuthorizedInvocation {
+                        function: AuthorizedFunction::Contract((
+                            xlm_client.address.clone(),
+                            symbol_short!("transfer"),
+                            (&user, &pool.address, 1_000_000i128).into_val(&env)
+                        )),
+                        sub_invocations: std::vec![],
+                    }),
+                ],
+            }
+        )]
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let result = pool.query_pool_info();
+
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: usdc_client.address.clone(),
+                amount: liquidity_amount - swap_amount,
+            },
+            asset_b: Asset {
+                address: xlm_client.address.clone(),
+                amount: liquidity_amount + swap_amount
+            },
+            asset_lp_share: Asset {
+                address: share_token_address.clone(),
+                amount: liquidity_amount,
+            },
+            stake_address: result.stake_address.clone(),
+        }
+    );
+
+    assert_eq!(
+        xlm_client.balance(&user),
+        user_initial_xlm_balance - swap_amount
+    ); // 10.0000000 - 0.1000000
+    assert_eq!(usdc_client.balance(&user), usdc_received);
+
+    // This time swapping 0.1 tokens of $USDC to $XLM
+    usdc_client.mint(&user, &10_000_000); // minting 1 $USDC to user before the swap
+
+    // just the reverse swap should work
+    let _ = pool.swap(
+        &user,
+        &usdc_client.address,
+        &swap_amount,
+        &None,
+        &Some(200),
+        &None::<u64>,
+        &None,
+    );
+}
+
+#[test]
+fn small_swap_replica_of_live_pools_xlm_usdc() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let mut xlm_client = deploy_token_contract(&env, &Address::generate(&env));
+    let mut usdc_client = deploy_token_contract(&env, &Address::generate(&env));
+    if usdc_client.address < xlm_client.address {
+        std::mem::swap(&mut xlm_client, &mut usdc_client);
+    }
+
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+    let liquidity_provider = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    // liquidity pool with 1% swap fees (100 bps)
+    let swap_fees = 100i64; // 1% bps
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&xlm_client.address, &usdc_client.address),
+        swap_fees,
+        Address::generate(&env),
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    let initial_liquidity = 2_500_000_000_000_i128;
+    xlm_client.mint(&liquidity_provider, &(4 * initial_liquidity));
+    usdc_client.mint(&liquidity_provider, &initial_liquidity);
+
+    // Provide liquidity to the pool
+    pool.provide_liquidity(
+        &liquidity_provider,
+        &Some(4 * initial_liquidity), // 1_000_000 XLM
+        &Some(4 * initial_liquidity), // 250_000 USDC
+        &Some(initial_liquidity),
+        &Some(initial_liquidity),
+        &None,
+        &None::<u64>,
+    );
+
+    // swap 100_000 units (0.1) of XLM in a 1:4 pool with 1% protocol fee
+    let offer_amount = 100_000i128;
+    xlm_client.mint(&user, &offer_amount);
+
+    let result = pool.swap(
+        &user,
+        &xlm_client.address,
+        &offer_amount,
+        &None,
+        &None,
+        &None::<u64>,
+        &None,
+    );
+
+    // calculate the expected output amount using the constant product formula:
+    // Y_new = (X_in * Y_old) / (X_in + X_old)
+    // X_in = 100_000 (offer amount)
+    // X_old = 4 * initial_liquidity = 10_000_000_000_000 (XLM reserve)
+    // Y_old = initial_liquidity = 2_500_000_000_000 (USDC reserve)
+    // Y_new = (100_000 * 2_500_000_000_000) / (100_000 + 10_000_000_000_000)
+    // Y_new = 272_727.27 (rounded to 272_728 due to integer division)
+    let output_amount = (offer_amount * initial_liquidity) / (offer_amount + 4 * initial_liquidity);
+
+    let fees = Decimal::percent(1) * output_amount;
+
+    let expected_net_amount = output_amount - fees;
+    assert_eq!(
+        result, expected_net_amount,
+        "First swap result does not match expected net amount"
+    );
+
+    usdc_client.mint(&user, &(output_amount - fees));
+
+    // reverse swap (USDC -> XLM)
+    let result = pool.swap(
+        &user,
+        &usdc_client.address,
+        &(output_amount - fees),
+        &None,
+        &None,
+        &None::<u64>,
+        &None,
+    );
+
+    // X_new = (Y_in * X_old) / (Y_in + Y_old)
+    // Y_in = output_amount - fees (USDC being swapped)
+    // Y_old = initial_liquidity - output_amount (remaining USDC reserve after first swap)
+    // X_old = 4 * initial_liquidity + offer_amount (updated XLM reserve after first swap)
+    // X_new = ((output_amount - fees) * (4 * initial_liquidity + offer_amount)) / ((output_amount - fees) + (initial_liquidity - output_amount))
+    let y_in = output_amount - fees;
+    let y_old = initial_liquidity - output_amount;
+    let x_old = 4 * initial_liquidity + offer_amount;
+    let reverse_output_amount = (y_in * x_old) / (y_in + y_old);
+
+    let reverse_fees = Decimal::percent(1) * reverse_output_amount;
+
+    // Assert the result of the second swap with rounding
+    let reverse_expected_net_amount = reverse_output_amount - reverse_fees + 1;
+    assert_eq!(
+        result,
+        reverse_expected_net_amount, // due to rounding
+        "Second swap result does not match expected net amount"
+    );
+}

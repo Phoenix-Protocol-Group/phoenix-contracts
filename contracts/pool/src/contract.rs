@@ -1312,10 +1312,14 @@ pub fn compute_swap(
     let return_amount =
         ask_pool_as_u256.sub(&(cp.div(&offer_pool_as_u256.add(&offer_amount_as_u256))));
     // Calculate the spread amount, representing the difference between the expected and actual swap amounts
-    let spread_amount = (offer_amount_as_u256
+    let expected_return = offer_amount_as_u256
         .mul(&ask_pool_as_u256)
-        .div(&offer_pool_as_u256))
-    .sub(&return_amount);
+        .div(&offer_pool_as_u256);
+    let spread_amount = if expected_return > return_amount {
+        expected_return.sub(&return_amount)
+    } else {
+        U256::from_u128(env, 0)
+    };
 
     let decimal_fractional = U256::from_u128(env, 1_000_000_000_000_000_000u128);
     let commission_amount = return_amount
