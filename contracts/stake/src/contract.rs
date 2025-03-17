@@ -70,6 +70,10 @@ pub trait StakingTrait {
 
     fn query_withdrawable_rewards(env: Env, address: Address) -> WithdrawableRewardsResponse;
 
+    fn update_config(env: Env, config: Config) -> Result<Config, ContractError>;
+
+    fn update_admin(env: Env, new_admin: Address) -> Result<Address, ContractError>;
+
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
     // fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
@@ -358,6 +362,33 @@ impl StakingTrait for Staking {
         }
 
         WithdrawableRewardsResponse { rewards }
+    }
+
+    fn update_config(env: Env, config: Config) -> Result<Config, ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        save_config(&env, config.clone());
+
+        Ok(config)
+    }
+
+    fn update_admin(env: Env, new_admin: Address) -> Result<Address, ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let admin = get_admin(&env);
+
+        admin.require_auth();
+
+        utils::save_admin(&env, &new_admin);
+
+        Ok(new_admin)
     }
 
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
