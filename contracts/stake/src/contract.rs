@@ -94,6 +94,10 @@ pub trait StakingTrait {
 
     fn query_withdrawable_rewards_dep(env: Env, address: Address) -> WithdrawableRewardsResponse;
 
+    fn update_config(env: Env, config: Config) -> Result<Config, ContractError>;
+
+    fn update_admin(env: Env, new_admin: Address) -> Result<Address, ContractError>;
+
     fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
     fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
@@ -753,6 +757,44 @@ impl StakingTrait for Staking {
         let distribution = get_distribution(&env, &asset);
         distribution.distributed_total
     }
+
+    fn update_config(env: Env, config: Config) -> Result<Config, ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let admin = get_admin(&env);
+        admin.require_auth();
+
+        save_config(&env, config.clone());
+
+        Ok(config)
+    }
+
+    fn update_admin(env: Env, new_admin: Address) -> Result<Address, ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let admin = get_admin(&env);
+
+        admin.require_auth();
+
+        utils::save_admin(&env, &new_admin);
+
+        Ok(new_admin)
+    }
+
+    // fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
+    //     let staking_rewards = find_stake_rewards_by_asset(&env, &asset).unwrap();
+    //     let unds_rew_fn_arg: Val = asset.into_val(&env);
+    //     let ret: u128 = env.invoke_contract(
+    //         &staking_rewards,
+    //         &Symbol::new(&env, "query_distributed_reward"),
+    //         vec![&env, unds_rew_fn_arg],
+    //     );
+    //     ret
+    // }
 
     fn query_undistributed_rewards(env: Env, asset: Address) -> u128 {
         env.storage()
