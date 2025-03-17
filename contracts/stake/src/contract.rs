@@ -94,7 +94,15 @@ pub trait StakingTrait {
 
     fn query_withdrawable_rewards_dep(env: Env, address: Address) -> WithdrawableRewardsResponse;
 
-    fn update_config(env: Env, config: Config) -> Result<Config, ContractError>;
+    fn update_config(
+        env: Env,
+        lp_token: Option<Address>,
+        min_bond: Option<i128>,
+        min_reward: Option<i128>,
+        manager: Option<Address>,
+        owner: Option<Address>,
+        max_complexity: Option<u32>,
+    ) -> Result<Config, ContractError>;
 
     fn update_admin(env: Env, new_admin: Address) -> Result<Address, ContractError>;
 
@@ -758,13 +766,65 @@ impl StakingTrait for Staking {
         distribution.distributed_total
     }
 
-    fn update_config(env: Env, config: Config) -> Result<Config, ContractError> {
+    fn update_config(
+        env: Env,
+        lp_token: Option<Address>,
+        min_bond: Option<i128>,
+        min_reward: Option<i128>,
+        manager: Option<Address>,
+        owner: Option<Address>,
+        max_complexity: Option<u32>,
+    ) -> Result<Config, ContractError> {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let admin = get_admin(&env);
         admin.require_auth();
+
+        let mut config = get_config(&env);
+
+        if let Some(lp_token) = lp_token {
+            config.lp_token = lp_token;
+        }
+
+        if let Some(min_bond) = min_bond {
+            if min_bond <= 0 {
+                log!(
+                &env,
+                "Stake: initialize: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
+            );
+                panic_with_error!(&env, ContractError::InvalidMinBond);
+            }
+            config.min_bond = min_bond
+        }
+
+        if let Some(min_reward) = min_reward {
+            if min_reward <= 0 {
+                log!(&env, "Stake: initialize: min_reward must be bigger than 0!");
+                panic_with_error!(&env, ContractError::InvalidMinReward);
+            }
+            config.min_reward = min_reward
+        }
+
+        if let Some(manager) = manager {
+            config.manager = manager;
+        }
+
+        if let Some(owner) = owner {
+            config.owner = owner;
+        }
+
+        if let Some(max_complexity) = max_complexity {
+            if max_complexity == 0 {
+                log!(
+                    &env,
+                    "Stake: initialize: max_complexity must be bigger than 0!"
+                );
+                panic_with_error!(&env, ContractError::InvalidMaxComplexity);
+            }
+            config.max_complexity = max_complexity
+        }
 
         save_config(&env, config.clone());
 
