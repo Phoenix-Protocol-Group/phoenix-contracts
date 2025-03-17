@@ -42,16 +42,26 @@ fn should_update_config() {
         }
     );
 
+    let new_min_bond = 2_000i128;
+    let new_min_reward = 2_000i128;
+
     let new_config = Config {
         lp_token: lp_token.address,
-        min_bond: 2_000i128,
-        min_reward: 2_000i128,
+        min_bond: new_min_bond,
+        min_reward: new_min_reward,
         manager,
         owner,
         max_complexity: DEFAULT_COMPLEXITY,
     };
 
-    staking.update_config(&new_config);
+    staking.update_config(
+        &None,
+        &Some(new_min_bond),
+        &Some(new_min_reward),
+        &None,
+        &None,
+        &None,
+    );
 
     assert_eq!(new_config, staking.query_config().config)
 }
@@ -90,16 +100,14 @@ fn update_config_should_fail_when_not_authorized() {
         }
     );
 
-    let new_config = Config {
-        lp_token: lp_token.address,
-        min_bond: 2_000i128,
-        min_reward: 2_000i128,
-        manager,
-        owner,
-        max_complexity: DEFAULT_COMPLEXITY,
-    };
-
-    staking.update_config(&new_config);
+    staking.update_config(
+        &Some(Address::generate(&env)),
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+    );
 }
 
 #[test]
