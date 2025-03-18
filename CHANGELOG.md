@@ -6,6 +6,28 @@ and this project adheres to
 
 ## [Unreleased]
 
+## Changed
+
+- All: Updates the soroban SDK to latest stable version 22 ([#411])
+- All: Put the admin data key under a separate const ([#400])
+- Trader: Removes deprecated methods from the sdk upgrade ([#408])
+- Stble Pool: Removes an unnecessary input arg from the stable pool initialize method ([#406])
+
+## Added
+
+- All: Adds instance extension to all queries and messages ([#392])
+
+## Fixed
+
+- Stake: fixes an underfow when calculating staking rewards ([#401])
+
+[#392]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/392
+[#400]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/400
+[#401]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/401
+[#406]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/406
+[#408]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/408
+[#411]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/411
+
 ## [1.1.0] - 2024-08-27
 
 ## Changed
@@ -322,7 +344,6 @@ and this project adheres to
 [#21]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/21
 [#19]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/19
 [#24]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/24
-
 [unreleased]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/compare/v0.8.0...v0.9.0
