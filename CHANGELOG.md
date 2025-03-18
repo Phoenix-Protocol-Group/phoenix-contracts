@@ -12,14 +12,25 @@ and this project adheres to
 - All: Put the admin data key under a separate const ([#400])
 - Trader: Removes deprecated methods from the sdk upgrade ([#408])
 - Stble Pool: Removes an unnecessary input arg from the stable pool initialize method ([#406])
+- All: Changes the ContractError Enum's numbers, so we get better understanding from which contract the error is ([#431])
+- XYK & Stable Pool: changes the validation of the input args ([#435])
+- Stake: Reverts back to the original stake implementatio from tag v1.0.0 ([#429])
 
 ## Added
 
 - All: Adds instance extension to all queries and messages ([#392])
+- All: Adds save math to all mathematical operations in our contracts ([#419])
+- All: Adds keys that save the contract name in storage ([#423])
+- Factory: Adds tests for the TTL extension ([#426])
+- Vesting: Adds a script for the deployment of the contract to testnet ([#433])
+- Vesting: Extends a query to provide more information ([#434])
+- All: Adds a query that returns the cargo pkg version ([#437])
 
 ## Fixed
 
-- Stake: fixes an underfow when calculating staking rewards ([#401])
+- Stake: Fixes an underfow when calculating staking rewards ([#401])
+- Stable Pool: Fixes an overflow in the Newtonian formula ([#414])
+- XYK Pool: Fixes an underflow when swapping small amounts ([#442])
 
 [#392]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/392
 [#400]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/400
@@ -27,6 +38,17 @@ and this project adheres to
 [#406]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/406
 [#408]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/408
 [#411]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/411
+[#414]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/414
+[#419]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/419
+[#429]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/429
+[#431]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/431
+[#423]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/423
+[#426]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/426
+[#433]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/433
+[#434]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/434
+[#435]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/435
+[#437]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/437
+[#442]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/442
 
 ## [1.1.0] - 2024-08-27
 
