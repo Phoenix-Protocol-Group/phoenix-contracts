@@ -1,20 +1,20 @@
 #!/bin/bash
 
-# Check if source account and send is provided
+# validate the input arguments
 if [ -z "$2" ]; then
   echo "Error: Source account and Send is required as an argument."
   echo "Usage: $0 <source_account> <send_tx>"
   exit 1
 fi
 
-# Input variables
+# vars
 SOURCE_ACCOUNT=$1
 SEND_TX=$2
 FACTORY_ID="CB4SVAWJA6TSRNOJZ7W2AWFW46D5VR4ZMFZKDIKXEINZCZEGZCJZCKMI"
 RPC_URL="https://mainnet.sorobanrpc.com"
 NETWORK_PASSPHRASE="Public Global Stellar Network ; September 2015"
 
-# Function to invoke Stellar contract
+# helper to invoke the stellar network
 invoke_contract() {
   local CONTRACT_ID=$1
   local FUNCTION_NAME=$2
@@ -32,23 +32,23 @@ invoke_contract() {
     $FUNCTION_NAME $ARGS | jq
 }
 
-# Query all pools
+# all pools of factory
 POOLS=$(invoke_contract $FACTORY_ID query_pools | jq -r '.[]')
 
-# Iterate over pools and query details
+# query the pools and get the details
 echo "Iterating over pool addresses"
 for POOL in $POOLS; do
   invoke_contract $FACTORY_ID query_pool_details "--pool_address $POOL"
 done
 
-# Query all pools details
+# same like before, just another storage key
 ALL_POOLS_DETAILS=$(invoke_contract $FACTORY_ID query_all_pools_details)
 
-# Declare arrays for stake and LP share addresses
+# arrays for staking and lp_share token
 STAKE_ADDRESSES=()
 LP_SHARE_ADDRESSES=()
 
-# Iterate over all pools details and extract stake and LP share addresses
+# fill in the arrays
 echo "Extracting stake addresses and LP share addresses"
 while read -r POOL_DETAIL; do
   STAKE_ADDRESS=$(echo "$POOL_DETAIL" | jq -r '.pool_response.stake_address')
@@ -58,30 +58,21 @@ while read -r POOL_DETAIL; do
   LP_SHARE_ADDRESSES+=("$LP_SHARE_ADDRESS")
 done < <(echo "$ALL_POOLS_DETAILS" | jq -c '.[]')
 
-# Debugging: Print extracted addresses
-echo "Stake Addresses: ${STAKE_ADDRESSES[@]}"
-echo "LP Share Addresses: ${LP_SHARE_ADDRESSES[@]}"
-
 echo "DONE WITH FACTORY QUERIES"
 
 echo "STARTING WITH QUERIES IN POOL"
 
-# Iterate over pools and call the new queries for each pool
+# call the queries in pool contract
 for POOL in $POOLS; do
 
-  # Query config
   invoke_contract $POOL query_config
 
-  # Query share token address
   invoke_contract $POOL query_share_token_address
 
-  # Query stake contract address
   invoke_contract $POOL query_stake_contract_address
 
-  # Query pool info
   invoke_contract $POOL query_pool_info
 
-  # Query pool info for factory
   invoke_contract $POOL query_pool_info_for_factory
 done
 
@@ -89,7 +80,7 @@ echo "DONE WITH QUERIES IN POOL CONTRACTS"
 
 echo "STARTING WITH STAKE CONTRACT QUERIES"
 
-# Iterate over stake contracts and query required details
+# call the queries in stake contract
 for STAKE in "${STAKE_ADDRESSES[@]}"; do
   echo "Querying stake contract: $STAKE"
   invoke_contract $STAKE query_config
@@ -102,7 +93,7 @@ echo "DONE WITH STAKE CONTRACT QUERIES"
 
 echo "STARTING WITH LP SHARE QUERIES"
 
-# Iterate over LP share addresses and query name
+# call the queries in token contract
 for LP_SHARE in "${LP_SHARE_ADDRESSES[@]}"; do
   echo "Querying LP share name: $LP_SHARE"
   invoke_contract $LP_SHARE name
