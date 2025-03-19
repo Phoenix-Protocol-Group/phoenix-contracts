@@ -50,13 +50,17 @@ LP_SHARE_ADDRESSES=()
 
 # Iterate over all pools details and extract stake and LP share addresses
 echo "Extracting stake addresses and LP share addresses"
-echo $ALL_POOLS_DETAILS | jq -c '.[]' | while read -r POOL_DETAIL; do
-  STAKE_ADDRESS=$(echo $POOL_DETAIL | jq -r '.pool_response.stake_address')
-  LP_SHARE_ADDRESS=$(echo $POOL_DETAIL | jq -r '.pool_response.asset_lp_share.address')
+while read -r POOL_DETAIL; do
+  STAKE_ADDRESS=$(echo "$POOL_DETAIL" | jq -r '.pool_response.stake_address')
+  LP_SHARE_ADDRESS=$(echo "$POOL_DETAIL" | jq -r '.pool_response.asset_lp_share.address')
 
   STAKE_ADDRESSES+=("$STAKE_ADDRESS")
   LP_SHARE_ADDRESSES+=("$LP_SHARE_ADDRESS")
-done
+done < <(echo "$ALL_POOLS_DETAILS" | jq -c '.[]')
+
+# Debugging: Print extracted addresses
+echo "Stake Addresses: ${STAKE_ADDRESSES[@]}"
+echo "LP Share Addresses: ${LP_SHARE_ADDRESSES[@]}"
 
 echo "DONE WITH FACTORY QUERIES"
 
@@ -91,18 +95,17 @@ for STAKE in "${STAKE_ADDRESSES[@]}"; do
   invoke_contract $STAKE query_config
   invoke_contract $STAKE query_admin
   invoke_contract $STAKE query_total_staked
-  invoke_contract $STAKE query_annualized_rewards
-
+  # invoke_contract $STAKE query_annualized_rewards TODO - not present in the current version
 done
 
 echo "DONE WITH STAKE CONTRACT QUERIES"
+
 echo "STARTING WITH LP SHARE QUERIES"
 
 # Iterate over LP share addresses and query name
 for LP_SHARE in "${LP_SHARE_ADDRESSES[@]}"; do
   echo "Querying LP share name: $LP_SHARE"
   invoke_contract $LP_SHARE name
-
 done
 
 echo "DONE WITH ALL QUERIES"
