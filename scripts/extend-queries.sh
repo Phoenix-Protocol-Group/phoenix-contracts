@@ -3,7 +3,7 @@
 # Check if source account and send is provided
 if [ -z "$2" ]; then
   echo "Error: Source account and Send is required as an argument."
-  echo "Usage: $0 <source_account> $1 <send_tx>"
+  echo "Usage: $0 <source_account> <send_tx>"
   exit 1
 fi
 
@@ -41,27 +41,25 @@ for POOL in $POOLS; do
   invoke_contract $FACTORY_ID query_pool_details "--pool_address $POOL"
 done
 
-# Query all pools details and save to variable
+# Query all pools details
 ALL_POOLS_DETAILS=$(invoke_contract $FACTORY_ID query_all_pools_details)
 
-# Iterate over all pools details and query token pairs
-echo "Iterating over token_a and token_b"
-echo $ALL_POOLS_DETAILS | jq -c '.[]' | while read -r POOL_DETAIL; do
-  TOKEN_A=$(echo $POOL_DETAIL | jq -r '.pool_response.asset_a.address')
-  TOKEN_B=$(echo $POOL_DETAIL | jq -r '.pool_response.asset_b.address')
+# Declare arrays for stake and LP share addresses
+STAKE_ADDRESSES=()
+LP_SHARE_ADDRESSES=()
 
-  invoke_contract $FACTORY_ID query_for_pool_by_token_pair "--token_a $TOKEN_A --token_b $TOKEN_B"
+# Iterate over all pools details and extract stake and LP share addresses
+echo "Extracting stake addresses and LP share addresses"
+echo $ALL_POOLS_DETAILS | jq -c '.[]' | while read -r POOL_DETAIL; do
+  STAKE_ADDRESS=$(echo $POOL_DETAIL | jq -r '.pool_response.stake_address')
+  LP_SHARE_ADDRESS=$(echo $POOL_DETAIL | jq -r '.pool_response.asset_lp_share.address')
+
+  STAKE_ADDRESSES+=("$STAKE_ADDRESS")
+  LP_SHARE_ADDRESSES+=("$LP_SHARE_ADDRESS")
 done
 
-# Query admin address
-echo "Querying admin"
-invoke_contract $FACTORY_ID get_admin
+echo "DONE WITH FACTORY QUERIES"
 
-# Query config
-echo "Querying config"
-invoke_contract $FACTORY_ID get_config
-
-echo "DONE WITH QUERIES IN FACTORY"
 echo "STARTING WITH QUERIES IN POOL"
 
 # Iterate over pools and call the new queries for each pool
@@ -84,3 +82,27 @@ for POOL in $POOLS; do
 done
 
 echo "DONE WITH QUERIES IN POOL CONTRACTS"
+
+echo "STARTING WITH STAKE CONTRACT QUERIES"
+
+# Iterate over stake contracts and query required details
+for STAKE in "${STAKE_ADDRESSES[@]}"; do
+  echo "Querying stake contract: $STAKE"
+  invoke_contract $STAKE query_config
+  invoke_contract $STAKE query_admin
+  invoke_contract $STAKE query_total_staked
+  invoke_contract $STAKE query_annualized_rewards
+
+done
+
+echo "DONE WITH STAKE CONTRACT QUERIES"
+echo "STARTING WITH LP SHARE QUERIES"
+
+# Iterate over LP share addresses and query name
+for LP_SHARE in "${LP_SHARE_ADDRESSES[@]}"; do
+  echo "Querying LP share name: $LP_SHARE"
+  invoke_contract $LP_SHARE name
+
+done
+
+echo "DONE WITH ALL QUERIES"
