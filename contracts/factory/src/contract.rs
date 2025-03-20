@@ -585,7 +585,7 @@ impl FactoryTrait for Factory {
         save_config(&env, config);
 
         env.events()
-            .publish(("Factory: ", "Accepted new_admin: "), &pending_admin);
+            .publish(("Factory: ", "Accepted new admin: "), &pending_admin);
 
         Ok(pending_admin)
     }
