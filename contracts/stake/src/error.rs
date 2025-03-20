@@ -20,4 +20,7 @@ pub enum ContractError {
     AdminNotSet = 415,
     ContractMathError = 416,
     RewardCurveDoesNotExist = 417,
+    SameAdmin = 418,
+    NoAdminChangeInPlace = 419,
+    AdminChangeExpired = 420,
 }
