@@ -3,11 +3,8 @@ use soroban_sdk::{
     Address, Env,
 };
 
-use crate::{
-    error::ContractError,
-    storage::{AdminChange, PENDING_ADMIN},
-    tests::setup::deploy_multihop_contract,
-};
+use crate::{error::ContractError, storage::PENDING_ADMIN, tests::setup::deploy_multihop_contract};
+use phoenix::utils::AdminChange;
 
 #[test]
 fn propose_admin() {

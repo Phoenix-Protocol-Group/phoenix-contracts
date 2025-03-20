@@ -75,13 +75,6 @@ pub struct PoolResponse {
     pub asset_lp_share: Asset,
 }
 
-#[derive(Clone)]
-#[contracttype]
-pub struct AdminChange {
-    pub new_admin: Address,
-    pub time_limit: Option<u64>,
-}
-
 pub fn save_factory(env: &Env, factory: Address) {
     env.storage().instance().set(&DataKey::FactoryKey, &factory);
     env.storage()

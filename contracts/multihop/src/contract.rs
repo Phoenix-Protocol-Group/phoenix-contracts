@@ -1,4 +1,7 @@
-use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
+use phoenix::{
+    ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL},
+    utils::AdminChange,
+};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
     Vec,
@@ -10,8 +13,7 @@ use crate::factory_contract::PoolType;
 // use crate::lp_contract::Referral;
 use crate::storage::{
     get_admin_old, get_factory, is_initialized, save_admin_old, save_factory, set_initialized,
-    AdminChange, SimulateReverseSwapResponse, SimulateSwapResponse, Swap, ADMIN, MULTIHOP_KEY,
-    PENDING_ADMIN,
+    SimulateReverseSwapResponse, SimulateSwapResponse, Swap, ADMIN, MULTIHOP_KEY, PENDING_ADMIN,
 };
 use crate::utils::{verify_reverse_swap, verify_swap};
 use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
