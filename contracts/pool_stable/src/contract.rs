@@ -146,6 +146,8 @@ pub trait StableLiquidityPoolTrait {
         time_limit: Option<u64>,
     ) -> Result<Address, ContractError>;
 
+    fn revoke_admin_change(env: Env) -> Result<(), ContractError>;
+
     fn accept_admin(env: Env) -> Result<Address, ContractError>;
 }
 
@@ -935,6 +937,23 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .publish(("Stable Pool: ", "Replace with new admin: "), &new_admin);
 
         Ok(new_admin)
+    }
+
+    fn revoke_admin_change(env: Env) -> Result<(), ContractError> {
+        let current_admin = get_admin_old(&env);
+        current_admin.require_auth();
+
+        if !env.storage().instance().has(&PENDING_ADMIN) {
+            log!(&env, "No admin change in place");
+            panic_with_error!(&env, ContractError::NoAdminChangeInPlace);
+        }
+
+        env.storage().instance().remove(&PENDING_ADMIN);
+
+        env.events()
+            .publish(("Stable Pool: ", "Undo admin change: "), ());
+
+        Ok(())
     }
 
     fn accept_admin(env: Env) -> Result<Address, ContractError> {

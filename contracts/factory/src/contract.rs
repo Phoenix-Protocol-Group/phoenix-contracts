@@ -93,6 +93,8 @@ pub trait FactoryTrait {
         time_limit: Option<u64>,
     ) -> Result<Address, ContractError>;
 
+    fn revoke_admin_change(env: Env) -> Result<(), ContractError>;
+
     fn accept_admin(env: Env) -> Result<Address, ContractError>;
 }
 
@@ -556,6 +558,23 @@ impl FactoryTrait for Factory {
             .publish(("Factory: ", "Replace with new admin: "), &new_admin);
 
         Ok(new_admin)
+    }
+
+    fn revoke_admin_change(env: Env) -> Result<(), ContractError> {
+        let current_admin = get_config(&env).admin;
+        current_admin.require_auth();
+
+        if !env.storage().instance().has(&PENDING_ADMIN) {
+            log!(&env, "No admin change in place");
+            panic_with_error!(&env, ContractError::NoAdminChangeInPlace);
+        }
+
+        env.storage().instance().remove(&PENDING_ADMIN);
+
+        env.events()
+            .publish(("Factory: ", "Undo admin change: "), ());
+
+        Ok(())
     }
 
     fn accept_admin(env: Env) -> Result<Address, ContractError> {
