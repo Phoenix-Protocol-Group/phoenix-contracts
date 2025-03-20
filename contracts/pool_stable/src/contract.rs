@@ -962,7 +962,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         utils::save_admin_old(&env, pending_admin.clone());
 
         env.events()
-            .publish(("Multihop: ", "Accepted new admin: "), &pending_admin);
+            .publish(("Stable Pool: ", "Accepted new admin: "), &pending_admin);
 
         Ok(pending_admin)
     }
