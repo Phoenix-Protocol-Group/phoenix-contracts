@@ -5,6 +5,7 @@ use self::setup::{
     install_stake_wasm, install_token_wasm,
 };
 
+mod admin_change;
 mod config;
 mod setup;
 

@@ -3,9 +3,9 @@ use crate::{
     stake_contract::StakedResponse,
     storage::{
         get_config, get_lp_vec, get_stable_wasm_hash, is_initialized, save_config, save_lp_vec,
-        save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, Asset, Config,
-        LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
-        FACTORY_KEY,
+        save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, set_initialized, AdminChange, Asset,
+        Config, LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
+        FACTORY_KEY, PENDING_ADMIN,
     },
     utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
     ConvertVec,
@@ -86,6 +86,14 @@ pub trait FactoryTrait {
     fn query_user_portfolio(env: Env, sender: Address, staking: bool) -> UserPortfolio;
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
+
+    fn replace_admin(
+        env: Env,
+        new_admin: Address,
+        time_limit: Option<u64>,
+    ) -> Result<Address, ContractError>;
+
+    fn accept_admin(env: Env) -> Result<Address, ContractError>;
 }
 
 #[contractimpl]
@@ -517,6 +525,69 @@ impl FactoryTrait for Factory {
         env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())
+    }
+
+    fn replace_admin(
+        env: Env,
+        new_admin: Address,
+        time_limit: Option<u64>,
+    ) -> Result<Address, ContractError> {
+        let current_admin = get_config(&env).admin;
+        current_admin.require_auth();
+
+        if current_admin == new_admin {
+            log!(&env, "Trying to set new admin as new");
+            panic_with_error!(&env, ContractError::SameAdmin);
+        }
+
+        env.storage().instance().set(
+            &PENDING_ADMIN,
+            &AdminChange {
+                new_admin: new_admin.clone(),
+                time_limit,
+            },
+        );
+
+        env.events().publish(
+            ("Factory: ", "Admin replacement requested by old admin: "),
+            &current_admin,
+        );
+        env.events()
+            .publish(("Factory: ", "Replace with new admin: "), &new_admin);
+
+        Ok(new_admin)
+    }
+
+    fn accept_admin(env: Env) -> Result<Address, ContractError> {
+        let admin_change_info: AdminChange = env
+            .storage()
+            .instance()
+            .get(&PENDING_ADMIN)
+            .unwrap_or_else(|| {
+                log!(&env, "No admin change request is in place");
+                panic_with_error!(&env, ContractError::NoAdminChangeInPlace);
+            });
+
+        let pending_admin = admin_change_info.new_admin;
+        pending_admin.require_auth();
+
+        if let Some(time_limit) = admin_change_info.time_limit {
+            if env.ledger().timestamp() > time_limit {
+                log!(&env, "Admin change expired");
+                panic_with_error!(&env, ContractError::AdminChangeExpired);
+            }
+        }
+
+        env.storage().instance().remove(&PENDING_ADMIN);
+
+        let mut config = get_config(&env);
+        config.admin = pending_admin.clone();
+        save_config(&env, config);
+
+        env.events()
+            .publish(("Factory: ", "Accepted new_admin: "), &pending_admin);
+
+        Ok(pending_admin)
     }
 }
 

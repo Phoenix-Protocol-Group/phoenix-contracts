@@ -13,4 +13,7 @@ pub enum ContractError {
     MinRewardInvalid = 7,
     AdminNotSet = 8,
     OverflowingOps = 9,
+    SameAdmin = 10,
+    NoAdminChangeInPlace = 11,
+    AdminChangeExpired = 12,
 }
