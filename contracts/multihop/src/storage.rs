@@ -10,6 +10,7 @@ use crate::error::ContractError;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const MULTIHOP_KEY: Symbol = symbol_short!("MULTIHOP");
+pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -72,6 +73,13 @@ pub struct PoolResponse {
     pub asset_b: Asset,
     /// The total amount of LP tokens currently issued
     pub asset_lp_share: Asset,
+}
+
+#[derive(Clone)]
+#[contracttype]
+pub struct AdminChange {
+    pub new_admin: Address,
+    pub time_limit: Option<u64>,
 }
 
 pub fn save_factory(env: &Env, factory: Address) {

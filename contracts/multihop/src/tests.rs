@@ -2,6 +2,7 @@ use crate::contract::{Multihop, MultihopClient};
 use crate::tests::setup::deploy_factory_contract;
 use soroban_sdk::{testutils::Address as _, Address, Env};
 
+mod admin_change;
 mod query;
 mod setup;
 mod swap;
