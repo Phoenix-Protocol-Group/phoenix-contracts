@@ -49,13 +49,6 @@ pub struct Config {
     pub lp_token_decimals: u32,
 }
 
-#[derive(Clone)]
-#[contracttype]
-pub struct AdminChange {
-    pub new_admin: Address,
-    pub time_limit: Option<u64>,
-}
-
 pub fn save_stable_wasm_hash(env: &Env, hash: BytesN<32>) {
     env.storage().persistent().set(&STABLE_WASM_HASH, &hash);
     env.storage().persistent().extend_ttl(
