@@ -41,6 +41,10 @@ pub enum ContractError {
     AlreadyInitialized = 31,
     AdminNotFound = 32,
     ContractMathError = 33,
+
+    SameAdmin = 34,
+    NoAdminChangeInPlace = 35,
+    AdminChangeExpired = 36,
 }
 
 impl From<CurveError> for ContractError {
