@@ -38,4 +38,7 @@ pub enum ContractError {
     AdminNotSet = 227,
     ContractMathError = 228,
     NegativeInputProvided = 229,
+    SameAdmin = 230,
+    NoAdminChangeInPlace = 231,
+    AdminChangeExpired = 232,
 }

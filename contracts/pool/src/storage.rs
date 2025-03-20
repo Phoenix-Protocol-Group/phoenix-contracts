@@ -9,6 +9,7 @@ use soroban_decimal::Decimal;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const XYK_POOL_KEY: Symbol = symbol_short!("XYK_POOL");
+pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -180,6 +181,13 @@ pub struct SimulateReverseSwapResponse {
     pub offer_amount: i128,
     pub commission_amount: i128,
     pub spread_amount: i128,
+}
+
+#[derive(Clone)]
+#[contracttype]
+pub struct AdminChange {
+    pub new_admin: Address,
+    pub time_limit: Option<u64>,
 }
 
 pub mod utils {
