@@ -15,4 +15,7 @@ pub enum ContractError {
     InitValueNotFound = 9,
     AlreadyInitialized = 10,
     AdminNotSet = 11,
+    SameAdmin = 12,
+    NoAdminChangeInPlace = 13,
+    AdminChangeExpired = 14,
 }
