@@ -363,7 +363,7 @@ impl MultihopTrait for Multihop {
         save_admin_old(&env, &pending_admin);
 
         env.events()
-            .publish(("Factory: ", "Accepted new admin: "), &pending_admin);
+            .publish(("Multihop: ", "Accepted new admin: "), &pending_admin);
 
         Ok(pending_admin)
     }
