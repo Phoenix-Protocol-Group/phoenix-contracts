@@ -200,3 +200,50 @@ fn accept_admin_successfully_on_time_limit() {
     });
     assert!(pending_admin.is_none());
 }
+
+#[test]
+fn propose_admin_then_revoke() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let new_admin = Address::generate(&env);
+
+    let trader_client = deploy_trader_client(&env);
+    trader_client.initialize(
+        &admin,
+        &String::from_str(&env, "Trader"),
+        &(Address::generate(&env), Address::generate(&env)),
+        &Address::generate(&env),
+    );
+
+    trader_client.propose_admin(&new_admin, &None);
+    trader_client.revoke_admin_change();
+
+    let pending_admin: Option<AdminChange> = env.as_contract(&trader_client.address, || {
+        env.storage().instance().get(&PENDING_ADMIN)
+    });
+
+    assert!(pending_admin.is_none());
+}
+
+#[test]
+fn revoke_admin_should_fail_when_no_admin_change_in_place() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let trader_client = deploy_trader_client(&env);
+    trader_client.initialize(
+        &admin,
+        &String::from_str(&env, "Trader"),
+        &(Address::generate(&env), Address::generate(&env)),
+        &Address::generate(&env),
+    );
+
+    assert_eq!(
+        trader_client.try_revoke_admin_change(),
+        Err(Ok(ContractError::NoAdminChangeInPlace))
+    );
+}

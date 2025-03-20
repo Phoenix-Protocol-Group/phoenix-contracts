@@ -277,3 +277,72 @@ fn accept_admin_successfully_on_time_limit() {
     });
     assert!(pending_admin.is_none());
 }
+
+#[test]
+fn propose_admin_then_revoke() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let new_admin = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0i64,
+        None,
+        None,
+        None,
+        Address::generate(&env),
+        Address::generate(&env),
+        None,
+    );
+
+    pool.propose_admin(&new_admin, &None);
+    pool.revoke_admin_change();
+
+    let pending_admin: Option<AdminChange> = env.as_contract(&pool.address, || {
+        env.storage().instance().get(&PENDING_ADMIN)
+    });
+
+    assert!(pending_admin.is_none());
+}
+
+#[test]
+fn revoke_admin_should_fail_when_no_admin_change_in_place() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0i64,
+        None,
+        None,
+        None,
+        Address::generate(&env),
+        Address::generate(&env),
+        None,
+    );
+
+    assert_eq!(
+        pool.try_revoke_admin_change(),
+        Err(Ok(ContractError::NoAdminChangeInPlace))
+    );
+}

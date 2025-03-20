@@ -208,3 +208,52 @@ fn accept_admin_successfully_on_time_limit() {
     });
     assert!(pending_admin.is_none());
 }
+
+#[test]
+fn propose_admin_then_revoke() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let new_admin = Address::generate(&env);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &Address::generate(&env),
+        &Address::generate(&env),
+        &Address::generate(&env),
+        &7u32,
+    );
+
+    staking.propose_admin(&new_admin, &None);
+    staking.revoke_admin_change();
+
+    let pending_admin: Option<AdminChange> = env.as_contract(&staking.address, || {
+        env.storage().instance().get(&PENDING_ADMIN)
+    });
+
+    assert!(pending_admin.is_none());
+}
+
+#[test]
+fn revoke_admin_should_fail_when_no_admin_change_in_place() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let staking = deploy_staking_contract(
+        &env,
+        admin.clone(),
+        &Address::generate(&env),
+        &Address::generate(&env),
+        &Address::generate(&env),
+        &7u32,
+    );
+
+    assert_eq!(
+        staking.try_revoke_admin_change(),
+        Err(Ok(ContractError::NoAdminChangeInPlace))
+    );
+}
