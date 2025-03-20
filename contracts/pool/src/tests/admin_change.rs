@@ -7,9 +7,11 @@ use soroban_sdk::{
 
 use crate::{
     error::ContractError,
-    storage::{AdminChange, PENDING_ADMIN},
+    storage::PENDING_ADMIN,
     tests::setup::{deploy_liquidity_pool_contract, deploy_token_contract},
 };
+
+use phoenix::utils::AdminChange;
 
 #[test]
 fn put_replace_admin_request_successfully() {

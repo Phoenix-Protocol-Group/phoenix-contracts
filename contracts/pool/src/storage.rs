@@ -183,13 +183,6 @@ pub struct SimulateReverseSwapResponse {
     pub spread_amount: i128,
 }
 
-#[derive(Clone)]
-#[contracttype]
-pub struct AdminChange {
-    pub new_admin: Address,
-    pub time_limit: Option<u64>,
-}
-
 pub mod utils {
     use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
     use soroban_sdk::String;
