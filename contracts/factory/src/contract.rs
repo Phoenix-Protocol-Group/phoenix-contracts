@@ -87,7 +87,7 @@ pub trait FactoryTrait {
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 
-    fn replace_admin(
+    fn propose_admin(
         env: Env,
         new_admin: Address,
         time_limit: Option<u64>,
@@ -527,7 +527,7 @@ impl FactoryTrait for Factory {
         Ok(())
     }
 
-    fn replace_admin(
+    fn propose_admin(
         env: Env,
         new_admin: Address,
         time_limit: Option<u64>,

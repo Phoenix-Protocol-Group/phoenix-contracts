@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[test]
-fn put_replace_admin_request_successfully() {
+fn propose_admin() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -19,7 +19,7 @@ fn put_replace_admin_request_successfully() {
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
-    let result = factory.replace_admin(&new_admin, &None);
+    let result = factory.propose_admin(&new_admin, &None);
     assert_eq!(result, new_admin.clone());
 
     let pending_admin: AdminChange = env.as_contract(&factory.address, || {
@@ -40,7 +40,7 @@ fn replace_admin_fails_when_new_admin_is_same_as_current() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     assert_eq!(
-        factory.try_replace_admin(&admin, &None),
+        factory.try_propose_admin(&admin, &None),
         Err(Ok(ContractError::SameAdmin))
     );
 }
@@ -55,7 +55,7 @@ fn accept_admin_successfully() {
 
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
-    factory.replace_admin(&new_admin, &None);
+    factory.propose_admin(&new_admin, &None);
 
     let result = factory.accept_admin();
     assert_eq!(result, new_admin.clone());
@@ -95,10 +95,13 @@ fn accept_admin_fails_when_time_limit_expired() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let time_limit = 1000u64;
-    env.ledger().set_timestamp(time_limit - 100);
-    factory.replace_admin(&new_admin, &Some(time_limit));
+    factory.propose_admin(&new_admin, &Some(time_limit));
+    env.ledger().set_timestamp(time_limit + 100);
 
-    factory.accept_admin();
+    assert_eq!(
+        factory.try_accept_admin(),
+        Err(Ok(ContractError::AdminChangeExpired))
+    )
 }
 
 #[test]
@@ -112,7 +115,7 @@ fn accept_admin_successfully_with_time_limit() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let time_limit = 1_500;
-    factory.replace_admin(&new_admin, &Some(time_limit));
+    factory.propose_admin(&new_admin, &Some(time_limit));
 
     env.ledger().set_timestamp(1_000u64);
 
@@ -139,7 +142,7 @@ fn accept_admin_successfully_on_time_limit() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let time_limit = 1_500;
-    factory.replace_admin(&new_admin, &Some(time_limit));
+    factory.propose_admin(&new_admin, &Some(time_limit));
 
     env.ledger().set_timestamp(time_limit);
 
