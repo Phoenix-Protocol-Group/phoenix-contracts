@@ -12,7 +12,9 @@ use soroban_sdk::{
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
-    stake_contract::{self, Stake, StakedResponse},
+    stake_contract::{
+        self, Stake, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse,
+    },
     storage::{Asset, PoolResponse},
     tests::setup::{install_stake_wasm, install_token_wasm},
     token_contract,
@@ -1261,6 +1263,8 @@ fn provide_liquidity_and_autostake() {
 
     let mut token1 = deploy_token_contract(&env, &admin1);
     let mut token2 = deploy_token_contract(&env, &admin2);
+    let reward_token = deploy_token_contract(&env, &admin2);
+
     if token2.address < token1.address {
         std::mem::swap(&mut token1, &mut token2);
         std::mem::swap(&mut admin1, &mut admin2);
@@ -1269,21 +1273,38 @@ fn provide_liquidity_and_autostake() {
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
 
-    let swap_fees = 0i64;
     let pool = deploy_liquidity_pool_contract(
         &env,
         None,
         (&token1.address, &token2.address),
-        swap_fees,
+        0,
         None,
         None,
         None,
-        stake_manager,
+        stake_manager.clone(),
         stake_owner,
     );
 
     let share_token_address = pool.query_share_token_address();
     let token_share = token_contract::Client::new(&env, &share_token_address);
+
+    let result = pool.query_pool_info();
+
+    let stake = stake_contract::Client::new(&env, &result.stake_address);
+
+    stake.create_distribution_flow(&stake_manager, &reward_token.address);
+
+    let reward_amount = 1_000_000_000_000_000;
+    //100_000_000
+    reward_token.mint(&stake_manager, &reward_amount);
+    let distribution_duration = 10_000;
+    stake.fund_distribution(
+        &stake_manager,
+        &0,
+        &distribution_duration,
+        &reward_token.address,
+        &reward_amount,
+    );
 
     token1.mint(&user, &1_000_000_000_000_000);
     assert_eq!(token1.balance(&user), 1_000_000_000_000_000);
@@ -1340,6 +1361,36 @@ fn provide_liquidity_and_autostake() {
                 Stake {
                     stake: 999_999_999_999_000, // the og lp_share amount is already staked
                     stake_timestamp
+                }
+            ]
+        }
+    );
+
+    assert_eq!(
+        stake.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 0
+                }
+            ]
+        }
+    );
+
+    env.ledger().set_timestamp(distribution_duration / 2);
+    stake.distribute_rewards();
+
+    // og stake amount is 999_999_999_999_000 rewards should be 1/2 of that
+    assert_eq!(
+        stake.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address,
+                    reward_amount: 499999999999965
                 }
             ]
         }
