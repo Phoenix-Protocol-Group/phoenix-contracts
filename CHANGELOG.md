@@ -14,7 +14,7 @@ and this project adheres to
 - Stble Pool: Removes an unnecessary input arg from the stable pool initialize method ([#406])
 - All: Changes the ContractError Enum's numbers, so we get better understanding from which contract the error is ([#431])
 - XYK & Stable Pool: changes the validation of the input args ([#435])
-- Stake: Reverts back to the original stake implementatio from tag v1.0.0 ([#429])
+- Stake: Bring back the original superior stake implementation from tag v1.0.0 ([#429])
 
 ## Added
 
@@ -25,6 +25,7 @@ and this project adheres to
 - Vesting: Adds a script for the deployment of the contract to testnet ([#433])
 - Vesting: Extends a query to provide more information ([#434])
 - All: Adds a query that returns the cargo pkg version ([#437])
+- Pool: Implement option to automatically stake when providing liquidity ([#447])
 - All: Adds a mechanism to change the admin of a contract that ensures safety of transition ([#448])
 
 ## Fixed
@@ -50,6 +51,7 @@ and this project adheres to
 [#435]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/435
 [#437]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/437
 [#442]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/442
+[#447]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/447
 [#448]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/448
 
 ## [1.1.0] - 2024-08-27

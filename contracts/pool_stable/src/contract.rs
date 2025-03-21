@@ -63,6 +63,7 @@ pub trait StableLiquidityPoolTrait {
         custom_slippage_bps: Option<i64>,
         deadline: Option<u64>,
         min_shares_to_receive: Option<u128>,
+        auto_stake: bool,
     );
 
     // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
@@ -296,6 +297,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         custom_slippage_bps: Option<i64>,
         deadline: Option<u64>,
         min_shares_to_receive: Option<u128>,
+        auto_stake: bool,
     ) {
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
@@ -485,6 +487,13 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
         let shares = convert_u128_to_i128(shares);
         utils::mint_shares(&env, &config.share_token, &sender, shares);
+
+        if auto_stake {
+            let stake_contract_client = stake_contract::Client::new(&env, &config.stake_contract);
+
+            stake_contract_client.bond(&sender, &shares);
+        }
+
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
