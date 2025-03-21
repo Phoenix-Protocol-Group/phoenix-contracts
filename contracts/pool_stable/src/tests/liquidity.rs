@@ -3,11 +3,14 @@ extern crate std;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    Address, Env, IntoVal, Symbol,
+    vec, Address, Env, IntoVal, Symbol,
 };
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::{
+    stake_contract::{
+        self, Stake, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse,
+    },
     storage::{Asset, PoolResponse},
     token_contract,
 };
@@ -1122,5 +1125,147 @@ fn provide_liqudity_with_user_specified_minimum_lp_shares_should_panic_when_user
         &None::<u64>,
         &Some(1_001),
         &false,
+    );
+}
+
+#[test]
+fn provide_liqudity_with_auto_stake() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &manager);
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager.clone(),
+        factory,
+        None,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let token_share = token_contract::Client::new(&env, &share_token_address);
+    let result = pool.query_pool_info();
+
+    let stake = stake_contract::Client::new(&env, &result.stake_address);
+
+    stake.create_distribution_flow(&manager, &reward_token.address);
+
+    let reward_amount = 1_000_000_000_000_000;
+    //100_000_000
+    reward_token.mint(&manager, &reward_amount);
+    let distribution_duration = 10_000;
+    stake.fund_distribution(
+        &manager,
+        &0,
+        &distribution_duration,
+        &reward_token.address,
+        &reward_amount,
+    );
+
+    token1.mint(&user1, &1000);
+    assert_eq!(token1.balance(&user1), 1000);
+
+    token2.mint(&user1, &1000);
+    assert_eq!(token2.balance(&user1), 1000);
+
+    // tokens 1 & 2 have 7 decimal digits, meaning those values are 0.0001 of token
+    let stake_timestamp = env.ledger().timestamp();
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+        &true,
+    );
+
+    assert_eq!(token_share.balance(&user1), 0);
+    assert_eq!(token_share.balance(&pool.address), 0);
+    assert_eq!(token1.balance(&user1), 0);
+    assert_eq!(token1.balance(&pool.address), 1000);
+    assert_eq!(token2.balance(&user1), 0);
+    assert_eq!(token2.balance(&pool.address), 1000);
+
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address,
+                amount: 1000i128
+            },
+            asset_b: Asset {
+                address: token2.address,
+                amount: 1000i128
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1000i128
+            },
+            stake_address: pool.query_stake_contract_address(),
+        }
+    );
+
+    assert_eq!(
+        stake.query_withdrawable_rewards(&user1),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 0
+                }
+            ]
+        }
+    );
+
+    assert_eq!(
+        stake.query_staked(&user1),
+        StakedResponse {
+            stakes: vec![
+                &env,
+                Stake {
+                    stake: 1_000,
+                    stake_timestamp
+                }
+            ]
+        }
+    );
+
+    assert_eq!(pool.query_total_issued_lp(), 1000);
+
+    env.ledger().set_timestamp(distribution_duration / 2);
+    stake.distribute_rewards();
+
+    assert_eq!(
+        stake.query_withdrawable_rewards(&user1),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address,
+                    reward_amount: (reward_amount / 2) as u128
+                }
+            ]
+        }
     );
 }
