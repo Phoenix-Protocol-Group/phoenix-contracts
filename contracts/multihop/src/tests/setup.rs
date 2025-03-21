@@ -183,6 +183,7 @@ pub fn deploy_and_initialize_pool(
                 &None,
                 &None::<i64>,
                 &None::<u64>,
+                &false,
             );
         }
         PoolType::Stable => {
@@ -194,6 +195,7 @@ pub fn deploy_and_initialize_pool(
                 &None,
                 &None::<u64>,
                 &None::<u128>,
+                &false,
             );
         }
     }

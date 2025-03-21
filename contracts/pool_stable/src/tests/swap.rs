@@ -46,6 +46,7 @@ fn simple_swap() {
         &None,
         &None::<u64>,
         &None::<u128>,
+        &false,
     );
 
     // true means "selling A token"
@@ -193,6 +194,7 @@ fn simple_swap_millions_liquidity_swapping_half_milion_no_fee() {
         &None,
         &None::<u64>,
         &None::<u128>,
+        &false,
     );
     // at this point, the pool holds:
     // token1: 100_000_000_000_000
@@ -328,6 +330,7 @@ fn simple_swap_ten_thousand_tokens() {
         &None,
         &None::<u64>,
         &None::<u128>,
+        &false,
     );
 
     // selling 10,000 tokens with 5% max spread allowed
@@ -415,6 +418,7 @@ fn simple_swap_millions_liquidity_swapping_half_milion_high_fee() {
         &None,
         &None::<u64>,
         &None::<u128>,
+        &false,
     );
 
     // at this point, the pool holds 100_000_000_000_000 "units"
@@ -554,6 +558,7 @@ fn swap_with_high_fee() {
         &None,
         &None::<u64>,
         &None::<u128>,
+        &false,
     );
 
     let spread = 1_000; // 10% maximum spread allowed
@@ -637,6 +642,7 @@ fn swap_simulation_even_pool() {
         &None,
         &None::<u64>,
         &None::<u128>,
+        &false,
     );
 
     // let's simulate swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
@@ -739,6 +745,7 @@ fn simple_swap_with_deadline_should_work() {
         &None,
         &Some(50),
         &None::<u128>,
+        &false,
     );
 
     let spread = 100i64;
@@ -853,6 +860,7 @@ fn simple_swap_should_panic_after_deadline() {
         &None,
         &None::<u64>,
         &None::<u128>,
+        &false,
     );
 
     // true means "selling A token"
@@ -904,7 +912,15 @@ fn simple_swap_with_low_user_fee_should_panic() {
 
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
-    pool.provide_liquidity(&user1, &1_000_000, &1_000_000, &None, &None::<u64>, &None);
+    pool.provide_liquidity(
+        &user1,
+        &1_000_000,
+        &1_000_000,
+        &None,
+        &None::<u64>,
+        &None,
+        &false,
+    );
 
     let spread = 100i64; // 1% maximum spread allowed
     pool.swap(

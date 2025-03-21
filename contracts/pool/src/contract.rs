@@ -64,6 +64,7 @@ pub trait LiquidityPoolTrait {
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
         deadline: Option<u64>,
+        auto_stake: bool,
     );
 
     // `offer_asset` is the asset that the user would like to swap for the other token in the pool.
@@ -284,6 +285,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         min_b: Option<i128>,
         custom_slippage_bps: Option<i64>,
         deadline: Option<u64>,
+        auto_stake: bool,
     ) {
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
@@ -461,6 +463,12 @@ impl LiquidityPoolTrait for LiquidityPool {
             });
 
         utils::mint_shares(&env, &config.share_token, &sender, shares_amount);
+
+        if auto_stake {
+            let stake_contract_client = stake_contract::Client::new(&env, &config.stake_contract);
+
+            stake_contract_client.bond(&sender, &shares_amount);
+        }
 
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
