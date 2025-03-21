@@ -10,6 +10,7 @@ use crate::error::ContractError;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const MULTIHOP_KEY: Symbol = symbol_short!("MULTIHOP");
+pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]

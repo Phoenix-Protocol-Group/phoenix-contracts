@@ -11,6 +11,8 @@ use crate::error::ContractError;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const FACTORY_KEY: Symbol = symbol_short!("FACTORY");
+pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
+const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -46,8 +48,6 @@ pub struct Config {
     pub whitelisted_accounts: Vec<Address>,
     pub lp_token_decimals: u32,
 }
-
-const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
 
 pub fn save_stable_wasm_hash(env: &Env, hash: BytesN<32>) {
     env.storage().persistent().set(&STABLE_WASM_HASH, &hash);

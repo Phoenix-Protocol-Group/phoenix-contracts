@@ -4,6 +4,7 @@ use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 #[allow(dead_code)]
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const STAKE_KEY: Symbol = symbol_short!("STAKE");
+pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]

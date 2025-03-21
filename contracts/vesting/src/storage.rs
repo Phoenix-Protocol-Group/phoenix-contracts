@@ -12,6 +12,7 @@ use crate::error::ContractError;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const VESTING_KEY: Symbol = symbol_short!("VESTING");
+pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
 
 impl TryFromVal<Env, DataKey> for Val {
     type Error = ConversionError;

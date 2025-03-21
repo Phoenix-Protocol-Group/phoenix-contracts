@@ -84,6 +84,13 @@ pub struct LiquidityPoolInitInfo {
     pub stake_init_info: StakeInitInfo,
 }
 
+#[derive(Clone)]
+#[contracttype]
+pub struct AdminChange {
+    pub new_admin: Address,
+    pub time_limit: Option<u64>,
+}
+
 #[contracttype]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]

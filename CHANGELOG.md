@@ -26,6 +26,7 @@ and this project adheres to
 - Vesting: Extends a query to provide more information ([#434])
 - All: Adds a query that returns the cargo pkg version ([#437])
 - Pool: Implement option to automatically stake when providing liquidity ([#447])
+- All: Adds a mechanism to change the admin of a contract that ensures safety of transition ([#448])
 
 ## Fixed
 
@@ -51,6 +52,7 @@ and this project adheres to
 [#437]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/437
 [#442]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/442
 [#447]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/447
+[#448]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/448
 
 ## [1.1.0] - 2024-08-27
 

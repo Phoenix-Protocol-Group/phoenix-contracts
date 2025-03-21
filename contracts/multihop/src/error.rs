@@ -8,4 +8,7 @@ pub enum ContractError {
     OperationsEmpty = 101,
     IncorrectAssetSwap = 102,
     AdminNotSet = 103,
+    SameAdmin = 104,
+    NoAdminChangeInPlace = 105,
+    AdminChangeExpired = 106,
 }

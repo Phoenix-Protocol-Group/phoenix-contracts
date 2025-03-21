@@ -1,6 +1,6 @@
 use phoenix::{
     ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL},
-    utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo},
+    utils::{convert_i128_to_u128, convert_u128_to_i128, AdminChange, LiquidityPoolInitInfo},
 };
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
@@ -15,7 +15,7 @@ use crate::{
         save_greatest_precision,
         utils::{self, get_admin_old, is_initialized, set_initialized},
         AmplifierParameters, Asset, Config, PairType, PoolResponse, SimulateReverseSwapResponse,
-        SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN, STABLE_POOL_KEY,
+        SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN, PENDING_ADMIN, STABLE_POOL_KEY,
     },
     token_contract, DECIMAL_PRECISION,
 };
@@ -140,6 +140,16 @@ pub trait StableLiquidityPoolTrait {
     fn query_total_issued_lp(env: Env) -> i128;
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
+
+    fn propose_admin(
+        env: Env,
+        new_admin: Address,
+        time_limit: Option<u64>,
+    ) -> Result<Address, ContractError>;
+
+    fn revoke_admin_change(env: Env) -> Result<(), ContractError>;
+
+    fn accept_admin(env: Env) -> Result<Address, ContractError>;
 }
 
 #[contractimpl]
@@ -902,6 +912,87 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())
+    }
+
+    fn propose_admin(
+        env: Env,
+        new_admin: Address,
+        time_limit: Option<u64>,
+    ) -> Result<Address, ContractError> {
+        let current_admin = get_admin_old(&env);
+        current_admin.require_auth();
+
+        if current_admin == new_admin {
+            log!(&env, "Trying to set new admin as new");
+            panic_with_error!(&env, ContractError::SameAdmin);
+        }
+
+        env.storage().instance().set(
+            &PENDING_ADMIN,
+            &AdminChange {
+                new_admin: new_admin.clone(),
+                time_limit,
+            },
+        );
+
+        env.events().publish(
+            (
+                "Stable Pool: ",
+                "Admin replacement requested by old admin: ",
+            ),
+            &current_admin,
+        );
+        env.events()
+            .publish(("Stable Pool: ", "Replace with new admin: "), &new_admin);
+
+        Ok(new_admin)
+    }
+
+    fn revoke_admin_change(env: Env) -> Result<(), ContractError> {
+        let current_admin = get_admin_old(&env);
+        current_admin.require_auth();
+
+        if !env.storage().instance().has(&PENDING_ADMIN) {
+            log!(&env, "No admin change in place");
+            panic_with_error!(&env, ContractError::NoAdminChangeInPlace);
+        }
+
+        env.storage().instance().remove(&PENDING_ADMIN);
+
+        env.events()
+            .publish(("Stable Pool: ", "Undo admin change: "), ());
+
+        Ok(())
+    }
+
+    fn accept_admin(env: Env) -> Result<Address, ContractError> {
+        let admin_change_info: AdminChange = env
+            .storage()
+            .instance()
+            .get(&PENDING_ADMIN)
+            .unwrap_or_else(|| {
+                log!(&env, "No admin change request is in place");
+                panic_with_error!(&env, ContractError::NoAdminChangeInPlace);
+            });
+
+        let pending_admin = admin_change_info.new_admin;
+        pending_admin.require_auth();
+
+        if let Some(time_limit) = admin_change_info.time_limit {
+            if env.ledger().timestamp() > time_limit {
+                log!(&env, "Admin change expired");
+                panic_with_error!(&env, ContractError::AdminChangeExpired);
+            }
+        }
+
+        env.storage().instance().remove(&PENDING_ADMIN);
+
+        utils::save_admin_old(&env, pending_admin.clone());
+
+        env.events()
+            .publish(("Stable Pool: ", "Accepted new admin: "), &pending_admin);
+
+        Ok(pending_admin)
     }
 }
 

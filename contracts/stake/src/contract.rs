@@ -1,4 +1,5 @@
 use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
+use phoenix::utils::AdminChange;
 use soroban_decimal::Decimal;
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, vec, Address, BytesN, Env, String,
@@ -6,6 +7,7 @@ use soroban_sdk::{
 };
 
 use crate::distribution::{calc_power, calculate_pending_rewards_deprecated};
+use crate::storage::PENDING_ADMIN;
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
@@ -95,6 +97,16 @@ pub trait StakingTrait {
     fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
     fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
+
+    fn propose_admin(
+        env: Env,
+        new_admin: Address,
+        time_limit: Option<u64>,
+    ) -> Result<Address, ContractError>;
+
+    fn revoke_admin_change(env: Env) -> Result<(), ContractError>;
+
+    fn accept_admin(env: Env) -> Result<Address, ContractError>;
 }
 
 #[contractimpl]
@@ -760,6 +772,83 @@ impl StakingTrait for Staking {
                 );
                 panic_with_error!(&env, ContractError::ContractMathError);
             })
+    }
+
+    fn propose_admin(
+        env: Env,
+        new_admin: Address,
+        time_limit: Option<u64>,
+    ) -> Result<Address, ContractError> {
+        let current_admin = get_admin_old(&env);
+        current_admin.require_auth();
+
+        if current_admin == new_admin {
+            log!(&env, "Trying to set new admin as new");
+            panic_with_error!(&env, ContractError::SameAdmin);
+        }
+
+        env.storage().instance().set(
+            &PENDING_ADMIN,
+            &AdminChange {
+                new_admin: new_admin.clone(),
+                time_limit,
+            },
+        );
+
+        env.events().publish(
+            ("Stake: ", "Admin replacement requested by old admin: "),
+            &current_admin,
+        );
+        env.events()
+            .publish(("Stake: ", "Replace with new admin: "), &new_admin);
+
+        Ok(new_admin)
+    }
+
+    fn revoke_admin_change(env: Env) -> Result<(), ContractError> {
+        let current_admin = get_admin_old(&env);
+        current_admin.require_auth();
+
+        if !env.storage().instance().has(&PENDING_ADMIN) {
+            log!(&env, "No admin change in place");
+            panic_with_error!(&env, ContractError::NoAdminChangeInPlace);
+        }
+
+        env.storage().instance().remove(&PENDING_ADMIN);
+
+        env.events().publish(("Stake: ", "Undo admin change: "), ());
+
+        Ok(())
+    }
+
+    fn accept_admin(env: Env) -> Result<Address, ContractError> {
+        let admin_change_info: AdminChange = env
+            .storage()
+            .instance()
+            .get(&PENDING_ADMIN)
+            .unwrap_or_else(|| {
+                log!(&env, "No admin change request is in place");
+                panic_with_error!(&env, ContractError::NoAdminChangeInPlace);
+            });
+
+        let pending_admin = admin_change_info.new_admin;
+        pending_admin.require_auth();
+
+        if let Some(time_limit) = admin_change_info.time_limit {
+            if env.ledger().timestamp() > time_limit {
+                log!(&env, "Admin change expired");
+                panic_with_error!(&env, ContractError::AdminChangeExpired);
+            }
+        }
+
+        env.storage().instance().remove(&PENDING_ADMIN);
+
+        utils::save_admin_old(&env, &pending_admin);
+
+        env.events()
+            .publish(("Stake: ", "Accepted new admin: "), &pending_admin);
+
+        Ok(pending_admin)
     }
 }
 
