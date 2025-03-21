@@ -25,6 +25,7 @@ and this project adheres to
 - Vesting: Adds a script for the deployment of the contract to testnet ([#433])
 - Vesting: Extends a query to provide more information ([#434])
 - All: Adds a query that returns the cargo pkg version ([#437])
+- All: Adds a mechanism to change the `admin contract` of a contract ([#448])
 
 ## Fixed
 
@@ -49,6 +50,7 @@ and this project adheres to
 [#435]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/435
 [#437]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/437
 [#442]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/442
+[#448]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/448
 
 ## [1.1.0] - 2024-08-27
 
