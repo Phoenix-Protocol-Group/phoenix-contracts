@@ -531,14 +531,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #211)")]
+    #[should_panic(expected = "Error(Contract, #311)")]
     fn test_get_deposit_amounts_amount_b_less_than_desired() {
         let env = Env::default();
         utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #210)")]
+    #[should_panic(expected = "Error(Contract, #310)")]
     fn test_get_deposit_amounts_amount_b_exceeds_desired_amount() {
         let env = Env::default();
         utils::get_deposit_amounts(
@@ -554,7 +554,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #211)")]
+    #[should_panic(expected = "Error(Contract, #311)")]
     fn test_get_deposit_amounts_amount_b_less_than_min_b() {
         let env = Env::default();
         utils::get_deposit_amounts(&env, 1000, None, 1005, Some(1001), 1, 1, Decimal::bps(100));
@@ -577,14 +577,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #206)")]
+    #[should_panic(expected = "Error(Contract, #306)")]
     fn test_get_deposit_amounts_amount_a_greater_than_desired_and_less_than_min_a() {
         let env = Env::default();
         utils::get_deposit_amounts(&env, 50, Some(100), 200, None, 100, 200, Decimal::bps(100));
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #207)")]
+    #[should_panic(expected = "Error(Contract, #307)")]
     fn test_get_deposit_amounts_amount_b_greater_than_desired_and_less_than_min_b() {
         let env = Env::default();
         utils::get_deposit_amounts(
@@ -600,7 +600,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #206)")]
+    #[should_panic(expected = "Error(Contract, #306)")]
     fn test_get_deposit_amounts_amount_a_less_than_min_a() {
         let env = Env::default();
         utils::get_deposit_amounts(&env, 100, Some(200), 200, None, 100, 200, Decimal::bps(100));
@@ -625,7 +625,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #208)")]
+    #[should_panic(expected = "Error(Contract, #308)")]
     fn test_get_deposit_amounts_exceeds_desired() {
         let env = Env::default();
         // The calculated deposit for asset A exceeds the desired amount and is not within 1% tolerance
@@ -633,7 +633,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #209)")]
+    #[should_panic(expected = "Error(Contract, #309)")]
     fn test_get_deposit_amounts_below_min_a() {
         let env = Env::default();
         // The calculated deposit for asset A is below the minimum requirement
@@ -650,7 +650,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Error(Contract, #211)")]
+    #[should_panic(expected = "Error(Contract, #311)")]
     fn test_get_deposit_amounts_below_min_b() {
         let env = Env::default();
         // The calculated deposit for asset B is below the minimum requirement
@@ -690,7 +690,7 @@ mod tests {
     #[test_case(10, 0 ; "when desired_b is zero")]
     #[test_case(-1, -1 ; "when both desired are negative")]
     #[test_case(0, 0 ; "when both desired are zero")]
-    #[should_panic(expected = "Error(Contract, #213)")]
+    #[should_panic(expected = "Error(Contract, #313)")]
     fn test_get_deposit_amounts_desired_less_than_or_equal_zero(desired_a: i128, desired_b: i128) {
         let env = Env::default();
         utils::get_deposit_amounts(
@@ -708,7 +708,7 @@ mod tests {
     #[test_case(-1, 10 ; "when min_a is negative")]
     #[test_case(10, -1 ; "when min_b is negative")]
     #[test_case(-1, -1 ; "when both minimums are negative")]
-    #[should_panic(expected = "Error(Contract, #214)")]
+    #[should_panic(expected = "Error(Contract, #314)")]
     fn test_get_deposit_amounts_min_amounts_less_than_zero(min_a: i128, min_b: i128) {
         let env = Env::default();
         utils::get_deposit_amounts(
