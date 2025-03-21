@@ -1,16 +1,20 @@
 extern crate std;
 
+use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use pretty_assertions::assert_eq;
 
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
-    Address, Env, IntoVal, Symbol,
+    vec, Address, Env, IntoVal, String, Symbol,
 };
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
+    contract::{LiquidityPool, LiquidityPoolClient},
+    stake_contract::{self, Stake, StakedResponse},
     storage::{Asset, PoolResponse},
+    tests::setup::{install_stake_wasm, install_token_wasm},
     token_contract,
 };
 
@@ -63,6 +67,7 @@ fn provide_liquidity() {
         &Some(1_000_000_000_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     assert_eq!(
@@ -80,7 +85,8 @@ fn provide_liquidity() {
                         Some(1_000_000_000_000_000_i128),
                         Some(1_000_000_000_000_000_i128),
                         None::<i64>,
-                        None::<u64>
+                        None::<u64>,
+                        false,
                     )
                         .into_val(&env),
                 )),
@@ -180,6 +186,7 @@ fn withdraw_liquidity() {
         &Some(1_000_000_000_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     assert_eq!(token1.balance(&user1), 0);
@@ -304,7 +311,16 @@ fn swap_with_no_amounts() {
     token1.mint(&user1, &10_001_000);
     token2.mint(&user1, &10_001_000);
     // providing all amounts as None
-    pool.provide_liquidity(&user1, &None, &None, &None, &None, &None, &None::<u64>);
+    pool.provide_liquidity(
+        &user1,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None::<u64>,
+        &false,
+    );
 }
 
 #[test]
@@ -352,6 +368,7 @@ fn withdraw_liqudity_below_min() {
         &Some(10_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     let share_amount = 5_000;
@@ -412,6 +429,7 @@ fn query_share_valid_liquidity() {
         &Some(200_000),
         &None,
         &None::<u64>,
+        &false,
     );
     let pool_info_before_withdrawal = pool.query_pool_info();
     assert_eq!(
@@ -443,6 +461,7 @@ fn query_share_valid_liquidity() {
         &Some(200_000),
         &None,
         &None::<u64>,
+        &false,
     );
     let pool_info_before_withdrawal = pool.query_pool_info();
     assert_eq!(
@@ -474,6 +493,7 @@ fn query_share_valid_liquidity() {
         &Some(800_000),
         &None,
         &None::<u64>,
+        &false,
     );
     let pool_info_before_withdrawal = pool.query_pool_info();
     assert_eq!(
@@ -821,6 +841,7 @@ fn provide_liquidity_slippage_tolerance_too_high() {
         &Some(10_000),
         &Some(10_001),
         &None::<u64>,
+        &false,
     );
 }
 
@@ -928,6 +949,7 @@ fn provide_liqudity_with_deadline_should_work() {
         &Some(10_000),
         &None,
         &Some(100),
+        &false,
     );
 
     assert_eq!(
@@ -945,7 +967,8 @@ fn provide_liqudity_with_deadline_should_work() {
                         Some(10_000i128),
                         Some(10_000i128),
                         None::<i64>,
-                        Some(100u64)
+                        Some(100u64),
+                        false,
                     )
                         .into_val(&env),
                 )),
@@ -1047,6 +1070,7 @@ fn provide_liqudity_past_deadline_should_panic() {
         &Some(10_000),
         &None,
         &Some(99),
+        &false,
     );
 }
 
@@ -1095,6 +1119,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
         &Some(10_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     assert_eq!(token1.balance(&user1), 0);
@@ -1210,6 +1235,7 @@ fn withdraw_liquidity_past_deadline_should_panic() {
         &Some(10_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     assert_eq!(token1.balance(&user1), 0);
@@ -1222,4 +1248,175 @@ fn withdraw_liquidity_past_deadline_should_panic() {
     let min_b = 5_000;
     env.ledger().with_mut(|li| li.timestamp = 50);
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(49));
+}
+
+#[test]
+fn provide_liquidity_and_autostake() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let swap_fees = 0i64;
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let token_share = token_contract::Client::new(&env, &share_token_address);
+
+    token1.mint(&user, &1_000_000_000_000_000);
+    assert_eq!(token1.balance(&user), 1_000_000_000_000_000);
+
+    token2.mint(&user, &1_000_000_000_000_000);
+    assert_eq!(token2.balance(&user), 1_000_000_000_000_000);
+
+    let stake_timestamp = env.ledger().timestamp();
+    pool.provide_liquidity(
+        &user,
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &None,
+        &None::<u64>,
+        &true,
+    );
+
+    assert_eq!(token_share.balance(&user), 0); // because lp_shares are automatically staked
+    assert_eq!(token_share.balance(&pool.address), 1_000);
+    assert_eq!(token1.balance(&user), 0);
+    assert_eq!(token1.balance(&pool.address), 1_000_000_000_000_000);
+    assert_eq!(token2.balance(&user), 0);
+    assert_eq!(token2.balance(&pool.address), 1_000_000_000_000_000);
+
+    let result = pool.query_pool_info();
+    assert_eq!(
+        result,
+        PoolResponse {
+            asset_a: Asset {
+                address: token1.address,
+                amount: 1_000_000_000_000_000_i128
+            },
+            asset_b: Asset {
+                address: token2.address,
+                amount: 1_000_000_000_000_000_i128
+            },
+            asset_lp_share: Asset {
+                address: share_token_address,
+                amount: 1_000_000_000_000_000_i128
+            },
+            stake_address: result.clone().stake_address,
+        }
+    );
+    assert_eq!(pool.query_total_issued_lp(), 1_000_000_000_000_000);
+
+    let stake_client = stake_contract::Client::new(&env, &result.stake_address);
+    assert_eq!(
+        stake_client.query_staked(&user),
+        StakedResponse {
+            stakes: vec![
+                &env,
+                Stake {
+                    stake: 999_999_999_999_000, // the og lp_share amount is already staked
+                    stake_timestamp
+                }
+            ]
+        }
+    );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #403)")]
+fn provide_liquidity_and_autostake_should_fail_when_liquidity_is_not_enough_for_min_stake() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let pool = LiquidityPoolClient::new(&env, &env.register(LiquidityPool, ()));
+    let token_init_info = TokenInitInfo {
+        token_a: token1.address.clone(),
+        token_b: token2.address.clone(),
+    };
+    let stake_init_info = StakeInitInfo {
+        min_bond: 1_000_000_000_000_000,
+        min_reward: 1_000_000_000_000_000,
+        manager: stake_manager,
+        max_complexity: 10u32,
+    };
+    let stake_wasm_hash = install_stake_wasm(&env);
+    let token_wasm_hash = install_token_wasm(&env);
+
+    let lp_init_info = LiquidityPoolInitInfo {
+        admin: admin1,
+        swap_fee_bps: 100,
+        fee_recipient: Address::generate(&env),
+        max_allowed_slippage_bps: 5_000,
+        default_slippage_bps: 2_500,
+        max_allowed_spread_bps: 1_000,
+        max_referral_bps: 5_000,
+        token_init_info,
+        stake_init_info,
+    };
+
+    pool.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &lp_init_info,
+        &stake_owner,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHOBTC"),
+        &100i64,
+        &1_000,
+    );
+
+    token1.mint(&user, &1_000_000_000_000_000);
+    assert_eq!(token1.balance(&user), 1_000_000_000_000_000);
+
+    token2.mint(&user, &1_000_000_000_000_000);
+    assert_eq!(token2.balance(&user), 1_000_000_000_000_000);
+
+    pool.provide_liquidity(
+        &user,
+        &Some(1_000_000_000),
+        &Some(1_000_000_000_000),
+        &Some(1_000_000_000),
+        &Some(1_000_000_000),
+        &None,
+        &None::<u64>,
+        &true,
+    );
 }

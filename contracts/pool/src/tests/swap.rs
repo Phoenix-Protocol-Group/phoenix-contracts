@@ -55,6 +55,7 @@ fn simple_swap() {
         &Some(liquidity_amount),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // Swapping 100,000 tokens with 7 decimal places
@@ -215,6 +216,7 @@ fn simple_swap_with_preferred_pool_fee() {
         &Some(1_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // selling just one token with 1% max spread allowed
@@ -369,6 +371,7 @@ fn simple_swap_should_panic_when_user_accepted_fee_is_less_than_pool_fee() {
         &Some(1_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     let spread = 100i64;
@@ -499,6 +502,7 @@ fn simple_swap_with_referral_fee() {
         &Some(1_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // selling just one token with 1% max spread allowed
@@ -629,6 +633,7 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
         &Some(1_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     let spread = 100i64; // 1% maximum spread allowed
@@ -695,6 +700,7 @@ fn swap_should_panic_with_bad_max_spread() {
         &None,
         &None,
         &None::<u64>,
+        &false,
     );
 
     // selling just one token with 1% max spread allowed and 50 bps max spread
@@ -755,6 +761,7 @@ fn swap_with_high_fee() {
         &Some(initial_liquidity),
         &None,
         &None::<u64>,
+        &false,
     );
 
     let spread = 1_000; // 10% maximum spread allowed
@@ -841,6 +848,7 @@ fn swap_simulation_even_pool() {
         &Some(initial_liquidity),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // let's simulate swap 100_000 units of Token 1 in 1:1 pool with 10% protocol fee
@@ -946,6 +954,7 @@ fn swap_simulation_one_third_pool() {
         &Some(3 * initial_liquidity),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // let's simulate swap 100_000 units of Token 1 in 1:3 pool with 5% protocol fee
@@ -1051,6 +1060,7 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
         &Some(initial_liquidity),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // simulating a swap with 1_000_000_000 units
@@ -1134,6 +1144,7 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
         &Some(1_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     pool.swap(
@@ -1306,6 +1317,7 @@ fn test_should_swap_with_valid_ask_asset_min_amount() {
         &Some(1_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     pool.swap(
@@ -1373,6 +1385,7 @@ fn test_should_fail_when_invalid_ask_asset_min_amount() {
         &Some(1_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     let spread = 100i64; // 1% maximum spread allowed
@@ -1431,6 +1444,7 @@ fn simple_swap_with_deadline_success() {
         &Some(1_000_000),
         &None,
         &Some(50u64),
+        &false,
     );
 
     // selling just one token with 1% max spread allowed
@@ -1552,6 +1566,7 @@ fn simple_swap_with_should_fail_when_after_the_deadline() {
         &Some(1_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // selling just one token with 1% max spread allowed
@@ -1614,6 +1629,7 @@ fn simple_swap_with_biggest_possible_decimal_precision() {
         &Some(405_000_000_000_000_000),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // 50% spread
@@ -1703,6 +1719,7 @@ fn swap_with_smaller_amounts() {
         &Some(liquidity_amount),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // Swapping 0.1 $XLM tokens with 7 decimal places
@@ -1841,6 +1858,7 @@ fn small_swap_replica_of_live_pools_xlm_usdc() {
         &Some(initial_liquidity),
         &None,
         &None::<u64>,
+        &false,
     );
 
     // swap 100_000 units (0.1) of XLM in a 1:4 pool with 1% protocol fee
