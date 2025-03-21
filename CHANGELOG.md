@@ -25,7 +25,7 @@ and this project adheres to
 - Vesting: Adds a script for the deployment of the contract to testnet ([#433])
 - Vesting: Extends a query to provide more information ([#434])
 - All: Adds a query that returns the cargo pkg version ([#437])
-- All: Adds a mechanism to change the `admin contract` of a contract ([#448])
+- All: Adds a mechanism to change the admin of a contract that ensures safety of transition ([#448])
 
 ## Fixed
 
