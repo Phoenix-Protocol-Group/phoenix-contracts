@@ -195,6 +195,7 @@ pub fn deploy_and_initialize_pool(
                 &None,
                 &None::<u64>,
                 &None::<u128>,
+                &false,
             );
         }
     }

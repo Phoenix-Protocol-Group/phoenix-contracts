@@ -53,7 +53,15 @@ fn provide_liqudity() {
     assert_eq!(token2.balance(&user1), 1000);
 
     // tokens 1 & 2 have 7 decimal digits, meaning those values are 0.0001 of token
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+        &false,
+    );
 
     assert_eq!(
         env.auths(),
@@ -69,7 +77,8 @@ fn provide_liqudity() {
                         1000i128,
                         None::<i64>,
                         None::<u64>,
-                        None::<u128>
+                        None::<u128>,
+                        false
                     )
                         .into_val(&env),
                 )),
@@ -174,6 +183,7 @@ fn provide_liqudity_big_numbers() {
         &None,
         &None::<u64>,
         &None::<u128>,
+        &false,
     );
 
     assert_eq!(
@@ -190,7 +200,8 @@ fn provide_liqudity_big_numbers() {
                         1_000_000_000_000_i128,
                         None::<i64>,
                         None::<u64>,
-                        None::<u128>
+                        None::<u128>,
+                        false
                     )
                         .into_val(&env),
                 )),
@@ -282,7 +293,15 @@ fn withdraw_liquidity() {
     token1.mint(&user1, &1000);
     token2.mint(&user1, &1000);
     // tokens 1 & 2 have 7 decimal digits, meaning those values are 0.0001 of token
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+        &false,
+    );
 
     assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
@@ -574,7 +593,15 @@ fn swap_with_no_amounts() {
     token1.mint(&user1, &1_001_000);
     token2.mint(&user1, &1_001_000);
     // providing all amounts as None
-    pool.provide_liquidity(&user1, &0i128, &0i128, &None, &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &0i128,
+        &0i128,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+        &false,
+    );
 }
 
 #[test]
@@ -611,7 +638,15 @@ fn withdraw_liqudity_below_min() {
 
     token1.mint(&user1, &1000);
     token2.mint(&user1, &1000);
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+        &false,
+    );
 
     let share_amount = 500;
     // Expecting min_a and/or min_b as huge bigger then available
@@ -658,7 +693,15 @@ fn provide_liqudity_with_deadline_works() {
     assert_eq!(token2.balance(&user1), 1000);
 
     env.ledger().with_mut(|li| li.timestamp = 99);
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &Some(100), &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &Some(100),
+        &None::<u128>,
+        &false,
+    );
 
     assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
@@ -728,7 +771,15 @@ fn provide_liqudity_past_deadline_should_panic() {
     assert_eq!(token2.balance(&user1), 1000);
 
     env.ledger().with_mut(|li| li.timestamp = 100);
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &Some(99), &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &Some(99),
+        &None::<u128>,
+        &false,
+    );
 }
 
 #[test]
@@ -767,7 +818,15 @@ fn withdraw_liquidity_with_deadline_should_work() {
     token1.mint(&user1, &1000);
     token2.mint(&user1, &1000);
 
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+        &false,
+    );
 
     assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
@@ -857,7 +916,15 @@ fn withdraw_liquidity_past_deadline_should_panic() {
     token1.mint(&user1, &1000);
     token2.mint(&user1, &1000);
 
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+        &false,
+    );
 
     assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
@@ -907,8 +974,24 @@ fn provide_liqudity_should_panic_when_shares_to_be_minted_below_minimum_shares()
     token1.mint(&user1, &2000);
     token2.mint(&user1, &2000);
 
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &None::<u128>);
-    pool.provide_liquidity(&user1, &1000, &1000, &Some(1), &None::<u64>, &None::<u128>);
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+        &false,
+    );
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &Some(1),
+        &None::<u64>,
+        &None::<u128>,
+        &false,
+    );
 }
 
 #[test]
@@ -950,7 +1033,15 @@ fn provide_liqudity_with_user_specified_minimum_lp_shares() {
     token2.mint(&user1, &1000);
     assert_eq!(token2.balance(&user1), 1000);
 
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &Some(1_000));
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &None::<u64>,
+        &Some(1_000),
+        &false,
+    );
 
     assert_eq!(token_share.balance(&user1), 1000);
     assert_eq!(token_share.balance(&pool.address), 0);
@@ -1023,5 +1114,13 @@ fn provide_liqudity_with_user_specified_minimum_lp_shares_should_panic_when_user
     assert_eq!(token2.balance(&user1), 1000);
 
     // Here the user provides `1_000` of each token and expects more than the pool allocation
-    pool.provide_liquidity(&user1, &1000, &1000, &None, &None::<u64>, &Some(1_001));
+    pool.provide_liquidity(
+        &user1,
+        &1000,
+        &1000,
+        &None,
+        &None::<u64>,
+        &Some(1_001),
+        &false,
+    );
 }
