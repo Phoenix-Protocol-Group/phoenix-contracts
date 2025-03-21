@@ -659,7 +659,7 @@ fn test_swap_should_fail_when_referral_fee_is_larger_than_allowed() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #200)")]
+#[should_panic(expected = "HostError: Error(Contract, #300)")]
 fn swap_should_panic_with_bad_max_spread() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1161,7 +1161,7 @@ fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Opt
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #215)")]
+#[should_panic(expected = "HostError: Error(Contract, #315)")]
 fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1205,7 +1205,7 @@ fn test_v_phx_vul_017_should_panic_when_swapping_non_existing_token_in_pool() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #215)")]
+#[should_panic(expected = "HostError: Error(Contract, #315)")]
 fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1243,7 +1243,7 @@ fn test_v_phx_vul_017_should_panic_when_simulating_swap_for_non_existing_token_i
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #215)")]
+#[should_panic(expected = "HostError: Error(Contract, #315)")]
 fn test_v_phx_vul_017_should_panic_when_simulating_reverse_swap_for_non_existing_token_in_pool() {
     let env = Env::default();
     env.mock_all_auths();

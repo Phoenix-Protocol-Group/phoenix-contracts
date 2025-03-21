@@ -1398,7 +1398,7 @@ fn provide_liquidity_and_autostake() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #403)")]
+#[should_panic(expected = "HostError: Error(Contract, #503)")]
 fn provide_liquidity_and_autostake_should_fail_when_liquidity_is_not_enough_for_min_stake() {
     let env = Env::default();
     env.mock_all_auths();
