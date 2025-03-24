@@ -777,9 +777,9 @@ impl StakingTrait for Staking {
     ) -> Result<Config, ContractError> {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
         admin.require_auth();
 
         let mut config = get_config(&env);
@@ -834,13 +834,13 @@ impl StakingTrait for Staking {
     fn update_admin(env: Env, new_admin: Address) -> Result<Address, ContractError> {
         env.storage()
             .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
-        let admin = get_admin(&env);
+        let admin = get_admin_old(&env);
 
         admin.require_auth();
 
-        utils::save_admin(&env, &new_admin);
+        utils::save_admin_old(&env, &new_admin);
 
         Ok(new_admin)
     }
