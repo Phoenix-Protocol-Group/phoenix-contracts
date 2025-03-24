@@ -1568,7 +1568,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "HostError: Error(Contract, #200)")]
+    #[should_panic(expected = "HostError: Error(Contract, #300)")]
     fn test_assert_max_spread_fail_max_spread_exceeded() {
         let env = Env::default();
 
@@ -1588,7 +1588,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "HostError: Error(Contract, #200)")]
+    #[should_panic(expected = "HostError: Error(Contract, #300)")]
     fn test_assert_max_spread_fail_no_belief_price_max_spread_exceeded() {
         let env = Env::default();
         // max spread of 10%, return amount of 10, spread amount of 2

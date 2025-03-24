@@ -4,16 +4,16 @@ use soroban_sdk::contracterror;
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum ContractError {
-    AlreadyInitialized = 1,
-    WhiteListeEmpty = 2,
-    NotAuthorized = 3,
-    LiquidityPoolNotFound = 4,
-    TokenABiggerThanTokenB = 5,
-    MinStakeInvalid = 6,
-    MinRewardInvalid = 7,
-    AdminNotSet = 8,
-    OverflowingOps = 9,
-    SameAdmin = 10,
-    NoAdminChangeInPlace = 11,
-    AdminChangeExpired = 12,
+    AlreadyInitialized = 100,
+    WhiteListeEmpty = 101,
+    NotAuthorized = 102,
+    LiquidityPoolNotFound = 103,
+    TokenABiggerThanTokenB = 104,
+    MinStakeInvalid = 105,
+    MinRewardInvalid = 106,
+    AdminNotSet = 107,
+    OverflowingOps = 108,
+    SameAdmin = 109,
+    NoAdminChangeInPlace = 110,
+    AdminChangeExpired = 111,
 }

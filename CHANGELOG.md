@@ -15,6 +15,7 @@ and this project adheres to
 - All: Changes the ContractError Enum's numbers, so we get better understanding from which contract the error is ([#431])
 - XYK & Stable Pool: changes the validation of the input args ([#435])
 - Stake: Bring back the original superior stake implementation from tag v1.0.0 ([#429])
+- All: changes the `ContractError` numbers ([#451])
 
 ## Added
 
@@ -53,6 +54,7 @@ and this project adheres to
 [#442]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/442
 [#447]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/447
 [#448]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/448
+[#451]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/451
 
 ## [1.1.0] - 2024-08-27
 
