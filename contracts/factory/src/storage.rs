@@ -12,7 +12,7 @@ use crate::error::ContractError;
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const FACTORY_KEY: Symbol = symbol_short!("FACTORY");
 pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
-const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
+pub(crate) const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]

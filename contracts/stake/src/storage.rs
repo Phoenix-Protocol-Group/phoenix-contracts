@@ -19,7 +19,8 @@ pub struct Config {
     // Maximum complexity for the reward distribution curve
     pub max_complexity: u32,
 }
-const CONFIG: Symbol = symbol_short!("CONFIG");
+
+pub const CONFIG: Symbol = symbol_short!("CONFIG");
 
 pub fn get_config(env: &Env) -> Config {
     let config = env

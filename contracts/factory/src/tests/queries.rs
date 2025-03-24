@@ -1,5 +1,8 @@
 use super::setup::{deploy_factory_contract, generate_lp_init_info};
-use crate::storage::{Asset, DataKey, LpPortfolio, Stake, StakePortfolio, UserPortfolio};
+use crate::storage::{
+    Asset, DataKey, LpPortfolio, PairTupleKey, Stake, StakePortfolio, UserPortfolio, FACTORY_KEY,
+    STABLE_WASM_HASH,
+};
 use crate::tests::setup::{
     install_and_deploy_token_contract, lp_contract, stake_contract, ONE_DAY,
 };
@@ -1577,4 +1580,181 @@ fn test_ttl_extensions_with_multiple_pool_queries() {
     let final_pools = factory.query_pools();
     assert!(!final_pools.is_empty());
     assert_eq!(final_pools.get(0).unwrap(), lp_address);
+}
+
+#[test]
+fn test_extend_all_ttl() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let fee_recipient = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let mut token1 = token_contract::Client::new(
+        &env,
+        &env.register_stellar_asset_contract_v2(admin.clone())
+            .address(),
+    );
+    let mut token2 = token_contract::Client::new(
+        &env,
+        &env.register_stellar_asset_contract_v2(admin.clone())
+            .address(),
+    );
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let mut token3 = token_contract::Client::new(
+        &env,
+        &env.register_stellar_asset_contract_v2(admin.clone())
+            .address(),
+    );
+    let mut token4 = token_contract::Client::new(
+        &env,
+        &env.register_stellar_asset_contract_v2(admin.clone())
+            .address(),
+    );
+    if token4.address < token3.address {
+        std::mem::swap(&mut token3, &mut token4);
+    }
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+    let factory_address = factory.address.clone();
+
+    let lp_init_info = generate_lp_init_info(
+        token1.address.clone(),
+        token2.address.clone(),
+        manager.clone(),
+        admin.clone(),
+        fee_recipient.clone(),
+    );
+    let lp_address = factory.create_liquidity_pool(
+        &admin,
+        &lp_init_info,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHO/BTC"),
+        &PoolType::Xyk,
+        &None::<u64>,
+        &100i64,
+        &1_000,
+    );
+
+    env.invoke_contract::<LiquidityPoolConfig>(
+        &lp_address,
+        &Symbol::new(&env, "query_config"),
+        Vec::new(&env),
+    );
+    env.ledger().with_mut(|li| li.timestamp += 60);
+    let second_lp_init_info = generate_lp_init_info(
+        token3.address.clone(),
+        token4.address.clone(),
+        manager,
+        admin.clone(),
+        fee_recipient,
+    );
+    let second_lp_address = factory.create_liquidity_pool(
+        &admin,
+        &second_lp_init_info,
+        &String::from_str(&env, "Second pool"),
+        &String::from_str(&env, "XLM/USDC"),
+        &PoolType::Xyk,
+        &None::<u64>,
+        &100i64,
+        &1_000,
+    );
+
+    env.invoke_contract::<LiquidityPoolConfig>(
+        &second_lp_address,
+        &Symbol::new(&env, "query_config"),
+        Vec::new(&env),
+    );
+
+    let (initial_instance_ttl, initial_persistent_ttl) = env.as_contract(&factory_address, || {
+        (
+            env.storage().instance().get_ttl(),
+            env.storage().persistent().get_ttl(&DataKey::LpVec),
+        )
+    });
+    assert_eq!(initial_instance_ttl, INSTANCE_TARGET_TTL);
+    assert!(
+        initial_persistent_ttl >= PERSISTENT_TARGET_TTL - 1,
+        "Initial persistent TTL should be at least {} (was {})",
+        PERSISTENT_TARGET_TTL - 1,
+        initial_persistent_ttl
+    );
+
+    env.ledger().with_mut(|li| li.timestamp += 5 * ONE_DAY);
+
+    factory.extend_all_ttl();
+
+    let (updated_instance_ttl, updated_persistent_ttl) = env.as_contract(&factory_address, || {
+        (
+            env.storage().instance().get_ttl(),
+            env.storage().persistent().get_ttl(&DataKey::LpVec),
+        )
+    });
+    assert_eq!(updated_instance_ttl, INSTANCE_TARGET_TTL);
+    assert!(
+        updated_persistent_ttl >= PERSISTENT_TARGET_TTL - 1,
+        "Persistent TTL after extension should be at least {} (was {})",
+        PERSISTENT_TARGET_TTL - 1,
+        updated_persistent_ttl
+    );
+
+    let stable_wasm_hash_ttl = env.as_contract(&factory_address, || {
+        env.storage().persistent().get_ttl(&STABLE_WASM_HASH)
+    });
+    assert!(
+        stable_wasm_hash_ttl >= PERSISTENT_TARGET_TTL - 1,
+        "STABLE_WASM_HASH TTL after extension should be at least {} (was {})",
+        PERSISTENT_TARGET_TTL - 1,
+        stable_wasm_hash_ttl
+    );
+
+    let factory_key_ttl = env.as_contract(&factory_address, || {
+        env.storage().persistent().get_ttl(&FACTORY_KEY)
+    });
+    assert!(
+        factory_key_ttl >= PERSISTENT_TARGET_TTL - 1,
+        "FACTORY_KEY TTL after extension should be at least {} (was {})",
+        PERSISTENT_TARGET_TTL - 1,
+        factory_key_ttl
+    );
+
+    let vec_of_pool_infos = factory.query_all_pools_details();
+    let mut vec_of_pair_tuple_keys: Vec<(Address, Address)> = Vec::new(&env);
+    for pool_info in vec_of_pool_infos.iter() {
+        let asset_a_address = pool_info.pool_response.asset_a.address.clone();
+        let asset_b_address = pool_info.pool_response.asset_b.address.clone();
+        vec_of_pair_tuple_keys.push_back((asset_a_address, asset_b_address));
+    }
+    for tuple in vec_of_pair_tuple_keys.iter() {
+        let current_key = PairTupleKey {
+            token_a: tuple.0.clone(),
+            token_b: tuple.1.clone(),
+        };
+        let tuple_key_ttl = env.as_contract(&factory_address, || {
+            env.storage().persistent().get_ttl(&current_key)
+        });
+        assert!(
+            tuple_key_ttl >= PERSISTENT_TARGET_TTL - 1,
+            "Tuple key ({:?}, {:?}) TTL after extension should be at least {} (was {})",
+            tuple.0,
+            tuple.1,
+            PERSISTENT_TARGET_TTL - 1,
+            tuple_key_ttl
+        );
+    }
+
+    let lp_addresses = factory.query_pools();
+    for lp_address in lp_addresses.iter() {
+        let lp_instance_ttl = env.as_contract(&lp_address, || env.storage().instance().get_ttl());
+        assert_eq!(lp_instance_ttl, INSTANCE_TARGET_TTL);
+    }
+
+    env.ledger()
+        .with_mut(|li| li.sequence_number += INSTANCE_TARGET_TTL - 100);
+    let final_pools = factory.query_pools();
+    assert!(!final_pools.is_empty());
+    assert_eq!(final_pools, vec![&env, lp_address, second_lp_address]);
 }
