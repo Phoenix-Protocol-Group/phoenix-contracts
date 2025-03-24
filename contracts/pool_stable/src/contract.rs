@@ -3,7 +3,7 @@ use phoenix::{
         INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
         PERSISTENT_TARGET_TTL,
     },
-    utils::{convert_i128_to_u128, convert_u128_to_i128, LiquidityPoolInitInfo},
+    utils::{convert_i128_to_u128, convert_u128_to_i128, AdminChange, LiquidityPoolInitInfo},
 };
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
@@ -19,7 +19,7 @@ use crate::{
         utils::{self, get_admin_old, is_initialized, set_initialized},
         AmplifierParameters, Asset, Config, DataKey, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse, StableLiquidityPoolInfo, ADMIN,
-        STABLE_POOL_KEY,
+        PENDING_ADMIN, STABLE_POOL_KEY,
     },
     token_contract, DECIMAL_PRECISION,
 };

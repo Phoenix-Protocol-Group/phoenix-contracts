@@ -12,7 +12,7 @@ use crate::{
         utils::{self, get_admin_old, is_initialized, set_initialized},
         Asset, ComputeSwap, Config, DataKey, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse, ADMIN, CONFIG, DEFAULT_SLIPPAGE_BPS,
-        XYK_POOL_KEY,
+        PENDING_ADMIN, XYK_POOL_KEY,
     },
     token_contract,
 };
@@ -21,7 +21,7 @@ use phoenix::{
         INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
         PERSISTENT_TARGET_TTL,
     },
-    utils::{convert_i128_to_u128, is_approx_ratio, LiquidityPoolInitInfo},
+    utils::{convert_i128_to_u128, is_approx_ratio, AdminChange, LiquidityPoolInitInfo},
     validate_bps, validate_int_parameters,
 };
 use soroban_decimal::Decimal;
