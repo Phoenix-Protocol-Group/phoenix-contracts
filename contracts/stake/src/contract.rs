@@ -104,8 +104,6 @@ pub trait StakingTrait {
         max_complexity: Option<u32>,
     ) -> Result<Config, ContractError>;
 
-    fn update_admin(env: Env, new_admin: Address) -> Result<Address, ContractError>;
-
     fn query_distributed_rewards(env: Env, asset: Address) -> u128;
 
     fn query_undistributed_rewards(env: Env, asset: Address) -> u128;
@@ -829,20 +827,6 @@ impl StakingTrait for Staking {
         save_config(&env, config.clone());
 
         Ok(config)
-    }
-
-    fn update_admin(env: Env, new_admin: Address) -> Result<Address, ContractError> {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-
-        let admin = get_admin_old(&env);
-
-        admin.require_auth();
-
-        utils::save_admin_old(&env, &new_admin);
-
-        Ok(new_admin)
     }
 
     // fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
