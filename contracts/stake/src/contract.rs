@@ -708,18 +708,6 @@ impl StakingTrait for Staking {
 
     // QUERIES
 
-    // from an old tag version 1.1.0
-    // fn query_distributed_rewards(env: Env, asset: Address) -> u128 {
-    //     let staking_rewards = find_stake_rewards_by_asset(&env, &asset).unwrap();
-    //     let unds_rew_fn_arg: Val = asset.into_val(&env);
-    //     let ret: u128 = env.invoke_contract(
-    //         &staking_rewards,
-    //         &Symbol::new(&env, "query_distributed_reward"),
-    //         vec![&env, unds_rew_fn_arg],
-    //     );
-    //     ret
-    // }
-
     fn query_config(env: Env) -> ConfigResponse {
         env.storage()
             .instance()
