@@ -1,6 +1,6 @@
 extern crate std;
 
-use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use phoenix::utils::{AutoUnstakeInfo, LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
 use pretty_assertions::assert_eq;
 
 use soroban_sdk::{
@@ -1479,5 +1479,215 @@ fn provide_liquidity_and_autostake_should_fail_when_liquidity_is_not_enough_for_
         &None,
         &None::<u64>,
         &true,
+    );
+}
+
+#[test]
+fn withdraw_liquidity_with_auto_unstake() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    let reward_token = deploy_token_contract(&env, &admin);
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let user = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0,
+        None,
+        None,
+        None,
+        stake_manager.clone(),
+        stake_owner,
+    );
+
+    let share_token_address = pool.query_share_token_address();
+    let token_share = token_contract::Client::new(&env, &share_token_address);
+
+    let result = pool.query_pool_info();
+    let stake = stake_contract::Client::new(&env, &result.stake_address);
+
+    stake.create_distribution_flow(&stake_manager, &reward_token.address);
+    let reward_amount = 1_000_000_000_000_000;
+    reward_token.mint(&stake_manager, &reward_amount);
+    let distribution_duration = 10_000;
+    stake.fund_distribution(
+        &stake_manager,
+        &0,
+        &distribution_duration,
+        &reward_token.address,
+        &reward_amount,
+    );
+
+    token1.mint(&user, &1_000_000_000_000_000);
+    token2.mint(&user, &1_000_000_000_000_000);
+    let stake_timestamp = env.ledger().timestamp();
+    pool.provide_liquidity(
+        &user,
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &None,
+        &None::<u64>,
+        &true,
+    );
+
+    let initial_stake = stake.query_staked(&user);
+    assert_eq!(
+        initial_stake,
+        StakedResponse {
+            stakes: vec![
+                &env,
+                Stake {
+                    stake: 999_999_999_999_000,
+                    stake_timestamp
+                }
+            ]
+        }
+    );
+    assert_eq!(
+        initial_stake.stakes.get(0).unwrap().stake,
+        999_999_999_999_000
+    );
+    assert_eq!(
+        initial_stake.stakes.get(0).unwrap().stake_timestamp,
+        stake_timestamp
+    );
+
+    let share_amount = 500_000_000_000_000;
+    let min_a = 500_000_000_000_000;
+    let min_b = 500_000_000_000_000;
+    let auto_unstake_info = AutoUnstakeInfo {
+        stake_amount: 999_999_999_999_000,
+        stake_timestamp,
+    };
+
+    env.ledger().with_mut(|li| li.timestamp += 1000);
+    stake.distribute_rewards();
+    assert_eq!(
+        stake.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address.clone(),
+                    reward_amount: 99_999_999_999_900
+                }
+            ]
+        }
+    );
+
+    assert_eq!(reward_token.balance(&user), 0); // should be 0 as the user has no rewards so far
+    pool.withdraw_liquidity(
+        &user,
+        &share_amount,
+        &min_a,
+        &min_b,
+        &None::<u64>,
+        &Some(auto_unstake_info),
+    );
+
+    assert_eq!(reward_token.balance(&user), 99_999_999_999_900); // all rewards withdrawn
+
+    let remaining_stake = stake.query_staked(&user);
+    assert!(remaining_stake.stakes.is_empty());
+    assert!(remaining_stake.stakes.get(0).is_none(),);
+
+    assert_eq!(token1.balance(&user), 500_000_000_000_000);
+    assert_eq!(token2.balance(&user), 500_000_000_000_000);
+    assert_eq!(token_share.balance(&user), 499999999999000); // should be 1/2 of the og staked
+
+    env.ledger().with_mut(|li| li.timestamp += 1000);
+    stake.distribute_rewards();
+    assert_eq!(
+        stake.query_withdrawable_rewards(&user),
+        WithdrawableRewardsResponse {
+            rewards: vec![
+                &env,
+                WithdrawableReward {
+                    reward_address: reward_token.address,
+                    reward_amount: 0
+                }
+            ]
+        }
+    );
+
+    pool.withdraw_liquidity(
+        &user,
+        &499_999_999_999_000,
+        &499_999_999_999_000,
+        &499_999_999_999_000,
+        &None::<u64>,
+        &None,
+    );
+
+    let final_stake = stake.query_staked(&user);
+    assert!(final_stake.stakes.is_empty());
+
+    assert_eq!(token1.balance(&user), 999_999_999_999_000);
+    assert_eq!(token2.balance(&user), 999_999_999_999_000);
+    assert_eq!(token_share.balance(&user), 0);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #509)")]
+fn withdraw_liquidity_with_auto_unstake_should_fail_when_unexisting_stake() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let user = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let stake_owner = Address::generate(&env);
+
+    let pool = deploy_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0,
+        None,
+        None,
+        None,
+        stake_manager.clone(),
+        stake_owner,
+    );
+
+    let share_amount = 500_000_000_000_000;
+    let min_a = 500_000_000_000_000;
+    let min_b = 500_000_000_000_000;
+    let auto_unstake_info = AutoUnstakeInfo {
+        stake_amount: 999_999_999_999_000,
+        stake_timestamp: 0,
+    };
+
+    pool.withdraw_liquidity(
+        &user,
+        &share_amount,
+        &min_a,
+        &min_b,
+        &None::<u64>,
+        &Some(auto_unstake_info),
     );
 }
