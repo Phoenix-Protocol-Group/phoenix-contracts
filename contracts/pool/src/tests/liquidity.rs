@@ -200,7 +200,7 @@ fn withdraw_liquidity() {
     let share_amount = 500_000_000_000_000;
     let min_a = 500_000_000_000_000;
     let min_b = 500_000_000_000_000;
-    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &None::<u64>);
+    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &None::<u64>, &None);
 
     assert_eq!(
         env.auths(),
@@ -265,6 +265,7 @@ fn withdraw_liquidity() {
         &499_999_999_999_000,
         &499_999_999_999_000,
         &None::<u64>,
+        &None,
     );
     assert_eq!(token_share.balance(&user1), 0);
     assert_eq!(token_share.balance(&pool.address), 1_000); // Because of the minted 1_000 lp shares
@@ -375,7 +376,7 @@ fn withdraw_liqudity_below_min() {
 
     let share_amount = 5_000;
     // Expecting min_a and/or min_b as huge bigger then available
-    pool.withdraw_liquidity(&user1, &share_amount, &30_000, &30_000, &None::<u64>);
+    pool.withdraw_liquidity(&user1, &share_amount, &30_000, &30_000, &None::<u64>, &None);
 }
 
 #[test]
@@ -578,6 +579,7 @@ fn query_share_valid_liquidity() {
         &149_133i128,
         &198_845i128,
         &None::<u64>,
+        &None,
     );
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
@@ -642,6 +644,7 @@ fn query_share_valid_liquidity() {
         &150_000i128,
         &200_000i128,
         &None::<u64>,
+        &None,
     );
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
@@ -686,7 +689,7 @@ fn query_share_valid_liquidity() {
     );
 
     // user3 has 693_820 shares, we are withdrawing 93_820
-    pool.withdraw_liquidity(&user3, &93_820, &1000i128, &1000i128, &None::<u64>);
+    pool.withdraw_liquidity(&user3, &93_820, &1000i128, &1000i128, &None::<u64>, &None);
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
         pool_info_after_withdrawal,
@@ -726,7 +729,14 @@ fn query_share_valid_liquidity() {
     );
 
     // last user cleans up the pool
-    pool.withdraw_liquidity(&user3, &599_000, &150_000i128, &200_000i128, &None::<u64>);
+    pool.withdraw_liquidity(
+        &user3,
+        &599_000,
+        &150_000i128,
+        &200_000i128,
+        &None::<u64>,
+        &None,
+    );
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
         pool_info_after_withdrawal,
@@ -1133,7 +1143,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
     let min_a = 5_000;
     let min_b = 5_000;
     env.ledger().with_mut(|li| li.timestamp = 49);
-    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(50));
+    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(50), &None);
 
     assert_eq!(
         env.auths(),
@@ -1185,7 +1195,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
     );
 
     env.ledger().with_mut(|li| li.timestamp = 99);
-    pool.withdraw_liquidity(&user1, &4_000, &4_000, &4_000, &Some(100));
+    pool.withdraw_liquidity(&user1, &4_000, &4_000, &4_000, &Some(100), &None);
     assert_eq!(token_share.balance(&user1), 0);
     assert_eq!(token_share.balance(&pool.address), 1_000); // sanity check
     assert_eq!(token1.balance(&user1), 9_000);
@@ -1249,7 +1259,7 @@ fn withdraw_liquidity_past_deadline_should_panic() {
     let min_a = 5_000;
     let min_b = 5_000;
     env.ledger().with_mut(|li| li.timestamp = 50);
-    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(49));
+    pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(49), &None);
 }
 
 #[test]
