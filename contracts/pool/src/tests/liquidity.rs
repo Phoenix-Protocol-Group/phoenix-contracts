@@ -215,7 +215,8 @@ fn withdraw_liquidity() {
                         500_000_000_000_000_i128,
                         500_000_000_000_000_i128,
                         500_000_000_000_000_i128,
-                        None::<u64>
+                        None::<u64>,
+                        None::<AutoUnstakeInfo>
                     )
                         .into_val(&env),
                 )),
@@ -1153,7 +1154,15 @@ fn withdraw_liquidity_with_deadline_should_work() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     Symbol::new(&env, "withdraw_liquidity"),
-                    (&user1, 5_000i128, 5_000i128, 5_000i128, 50u64).into_val(&env),
+                    (
+                        &user1,
+                        5_000i128,
+                        5_000i128,
+                        5_000i128,
+                        50u64,
+                        None::<AutoUnstakeInfo>
+                    )
+                        .into_val(&env),
                 )),
                 sub_invocations: std::vec![AuthorizedInvocation {
                     function: AuthorizedFunction::Contract((
