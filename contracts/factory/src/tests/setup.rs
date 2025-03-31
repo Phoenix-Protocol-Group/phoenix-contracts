@@ -3,10 +3,7 @@ use crate::{
     token_contract,
 };
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{
-    testutils::{arbitrary::std, Address as _},
-    vec, Address, BytesN, Env, String,
-};
+use soroban_sdk::{testutils::Address as _, vec, Address, BytesN, Env, String, Vec};
 pub const ONE_DAY: u64 = 86400;
 const TOKEN_WASM: &[u8] =
     include_bytes!("../../../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm");
@@ -96,12 +93,13 @@ pub fn deploy_factory_contract<'a>(
     let admin = admin.into().unwrap_or(Address::generate(env));
 
     let multihop_wasm_hash = install_multihop_wasm(env);
-    let whitelisted_accounts = vec![env, admin.clone()];
+    let whitelisted_accounts: Vec<Address> = vec![env, admin.clone()];
 
     let lp_wasm_hash = install_lp_contract(env);
     let stable_wasm_hash = install_stable_lp(env);
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
+
     let factory = FactoryClient::new(
         env,
         &env.register(
