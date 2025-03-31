@@ -16,6 +16,7 @@ and this project adheres to
 - XYK & Stable Pool: changes the validation of the input args ([#435])
 - Stake: Bring back the original superior stake implementation from tag v1.0.0 ([#429])
 - All: changes the `ContractError` numbers ([#451])
+- Pools: Allow auto-unbond with withdrawing liquidity ([#454])
 
 ## Added
 
@@ -55,6 +56,7 @@ and this project adheres to
 [#447]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/447
 [#448]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/448
 [#451]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/451
+[#454]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/454
 
 ## [1.1.0] - 2024-08-27
 
