@@ -78,9 +78,27 @@ pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
     let salt = Bytes::new(e);
     let salt = e.crypto().sha256(&salt);
 
-    e.deployer()
-        .with_address(admin, salt)
-        .deploy_v2(factory_wasm, ())
+    let multihop_wasm_hash = install_multihop_wasm(e);
+    let whitelisted_accounts = vec![e, admin.clone()];
+
+    let lp_wasm_hash = install_lp_contract(e);
+    let stable_wasm_hash = install_stable_lp_contract(e);
+    let stake_wasm_hash = install_stake_wasm(e);
+    let token_wasm_hash = install_token_wasm(e);
+
+    e.deployer().with_address(admin.clone(), salt).deploy_v2(
+        factory_wasm,
+        (
+            &admin.clone(),
+            &multihop_wasm_hash,
+            &lp_wasm_hash,
+            &stable_wasm_hash,
+            &stake_wasm_hash,
+            &token_wasm_hash,
+            whitelisted_accounts,
+            &10u32,
+        ),
+    )
 }
 
 pub fn deploy_multihop_contract<'a>(
@@ -107,8 +125,6 @@ pub fn deploy_and_mint_tokens<'a>(
 }
 
 pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory_contract::Client {
-    let factory_addr = deploy_factory_contract(env, admin.clone());
-    let factory_client = factory_contract::Client::new(env, &factory_addr);
     let multihop_wasm_hash = install_multihop_wasm(env);
     let whitelisted_accounts = vec![env, admin.clone()];
 
@@ -117,16 +133,23 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory_contr
     let stake_wasm_hash = install_stake_wasm(env);
     let token_wasm_hash = install_token_wasm(env);
 
-    factory_client.initialize(
-        &admin.clone(),
-        &multihop_wasm_hash,
-        &lp_wasm_hash,
-        &stable_wasm_hash,
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &whitelisted_accounts,
-        &10u32,
+    let factory_client = factory_contract::Client::new(
+        env,
+        &env.register(
+            factory_contract::WASM,
+            (
+                &admin.clone(),
+                &multihop_wasm_hash,
+                &lp_wasm_hash,
+                &stable_wasm_hash,
+                &stake_wasm_hash,
+                &token_wasm_hash,
+                whitelisted_accounts,
+                &10u32,
+            ),
+        ),
     );
+
     factory_client
 }
 
