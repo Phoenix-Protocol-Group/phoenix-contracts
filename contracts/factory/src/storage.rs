@@ -19,7 +19,7 @@ const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
 pub enum DataKey {
     Config = 1,
     LpVec = 2,
-    Initialized = 3, // deprecated, remove in future upgrade
+    Initialized = 3, // TODO: deprecated, remove in next upgrade
 }
 
 #[derive(Clone)]

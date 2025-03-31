@@ -30,7 +30,7 @@ pub enum DataKey {
     PairKey(Pair),
     FactoryKey,
     Admin,
-    Initialized, // deprecrated, remove in next upgrade
+    Initialized, // TODO: deprecated, remove in next upgrade
 }
 
 #[contracttype]
