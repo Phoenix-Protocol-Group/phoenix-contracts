@@ -67,7 +67,7 @@ fn test_initialize_with_bigger_first_token_should_fail() {
                 String::from_str(&env, "Pool"),
                 String::from_str(&env, "PHOBTC"),
                 &100i64,
-                &1_000,
+                &1_000i64,
             ),
         ),
     );
@@ -439,7 +439,7 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
                 String::from_str(&env, "Pool"),
                 String::from_str(&env, "PHOBTC"),
                 &100i64,
-                &1_000,
+                &1_000i64,
             ),
         ),
     );

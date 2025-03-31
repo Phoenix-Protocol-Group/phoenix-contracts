@@ -1473,7 +1473,7 @@ fn provide_liquidity_and_autostake_should_fail_when_liquidity_is_not_enough_for_
                 String::from_str(&env, "Pool"),
                 String::from_str(&env, "PHOBTC"),
                 &100i64,
-                &1_000,
+                &1_000i64,
             ),
         ),
     );
