@@ -4,7 +4,7 @@ use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
 
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
-    Address, Bytes, BytesN, Env,
+    Address, BytesN, Env,
 };
 use soroban_sdk::{vec, String};
 
@@ -73,34 +73,6 @@ pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-pub fn deploy_factory_contract(e: &Env, admin: Address) -> Address {
-    let factory_wasm = e.deployer().upload_contract_wasm(factory_contract::WASM);
-    let salt = Bytes::new(e);
-    let salt = e.crypto().sha256(&salt);
-
-    let multihop_wasm_hash = install_multihop_wasm(e);
-    let whitelisted_accounts = vec![e, admin.clone()];
-
-    let lp_wasm_hash = install_lp_contract(e);
-    let stable_wasm_hash = install_stable_lp_contract(e);
-    let stake_wasm_hash = install_stake_wasm(e);
-    let token_wasm_hash = install_token_wasm(e);
-
-    e.deployer().with_address(admin.clone(), salt).deploy_v2(
-        factory_wasm,
-        (
-            &admin.clone(),
-            &multihop_wasm_hash,
-            &lp_wasm_hash,
-            &stable_wasm_hash,
-            &stake_wasm_hash,
-            &token_wasm_hash,
-            whitelisted_accounts,
-            &10u32,
-        ),
-    )
-}
-
 pub fn deploy_multihop_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,
@@ -108,9 +80,8 @@ pub fn deploy_multihop_contract<'a>(
 ) -> MultihopClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
 
-    let multihop = MultihopClient::new(env, &env.register(Multihop, ()));
+    let multihop = MultihopClient::new(env, &env.register(Multihop, (&admin, factory)));
 
-    multihop.initialize(&admin, factory);
     multihop
 }
 
