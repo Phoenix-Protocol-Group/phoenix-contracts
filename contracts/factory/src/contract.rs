@@ -7,7 +7,7 @@ use crate::{
         LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN, FACTORY_KEY,
         PENDING_ADMIN,
     },
-    utils::{deploy_and_initialize_multihop_contract, deploy_lp_contract},
+    utils::deploy_and_initialize_multihop_contract,
     ConvertVec,
 };
 use phoenix::{

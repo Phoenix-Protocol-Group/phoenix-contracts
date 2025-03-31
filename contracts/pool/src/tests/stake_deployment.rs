@@ -1,15 +1,11 @@
 extern crate std;
-use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
-use soroban_sdk::{testutils::Address as _, Address, Env, String};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::{
     stake_contract,
     storage::{Config, PairType},
 };
-
-use crate::contract::{LiquidityPool, LiquidityPoolClient};
-use crate::tests::setup::{install_stake_wasm, install_token_wasm};
 
 #[test]
 fn confirm_stake_contract_deployment() {
