@@ -56,37 +56,6 @@ fn initialize_staking_contract() {
 }
 
 #[test]
-#[should_panic(expected = "Stake: Initialize: initializing contract twice is not allowed")]
-fn test_deploying_stake_twice_should_fail() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let admin = Address::generate(&env);
-    let lp_token = deploy_token_contract(&env, &admin);
-    let manager = Address::generate(&env);
-    let owner = Address::generate(&env);
-
-    let first = deploy_staking_contract(
-        &env,
-        admin.clone(),
-        &lp_token.address,
-        &manager,
-        &owner,
-        &DEFAULT_COMPLEXITY,
-    );
-
-    first.initialize(
-        &admin,
-        &lp_token.address,
-        &100i128,
-        &50i128,
-        &manager,
-        &owner,
-        &DEFAULT_COMPLEXITY,
-    );
-}
-
-#[test]
 #[should_panic = "Stake: Bond: Trying to stake less than minimum required"]
 fn bond_too_few() {
     let env = Env::default();
@@ -386,16 +355,20 @@ fn initialize_staking_contract_should_panic_when_min_bond_invalid() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let staking = StakingClient::new(&env, &env.register(Staking, ()));
-
-    staking.initialize(
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &0,
-        &1_000,
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &DEFAULT_COMPLEXITY,
+    let _ = StakingClient::new(
+        &env,
+        &env.register(
+            Staking,
+            (
+                &Address::generate(&env),
+                &Address::generate(&env),
+                &0i128,
+                &1_000i128,
+                &Address::generate(&env),
+                &Address::generate(&env),
+                &DEFAULT_COMPLEXITY,
+            ),
+        ),
     );
 }
 
@@ -405,16 +378,20 @@ fn initialize_staking_contract_should_panic_when_min_rewards_invalid() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let staking = StakingClient::new(&env, &env.register(Staking, ()));
-
-    staking.initialize(
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &1_000,
-        &0,
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &DEFAULT_COMPLEXITY,
+    let _ = StakingClient::new(
+        &env,
+        &env.register(
+            Staking,
+            (
+                &Address::generate(&env),
+                &Address::generate(&env),
+                &1_000i128,
+                &0i128,
+                &Address::generate(&env),
+                &Address::generate(&env),
+                &DEFAULT_COMPLEXITY,
+            ),
+        ),
     );
 }
 
@@ -424,15 +401,19 @@ fn initialize_staking_contract_should_panic_when_max_complexity_invalid() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let staking = StakingClient::new(&env, &env.register(Staking, ()));
-
-    staking.initialize(
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &1_000,
-        &1_000,
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &0u32,
+    let _ = StakingClient::new(
+        &env,
+        &env.register(
+            Staking,
+            (
+                &Address::generate(&env),
+                &Address::generate(&env),
+                &1_000i128,
+                &1_000i128,
+                &Address::generate(&env),
+                &Address::generate(&env),
+                &0u32,
+            ),
+        ),
     );
 }
