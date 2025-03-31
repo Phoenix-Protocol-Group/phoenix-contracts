@@ -1,5 +1,6 @@
 extern crate std;
 
+use phoenix::utils::AutoUnstakeInfo;
 use soroban_sdk::{testutils::Address as _, Address, Env};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
@@ -127,6 +128,7 @@ fn query_share_valid_liquidity() {
         &1000i128,
         &1000i128,
         &None::<u64>,
+        &None::<AutoUnstakeInfo>,
     );
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
@@ -175,6 +177,7 @@ fn query_share_valid_liquidity() {
         &1500i128,
         &2000i128,
         &None::<u64>,
+        &None::<AutoUnstakeInfo>,
     );
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
@@ -217,7 +220,14 @@ fn query_share_valid_liquidity() {
     );
 
     // user3 has 2499 shares, we are withdrawing 1499
-    pool.withdraw_liquidity(&user3, &1499, &1i128, &1i128, &None::<u64>);
+    pool.withdraw_liquidity(
+        &user3,
+        &1499,
+        &1i128,
+        &1i128,
+        &None::<u64>,
+        &None::<AutoUnstakeInfo>,
+    );
     let pool_info_after_withdrawal = pool.query_pool_info();
     assert_eq!(
         pool_info_after_withdrawal,

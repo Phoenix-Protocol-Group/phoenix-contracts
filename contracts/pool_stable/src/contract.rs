@@ -1,6 +1,9 @@
 use phoenix::{
     ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL},
-    utils::{convert_i128_to_u128, convert_u128_to_i128, AdminChange, LiquidityPoolInitInfo},
+    utils::{
+        convert_i128_to_u128, convert_u128_to_i128, AdminChange, AutoUnstakeInfo,
+        LiquidityPoolInitInfo,
+    },
 };
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String,
@@ -92,6 +95,7 @@ pub trait StableLiquidityPoolTrait {
         min_a: i128,
         min_b: i128,
         deadline: Option<u64>,
+        auto_unstake: Option<AutoUnstakeInfo>,
     ) -> (i128, i128);
 
     // Allows admin address set during initialization to change some parameters of the
@@ -555,6 +559,7 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
         min_a: i128,
         min_b: i128,
         deadline: Option<u64>,
+        auto_unstake: Option<AutoUnstakeInfo>,
     ) -> (i128, i128) {
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
@@ -582,6 +587,23 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
         let config = get_config(&env);
+
+        if let Some(auto_unstake_info) = auto_unstake {
+            let stake_client = stake_contract::Client::new(&env, &config.stake_contract);
+            stake_client.unbond(
+                &sender,
+                &auto_unstake_info.stake_amount,
+                &auto_unstake_info.stake_timestamp,
+            );
+
+            env.events().publish(
+                ("withdraw_liquidity", "auto unbonded"),
+                (
+                    auto_unstake_info.stake_amount,
+                    auto_unstake_info.stake_timestamp,
+                ),
+            );
+        }
 
         let share_token_client = token_contract::Client::new(&env, &config.share_token);
         share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
