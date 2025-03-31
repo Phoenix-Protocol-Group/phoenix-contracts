@@ -1581,7 +1581,7 @@ fn withdraw_liquidity_with_auto_unstake() {
     let min_a = 500_000_000_000_000;
     let min_b = 500_000_000_000_000;
     let auto_unstake_info = AutoUnstakeInfo {
-        stake_amount: 999_999_999_999_000,
+        stake_amount: initial_stake.stakes.get(0).unwrap().stake,
         stake_timestamp,
     };
 
