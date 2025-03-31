@@ -21,7 +21,7 @@ pub enum DataKey {
     Pair,
     Token,
     MaxSpread,
-    IsInitialized,
+    IsInitialized, //TODO: deprecated, remove in future upgrade
 }
 
 #[contracttype]
@@ -184,22 +184,4 @@ pub fn get_output_token(env: &Env) -> Address {
     );
 
     token_addr
-}
-
-pub fn set_initialized(env: &Env) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::IsInitialized, &true);
-    env.storage().persistent().extend_ttl(
-        &DataKey::IsInitialized,
-        PERSISTENT_RENEWAL_THRESHOLD,
-        PERSISTENT_TARGET_TTL,
-    );
-}
-
-pub fn is_initialized(env: &Env) -> bool {
-    env.storage()
-        .persistent()
-        .get(&DataKey::IsInitialized)
-        .unwrap_or_default()
 }
