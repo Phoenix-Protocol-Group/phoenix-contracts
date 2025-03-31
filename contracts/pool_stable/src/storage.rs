@@ -1,7 +1,4 @@
-use phoenix::ttl::{
-    INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL, PERSISTENT_RENEWAL_THRESHOLD,
-    PERSISTENT_TARGET_TTL,
-};
+use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
 use soroban_sdk::{
     contracttype, symbol_short, xdr::ToXdr, Address, Bytes, BytesN, ConversionError, Env, Symbol,
     TryFromVal, Val,
@@ -13,6 +10,7 @@ use soroban_decimal::Decimal;
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const STABLE_POOL_KEY: Symbol = symbol_short!("STABLE_P");
 pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
+const CONFIG: Symbol = symbol_short!("CONFIG");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -21,7 +19,7 @@ pub enum DataKey {
     ReserveA = 1,
     ReserveB = 2,
     Admin = 3,
-    Initialized = 4,
+    Initialized = 4, // TODO: deprecated, remove in future upgrade
     Amp = 5,
     MaxPrecision = 6,
     TokenPrecision = 7,
@@ -62,7 +60,6 @@ pub struct Config {
     /// The maximum amount of spread (in bps) that is tolerated during swap
     pub max_allowed_spread_bps: i64,
 }
-const CONFIG: Symbol = symbol_short!("CONFIG");
 
 impl Config {
     pub fn protocol_fee_rate(&self) -> Decimal {
@@ -360,22 +357,6 @@ pub mod utils {
 
     pub fn get_balance(e: &Env, contract: &Address) -> i128 {
         token_contract::Client::new(e, contract).balance(&e.current_contract_address())
-    }
-
-    pub fn is_initialized(e: &Env) -> bool {
-        e.storage()
-            .persistent()
-            .get(&DataKey::Initialized)
-            .unwrap_or(false)
-    }
-
-    pub fn set_initialized(e: &Env) {
-        e.storage().persistent().set(&DataKey::Initialized, &true);
-        e.storage().persistent().extend_ttl(
-            &DataKey::Initialized,
-            PERSISTENT_RENEWAL_THRESHOLD,
-            PERSISTENT_TARGET_TTL,
-        );
     }
 }
 
