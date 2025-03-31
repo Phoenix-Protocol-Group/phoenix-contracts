@@ -1436,7 +1436,6 @@ fn provide_liquidity_and_autostake_should_fail_when_liquidity_is_not_enough_for_
     let stake_manager = Address::generate(&env);
     let stake_owner = Address::generate(&env);
 
-    let pool = LiquidityPoolClient::new(&env, &env.register(LiquidityPool, ()));
     let token_init_info = TokenInitInfo {
         token_a: token1.address.clone(),
         token_b: token2.address.clone(),
@@ -1462,15 +1461,21 @@ fn provide_liquidity_and_autostake_should_fail_when_liquidity_is_not_enough_for_
         stake_init_info,
     };
 
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-        &stake_owner,
-        &String::from_str(&env, "Pool"),
-        &String::from_str(&env, "PHOBTC"),
-        &100i64,
-        &1_000,
+    let pool = LiquidityPoolClient::new(
+        &env,
+        &env.register(
+            LiquidityPool,
+            (
+                &stake_wasm_hash,
+                &token_wasm_hash,
+                lp_init_info,
+                &stake_owner,
+                String::from_str(&env, "Pool"),
+                String::from_str(&env, "PHOBTC"),
+                &100i64,
+                &1_000,
+            ),
+        ),
     );
 
     token1.mint(&user, &1_000_000_000_000_000);

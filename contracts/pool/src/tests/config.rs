@@ -28,7 +28,6 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         std::mem::swap(&mut token1, &mut token2);
     }
 
-    let pool = LiquidityPoolClient::new(&env, &env.register(LiquidityPool, ()));
     let fee_recipient = Address::generate(&env);
 
     let token_init_info = TokenInitInfo {
@@ -56,15 +55,21 @@ fn test_initialize_with_bigger_first_token_should_fail() {
         stake_init_info,
     };
 
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-        &Address::generate(&env),
-        &String::from_str(&env, "Pool"),
-        &String::from_str(&env, "PHOBTC"),
-        &100i64,
-        &1_000,
+    let _ = LiquidityPoolClient::new(
+        &env,
+        &env.register(
+            LiquidityPool,
+            (
+                &stake_wasm_hash,
+                &token_wasm_hash,
+                lp_init_info,
+                &Address::generate(&env),
+                String::from_str(&env, "Pool"),
+                String::from_str(&env, "PHOBTC"),
+                &100i64,
+                &1_000,
+            ),
+        ),
     );
 }
 
@@ -395,7 +400,6 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
         std::mem::swap(&mut token1, &mut token2);
     }
 
-    let pool = LiquidityPoolClient::new(&env, &env.register(LiquidityPool, ()));
     let fee_recipient = Address::generate(&env);
 
     let token_init_info = TokenInitInfo {
@@ -423,14 +427,20 @@ fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() 
         stake_init_info,
     };
 
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-        &Address::generate(&env),
-        &String::from_str(&env, "Pool"),
-        &String::from_str(&env, "PHOBTC"),
-        &100i64,
-        &1_000,
+    let _ = LiquidityPoolClient::new(
+        &env,
+        &env.register(
+            LiquidityPool,
+            (
+                &stake_wasm_hash,
+                &token_wasm_hash,
+                lp_init_info,
+                &Address::generate(&env),
+                String::from_str(&env, "Pool"),
+                String::from_str(&env, "PHOBTC"),
+                &100i64,
+                &1_000,
+            ),
+        ),
     );
 }

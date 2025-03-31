@@ -76,7 +76,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
     stake_owner: Address,
 ) -> LiquidityPoolClient<'a> {
     let admin = admin.into().unwrap_or(Address::generate(env));
-    let pool = LiquidityPoolClient::new(env, &env.register(LiquidityPool, ()));
+
     let fee_recipient = fee_recipient
         .into()
         .unwrap_or_else(|| Address::generate(env));
@@ -106,16 +106,23 @@ pub fn deploy_liquidity_pool_contract<'a>(
         stake_init_info,
     };
 
-    pool.initialize(
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &lp_init_info,
-        &stake_owner,
-        &String::from_str(env, "Pool"),
-        &String::from_str(env, "PHOBTC"),
-        &100i64,
-        &1_000,
+    let pool = LiquidityPoolClient::new(
+        env,
+        &env.register(
+            LiquidityPool,
+            (
+                &stake_wasm_hash,
+                &token_wasm_hash,
+                lp_init_info,
+                &stake_owner,
+                String::from_str(env, "Pool"),
+                String::from_str(env, "PHOBTC"),
+                &100i64,
+                &1_000,
+            ),
+        ),
     );
+
     pool
 }
 
