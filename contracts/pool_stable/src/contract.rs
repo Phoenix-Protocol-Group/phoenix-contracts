@@ -939,15 +939,16 @@ impl StableLiquidityPool {
             share_token_symbol,
         );
 
-        let stake_contract_address = utils::deploy_stake_contract(&env, stake_wasm_hash);
-        stake_contract::Client::new(&env, &stake_contract_address).initialize(
+        let stake_contract_address = utils::deploy_stake_contract(
+            &env,
+            stake_wasm_hash,
             &admin,
             &share_token_address,
-            &min_bond,
-            &min_reward,
+            min_bond,
+            min_reward,
             &manager,
             &factory_addr,
-            &stake_init_info.max_complexity,
+            stake_init_info.max_complexity,
         );
 
         let config = Config {
