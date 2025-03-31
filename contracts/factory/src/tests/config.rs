@@ -13,7 +13,7 @@ use test_case::test_case;
 use phoenix::utils::PoolType;
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
-    vec, Address, BytesN, Env, String,
+    vec, Address, BytesN, Env, String, Vec,
 };
 
 #[test]
@@ -247,25 +247,29 @@ fn factory_fails_to_init_lp_when_no_whitelisted_accounts() {
 
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
-
-    let factory = FactoryClient::new(&env, &env.register(Factory, ()));
     let multihop_wasm_hash = install_multihop_wasm(&env);
-    let whitelisted_accounts = vec![&env];
+    let whitelisted_accounts: Vec<Address> = vec![&env];
 
     let lp_wasm_hash = install_lp_contract(&env);
     let stable_wasm_hash = install_stable_lp(&env);
     let stake_wasm_hash = install_stake_wasm(&env);
     let token_wasm_hash = install_token_wasm(&env);
 
-    factory.initialize(
-        &admin,
-        &multihop_wasm_hash,
-        &lp_wasm_hash,
-        &stable_wasm_hash,
-        &stake_wasm_hash,
-        &token_wasm_hash,
-        &whitelisted_accounts,
-        &10u32,
+    let _ = FactoryClient::new(
+        &env,
+        &env.register(
+            Factory,
+            (
+                &admin,
+                &multihop_wasm_hash,
+                &lp_wasm_hash,
+                &stable_wasm_hash,
+                &stake_wasm_hash,
+                &token_wasm_hash,
+                whitelisted_accounts,
+                &10u32,
+            ),
+        ),
     );
 }
 
