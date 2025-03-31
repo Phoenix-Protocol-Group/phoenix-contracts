@@ -7,9 +7,9 @@ use soroban_sdk::{
 };
 
 use crate::{
+    contract::{Vesting, VestingClient},
     error::ContractError,
-    storage::{VestingTokenInfo, PENDING_ADMIN},
-    tests::setup::instantiate_vesting_client,
+    storage::{MinterInfo, VestingTokenInfo, PENDING_ADMIN},
 };
 
 #[test]
@@ -26,8 +26,14 @@ fn propose_admin() {
         decimals: 6,
         address: Address::generate(&env),
     };
-    let vesting = instantiate_vesting_client(&env);
-    vesting.initialize(&admin, &vesting_token_info, &10u32);
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
 
     let result = vesting.propose_admin(&new_admin, &None);
     assert_eq!(result, new_admin.clone());
@@ -53,8 +59,14 @@ fn replace_admin_fails_when_new_admin_is_same_as_current() {
         decimals: 6,
         address: Address::generate(&env),
     };
-    let vesting = instantiate_vesting_client(&env);
-    vesting.initialize(&admin, &vesting_token_info, &10u32);
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
 
     assert_eq!(
         vesting.try_propose_admin(&admin, &None),
@@ -76,8 +88,14 @@ fn accept_admin_successfully() {
         decimals: 6,
         address: Address::generate(&env),
     };
-    let vesting = instantiate_vesting_client(&env);
-    vesting.initialize(&admin, &vesting_token_info, &10u32);
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
 
     vesting.propose_admin(&new_admin, &None);
 
@@ -103,8 +121,14 @@ fn accept_admin_fails_when_no_pending_admin() {
         decimals: 6,
         address: Address::generate(&env),
     };
-    let vesting = instantiate_vesting_client(&env);
-    vesting.initialize(&admin, &vesting_token_info, &10u32);
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
 
     assert_eq!(
         vesting.try_accept_admin(),
@@ -126,8 +150,14 @@ fn accept_admin_fails_when_time_limit_expired() {
         decimals: 6,
         address: Address::generate(&env),
     };
-    let vesting = instantiate_vesting_client(&env);
-    vesting.initialize(&admin, &vesting_token_info, &10u32);
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
 
     let time_limit = 1000u64;
     vesting.propose_admin(&new_admin, &Some(time_limit));
@@ -153,8 +183,14 @@ fn accept_admin_successfully_with_time_limit() {
         decimals: 6,
         address: Address::generate(&env),
     };
-    let vesting = instantiate_vesting_client(&env);
-    vesting.initialize(&admin, &vesting_token_info, &10u32);
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
 
     let time_limit = 1_500;
     vesting.propose_admin(&new_admin, &Some(time_limit));
@@ -184,8 +220,14 @@ fn accept_admin_successfully_on_time_limit() {
         decimals: 6,
         address: Address::generate(&env),
     };
-    let vesting = instantiate_vesting_client(&env);
-    vesting.initialize(&admin, &vesting_token_info, &10u32);
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
 
     let time_limit = 1_500;
     vesting.propose_admin(&new_admin, &Some(time_limit));
@@ -215,8 +257,14 @@ fn propose_admin_then_revoke() {
         decimals: 6,
         address: Address::generate(&env),
     };
-    let vesting = instantiate_vesting_client(&env);
-    vesting.initialize(&admin, &vesting_token_info, &10u32);
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
 
     vesting.propose_admin(&new_admin, &None);
     vesting.revoke_admin_change();
@@ -241,8 +289,14 @@ fn revoke_admin_should_fail_when_no_admin_change_in_place() {
         decimals: 6,
         address: Address::generate(&env),
     };
-    let vesting = instantiate_vesting_client(&env);
-    vesting.initialize(&admin, &vesting_token_info, &10u32);
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
 
     assert_eq!(
         vesting.try_revoke_admin_change(),
