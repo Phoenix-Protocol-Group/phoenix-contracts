@@ -29,6 +29,7 @@ and this project adheres to
 - All: Adds a query that returns the cargo pkg version ([#437])
 - Pool: Implement option to automatically stake when providing liquidity ([#447])
 - All: Adds a mechanism to change the admin of a contract that ensures safety of transition ([#448])
+- All: Adds constructors instead of using `initialize` (#[455])
 - Factory, Trader, Vesting: adds `update_config` ([#457])
 
 ## Fixed
@@ -58,6 +59,7 @@ and this project adheres to
 [#448]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/448
 [#451]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/451
 [#454]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/454
+[#455]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/455
 [#457]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/457
 
 ## [1.1.0] - 2024-08-27
