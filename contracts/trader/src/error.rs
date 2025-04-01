@@ -18,4 +18,5 @@ pub enum ContractError {
     SameAdmin = 612,
     NoAdminChangeInPlace = 613,
     AdminChangeExpired = 614,
+    OutputTokenInPair = 615,
 }
