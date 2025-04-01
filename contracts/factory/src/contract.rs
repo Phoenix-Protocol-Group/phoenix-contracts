@@ -57,19 +57,16 @@ pub trait FactoryTrait {
         max_allowed_fee_bps: i64,
     ) -> Address;
 
-    fn update_whitelisted_accounts(
+    fn update_config(
         env: Env,
-        sender: Address,
-        to_add: Vec<Address>,
-        to_remove: Vec<Address>,
-    );
-
-    fn update_wasm_hashes(
-        env: Env,
+        multihop_address: Option<Address>,
         lp_wasm_hash: Option<BytesN<32>>,
         stake_wasm_hash: Option<BytesN<32>>,
         token_wasm_hash: Option<BytesN<32>>,
-    );
+        whitelisted_to_add: Option<Vec<Address>>,
+        whitelisted_to_remove: Option<Vec<Address>>,
+        lp_token_decimals: Option<u32>,
+    ) -> Result<Config, ContractError>;
 
     fn query_pools(env: Env) -> Vec<Address>;
 
@@ -248,72 +245,69 @@ impl FactoryTrait for Factory {
         lp_contract_address
     }
 
-    fn update_whitelisted_accounts(
+    #[allow(clippy::too_many_arguments)]
+    fn update_config(
         env: Env,
-        sender: Address,
-        to_add: Vec<Address>,
-        to_remove: Vec<Address>,
-    ) {
-        sender.require_auth();
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-
-        let config = get_config(&env);
-
-        if config.admin != sender {
-            log!(
-                &env,
-                "Factory: Update whitelisted accounts: You are not authorized!"
-            );
-            panic_with_error!(&env, ContractError::NotAuthorized);
-        };
-
-        let mut whitelisted_accounts = config.whitelisted_accounts;
-
-        to_add.into_iter().for_each(|addr| {
-            if !whitelisted_accounts.contains(addr.clone()) {
-                whitelisted_accounts.push_back(addr);
-            }
-        });
-
-        to_remove.into_iter().for_each(|addr| {
-            if let Some(id) = whitelisted_accounts.iter().position(|x| x == addr) {
-                whitelisted_accounts.remove(id as u32);
-            }
-        });
-
-        save_config(
-            &env,
-            Config {
-                whitelisted_accounts,
-                ..config
-            },
-        )
-    }
-
-    fn update_wasm_hashes(
-        env: Env,
+        multihop_address: Option<Address>,
         lp_wasm_hash: Option<BytesN<32>>,
         stake_wasm_hash: Option<BytesN<32>>,
         token_wasm_hash: Option<BytesN<32>>,
-    ) {
-        let config = get_config(&env);
-
-        config.admin.require_auth();
+        whitelisted_to_add: Option<Vec<Address>>,
+        whitelisted_to_remove: Option<Vec<Address>>,
+        lp_token_decimals: Option<u32>,
+    ) -> Result<Config, ContractError> {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
-        save_config(
-            &env,
-            Config {
-                lp_wasm_hash: lp_wasm_hash.unwrap_or(config.lp_wasm_hash),
-                stake_wasm_hash: stake_wasm_hash.unwrap_or(config.stake_wasm_hash),
-                token_wasm_hash: token_wasm_hash.unwrap_or(config.token_wasm_hash),
-                ..config
-            },
-        );
+        let mut config = get_config(&env);
+        config.admin.require_auth();
+
+        if let Some(multihop_addr) = multihop_address {
+            config.multihop_address = multihop_addr;
+        }
+
+        if let Some(lp_wasm_hash) = lp_wasm_hash {
+            config.lp_wasm_hash = lp_wasm_hash;
+        }
+
+        if let Some(stake_wasm_hash) = stake_wasm_hash {
+            config.stake_wasm_hash = stake_wasm_hash;
+        }
+
+        if let Some(token_wasm_hash) = token_wasm_hash {
+            config.token_wasm_hash = token_wasm_hash;
+        }
+
+        if let Some(to_add) = whitelisted_to_add {
+            to_add.into_iter().for_each(|addr| {
+                if !config.whitelisted_accounts.contains(addr.clone()) {
+                    config.whitelisted_accounts.push_back(addr);
+                }
+            });
+        }
+
+        if let Some(to_remove) = whitelisted_to_remove {
+            to_remove.into_iter().for_each(|addr| {
+                if let Some(id) = config.whitelisted_accounts.iter().position(|x| x == addr) {
+                    config.whitelisted_accounts.remove(id as u32);
+                }
+            });
+        }
+
+        if let Some(lp_token_decimals) = lp_token_decimals {
+            if lp_token_decimals == 0 || lp_token_decimals > 22 {
+                log!(&env, "Factory: Update Config: Token Decimals invalid");
+                panic_with_error!(&env, ContractError::TokenDecimalsInvalid);
+            }
+            config.lp_token_decimals = lp_token_decimals;
+        }
+
+        save_config(&env, config.clone());
+
+        env.events().publish(("Factory", "Updated Config"), ());
+
+        Ok(config)
     }
 
     fn query_pools(env: Env) -> Vec<Address> {

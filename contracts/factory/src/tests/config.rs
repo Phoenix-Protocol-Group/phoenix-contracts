@@ -4,13 +4,16 @@ use super::setup::{
 };
 use crate::{
     contract::{Factory, FactoryClient},
+    error::ContractError,
     tests::setup::{generate_lp_init_info, install_and_deploy_token_contract, stable_lp},
 };
+
+use test_case::test_case;
 
 use phoenix::utils::PoolType;
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
-    vec, Address, Env, String,
+    vec, Address, BytesN, Env, String,
 };
 
 #[test]
@@ -279,7 +282,7 @@ fn successfully_updates_new_list_of_whitelisted_accounts() {
     let factory = deploy_factory_contract(&env, admin.clone());
 
     let to_add = vec![&env, first_wl_addr.clone(), second_wl_addr.clone()];
-    factory.update_whitelisted_accounts(&admin.clone(), &to_add, &vec![&env]);
+    factory.update_config(&None, &None, &None, &None, &Some(to_add), &None, &None);
     // query for first whitelisted address
     let config = factory.get_config();
 
@@ -287,7 +290,7 @@ fn successfully_updates_new_list_of_whitelisted_accounts() {
 
     let to_remove = vec![&env, admin.clone()];
 
-    factory.update_whitelisted_accounts(&admin, &vec![&env], &to_remove);
+    factory.update_config(&None, &None, &None, &None, &None, &Some(to_remove), &None);
 
     let config = factory.get_config();
 
@@ -308,33 +311,12 @@ fn doesn_not_change_whitelisted_accounts_when_removing_non_existent() {
 
     let to_remove = vec![&env, Address::generate(&env)];
 
-    factory.update_whitelisted_accounts(&admin.clone(), &vec![&env], &to_remove);
+    factory.update_config(&None, &None, &None, &None, &None, &Some(to_remove), &None);
 
     let config = factory.get_config();
 
     assert!(config.whitelisted_accounts.contains(admin));
     assert!(config.whitelisted_accounts.len() == 1);
-}
-
-#[should_panic(expected = "Factory: Update whitelisted accounts: You are not authorized!")]
-#[test]
-fn fails_to_update_whitelisted_accounts_when_not_authorized() {
-    let env = Env::default();
-    env.mock_all_auths();
-    env.cost_estimate().budget().reset_unlimited();
-
-    let admin = Address::generate(&env);
-    let first_wl_addr = Address::generate(&env);
-    let second_wl_addr = Address::generate(&env);
-
-    let factory = deploy_factory_contract(&env, admin.clone());
-
-    let to_add = vec![&env, first_wl_addr.clone(), second_wl_addr.clone()];
-    factory.update_whitelisted_accounts(&admin.clone(), &to_add, &vec![&env]);
-
-    let to_remove = vec![&env, admin.clone()];
-
-    factory.update_whitelisted_accounts(&Address::generate(&env), &vec![&env], &to_remove);
 }
 
 #[test]
@@ -359,7 +341,7 @@ fn test_add_vec_with_duplicates_should_be_handled_correctly() {
         dupe_second_wl_addr.clone(),
     ];
 
-    factory.update_whitelisted_accounts(&admin.clone(), &to_add, &vec![&env]);
+    factory.update_config(&None, &None, &None, &None, &Some(to_add), &None, &None);
     let config = factory.get_config();
 
     assert!(config.whitelisted_accounts.contains(first_wl_addr.clone()));
@@ -367,7 +349,7 @@ fn test_add_vec_with_duplicates_should_be_handled_correctly() {
 
     let to_remove = vec![&env, admin.clone()];
 
-    factory.update_whitelisted_accounts(&admin, &vec![&env], &to_remove);
+    factory.update_config(&None, &None, &None, &None, &None, &Some(to_remove), &None);
 
     let config = factory.get_config();
 
@@ -504,4 +486,115 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
             total_fee_bps: 0,
         }
     );
+}
+
+#[test]
+fn update_wasm_hashes() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, admin.clone());
+    let old_lp_wasm_hash = factory.get_config().lp_wasm_hash;
+    let new_lp_wasm_hash = BytesN::from_array(&env, &[1; 32]);
+    assert!(old_lp_wasm_hash != new_lp_wasm_hash);
+
+    factory.update_config(
+        &None,
+        &Some(new_lp_wasm_hash.clone()),
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+    );
+
+    let updated_lp_wasm_hash = factory.get_config().lp_wasm_hash;
+
+    assert!(new_lp_wasm_hash == updated_lp_wasm_hash);
+}
+
+#[test]
+fn update_multihop_addr() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, admin.clone());
+    let old_multihop_addr = factory.get_config().multihop_address;
+    let new_multihop_adrr = Address::generate(&env);
+
+    assert!(old_multihop_addr != new_multihop_adrr);
+
+    factory.update_config(
+        &Some(new_multihop_adrr.clone()),
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+    );
+
+    let updated_multihop_addr = factory.get_config().multihop_address;
+
+    assert!(updated_multihop_addr == new_multihop_adrr);
+}
+
+#[test]
+fn update_lp_token_decimals() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, admin.clone());
+    let old_token_decimals = factory.get_config().lp_token_decimals;
+    let new_token_decimals = 22;
+
+    assert!(old_token_decimals != new_token_decimals);
+
+    factory.update_config(
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+        &None,
+        &Some(new_token_decimals),
+    );
+
+    let updated_token_decimals = factory.get_config().lp_token_decimals;
+
+    assert!(updated_token_decimals == new_token_decimals);
+}
+
+#[test_case(0u32; "should fail with 0")]
+#[test_case(23u32; "should fail with bigger than 22")]
+fn update_lp_token_decimals_should_panic_when_invalid(new_token_decimals: u32) {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, admin.clone());
+
+    assert_eq!(
+        factory.try_update_config(
+            &None,
+            &None,
+            &None,
+            &None,
+            &None,
+            &None,
+            &Some(new_token_decimals),
+        ),
+        Err(Ok(ContractError::TokenDecimalsInvalid))
+    )
 }
