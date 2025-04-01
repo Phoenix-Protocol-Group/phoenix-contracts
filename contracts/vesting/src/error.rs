@@ -44,6 +44,8 @@ pub enum ContractError {
     SameAdmin = 733,
     NoAdminChangeInPlace = 734,
     AdminChangeExpired = 735,
+    SameTokenAddress = 745,
+    InvalidMaxComplexity = 746,
 }
 
 impl From<CurveError> for ContractError {

@@ -56,6 +56,10 @@ pub trait VestingTrait {
 
     fn query_available_to_claim(env: Env, address: Address, index: u64) -> i128;
 
+    fn update_vesting_token(env: Env, new_token_address: Address) -> Result<(), ContractError>;
+
+    fn update_max_complexity(env: Env, new_max_complexity: u32) -> Result<(), ContractError>;
+
     #[cfg(feature = "minter")]
     fn initialize_with_minter(
         env: Env,
@@ -530,6 +534,73 @@ impl VestingTrait for Vesting {
                 panic_with_error!(&env, ContractError::ContractMathError);
             });
         convert_u128_to_i128(difference)
+    }
+    fn update_vesting_token(env: Env, new_token_address: Address) -> Result<(), ContractError> {
+        get_admin_old(&env).require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let old_token_info = get_token_info(&env);
+        if old_token_info.address == new_token_address {
+            log!(&env, "Vesting: Update Token: New address is same as old.");
+            panic_with_error!(&env, ContractError::SameTokenAddress);
+        }
+
+        let new_token_client = token_contract::Client::new(&env, &new_token_address);
+        let new_name = new_token_client.name();
+        let new_symbol = new_token_client.symbol();
+        let new_decimals = new_token_client.decimals();
+
+        let new_token_info = VestingTokenInfo {
+            name: new_name.clone(),
+            symbol: new_symbol.clone(),
+            decimals: new_decimals,
+            address: new_token_address.clone(),
+        };
+
+        save_token_info(&env, &new_token_info);
+
+        env.events()
+            .publish(("Vesting: Update Token", "new_addr:"), new_token_address);
+
+        env.events().publish(
+            (
+                "Vesting: Update Token",
+                "new_name:",
+                "new_symbol:",
+                "new_decimals:",
+            ),
+            (new_name, new_symbol, new_decimals),
+        );
+
+        Ok(())
+    }
+
+    fn update_max_complexity(env: Env, new_max_complexity: u32) -> Result<(), ContractError> {
+        get_admin_old(&env).require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        if new_max_complexity == 0 {
+            log!(
+                &env,
+                "Vesting: Update Max Complexity: Complexity cannot be zero."
+            );
+            panic_with_error!(&env, ContractError::InvalidMaxComplexity);
+        }
+
+        save_max_vesting_complexity(&env, &new_max_complexity);
+
+        env.events().publish(
+            ("Vesting: Update Max Complexity", "new:"),
+            new_max_complexity,
+        );
+
+        Ok(())
     }
 
     fn update(env: Env, new_wasm_hash: BytesN<32>) {
