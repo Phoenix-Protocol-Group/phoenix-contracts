@@ -1,2 +1,0 @@
-Note: attribute files value in CLI (setup.conf) overrides value stored in conf file (../../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm)
-Saving last configuration file to .certora_internal/25_03_04_14_50_49_941/run.conf

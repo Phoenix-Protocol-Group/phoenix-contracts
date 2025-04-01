@@ -1,2 +1,0 @@
-Note: attribute files value in CLI (setup.conf) overrides value stored in conf file (../../../target/wasm32-unknown-unknown/certora/soroban_token_contract.wasm)
-Saving last configuration file to .certora_internal/25_03_10_16_56_48_999/run.conf
