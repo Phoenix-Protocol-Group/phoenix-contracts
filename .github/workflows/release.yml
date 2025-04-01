@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust-version: [1.79.0]
+        rust-version: [1.84.0]
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
