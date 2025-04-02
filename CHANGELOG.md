@@ -17,6 +17,7 @@ and this project adheres to
 - Stake: Bring back the original superior stake implementation from tag v1.0.0 ([#429])
 - All: changes the `ContractError` numbers ([#451])
 - Pools: Allow auto-unbond with withdrawing liquidity ([#454])
+- All: increass the `soroban-sdk` version in all contracts to `22.0.7` ([#417])
 
 ## Added
 
@@ -45,6 +46,7 @@ and this project adheres to
 [#408]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/408
 [#411]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/411
 [#414]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/414
+[#417]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/417
 [#419]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/419
 [#429]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/429
 [#431]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/431
