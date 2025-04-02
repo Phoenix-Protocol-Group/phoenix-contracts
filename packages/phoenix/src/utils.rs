@@ -91,6 +91,13 @@ pub struct AdminChange {
     pub time_limit: Option<u64>,
 }
 
+#[derive(Clone)]
+#[contracttype]
+pub struct AutoUnstakeInfo {
+    pub stake_amount: i128,
+    pub stake_timestamp: u64,
+}
+
 #[contracttype]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
