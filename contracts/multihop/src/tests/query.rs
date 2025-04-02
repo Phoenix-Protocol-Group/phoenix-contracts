@@ -699,3 +699,73 @@ fn query_simulate_reverse_swap_panics_with_no_operations() {
 
     multihop.simulate_reverse_swap(&swap_vec, &50i128, &PoolType::Xyk);
 }
+
+#[test]
+fn simulate_swap_stable_pool() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let token1 = create_token_contract_with_metadata(
+        &env,
+        &admin,
+        7u32,
+        String::from_str(&env, "fuzzy"),
+        String::from_str(&env, "FZY"),
+        1_001_000,
+    );
+    let token2 = create_token_contract_with_metadata(
+        &env,
+        &admin,
+        7u32,
+        String::from_str(&env, "buzzy"),
+        String::from_str(&env, "BZY"),
+        1_001_000,
+    );
+
+    let factory_client = deploy_and_initialize_factory(&env, admin.clone());
+
+    deploy_and_initialize_pool(
+        &env,
+        &factory_client,
+        admin.clone(),
+        token1.address.clone(),
+        1_000_000,
+        token2.address.clone(),
+        1_000_000,
+        None,
+        PoolType::Stable,
+    );
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &factory_client.address);
+
+    let operation = vec![
+        &env,
+        Swap {
+            offer_asset: token1.address.clone(),
+            ask_asset: token2.address.clone(),
+            ask_asset_min_amount: None::<i128>,
+        },
+    ];
+
+    let simulated_swap = multihop.simulate_swap(&operation, &300i128, &PoolType::Stable);
+
+    assert_eq!(simulated_swap.ask_amount, 300i128);
+    assert_eq!(
+        simulated_swap.commission_amounts,
+        vec![&env, (String::from_str(&env, "FZY"), 0i128)]
+    );
+    assert_eq!(simulated_swap.spread_amount, vec![&env, 0i128]);
+
+    let reverse_simulated_swap =
+        multihop.simulate_reverse_swap(&operation, &240i128, &PoolType::Stable);
+
+    assert_eq!(reverse_simulated_swap.offer_amount, 240i128);
+    assert_eq!(
+        reverse_simulated_swap.commission_amounts,
+        vec![&env, (String::from_str(&env, "BZY"), 0i128)]
+    );
+    assert_eq!(reverse_simulated_swap.spread_amount, vec![&env, 0i128]);
+}
