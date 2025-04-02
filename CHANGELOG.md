@@ -18,6 +18,7 @@ and this project adheres to
 - All: changes the `ContractError` numbers ([#451])
 - Pools: Allow auto-unbond with withdrawing liquidity ([#454])
 - All: increass the `soroban-sdk` version in all contracts to `22.0.7` ([#417])
+- All: increases the test coverage ([#458])
 
 ## Added
 
@@ -63,6 +64,7 @@ and this project adheres to
 [#454]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/454
 [#455]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/455
 [#457]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/457
+[#458]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/458
 
 ## [1.1.0] - 2024-08-27
 
