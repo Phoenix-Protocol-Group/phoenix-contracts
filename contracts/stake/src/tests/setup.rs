@@ -503,6 +503,8 @@ mod tests {
     fn upgrade_stake_contract() {
         use soroban_sdk::{testutils::Ledger, vec};
 
+        use crate::tests::setup::{deploy_token_contract, install_stake_latest_wasm};
+
         let env = Env::default();
         env.mock_all_auths();
         env.cost_estimate().budget().reset_unlimited();
@@ -529,6 +531,9 @@ mod tests {
             &10,
         );
 
+        token_client.mint(&owner, &1_000);
+        old_stake_client.create_distribution_flow(&owner, &token_client.address);
+
         assert_eq!(old_stake_client.query_admin(), admin);
 
         env.ledger().with_mut(|li| li.timestamp = 100);
@@ -553,24 +558,25 @@ mod tests {
         let new_stake_wasm = install_stake_latest_wasm(&env);
         old_stake_client.update(&new_stake_wasm);
 
-        let new_stake_client = stake_latest::Client::new(&env, &stake_addr);
+        let new_stake_client = latest_stake::Client::new(&env, &stake_addr);
+        new_stake_client.migrate_distributions();
 
         assert_eq!(new_stake_client.query_admin(), admin);
 
         env.ledger().with_mut(|li| li.timestamp = 20_000);
+        new_stake_client.distribute_rewards();
 
-        new_stake_client.unbond(&user, &1_000, &100);
-        assert_eq!(
-            new_stake_client.query_staked(&user),
-            stake_latest::StakedResponse {
-                stakes: vec![&env,],
-                total_stake: 0i128,
-                last_reward_time: 0u64,
-            }
+        soroban_sdk::testutils::arbitrary::std::dbg!(
+            new_stake_client.query_withdrawable_rewards(&user)
         );
 
-        new_stake_client.create_distribution_flow(&owner, &token_client.address);
-        token_client.mint(&owner, &1_000);
-        new_stake_client.distribute_rewards(&owner, &1_000, &token_client.address);
+        new_stake_client.unbond_deprecated(&user, &1_000, &100);
+
+        assert_eq!(
+            new_stake_client.query_staked(&user),
+            latest_stake::StakedResponse {
+                stakes: vec![&env,],
+            }
+        );
     }
 }
