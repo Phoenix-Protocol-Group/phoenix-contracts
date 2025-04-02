@@ -7,6 +7,20 @@ use soroban_sdk::{
     Address, Bytes, BytesN, Env,
 };
 use soroban_sdk::{vec, String};
+
+#[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
+pub mod old_multihop {
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_multihop.wasm");
+}
+
+#[allow(clippy::too_many_arguments)]
+pub mod latest_multihop {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_multihop.wasm"
+    );
+}
+
 pub fn create_token_contract_with_metadata<'a>(
     env: &Env,
     admin: &Address,
@@ -199,4 +213,23 @@ pub fn deploy_and_initialize_pool(
             );
         }
     }
+}
+
+#[test]
+#[allow(deprecated)]
+#[cfg(feature = "upgrade")]
+fn updapte_multihop() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let old_multhop_addr = env.register_contract_wasm(None, old_multihop::WASM);
+    let old_multihop_client = old_multihop::Client::new(&env, &old_multhop_addr);
+
+    old_multihop_client.initialize(&admin, &factory);
+    let latest_multihop_wasm = install_multihop_wasm(&env);
+    old_multihop_client.update(&latest_multihop_wasm);
 }
