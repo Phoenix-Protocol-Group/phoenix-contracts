@@ -220,6 +220,7 @@ fn update_liquidity_pool() {
         &500_000_000_000_000,
         &500_000_000_000_000,
         &None,
+        &None,
     );
 
     let pool_info_after_upgrade = new_lp_client.query_pool_info_for_factory();
