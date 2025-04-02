@@ -1,5 +1,6 @@
 use crate::contract::{Multihop, MultihopClient};
 use crate::factory_contract::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
+use crate::storage::{DataKey, ADMIN};
 use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
 
 use soroban_sdk::{
@@ -212,7 +213,7 @@ pub fn deploy_and_initialize_pool(
 #[test]
 #[allow(deprecated)]
 #[cfg(feature = "upgrade")]
-fn updapte_multihop() {
+fn update_multihop() {
     let env = Env::default();
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
@@ -226,4 +227,26 @@ fn updapte_multihop() {
     old_multihop_client.initialize(&admin, &factory);
     let latest_multihop_wasm = install_multihop_wasm(&env);
     old_multihop_client.update(&latest_multihop_wasm);
+}
+
+#[test]
+fn migrate_admin_key() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &Address::generate(&env));
+
+    let before_migration: Address = env.as_contract(&multihop.address, || {
+        env.storage().instance().get(&DataKey::Admin).unwrap()
+    });
+
+    multihop.migrate_admin_key();
+
+    let after_migration: Address = env.as_contract(&multihop.address, || {
+        env.storage().instance().get(&ADMIN).unwrap()
+    });
+
+    assert_eq!(before_migration, after_migration)
 }
