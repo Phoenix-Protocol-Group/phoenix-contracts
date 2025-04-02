@@ -248,5 +248,6 @@ fn migrate_admin_key() {
         env.storage().instance().get(&ADMIN).unwrap()
     });
 
-    assert_eq!(before_migration, after_migration)
+    assert_eq!(before_migration, after_migration);
+    assert_ne!(Address::generate(&env), after_migration)
 }
