@@ -21,6 +21,9 @@ curve = { workspace = true }
 phoenix = { workspace = true }
 soroban-sdk = { workspace = true }
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(tarpaulin_include)"] }
+
 [dev-dependencies]
 curve = { workspace = true, features = ["testutils"] }
 soroban-sdk = { workspace = true, features = ["testutils"] }
