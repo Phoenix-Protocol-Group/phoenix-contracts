@@ -1012,6 +1012,7 @@ impl StableLiquidityPool {
 
     #[allow(dead_code)]
     //TODO: Remove after we've added the key to storage
+    #[cfg(not(tarpaulin_include))]
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&STABLE_POOL_KEY, &true);
         Ok(())
