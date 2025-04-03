@@ -17,7 +17,7 @@ and this project adheres to
 - Stake: Bring back the original superior stake implementation from tag v1.0.0 ([#429])
 - All: changes the `ContractError` numbers ([#451])
 - Pools: Allow auto-unbond with withdrawing liquidity ([#454])
-- All: increass the `soroban-sdk` version in all contracts to `22.0.7` ([#417])
+- All: increase the `soroban-sdk` version in all contracts to `22.0.7` ([#417])
 - All: increases the test coverage ([#458])
 
 ## Added
