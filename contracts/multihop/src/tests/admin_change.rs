@@ -70,9 +70,7 @@ fn accept_admin_fails_when_no_pending_admin() {
 
     let admin = Address::generate(&env);
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let multihop = deploy_multihop_contract(&env, admin.clone(), &Address::generate(&env));
-    soroban_sdk::testutils::arbitrary::std::dbg!();
 
     assert_eq!(
         multihop.try_accept_admin(),
