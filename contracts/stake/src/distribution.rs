@@ -346,6 +346,7 @@ pub fn calc_power(
     }
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn calculate_pending_rewards_deprecated(
     env: &Env,
     reward_token: &Address,
@@ -414,6 +415,7 @@ pub fn calculate_pending_rewards_deprecated(
     pending_rewards
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn get_reward_history_deprecated(e: &Env, reward_token: &Address) -> Map<u64, u128> {
     let reward_history = e
         .storage()
@@ -429,6 +431,7 @@ pub fn get_reward_history_deprecated(e: &Env, reward_token: &Address) -> Map<u64
     reward_history
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn get_total_staked_history_deprecated(e: &Env) -> Map<u64, u128> {
     let total_staked_history = e
         .storage()

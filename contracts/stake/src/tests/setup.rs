@@ -97,6 +97,8 @@ pub mod tests {
 
     use crate::tests::setup::{install_stake_wasm, latest_stake};
 
+    use super::deploy_staking_contract;
+
     #[test]
     fn upgrade_staking_contract_and_remove_stake_rewards() {
         const DAY_AS_SECONDS: u64 = 86_400;
@@ -578,5 +580,23 @@ pub mod tests {
                 stakes: vec![&env,],
             }
         );
+    }
+
+    #[test]
+    fn test_query_version() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let lp_token = Address::generate(&env);
+        let manager = Address::generate(&env);
+        let owner = Address::generate(&env);
+
+        let staking =
+            deploy_staking_contract(&env, admin.clone(), &lp_token, &manager, &owner, &10);
+
+        let expected_version = env!("CARGO_PKG_VERSION");
+        let version = staking.query_version();
+        assert_eq!(String::from_str(&env, expected_version), version);
     }
 }
