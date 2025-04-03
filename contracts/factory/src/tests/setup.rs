@@ -16,6 +16,13 @@ pub mod old_factory {
 
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
+pub fn install_old_multihop_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_multihop.wasm");
+    env.deployer().upload_contract_wasm(WASM)
+}
+
+#[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
 pub fn old_lp_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_pool.wasm");
     env.deployer().upload_contract_wasm(WASM)
@@ -175,7 +182,7 @@ fn update_factory() {
 
     old_factory_client.initialize(
         &admin.clone(),
-        &install_multihop_wasm(&env),
+        &install_old_multihop_wasm(&env),
         &old_lp_wasm(&env),
         &install_stable_lp(&env),
         &old_stake_wasm(&env),
