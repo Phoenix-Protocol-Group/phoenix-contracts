@@ -66,6 +66,12 @@ pub trait TraderTrait {
 
     fn query_output_token_info(env: Env) -> OutputTokenInfo;
 
+    fn update_contract_name(env: Env, new_name: String) -> Result<(), ContractError>;
+
+    fn update_pair_addresses(env: Env, new_pair: (Address, Address)) -> Result<(), ContractError>;
+
+    fn update_output_token(env: Env, new_token: Address) -> Result<(), ContractError>;
+
     fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 
     fn propose_admin(
@@ -93,6 +99,14 @@ impl TraderTrait for Trader {
         if is_initialized(&env) {
             log!(&env, "Trader: Initialize: Cannot initialize trader twice!");
             panic_with_error!(env, ContractError::AlreadyInitialized)
+        }
+
+        if output_token == pair_addresses.0 || output_token == pair_addresses.1 {
+            log!(
+                &env,
+                "Trader: Update Pair: New pair addresses cannot include the output token"
+            );
+            panic_with_error!(env, ContractError::OutputTokenInPair);
         }
 
         save_admin_old(&env, &admin);
@@ -284,6 +298,70 @@ impl TraderTrait for Trader {
             symbol: output_token_client.symbol(),
             decimal: output_token_client.decimals(),
         }
+    }
+
+    fn update_contract_name(env: Env, new_name: String) -> Result<(), ContractError> {
+        get_admin_old(&env).require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        save_name(&env, &new_name);
+
+        env.events()
+            .publish(("Trader: Update Name", "old:"), new_name);
+
+        Ok(())
+    }
+
+    fn update_pair_addresses(env: Env, new_pair: (Address, Address)) -> Result<(), ContractError> {
+        get_admin_old(&env).require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let output_token = get_output_token(&env);
+
+        if output_token == new_pair.0 || output_token == new_pair.1 {
+            log!(
+                &env,
+                "Trader: Update Pair: New pair addresses cannot include the output token"
+            );
+            panic_with_error!(env, ContractError::OutputTokenInPair);
+        }
+
+        save_pair(&env, &new_pair);
+
+        env.events()
+            .publish(("Trader: Update Pair", "old:"), new_pair);
+
+        Ok(())
+    }
+
+    fn update_output_token(env: Env, new_token: Address) -> Result<(), ContractError> {
+        get_admin_old(&env).require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let current_pair = get_pair(&env);
+        if new_token == current_pair.0 || new_token == current_pair.1 {
+            log!(
+                &env,
+                "Trader: Update Output Token: New token cannot be one of the pair addresses"
+            );
+            panic_with_error!(env, ContractError::OutputTokenInPair);
+        }
+
+        save_output_token(&env, &new_token);
+
+        env.events()
+            .publish(("Trader: Update Output Token", "old:"), new_token);
+
+        Ok(())
     }
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError> {

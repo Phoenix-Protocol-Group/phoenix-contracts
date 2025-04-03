@@ -108,6 +108,7 @@ pub fn deploy_and_init_lp_client(
         &None::<i128>,
         &None::<i64>,
         &None,
+        &false,
     );
     lp_client
 }

@@ -4,6 +4,7 @@ use soroban_sdk::{
 };
 
 use crate::{
+    error::ContractError,
     storage::{Asset, BalanceInfo},
     tests::setup::deploy_token_contract,
 };
@@ -666,7 +667,7 @@ fn transfer_should_fail_when_unauthorized() {
 
 #[test_case(-1 ; "when negative")]
 #[test_case(10001; "when bigger than 100 percent")]
-#[should_panic(expected = "Error(Contract, #8)")]
+#[should_panic(expected = "Error(Contract, #608)")]
 fn transfer_should_fail_with_invalid_spread_bps(max_spread_bps: i64) {
     let env = Env::default();
 
@@ -827,4 +828,81 @@ fn simple_trade_token_and_transfer_token_with_some_ask_asset_min_amount() {
     assert_eq!(output_token.balance(&rcpt), 0);
     trader_client.transfer(&admin, &rcpt, &1_000, &None);
     assert_eq!(output_token.balance(&rcpt), 1_000);
+}
+
+#[test]
+fn update_contract_metadata() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let xlm_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Stellar"),
+        &String::from_str(&env, "XLM"),
+    );
+    let usdc_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "USD Coin"),
+        &String::from_str(&env, "USDC"),
+    );
+    let pho_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix"),
+        &String::from_str(&env, "PHO"),
+    );
+
+    let trader_client = deploy_trader_client(&env);
+
+    trader_client.initialize(
+        &admin,
+        &contract_name,
+        &(xlm_token.address.clone(), usdc_token.address.clone()),
+        &pho_token.address,
+    );
+
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    let new_pair_a = Address::generate(&env);
+    let new_pair_b = Address::generate(&env);
+
+    assert_eq!(
+        trader_client.try_update_pair_addresses(&(new_pair_a.clone(), pho_token.address)),
+        Err(Ok(ContractError::OutputTokenInPair))
+    );
+
+    trader_client.update_pair_addresses(&(new_pair_a.clone(), new_pair_b.clone()));
+
+    assert_eq!(
+        trader_client.query_trading_pairs(),
+        (new_pair_a, new_pair_b)
+    );
+
+    let new_output_token = deploy_token_contract(
+        &env,
+        &admin,
+        &6,
+        &String::from_str(&env, "Phoenix2"),
+        &String::from_str(&env, "MOREPHO"),
+    );
+
+    trader_client.update_output_token(&new_output_token.address);
+
+    assert_eq!(
+        trader_client.query_output_token_info().address,
+        new_output_token.address
+    );
+
+    soroban_sdk::testutils::arbitrary::std::dbg!();
+    let new_trader_name = String::from_str(&env, "Some new name");
+    trader_client.update_contract_name(&new_trader_name);
+
+    assert_eq!(trader_client.query_contract_name(), new_trader_name);
 }
