@@ -847,16 +847,19 @@ fn update_contract_metadata() {
         &String::from_str(&env, "PHO"),
     );
 
-    let trader_client = deploy_trader_client(&env);
-
-    trader_client.initialize(
-        &admin,
-        &contract_name,
-        &(xlm_token.address.clone(), usdc_token.address.clone()),
-        &pho_token.address,
+    let trader_client = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                contract_name.clone(),
+                &(xlm_token.address.clone(), usdc_token.address.clone()),
+                &pho_token.address,
+            ),
+        ),
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let new_pair_a = Address::generate(&env);
     let new_pair_b = Address::generate(&env);
 
@@ -887,7 +890,6 @@ fn update_contract_metadata() {
         new_output_token.address
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let new_trader_name = String::from_str(&env, "Some new name");
     trader_client.update_contract_name(&new_trader_name);
 
@@ -906,8 +908,18 @@ fn test_query_version() {
 
     let output_addr = Address::generate(&env);
 
-    let trader_client = deploy_trader_client(&env);
-    trader_client.initialize(&admin, &contract_name, &(pair_a, pair_b), &output_addr);
+    let trader_client = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                contract_name.clone(),
+                &(pair_a, pair_b),
+                &output_addr,
+            ),
+        ),
+    );
 
     let expected_version = env!("CARGO_PKG_VERSION");
     let version = trader_client.query_version();
@@ -926,8 +938,18 @@ fn migrate_admin_key() {
 
     let output_addr = Address::generate(&env);
 
-    let trader_client = deploy_trader_client(&env);
-    trader_client.initialize(&admin, &contract_name, &(pair_a, pair_b), &output_addr);
+    let trader_client = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                contract_name.clone(),
+                &(pair_a, pair_b),
+                &output_addr,
+            ),
+        ),
+    );
 
     let before_migration: Address = env.as_contract(&trader_client.address, || {
         env.storage().persistent().get(&DataKey::Admin).unwrap()

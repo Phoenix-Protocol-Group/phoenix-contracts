@@ -166,28 +166,31 @@ fn update_liquidity_pool() {
 
     let lp_init_info = old_liquidity_pool::LiquidityPoolInitInfo {
         admin: admin1.clone(),
-        swap_fee_bps: 0,
+        swap_fee_bps: 0i64,
         fee_recipient: admin1.clone(),
-        max_allowed_slippage_bps: 5_000,
-        default_slippage_bps: 2_500,
-        max_allowed_spread_bps: 1_000,
-        max_referral_bps: 5_000,
+        max_allowed_slippage_bps: 5_000i64,
+        default_slippage_bps: 2_500i64,
+        max_allowed_spread_bps: 1_000i64,
+        max_referral_bps: 5_000i64,
         token_init_info,
         stake_init_info,
     };
+
+    soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
 
     old_lp_client.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
         &lp_init_info,
         &Address::generate(&env),
-        &7,
+        &7u32,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHOBTC"),
         &100i64,
-        &1_000,
+        &1_000i64,
     );
 
+    soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
     assert_eq!(old_lp_client.query_config().fee_recipient, admin1);
 
     env.ledger().with_mut(|li| li.timestamp = 100);

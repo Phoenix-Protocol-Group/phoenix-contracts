@@ -1384,7 +1384,6 @@ fn withdraw_liquidity_with_auto_unstake() {
         &true,
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let initial_stake = stake.query_staked(&user);
     assert_eq!(
         initial_stake,
@@ -1407,7 +1406,6 @@ fn withdraw_liquidity_with_auto_unstake() {
         stake_timestamp
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let share_amount = 1_999_999_999_000;
     let min_a = 500_000_000_000;
     let min_b = 500_000_000_000;
@@ -1416,7 +1414,6 @@ fn withdraw_liquidity_with_auto_unstake() {
         stake_timestamp,
     };
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     env.ledger().with_mut(|li| li.timestamp += 1000);
     stake.distribute_rewards();
     assert_eq!(

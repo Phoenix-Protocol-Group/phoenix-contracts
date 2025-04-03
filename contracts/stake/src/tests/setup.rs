@@ -570,10 +570,6 @@ pub mod tests {
         env.ledger().with_mut(|li| li.timestamp = 20_000);
         new_stake_client.distribute_rewards();
 
-        soroban_sdk::testutils::arbitrary::std::dbg!(
-            new_stake_client.query_withdrawable_rewards(&user)
-        );
-
         new_stake_client.unbond_deprecated(&user, &1_000, &100);
 
         assert_eq!(

@@ -200,9 +200,13 @@ fn update_factory() {
 
     assert_eq!(latest_factory_client.get_admin(), admin.clone());
 
-    latest_factory_client.update_wasm_hashes(
+    latest_factory_client.update_config(
+        &None,
         &Some(install_lp_contract(&env)),
         &Some(install_stake_wasm(&env)),
         &Some(install_token_wasm(&env)),
+        &None,
+        &None,
+        &None,
     );
 }

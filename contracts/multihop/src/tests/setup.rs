@@ -259,7 +259,9 @@ fn test_update() {
 
     let admin = Address::generate(&env);
 
-    let multihop = deploy_multihop_contract(&env, admin.clone(), &Address::generate(&env));
+    let old_multihop_addr = env.register(old_multihop::WASM, ());
+    let multihop = old_multihop::Client::new(&env, &old_multihop_addr);
+    multihop.initialize(&admin, &Address::generate(&env));
 
     let new_wasm_hash = install_multihop_wasm(&env);
 
