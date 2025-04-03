@@ -12,7 +12,7 @@ use crate::{
     stake_contract::{
         self, Stake, StakedResponse, WithdrawableReward, WithdrawableRewardsResponse,
     },
-    storage::{Asset, PoolResponse},
+    storage::{Asset, PoolResponse, StableLiquidityPoolInfo},
     token_contract,
 };
 
@@ -1499,5 +1499,79 @@ fn withdraw_liquidity_with_auto_unstake_should_fail_when_unexisting_stake() {
         &min_b,
         &None::<u64>,
         &Some(auto_unstake_info),
+    );
+}
+
+#[test]
+fn test_query_pool_info_for_factory() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+    let manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+    let user1 = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        swap_fees,
+        None,
+        None,
+        None,
+        manager,
+        factory,
+        None,
+    );
+
+    let stake_addr = pool.query_stake_contract_address();
+    let share_token_address = pool.query_share_token_address();
+
+    let staked1 = 1_000;
+    let staked2 = 1_000;
+    token1.mint(&user1, &staked1);
+    token2.mint(&user1, &staked2);
+
+    pool.provide_liquidity(
+        &user1,
+        &staked1,
+        &staked2,
+        &None,
+        &None::<u64>,
+        &None::<u128>,
+        &false,
+    );
+
+    let result = pool.query_pool_info_for_factory();
+    assert_eq!(
+        result,
+        StableLiquidityPoolInfo {
+            pool_address: pool.address,
+            pool_response: PoolResponse {
+                asset_a: Asset {
+                    address: token1.address,
+                    amount: staked1
+                },
+                asset_b: Asset {
+                    address: token2.address,
+                    amount: staked2
+                },
+                asset_lp_share: Asset {
+                    address: share_token_address,
+                    amount: 1_000
+                },
+                stake_address: stake_addr
+            },
+            total_fee_bps: swap_fees
+        }
     );
 }
