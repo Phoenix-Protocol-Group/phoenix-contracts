@@ -7,7 +7,7 @@ use soroban_sdk::{
 };
 
 use crate::distribution::{calc_power, calculate_pending_rewards_deprecated};
-use crate::storage::PENDING_ADMIN;
+use crate::storage::{ADMIN, PENDING_ADMIN};
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
@@ -93,6 +93,8 @@ pub trait StakingTrait {
     fn revoke_admin_change(env: Env) -> Result<(), ContractError>;
 
     fn accept_admin(env: Env) -> Result<Address, ContractError>;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -775,6 +777,13 @@ impl StakingTrait for Staking {
             .publish(("Stake: ", "Accepted new admin: "), &pending_admin);
 
         Ok(pending_admin)
+    }
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_admin_old(&env);
+        env.storage().instance().set(&ADMIN, &admin);
+
+        Ok(())
     }
 }
 

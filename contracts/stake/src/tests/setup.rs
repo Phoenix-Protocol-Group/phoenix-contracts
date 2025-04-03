@@ -95,6 +95,8 @@ pub mod tests {
     use soroban_sdk::{testutils::Address as _, Address};
     use soroban_sdk::{vec, Env, String};
 
+    use crate::storage::utils::DataKey;
+    use crate::storage::ADMIN;
     use crate::tests::setup::{install_stake_wasm, latest_stake};
 
     use super::deploy_staking_contract;
@@ -598,5 +600,32 @@ pub mod tests {
         let expected_version = env!("CARGO_PKG_VERSION");
         let version = staking.query_version();
         assert_eq!(String::from_str(&env, expected_version), version);
+    }
+
+    #[test]
+    fn test_migrate_admin_key() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let lp_token = Address::generate(&env);
+        let manager = Address::generate(&env);
+        let owner = Address::generate(&env);
+
+        let staking =
+            deploy_staking_contract(&env, admin.clone(), &lp_token, &manager, &owner, &10);
+
+        let before_migration: Address = env.as_contract(&staking.address, || {
+            env.storage().persistent().get(&DataKey::Admin).unwrap()
+        });
+
+        staking.migrate_admin_key();
+
+        let after_migration: Address = env.as_contract(&staking.address, || {
+            env.storage().instance().get(&ADMIN).unwrap()
+        });
+
+        assert_eq!(before_migration, after_migration);
+        assert_ne!(Address::generate(&env), after_migration)
     }
 }
