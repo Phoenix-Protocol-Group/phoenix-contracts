@@ -29,7 +29,7 @@ and this project adheres to
 - All: Adds a query that returns the cargo pkg version ([#437])
 - Pool: Implement option to automatically stake when providing liquidity ([#447])
 - All: Adds a mechanism to change the admin of a contract that ensures safety of transition ([#448])
-- Factory, Trader, Vesting: adds `update_config` or similar functionality ([#457])
+- Factory, Trader, Vesting: adds `update_config` ([#457])
 
 ## Fixed
 
