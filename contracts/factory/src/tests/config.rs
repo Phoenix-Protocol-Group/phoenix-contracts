@@ -5,7 +5,10 @@ use super::setup::{
 use crate::{
     contract::{Factory, FactoryClient},
     error::ContractError,
-    tests::setup::{generate_lp_init_info, install_and_deploy_token_contract, stable_lp},
+    storage::ADMIN,
+    tests::setup::{
+        generate_lp_init_info, install_and_deploy_token_contract, install_latest_factory, stable_lp,
+    },
 };
 
 use test_case::test_case;
@@ -521,6 +524,25 @@ fn update_wasm_hashes() {
 }
 
 #[test]
+fn migrate_admin_key() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+
+    factory.migrate_admin_key();
+
+    let after_migration: Address = env.as_contract(&factory.address, || {
+        env.storage().instance().get(&ADMIN).unwrap()
+    });
+
+    assert_eq!(admin, after_migration);
+}
+
+#[test]
 fn update_multihop_addr() {
     let env = Env::default();
     env.mock_all_auths();
@@ -550,6 +572,22 @@ fn update_multihop_addr() {
 }
 
 #[test]
+fn test_simple_update() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+
+    let new_wasm_hash = install_latest_factory(&env);
+    let latest_wasm = install_stable_lp(&env);
+
+    factory.update(&new_wasm_hash, &latest_wasm);
+}
+
+#[test]
 fn update_lp_token_decimals() {
     let env = Env::default();
     env.mock_all_auths();
@@ -576,6 +614,21 @@ fn update_lp_token_decimals() {
     let updated_token_decimals = factory.get_config().lp_token_decimals;
 
     assert!(updated_token_decimals == new_token_decimals);
+}
+
+#[test]
+fn test_query_version() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin = Address::generate(&env);
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+
+    let expected_version = env!("CARGO_PKG_VERSION");
+    let version = factory.query_version();
+    assert_eq!(String::from_str(&env, expected_version), version);
 }
 
 #[test_case(0u32; "should fail with 0")]

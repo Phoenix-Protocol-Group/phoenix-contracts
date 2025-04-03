@@ -599,6 +599,7 @@ impl Factory {
     }
 
     #[allow(dead_code)]
+    #[cfg(not(tarpaulin_include))]
     //TODO: Remove after we've added the key to storage
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&FACTORY_KEY, &true);
