@@ -251,3 +251,31 @@ fn migrate_admin_key() {
     assert_eq!(before_migration, after_migration);
     assert_ne!(Address::generate(&env), after_migration)
 }
+
+#[test]
+fn test_update() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &Address::generate(&env));
+
+    let new_wasm_hash = install_multihop_wasm(&env);
+
+    multihop.update(&new_wasm_hash);
+}
+
+#[test]
+fn test_query_version() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &Address::generate(&env));
+
+    let expected_version = env!("CARGO_PKG_VERSION");
+    let version = multihop.query_version();
+    assert_eq!(String::from_str(&env, expected_version), version);
+}
