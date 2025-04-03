@@ -9,7 +9,7 @@ use soroban_sdk::{
 use crate::{
     contract::{Vesting, VestingClient},
     error::ContractError,
-    storage::{MinterInfo, VestingTokenInfo, PENDING_ADMIN},
+    storage::{MinterInfo, VestingTokenInfo, ADMIN, PENDING_ADMIN},
 };
 
 #[test]
@@ -302,4 +302,35 @@ fn revoke_admin_should_fail_when_no_admin_change_in_place() {
         vesting.try_revoke_admin_change(),
         Err(Ok(ContractError::NoAdminChangeInPlace))
     );
+}
+
+#[test]
+fn test_migrate_admin() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let vesting_token_info = VestingTokenInfo {
+        name: String::from_str(&env, "Phoenix"),
+        symbol: String::from_str(&env, "PHO"),
+        decimals: 6,
+        address: Address::generate(&env),
+    };
+
+    let vesting = VestingClient::new(
+        &env,
+        &env.register(
+            Vesting,
+            (&admin, vesting_token_info, &10u32, None::<MinterInfo>),
+        ),
+    );
+
+    vesting.migrate_admin_key();
+
+    let admin_addr: Address = env.as_contract(&vesting.address, || {
+        env.storage().instance().get(&ADMIN).unwrap()
+    });
+
+    assert_eq!(admin_addr, admin);
 }
