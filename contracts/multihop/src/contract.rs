@@ -381,7 +381,6 @@ impl Multihop {
     }
 
     #[allow(dead_code)]
-    #[cfg(not(tarpaulin_include))]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin_old(&env);
         admin.require_auth();
@@ -390,7 +389,6 @@ impl Multihop {
     }
 
     #[allow(dead_code)]
-    #[cfg(not(tarpaulin_include))]
     pub fn query_version(env: Env) -> String {
         String::from_str(&env, env!("CARGO_PKG_VERSION"))
     }
