@@ -21,7 +21,7 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
 }
 
 #[allow(clippy::too_many_arguments)]
-mod latest_stake {
+pub mod latest_stake {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
@@ -71,7 +71,7 @@ pub fn deploy_staking_contract<'a>(
 
 #[cfg(test)]
 #[allow(clippy::too_many_arguments)]
-mod tests {
+pub mod tests {
 
     pub mod token {
         // The import will code generate:

@@ -218,6 +218,7 @@ impl StakingTrait for Staking {
         env.events().publish(("unbond", "amount"), stake_amount);
     }
 
+    #[cfg(not(tarpaulin_include))]
     fn unbond_deprecated(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
         sender.require_auth();
 
@@ -439,6 +440,7 @@ impl StakingTrait for Staking {
         }
     }
 
+    #[cfg(not(tarpaulin_include))]
     fn withdraw_rewards_deprecated(env: Env, sender: Address) {
         env.storage()
             .instance()
@@ -650,6 +652,7 @@ impl StakingTrait for Staking {
         WithdrawableRewardsResponse { rewards }
     }
 
+    #[cfg(not(tarpaulin_include))]
     fn query_withdrawable_rewards_dep(env: Env, user: Address) -> WithdrawableRewardsResponse {
         env.storage()
             .instance()
@@ -845,12 +848,14 @@ impl Staking {
 
     //TODO: Remove after we've added the key to storage
     #[allow(dead_code)]
+    #[cfg(not(tarpaulin_include))]
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&STAKE_KEY, &true);
         Ok(())
     }
 
     #[allow(dead_code)]
+    #[cfg(not(tarpaulin_include))]
     pub fn migrate_distributions(env: Env) {
         let distributions = get_distributions(&env);
 
