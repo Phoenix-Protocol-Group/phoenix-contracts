@@ -2,10 +2,8 @@ use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 use crate::{
     contract::{Vesting, VestingClient},
-    storage::{
-        DataKey, VestingInfoResponse, VestingSchedule, VestingTokenInfo, ADMIN, VESTING_KEY,
-    },
-    tests::setup::{deploy_token_contract, instantiate_vesting_client},
+    storage::{MinterInfo, VestingInfoResponse, VestingSchedule, VestingTokenInfo},
+    tests::setup::deploy_token_contract,
 };
 use curve::{Curve, SaturatingLinear};
 

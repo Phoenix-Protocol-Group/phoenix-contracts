@@ -73,7 +73,6 @@ pub struct VestingCounterKey {
     pub recipient: Address,
 }
 
-#[cfg(feature = "minter")]
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MinterInfo {
