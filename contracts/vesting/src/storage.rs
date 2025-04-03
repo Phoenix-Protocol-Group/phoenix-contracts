@@ -83,6 +83,7 @@ pub struct MinterInfo {
 
 #[cfg(feature = "minter")]
 impl MinterInfo {
+    #[cfg(not(tarpaulin_include))]
     pub fn get_curve(&self) -> Curve {
         Curve::Constant(self.mint_capacity)
     }
@@ -97,6 +98,7 @@ pub fn save_admin_old(env: &Env, admin: &Address) {
     );
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn _save_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&ADMIN, admin);
     env.storage()
@@ -122,6 +124,7 @@ pub fn get_admin_old(env: &Env) -> Address {
     admin_addr
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn _get_admin(env: &Env) -> Address {
     env.storage()
         .instance()
