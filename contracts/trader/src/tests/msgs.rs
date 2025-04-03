@@ -913,3 +913,32 @@ fn test_query_version() {
     let version = trader_client.query_version();
     assert_eq!(String::from_str(&env, expected_version), version);
 }
+
+#[test]
+fn migrate_admin_key() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let pair_a = Address::generate(&env);
+    let pair_b = Address::generate(&env);
+
+    let output_addr = Address::generate(&env);
+
+    let trader_client = deploy_trader_client(&env);
+    trader_client.initialize(&admin, &contract_name, &(pair_a, pair_b), &output_addr);
+
+    let before_migration: Address = env.as_contract(&trader_client.address, || {
+        env.storage().persistent().get(&DataKey::Admin).unwrap()
+    });
+
+    trader_client.migrate_admin_key();
+
+    let after_migration: Address = env.as_contract(&trader_client.address, || {
+        env.storage().instance().get(&ADMIN).unwrap()
+    });
+
+    assert_eq!(before_migration, after_migration);
+    assert_ne!(Address::generate(&env), after_migration)
+}
