@@ -39,6 +39,12 @@ pub fn install_old_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+#[cfg(feature = "upgrade")]
+pub fn install_old_stake_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_stake.wasm");
+    env.deployer().upload_contract_wasm(WASM)
+}
+
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
@@ -161,7 +167,7 @@ fn update_liquidity_pool() {
         manager: Address::generate(&env),
         max_complexity: 10u32,
     };
-    let stake_wasm_hash = install_stake_wasm(&env);
+    let stake_wasm_hash = install_old_stake_wasm(&env);
     let token_wasm_hash = install_old_token_wasm(&env);
 
     let lp_init_info = old_liquidity_pool::LiquidityPoolInitInfo {
