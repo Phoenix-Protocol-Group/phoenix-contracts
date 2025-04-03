@@ -29,8 +29,7 @@ pub fn old_stake_wasm(env: &Env) -> BytesN<32> {
 }
 
 #[allow(clippy::too_many_arguments)]
-#[cfg(feature = "upgrade")]
-pub fn install_latest_factory(env: &Env) -> BytesN<32> {
+pub(crate) fn install_latest_factory(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"
     );

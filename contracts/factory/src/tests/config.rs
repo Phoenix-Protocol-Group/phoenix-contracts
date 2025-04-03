@@ -1,14 +1,12 @@
 use super::setup::{
-    deploy_factory_contract, install_lp_contract, install_multihop_wasm, install_stable_lp,
-    install_stake_wasm, install_token_wasm, lp_contract,
+    deploy_factory_contract, install_latest_factory, install_lp_contract, install_multihop_wasm,
+    install_stable_lp, install_stake_wasm, install_token_wasm, lp_contract,
 };
 use crate::{
     contract::{Factory, FactoryClient},
     error::ContractError,
     storage::ADMIN,
-    tests::setup::{
-        generate_lp_init_info, install_and_deploy_token_contract, install_latest_factory, stable_lp,
-    },
+    tests::setup::{generate_lp_init_info, install_and_deploy_token_contract, stable_lp},
 };
 
 use test_case::test_case;
