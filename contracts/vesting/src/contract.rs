@@ -537,7 +537,7 @@ impl VestingTrait for Vesting {
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
         let admin = get_admin_old(&env);
-        env.storage().persistent().set(&ADMIN, &admin);
+        env.storage().instance().set(&ADMIN, &admin);
 
         Ok(())
     }
