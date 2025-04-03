@@ -10,7 +10,6 @@ use soroban_sdk::{
 use soroban_sdk::{vec, String};
 
 #[allow(clippy::too_many_arguments)]
-#[cfg(feature = "upgrade")]
 pub mod old_multihop {
     soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_multihop.wasm");
 }
