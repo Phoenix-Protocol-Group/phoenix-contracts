@@ -100,7 +100,7 @@ pub trait LiquidityPoolTrait {
     );
 
     // Migration entrypoint
-    fn upgrade(e: Env, new_wasm_hash: BytesN<32>, new_default_slippage_bps: i64);
+    fn upgrade(e: Env, new_wasm_hash: BytesN<32>);
 
     // QUERIES
 
@@ -558,12 +558,12 @@ impl LiquidityPoolTrait for LiquidityPool {
         save_config(&env, config);
     }
 
-    fn upgrade(env: Env, new_wasm_hash: BytesN<32>, new_default_slippage_bps: i64) {
+    #[cfg(not(tarpaulin_include))]
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
         let admin: Address = utils::get_admin_old(&env);
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
-        save_default_slippage_bps(&env, new_default_slippage_bps);
     }
 
     // Queries
@@ -963,15 +963,6 @@ impl LiquidityPool {
     }
 
     #[allow(dead_code)]
-    #[cfg(not(tarpaulin_include))]
-    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
-        let admin = get_admin_old(&env);
-        admin.require_auth();
-
-        env.deployer().update_current_contract_wasm(new_wasm_hash);
-    }
-
-    #[allow(dead_code)]
     pub fn query_version(env: Env) -> String {
         String::from_str(&env, env!("CARGO_PKG_VERSION"))
     }
@@ -1202,6 +1193,7 @@ fn do_swap(
 ///
 // TODO: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/issues/204
 #[allow(dead_code)]
+#[cfg(not(tarpaulin_include))]
 fn split_deposit_based_on_pool_ratio(
     env: &Env,
     config: &Config,
