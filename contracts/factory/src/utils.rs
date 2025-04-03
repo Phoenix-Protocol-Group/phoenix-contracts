@@ -1,20 +1,4 @@
-use soroban_sdk::{xdr::ToXdr, Address, Bytes, BytesN, Env, IntoVal, Symbol, Val, Vec};
-
-pub fn deploy_lp_contract(
-    env: &Env,
-    wasm_hash: BytesN<32>,
-    token_a: &Address,
-    token_b: &Address,
-) -> Address {
-    let mut salt = Bytes::new(env);
-    salt.append(&token_a.to_xdr(env));
-    salt.append(&token_b.to_xdr(env));
-    let salt = env.crypto().sha256(&salt);
-
-    env.deployer()
-        .with_current_contract(salt)
-        .deploy_v2(wasm_hash, ())
-}
+use soroban_sdk::{xdr::ToXdr, Address, Bytes, BytesN, Env};
 
 pub fn deploy_and_initialize_multihop_contract(
     env: Env,
@@ -25,14 +9,7 @@ pub fn deploy_and_initialize_multihop_contract(
     salt.append(&admin.clone().to_xdr(&env));
     let salt = env.crypto().sha256(&salt);
 
-    let multihop_address = env
-        .deployer()
+    env.deployer()
         .with_current_contract(salt)
-        .deploy_v2(multihop_wasm_hash, ());
-
-    let init_fn = Symbol::new(&env, "initialize");
-    let init_args: Vec<Val> = (admin, env.current_contract_address()).into_val(&env);
-    env.invoke_contract::<Val>(&multihop_address, &init_fn, init_args);
-
-    multihop_address
+        .deploy_v2(multihop_wasm_hash, (admin, env.current_contract_address()))
 }

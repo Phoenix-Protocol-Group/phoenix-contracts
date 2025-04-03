@@ -47,7 +47,6 @@ soroban contract invoke \
     --source $IDENTITY_STRING \
     --network $NETWORK \
     -- \
-    initialize \
     --admin $ADMIN_ADDRESS \
     --decimal 7 \
     --name PHOENIX \
@@ -113,7 +112,6 @@ soroban contract invoke \
     --source $IDENTITY_STRING \
     --network $NETWORK \
     -- \
-    initialize \
     --admin $ADMIN_ADDRESS \
     --multihop_wasm_hash $MULTIHOP \
     --lp_wasm_hash $PAIR_WASM_HASH \
@@ -205,7 +203,6 @@ soroban contract invoke \
     --source $IDENTITY_STRING \
     --network $NETWORK \
     -- \
-    initialize \
     --admin $ADMIN_ADDRESS \
     --decimal 7 \
     --name USDC \

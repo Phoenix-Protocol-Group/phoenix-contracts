@@ -6,7 +6,11 @@ use soroban_sdk::{
     Address, Env, String,
 };
 
-use crate::{error::ContractError, storage::PENDING_ADMIN, tests::setup::deploy_trader_client};
+use crate::{
+    contract::{Trader, TraderClient},
+    error::ContractError,
+    storage::PENDING_ADMIN,
+};
 
 #[test]
 fn propose_admin() {
@@ -16,12 +20,17 @@ fn propose_admin() {
     let admin = Address::generate(&env);
     let new_admin = Address::generate(&env);
 
-    let trader = deploy_trader_client(&env);
-    trader.initialize(
-        &admin,
-        &String::from_str(&env, "Trader"),
-        &(Address::generate(&env), Address::generate(&env)),
-        &Address::generate(&env),
+    let trader = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                String::from_str(&env, "Trader"),
+                &(Address::generate(&env), Address::generate(&env)),
+                &Address::generate(&env),
+            ),
+        ),
     );
 
     let result = trader.propose_admin(&new_admin, &None);
@@ -43,12 +52,17 @@ fn replace_admin_fails_when_new_admin_is_same_as_current() {
 
     let admin = Address::generate(&env);
 
-    let trader = deploy_trader_client(&env);
-    trader.initialize(
-        &admin,
-        &String::from_str(&env, "Trader"),
-        &(Address::generate(&env), Address::generate(&env)),
-        &Address::generate(&env),
+    let trader = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                String::from_str(&env, "Trader"),
+                &(Address::generate(&env), Address::generate(&env)),
+                &Address::generate(&env),
+            ),
+        ),
     );
 
     assert_eq!(
@@ -66,12 +80,17 @@ fn accept_admin_successfully() {
     let admin = Address::generate(&env);
     let new_admin = Address::generate(&env);
 
-    let trader = deploy_trader_client(&env);
-    trader.initialize(
-        &admin,
-        &String::from_str(&env, "Trader"),
-        &(Address::generate(&env), Address::generate(&env)),
-        &Address::generate(&env),
+    let trader = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                String::from_str(&env, "Trader"),
+                &(Address::generate(&env), Address::generate(&env)),
+                &Address::generate(&env),
+            ),
+        ),
     );
 
     trader.propose_admin(&new_admin, &None);
@@ -94,12 +113,17 @@ fn accept_admin_fails_when_no_pending_admin() {
 
     let admin = Address::generate(&env);
 
-    let trader = deploy_trader_client(&env);
-    trader.initialize(
-        &admin,
-        &String::from_str(&env, "Trader"),
-        &(Address::generate(&env), Address::generate(&env)),
-        &Address::generate(&env),
+    let trader = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                String::from_str(&env, "Trader"),
+                &(Address::generate(&env), Address::generate(&env)),
+                &Address::generate(&env),
+            ),
+        ),
     );
 
     assert_eq!(
@@ -118,12 +142,17 @@ fn accept_admin_fails_when_time_limit_expired() {
     let admin = Address::generate(&env);
     let new_admin = Address::generate(&env);
 
-    let trader = deploy_trader_client(&env);
-    trader.initialize(
-        &admin,
-        &String::from_str(&env, "Trader"),
-        &(Address::generate(&env), Address::generate(&env)),
-        &Address::generate(&env),
+    let trader = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                String::from_str(&env, "Trader"),
+                &(Address::generate(&env), Address::generate(&env)),
+                &Address::generate(&env),
+            ),
+        ),
     );
 
     let time_limit = 1000u64;
@@ -145,12 +174,17 @@ fn accept_admin_successfully_with_time_limit() {
     let admin = Address::generate(&env);
     let new_admin = Address::generate(&env);
 
-    let trader = deploy_trader_client(&env);
-    trader.initialize(
-        &admin,
-        &String::from_str(&env, "Trader"),
-        &(Address::generate(&env), Address::generate(&env)),
-        &Address::generate(&env),
+    let trader = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                String::from_str(&env, "Trader"),
+                &(Address::generate(&env), Address::generate(&env)),
+                &Address::generate(&env),
+            ),
+        ),
     );
 
     let time_limit = 1_500;
@@ -177,12 +211,17 @@ fn accept_admin_successfully_on_time_limit() {
     let admin = Address::generate(&env);
     let new_admin = Address::generate(&env);
 
-    let trader_client = deploy_trader_client(&env);
-    trader_client.initialize(
-        &admin,
-        &String::from_str(&env, "Trader"),
-        &(Address::generate(&env), Address::generate(&env)),
-        &Address::generate(&env),
+    let trader_client = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                String::from_str(&env, "Trader"),
+                &(Address::generate(&env), Address::generate(&env)),
+                &Address::generate(&env),
+            ),
+        ),
     );
 
     let time_limit = 1_500;
@@ -209,12 +248,17 @@ fn propose_admin_then_revoke() {
     let admin = Address::generate(&env);
     let new_admin = Address::generate(&env);
 
-    let trader_client = deploy_trader_client(&env);
-    trader_client.initialize(
-        &admin,
-        &String::from_str(&env, "Trader"),
-        &(Address::generate(&env), Address::generate(&env)),
-        &Address::generate(&env),
+    let trader_client = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                String::from_str(&env, "Trader"),
+                &(Address::generate(&env), Address::generate(&env)),
+                &Address::generate(&env),
+            ),
+        ),
     );
 
     trader_client.propose_admin(&new_admin, &None);
@@ -234,12 +278,17 @@ fn revoke_admin_should_fail_when_no_admin_change_in_place() {
 
     let admin = Address::generate(&env);
 
-    let trader_client = deploy_trader_client(&env);
-    trader_client.initialize(
-        &admin,
-        &String::from_str(&env, "Trader"),
-        &(Address::generate(&env), Address::generate(&env)),
-        &Address::generate(&env),
+    let trader_client = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                String::from_str(&env, "Trader"),
+                &(Address::generate(&env), Address::generate(&env)),
+                &Address::generate(&env),
+            ),
+        ),
     );
 
     assert_eq!(

@@ -65,7 +65,6 @@ soroban contract invoke \
     --source $IDENTITY_STRING \
     --network $NETWORK \
     -- \
-    initialize \
     --admin $ADMIN_ADDRESS \
     --vesting_token "$VESTING_TOKEN_JSON" \
     --max_vesting_complexity 10

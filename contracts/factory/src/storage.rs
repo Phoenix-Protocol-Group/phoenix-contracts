@@ -19,7 +19,7 @@ const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
 pub enum DataKey {
     Config = 1,
     LpVec = 2,
-    Initialized = 3,
+    Initialized = 3, // TODO: deprecated, remove in next upgrade
 }
 
 #[derive(Clone)]
@@ -230,23 +230,6 @@ pub fn save_lp_vec_with_tuple_as_key(
             token_a: tuple_pool.0.clone(),
             token_b: tuple_pool.1.clone(),
         },
-        PERSISTENT_RENEWAL_THRESHOLD,
-        PERSISTENT_TARGET_TTL,
-    );
-}
-
-pub fn is_initialized(e: &Env) -> bool {
-    e.storage()
-        .persistent()
-        .get(&DataKey::Initialized)
-        .unwrap_or(false)
-}
-
-pub fn set_initialized(e: &Env) {
-    e.storage().persistent().set(&DataKey::Initialized, &true);
-
-    e.storage().persistent().extend_ttl(
-        &DataKey::Initialized,
         PERSISTENT_RENEWAL_THRESHOLD,
         PERSISTENT_TARGET_TTL,
     );

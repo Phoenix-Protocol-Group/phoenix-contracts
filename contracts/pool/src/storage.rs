@@ -7,6 +7,8 @@ use soroban_sdk::{
 use crate::{error::ContractError, token_contract};
 use soroban_decimal::Decimal;
 
+const CONFIG: Symbol = symbol_short!("CONFIG");
+const DEFAULT_SLIPPAGE_BPS: Symbol = symbol_short!("DSLIPBPS");
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const XYK_POOL_KEY: Symbol = symbol_short!("XYK_POOL");
 pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
@@ -18,7 +20,7 @@ pub enum DataKey {
     ReserveA = 1,
     ReserveB = 2,
     Admin = 3,
-    Initialized = 4,
+    Initialized = 4, // TODO: deprecated, remove in next upgrade
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -55,9 +57,7 @@ pub struct Config {
     /// The maximum allowed percentage (in bps) for referral fee
     pub max_referral_bps: i64,
 }
-const CONFIG: Symbol = symbol_short!("CONFIG");
 
-const DEFAULT_SLIPPAGE_BPS: Symbol = symbol_short!("DSLIPBPS");
 pub fn save_default_slippage_bps(env: &Env, bps: i64) {
     env.storage().persistent().set(&DEFAULT_SLIPPAGE_BPS, &bps);
     env.storage().persistent().extend_ttl(
@@ -209,13 +209,33 @@ pub mod utils {
             .deploy_v2(token_wasm_hash, (admin, decimals, name, symbol))
     }
 
-    pub fn deploy_stake_contract(e: &Env, stake_wasm_hash: BytesN<32>) -> Address {
+    #[allow(clippy::too_many_arguments)]
+    pub fn deploy_stake_contract(
+        e: &Env,
+        stake_wasm_hash: BytesN<32>,
+        admin: &Address,
+        share_token_address: &Address,
+        min_bond: i128,
+        min_reward: i128,
+        manager: &Address,
+        factory_addr: &Address,
+        max_complexity: u32,
+    ) -> Address {
         let salt = Bytes::new(e);
         let salt = e.crypto().sha256(&salt);
 
-        e.deployer()
-            .with_current_contract(salt)
-            .deploy_v2(stake_wasm_hash, ())
+        e.deployer().with_current_contract(salt).deploy_v2(
+            stake_wasm_hash,
+            (
+                admin,
+                share_token_address,
+                min_bond,
+                min_reward,
+                manager,
+                factory_addr,
+                max_complexity,
+            ),
+        )
     }
 
     pub fn save_admin_old(e: &Env, address: Address) {
@@ -469,22 +489,6 @@ pub mod utils {
         };
 
         (amount_a, amount_b)
-    }
-
-    pub fn is_initialized(e: &Env) -> bool {
-        e.storage()
-            .persistent()
-            .get(&DataKey::Initialized)
-            .unwrap_or(false)
-    }
-
-    pub fn set_initialized(e: &Env) {
-        e.storage().persistent().set(&DataKey::Initialized, &true);
-        e.storage().persistent().extend_ttl(
-            &DataKey::Initialized,
-            PERSISTENT_RENEWAL_THRESHOLD,
-            PERSISTENT_TARGET_TTL,
-        );
     }
 }
 
