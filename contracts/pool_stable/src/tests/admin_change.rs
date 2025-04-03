@@ -8,7 +8,7 @@ use soroban_sdk::{
 
 use crate::{
     error::ContractError,
-    storage::PENDING_ADMIN,
+    storage::{DataKey, ADMIN, PENDING_ADMIN},
     tests::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract},
 };
 
@@ -345,4 +345,44 @@ fn revoke_admin_should_fail_when_no_admin_change_in_place() {
         pool.try_revoke_admin_change(),
         Err(Ok(ContractError::NoAdminChangeInPlace))
     );
+}
+
+#[test]
+fn migrate_admin_key() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin);
+    let mut token2 = deploy_token_contract(&env, &admin);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        None,
+        (&token1.address, &token2.address),
+        0i64,
+        None,
+        None,
+        None,
+        Address::generate(&env),
+        Address::generate(&env),
+        None,
+    );
+
+    let before_migration: Address = env.as_contract(&pool.address, || {
+        env.storage().instance().get(&DataKey::Admin).unwrap()
+    });
+
+    pool.migrate_admin_key();
+
+    let after_migration: Address = env.as_contract(&pool.address, || {
+        env.storage().instance().get(&ADMIN).unwrap()
+    });
+
+    assert_eq!(before_migration, after_migration);
+    assert_ne!(Address::generate(&env), after_migration)
 }
