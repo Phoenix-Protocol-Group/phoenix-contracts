@@ -10,7 +10,7 @@ use super::setup::{
 };
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
-    storage::{Config, PairType, XYK_POOL_KEY},
+    storage::{Config, PairType, ADMIN, XYK_POOL_KEY},
 };
 
 #[should_panic(
@@ -177,6 +177,14 @@ fn update_config() {
     });
 
     assert!(key_result);
+
+    pool.migrate_admin_key();
+
+    let admin_addr_new_key: Address = env.as_contract(&pool.address, || {
+        env.storage().instance().get(&ADMIN).unwrap()
+    });
+
+    assert_eq!(admin_addr_new_key, admin1);
 }
 
 #[test]
