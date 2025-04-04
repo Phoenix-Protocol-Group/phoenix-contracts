@@ -182,8 +182,6 @@ fn update_liquidity_pool() {
         stake_init_info,
     };
 
-    soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
-
     old_lp_client.initialize(
         &stake_wasm_hash,
         &token_wasm_hash,
@@ -196,7 +194,6 @@ fn update_liquidity_pool() {
         &1_000i64,
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!("DBG");
     assert_eq!(old_lp_client.query_config().fee_recipient, admin1);
 
     env.ledger().with_mut(|li| li.timestamp = 100);
