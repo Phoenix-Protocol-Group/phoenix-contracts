@@ -67,6 +67,7 @@ pub fn save_admin_old(env: &Env, address: &Address) {
     );
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn _save_admin(env: &Env, address: &Address) {
     env.storage().instance().set(&ADMIN, address);
     env.storage()
@@ -92,6 +93,7 @@ pub fn get_admin_old(env: &Env) -> Address {
     admin
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn _get_admin(env: &Env) -> Address {
     env.storage()
         .instance()

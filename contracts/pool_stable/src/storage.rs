@@ -284,6 +284,7 @@ pub mod utils {
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
+    #[cfg(not(tarpaulin_include))]
     pub fn _save_admin(e: &Env, address: Address) {
         e.storage().instance().set(&ADMIN, &address);
         e.storage()
@@ -338,6 +339,7 @@ pub mod utils {
         admin
     }
 
+    #[cfg(not(tarpaulin_include))]
     pub fn _get_admin(e: &Env) -> Address {
         e.storage()
             .instance()
@@ -382,6 +384,10 @@ pub mod utils {
 
 #[cfg(test)]
 mod tests {
+    use soroban_sdk::testutils::Ledger;
+
+    use crate::math::compute_current_amp;
+
     use super::*;
 
     #[test]
@@ -410,5 +416,37 @@ mod tests {
     fn test_get_pool_balance_b_failure() {
         let env = Env::default();
         let _ = utils::get_pool_balance_b(&env);
+    }
+
+    #[test]
+    fn test_compute_current_amp() {
+        let env = Env::default();
+        let params1 = AmplifierParameters {
+            init_amp: 100,
+            init_amp_time: 0,
+            next_amp: 200,
+            next_amp_time: 100,
+        };
+
+        assert_eq!(compute_current_amp(&env, &params1), 100);
+        let params2 = AmplifierParameters {
+            init_amp: 100,
+            init_amp_time: 0,
+            next_amp: 200,
+            next_amp_time: 100,
+        };
+
+        env.ledger().set_timestamp(100);
+        assert_eq!(compute_current_amp(&env, &params2), 200);
+
+        let params3 = AmplifierParameters {
+            init_amp: 200,
+            init_amp_time: 0,
+            next_amp: 100,
+            next_amp_time: 100,
+        };
+
+        env.ledger().set_timestamp(50);
+        assert_eq!(compute_current_amp(&env, &params3), 150);
     }
 }

@@ -21,7 +21,7 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
 }
 
 #[allow(clippy::too_many_arguments)]
-mod latest_stake {
+pub mod latest_stake {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
@@ -71,7 +71,7 @@ pub fn deploy_staking_contract<'a>(
 
 #[cfg(test)]
 #[allow(clippy::too_many_arguments)]
-mod tests {
+pub mod tests {
 
     pub mod token {
         // The import will code generate:
@@ -95,7 +95,11 @@ mod tests {
     use soroban_sdk::{testutils::Address as _, Address};
     use soroban_sdk::{vec, Env, String};
 
+    use crate::storage::utils::DataKey;
+    use crate::storage::ADMIN;
     use crate::tests::setup::{install_stake_wasm, latest_stake};
+
+    use super::deploy_staking_contract;
 
     #[test]
     fn upgrade_staking_contract_and_remove_stake_rewards() {
@@ -503,6 +507,8 @@ mod tests {
     fn upgrade_stake_contract() {
         use soroban_sdk::{testutils::Ledger, vec};
 
+        use crate::tests::setup::{deploy_token_contract, install_stake_latest_wasm};
+
         let env = Env::default();
         env.mock_all_auths();
         env.cost_estimate().budget().reset_unlimited();
@@ -529,6 +535,9 @@ mod tests {
             &10,
         );
 
+        token_client.mint(&owner, &1_000);
+        old_stake_client.create_distribution_flow(&owner, &token_client.address);
+
         assert_eq!(old_stake_client.query_admin(), admin);
 
         env.ledger().with_mut(|li| li.timestamp = 100);
@@ -553,24 +562,66 @@ mod tests {
         let new_stake_wasm = install_stake_latest_wasm(&env);
         old_stake_client.update(&new_stake_wasm);
 
-        let new_stake_client = stake_latest::Client::new(&env, &stake_addr);
+        let new_stake_client = latest_stake::Client::new(&env, &stake_addr);
+        new_stake_client.migrate_distributions();
 
         assert_eq!(new_stake_client.query_admin(), admin);
 
         env.ledger().with_mut(|li| li.timestamp = 20_000);
+        new_stake_client.distribute_rewards();
 
-        new_stake_client.unbond(&user, &1_000, &100);
+        new_stake_client.unbond_deprecated(&user, &1_000, &100);
+
         assert_eq!(
             new_stake_client.query_staked(&user),
-            stake_latest::StakedResponse {
+            latest_stake::StakedResponse {
                 stakes: vec![&env,],
-                total_stake: 0i128,
-                last_reward_time: 0u64,
             }
         );
+    }
 
-        new_stake_client.create_distribution_flow(&owner, &token_client.address);
-        token_client.mint(&owner, &1_000);
-        new_stake_client.distribute_rewards(&owner, &1_000, &token_client.address);
+    #[test]
+    fn test_query_version() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let lp_token = Address::generate(&env);
+        let manager = Address::generate(&env);
+        let owner = Address::generate(&env);
+
+        let staking =
+            deploy_staking_contract(&env, admin.clone(), &lp_token, &manager, &owner, &10);
+
+        let expected_version = env!("CARGO_PKG_VERSION");
+        let version = staking.query_version();
+        assert_eq!(String::from_str(&env, expected_version), version);
+    }
+
+    #[test]
+    fn test_migrate_admin_key() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let lp_token = Address::generate(&env);
+        let manager = Address::generate(&env);
+        let owner = Address::generate(&env);
+
+        let staking =
+            deploy_staking_contract(&env, admin.clone(), &lp_token, &manager, &owner, &10);
+
+        let before_migration: Address = env.as_contract(&staking.address, || {
+            env.storage().persistent().get(&DataKey::Admin).unwrap()
+        });
+
+        staking.migrate_admin_key();
+
+        let after_migration: Address = env.as_contract(&staking.address, || {
+            env.storage().instance().get(&ADMIN).unwrap()
+        });
+
+        assert_eq!(before_migration, after_migration);
+        assert_ne!(Address::generate(&env), after_migration)
     }
 }

@@ -1,5 +1,5 @@
 extern crate std;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 use super::setup::{deploy_stable_liquidity_pool_contract, deploy_token_contract};
 use crate::storage::{Config, PairType};
@@ -392,4 +392,40 @@ fn create_stable_pool_with_too_high_swap_fee_bps_should_panic() {
         &None,
         &None,
     );
+}
+
+#[test]
+fn test_version_query() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let mut admin1 = Address::generate(&env);
+    let mut admin2 = Address::generate(&env);
+
+    let mut token1 = deploy_token_contract(&env, &admin1);
+    let mut token2 = deploy_token_contract(&env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user1 = Address::generate(&env);
+    let stake_manager = Address::generate(&env);
+    let factory = Address::generate(&env);
+    let swap_fees = 0i64;
+    let pool = deploy_stable_liquidity_pool_contract(
+        &env,
+        Some(admin1.clone()),
+        (&token1.address, &token2.address),
+        swap_fees,
+        user1.clone(),
+        500,
+        200,
+        stake_manager,
+        factory,
+        None,
+    );
+    let expected_version = env!("CARGO_PKG_VERSION");
+    let version = pool.query_version();
+    assert_eq!(String::from_str(&env, expected_version), version);
 }

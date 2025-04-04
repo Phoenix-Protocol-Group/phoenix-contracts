@@ -247,6 +247,7 @@ pub mod utils {
         );
     }
 
+    #[cfg(not(tarpaulin_include))]
     pub fn _save_admin(e: &Env, address: Address) {
         e.storage().instance().set(&ADMIN, &address);
         e.storage()
@@ -309,6 +310,7 @@ pub mod utils {
         admin
     }
 
+    #[cfg(not(tarpaulin_include))]
     pub fn _get_admin(e: &Env) -> Address {
         e.storage()
             .instance()

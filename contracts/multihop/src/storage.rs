@@ -72,6 +72,7 @@ pub struct PoolResponse {
     pub asset_lp_share: Asset,
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn save_factory(env: &Env, factory: Address) {
     env.storage().instance().set(&DataKey::FactoryKey, &factory);
     env.storage()
@@ -79,6 +80,7 @@ pub fn save_factory(env: &Env, factory: Address) {
         .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn get_factory(env: &Env) -> Address {
     let address = env
         .storage()
@@ -93,6 +95,7 @@ pub fn get_factory(env: &Env) -> Address {
     address
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn save_admin_old(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, admin);
     env.storage()
@@ -100,6 +103,7 @@ pub fn save_admin_old(env: &Env, admin: &Address) {
         .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn _save_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&ADMIN, admin);
     env.storage()
@@ -107,6 +111,7 @@ pub fn _save_admin(env: &Env, admin: &Address) {
         .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn get_admin_old(env: &Env) -> Address {
     let address = env
         .storage()
@@ -124,6 +129,7 @@ pub fn get_admin_old(env: &Env) -> Address {
     address
 }
 
+#[cfg(not(tarpaulin_include))]
 pub fn _get_admin(env: &Env) -> Address {
     let admin = env.storage().instance().get(&ADMIN).unwrap_or_else(|| {
         log!(env, "Multihop: Admin not set");

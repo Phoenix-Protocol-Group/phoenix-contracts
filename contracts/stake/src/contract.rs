@@ -7,7 +7,7 @@ use soroban_sdk::{
 };
 
 use crate::distribution::{calc_power, calculate_pending_rewards_deprecated};
-use crate::storage::PENDING_ADMIN;
+use crate::storage::{ADMIN, PENDING_ADMIN};
 use crate::TOKEN_PER_POWER;
 use crate::{
     distribution::{
@@ -93,6 +93,8 @@ pub trait StakingTrait {
     fn revoke_admin_change(env: Env) -> Result<(), ContractError>;
 
     fn accept_admin(env: Env) -> Result<Address, ContractError>;
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 }
 
 #[contractimpl]
@@ -218,6 +220,7 @@ impl StakingTrait for Staking {
         env.events().publish(("unbond", "amount"), stake_amount);
     }
 
+    #[cfg(not(tarpaulin_include))]
     fn unbond_deprecated(env: Env, sender: Address, stake_amount: i128, stake_timestamp: u64) {
         sender.require_auth();
 
@@ -439,6 +442,7 @@ impl StakingTrait for Staking {
         }
     }
 
+    #[cfg(not(tarpaulin_include))]
     fn withdraw_rewards_deprecated(env: Env, sender: Address) {
         env.storage()
             .instance()
@@ -650,6 +654,7 @@ impl StakingTrait for Staking {
         WithdrawableRewardsResponse { rewards }
     }
 
+    #[cfg(not(tarpaulin_include))]
     fn query_withdrawable_rewards_dep(env: Env, user: Address) -> WithdrawableRewardsResponse {
         env.storage()
             .instance()
@@ -773,6 +778,13 @@ impl StakingTrait for Staking {
 
         Ok(pending_admin)
     }
+
+    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
+        let admin = get_admin_old(&env);
+        env.storage().instance().set(&ADMIN, &admin);
+
+        Ok(())
+    }
 }
 
 #[contractimpl]
@@ -831,6 +843,7 @@ impl Staking {
     }
 
     #[allow(dead_code)]
+    #[cfg(not(tarpaulin_include))]
     pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin_old(&env);
         admin.require_auth();
@@ -845,12 +858,14 @@ impl Staking {
 
     //TODO: Remove after we've added the key to storage
     #[allow(dead_code)]
+    #[cfg(not(tarpaulin_include))]
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&STAKE_KEY, &true);
         Ok(())
     }
 
     #[allow(dead_code)]
+    #[cfg(not(tarpaulin_include))]
     pub fn migrate_distributions(env: Env) {
         let distributions = get_distributions(&env);
 

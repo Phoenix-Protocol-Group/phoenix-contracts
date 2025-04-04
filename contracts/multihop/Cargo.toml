@@ -17,5 +17,8 @@ upgrade = []
 soroban-sdk = { workspace = true }
 phoenix = { workspace = true }
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(tarpaulin_include)"] }
+
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }

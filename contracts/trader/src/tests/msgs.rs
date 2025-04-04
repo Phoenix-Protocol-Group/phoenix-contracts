@@ -6,7 +6,7 @@ use soroban_sdk::{
 use crate::{
     contract::{Trader, TraderClient},
     error::ContractError,
-    storage::{Asset, BalanceInfo},
+    storage::{Asset, BalanceInfo, DataKey, OutputTokenInfo, ADMIN},
     tests::setup::deploy_token_contract,
 };
 use test_case::test_case;
@@ -35,13 +35,11 @@ fn initialize() {
         &String::from_str(&env, "USD Coin"),
         &String::from_str(&env, "USDC"),
     );
-    let pho_token = deploy_token_contract(
-        &env,
-        &admin,
-        &6,
-        &String::from_str(&env, "Phoenix"),
-        &String::from_str(&env, "PHO"),
-    );
+
+    let output_token_name = String::from_str(&env, "Phoenix");
+    let output_token_sym = String::from_str(&env, "PHO");
+
+    let pho_token = deploy_token_contract(&env, &admin, &6, &output_token_name, &output_token_sym);
 
     let trader_client = TraderClient::new(
         &env,
@@ -62,6 +60,16 @@ fn initialize() {
         trader_client.query_trading_pairs(),
         (xlm_token.address, usdc_token.address)
     );
+
+    assert_eq!(
+        trader_client.query_output_token_info(),
+        OutputTokenInfo {
+            address: pho_token.address,
+            name: output_token_name,
+            symbol: output_token_sym,
+            decimal: 6
+        }
+    )
 }
 
 #[test]
@@ -839,16 +847,19 @@ fn update_contract_metadata() {
         &String::from_str(&env, "PHO"),
     );
 
-    let trader_client = deploy_trader_client(&env);
-
-    trader_client.initialize(
-        &admin,
-        &contract_name,
-        &(xlm_token.address.clone(), usdc_token.address.clone()),
-        &pho_token.address,
+    let trader_client = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                contract_name.clone(),
+                &(xlm_token.address.clone(), usdc_token.address.clone()),
+                &pho_token.address,
+            ),
+        ),
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let new_pair_a = Address::generate(&env);
     let new_pair_b = Address::generate(&env);
 
@@ -879,9 +890,77 @@ fn update_contract_metadata() {
         new_output_token.address
     );
 
-    soroban_sdk::testutils::arbitrary::std::dbg!();
     let new_trader_name = String::from_str(&env, "Some new name");
     trader_client.update_contract_name(&new_trader_name);
 
     assert_eq!(trader_client.query_contract_name(), new_trader_name);
+}
+
+#[test]
+fn test_query_version() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let pair_a = Address::generate(&env);
+    let pair_b = Address::generate(&env);
+
+    let output_addr = Address::generate(&env);
+
+    let trader_client = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                contract_name.clone(),
+                &(pair_a, pair_b),
+                &output_addr,
+            ),
+        ),
+    );
+
+    let expected_version = env!("CARGO_PKG_VERSION");
+    let version = trader_client.query_version();
+    assert_eq!(String::from_str(&env, expected_version), version);
+}
+
+#[test]
+fn migrate_admin_key() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let contract_name = String::from_str(&env, "XLM/USDC");
+    let pair_a = Address::generate(&env);
+    let pair_b = Address::generate(&env);
+
+    let output_addr = Address::generate(&env);
+
+    let trader_client = TraderClient::new(
+        &env,
+        &env.register(
+            Trader,
+            (
+                &admin,
+                contract_name.clone(),
+                &(pair_a, pair_b),
+                &output_addr,
+            ),
+        ),
+    );
+
+    let before_migration: Address = env.as_contract(&trader_client.address, || {
+        env.storage().persistent().get(&DataKey::Admin).unwrap()
+    });
+
+    trader_client.migrate_admin_key();
+
+    let after_migration: Address = env.as_contract(&trader_client.address, || {
+        env.storage().instance().get(&ADMIN).unwrap()
+    });
+
+    assert_eq!(before_migration, after_migration);
+    assert_ne!(Address::generate(&env), after_migration)
 }

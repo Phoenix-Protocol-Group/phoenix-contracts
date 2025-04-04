@@ -16,6 +16,13 @@ pub mod old_factory {
 
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
+pub fn install_old_multihop_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_multihop.wasm");
+    env.deployer().upload_contract_wasm(WASM)
+}
+
+#[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
 pub fn old_lp_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_pool.wasm");
     env.deployer().upload_contract_wasm(WASM)
@@ -29,8 +36,7 @@ pub fn old_stake_wasm(env: &Env) -> BytesN<32> {
 }
 
 #[allow(clippy::too_many_arguments)]
-#[cfg(feature = "upgrade")]
-pub fn install_latest_factory(env: &Env) -> BytesN<32> {
+pub(crate) fn install_latest_factory(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"
     );
@@ -176,7 +182,7 @@ fn update_factory() {
 
     old_factory_client.initialize(
         &admin.clone(),
-        &install_multihop_wasm(&env),
+        &install_old_multihop_wasm(&env),
         &old_lp_wasm(&env),
         &install_stable_lp(&env),
         &old_stake_wasm(&env),
@@ -201,9 +207,13 @@ fn update_factory() {
 
     assert_eq!(latest_factory_client.get_admin(), admin.clone());
 
-    latest_factory_client.update_wasm_hashes(
+    latest_factory_client.update_config(
+        &None,
         &Some(install_lp_contract(&env)),
         &Some(install_stake_wasm(&env)),
         &Some(install_token_wasm(&env)),
+        &None,
+        &None,
+        &None,
     );
 }

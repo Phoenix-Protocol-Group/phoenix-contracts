@@ -39,6 +39,12 @@ pub fn install_old_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+#[cfg(feature = "upgrade")]
+pub fn install_old_stake_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_stake.wasm");
+    env.deployer().upload_contract_wasm(WASM)
+}
+
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
@@ -161,17 +167,17 @@ fn update_liquidity_pool() {
         manager: Address::generate(&env),
         max_complexity: 10u32,
     };
-    let stake_wasm_hash = install_stake_wasm(&env);
+    let stake_wasm_hash = install_old_stake_wasm(&env);
     let token_wasm_hash = install_old_token_wasm(&env);
 
     let lp_init_info = old_liquidity_pool::LiquidityPoolInitInfo {
         admin: admin1.clone(),
-        swap_fee_bps: 0,
+        swap_fee_bps: 0i64,
         fee_recipient: admin1.clone(),
-        max_allowed_slippage_bps: 5_000,
-        default_slippage_bps: 2_500,
-        max_allowed_spread_bps: 1_000,
-        max_referral_bps: 5_000,
+        max_allowed_slippage_bps: 5_000i64,
+        default_slippage_bps: 2_500i64,
+        max_allowed_spread_bps: 1_000i64,
+        max_referral_bps: 5_000i64,
         token_init_info,
         stake_init_info,
     };
@@ -181,11 +187,11 @@ fn update_liquidity_pool() {
         &token_wasm_hash,
         &lp_init_info,
         &Address::generate(&env),
-        &7,
+        &7u32,
         &String::from_str(&env, "Pool"),
         &String::from_str(&env, "PHOBTC"),
         &100i64,
-        &1_000,
+        &1_000i64,
     );
 
     assert_eq!(old_lp_client.query_config().fee_recipient, admin1);
@@ -219,6 +225,7 @@ fn update_liquidity_pool() {
         &500_000_000_000_000,
         &500_000_000_000_000,
         &500_000_000_000_000,
+        &None,
         &None,
     );
 

@@ -1,4 +1,5 @@
 use phoenix::utils::{LiquidityPoolInitInfo, StakeInitInfo, TokenInitInfo};
+use pretty_assertions::assert_eq;
 use soroban_sdk::{
     testutils::{arbitrary::std, Address as _},
     Address, Env, String,
@@ -9,7 +10,7 @@ use super::setup::{
 };
 use crate::{
     contract::{LiquidityPool, LiquidityPoolClient},
-    storage::{Config, PairType},
+    storage::{Config, PairType, ADMIN, XYK_POOL_KEY},
 };
 
 #[should_panic(
@@ -165,6 +166,25 @@ fn update_config() {
             max_referral_bps: 500,
         }
     );
+
+    let expected_version = env!("CARGO_PKG_VERSION");
+    let version = pool.query_version();
+    assert_eq!(version, String::from_str(&env, expected_version));
+
+    pool.add_new_key_to_storage();
+    let key_result: bool = env.as_contract(&pool.address, || {
+        env.storage().persistent().get(&XYK_POOL_KEY).unwrap()
+    });
+
+    assert!(key_result);
+
+    pool.migrate_admin_key();
+
+    let admin_addr_new_key: Address = env.as_contract(&pool.address, || {
+        env.storage().instance().get(&ADMIN).unwrap()
+    });
+
+    assert_eq!(admin_addr_new_key, admin1);
 }
 
 #[test]

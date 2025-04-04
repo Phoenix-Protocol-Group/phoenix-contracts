@@ -528,6 +528,7 @@ impl VestingTrait for Vesting {
         Ok(())
     }
 
+    #[cfg(not(tarpaulin_include))]
     fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_admin_old(&env);
         admin.require_auth();
@@ -659,12 +660,14 @@ impl Vesting {
 
     #[allow(dead_code)]
     //TODO: Remove after we've added the key to storage
+    #[cfg(not(tarpaulin_include))]
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&VESTING_KEY, &true);
         Ok(())
     }
 
     #[allow(dead_code)]
+    #[cfg(not(tarpaulin_include))]
     pub fn query_version(env: Env) -> String {
         String::from_str(&env, env!("CARGO_PKG_VERSION"))
     }

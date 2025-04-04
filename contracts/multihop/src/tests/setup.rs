@@ -1,5 +1,6 @@
 use crate::contract::{Multihop, MultihopClient};
 use crate::factory_contract::{LiquidityPoolInitInfo, PoolType, StakeInitInfo, TokenInitInfo};
+use crate::storage::{DataKey, ADMIN};
 use crate::{factory_contract, stable_pool, token_contract, xyk_pool};
 
 use soroban_sdk::{
@@ -9,7 +10,6 @@ use soroban_sdk::{
 use soroban_sdk::{vec, String};
 
 #[allow(clippy::too_many_arguments)]
-#[cfg(feature = "upgrade")]
 pub mod old_multihop {
     soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_multihop.wasm");
 }
@@ -212,7 +212,7 @@ pub fn deploy_and_initialize_pool(
 #[test]
 #[allow(deprecated)]
 #[cfg(feature = "upgrade")]
-fn updapte_multihop() {
+fn update_multihop() {
     let env = Env::default();
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
@@ -226,4 +226,57 @@ fn updapte_multihop() {
     old_multihop_client.initialize(&admin, &factory);
     let latest_multihop_wasm = install_multihop_wasm(&env);
     old_multihop_client.update(&latest_multihop_wasm);
+}
+
+#[test]
+fn migrate_admin_key() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &Address::generate(&env));
+
+    let before_migration: Address = env.as_contract(&multihop.address, || {
+        env.storage().instance().get(&DataKey::Admin).unwrap()
+    });
+
+    multihop.migrate_admin_key();
+
+    let after_migration: Address = env.as_contract(&multihop.address, || {
+        env.storage().instance().get(&ADMIN).unwrap()
+    });
+
+    assert_eq!(before_migration, after_migration);
+    assert_ne!(Address::generate(&env), after_migration)
+}
+
+#[test]
+fn test_update() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let old_multihop_addr = env.register(old_multihop::WASM, ());
+    let multihop = old_multihop::Client::new(&env, &old_multihop_addr);
+    multihop.initialize(&admin, &Address::generate(&env));
+
+    let new_wasm_hash = install_multihop_wasm(&env);
+
+    multihop.update(&new_wasm_hash);
+}
+
+#[test]
+fn test_query_version() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    let multihop = deploy_multihop_contract(&env, admin.clone(), &Address::generate(&env));
+
+    let expected_version = env!("CARGO_PKG_VERSION");
+    let version = multihop.query_version();
+    assert_eq!(String::from_str(&env, expected_version), version);
 }
