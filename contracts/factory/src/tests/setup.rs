@@ -11,7 +11,7 @@ const TOKEN_WASM: &[u8] =
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub mod old_factory {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_factory.wasm");
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/live_factory.wasm");
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -199,9 +199,8 @@ fn update_factory() {
     assert_eq!(old_factory_client.get_admin(), admin.clone());
 
     let latest_factory_wasm = install_latest_factory(&env);
-    let stable_wasm = install_stable_lp(&env);
 
-    old_factory_client.update(&latest_factory_wasm, &stable_wasm);
+    old_factory_client.update(&latest_factory_wasm);
 
     let latest_factory_client = FactoryClient::new(&env, &factory_addr);
 
@@ -216,4 +215,6 @@ fn update_factory() {
         &None,
         &None,
     );
+
+    let _ = latest_factory_client.get_config();
 }
