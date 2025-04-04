@@ -205,6 +205,8 @@ fn update_factory() {
 
     let latest_factory_client = FactoryClient::new(&env, &factory_addr);
 
+    // latest_factory_client.migrate_storage_data();
+
     assert_eq!(latest_factory_client.get_admin(), admin.clone());
 
     latest_factory_client.update_config(
@@ -216,4 +218,6 @@ fn update_factory() {
         &None,
         &None,
     );
+
+    let _ = latest_factory_client.get_config();
 }

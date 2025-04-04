@@ -49,13 +49,18 @@ pub struct Config {
     pub lp_token_decimals: u32,
 }
 
-pub fn save_stable_wasm_hash(env: &Env, hash: BytesN<32>) {
-    env.storage().persistent().set(&STABLE_WASM_HASH, &hash);
-    env.storage().persistent().extend_ttl(
-        &STABLE_WASM_HASH,
-        PERSISTENT_RENEWAL_THRESHOLD,
-        PERSISTENT_TARGET_TTL,
-    );
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OldConfig {
+    pub admin: Address,
+    pub multihop_address: Address,
+    pub lp_wasm_hash: BytesN<32>,
+    pub stable_wasm_hash: BytesN<32>,
+    pub stake_wasm_hash: BytesN<32>,
+    pub token_wasm_hash: BytesN<32>,
+    pub stake_rewards_wasm_hash: BytesN<32>,
+    pub whitelisted_accounts: Vec<Address>,
+    pub lp_token_decimals: u32,
 }
 
 pub fn get_stable_wasm_hash(env: &Env) -> BytesN<32> {

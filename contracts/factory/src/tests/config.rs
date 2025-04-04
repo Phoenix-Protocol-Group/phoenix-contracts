@@ -580,9 +580,8 @@ fn test_simple_update() {
     let factory = deploy_factory_contract(&env, Some(admin.clone()));
 
     let new_wasm_hash = install_latest_factory(&env);
-    let latest_wasm = install_stable_lp(&env);
 
-    factory.update(&new_wasm_hash, &latest_wasm);
+    factory.update(&new_wasm_hash);
 }
 
 #[test]

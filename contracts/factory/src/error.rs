@@ -17,4 +17,5 @@ pub enum ContractError {
     NoAdminChangeInPlace = 110,
     AdminChangeExpired = 111,
     TokenDecimalsInvalid = 112,
+    ConfigNotFound = 113,
 }

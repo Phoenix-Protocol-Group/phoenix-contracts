@@ -3,9 +3,8 @@ use crate::{
     stake_contract::StakedResponse,
     storage::{
         get_config, get_lp_vec, get_stable_wasm_hash, save_config, save_lp_vec,
-        save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, Asset, Config, LiquidityPoolInfo,
-        LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN, FACTORY_KEY,
-        PENDING_ADMIN,
+        save_lp_vec_with_tuple_as_key, Asset, Config, DataKey, LiquidityPoolInfo, LpPortfolio,
+        OldConfig, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN, FACTORY_KEY, PENDING_ADMIN,
     },
     utils::deploy_and_initialize_multihop_contract,
     ConvertVec,
@@ -44,6 +43,7 @@ pub trait FactoryTrait {
         max_allowed_fee_bps: i64,
     ) -> Address;
 
+    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         multihop_address: Option<Address>,
@@ -549,7 +549,6 @@ impl Factory {
         admin: Address,
         multihop_wasm_hash: BytesN<32>,
         lp_wasm_hash: BytesN<32>,
-        stable_wasm_hash: BytesN<32>,
         stake_wasm_hash: BytesN<32>,
         token_wasm_hash: BytesN<32>,
         whitelisted_accounts: Vec<Address>,
@@ -575,7 +574,6 @@ impl Factory {
                 lp_token_decimals,
             },
         );
-        save_stable_wasm_hash(&env, stable_wasm_hash);
 
         save_lp_vec(&env, Vec::new(&env));
 
@@ -586,12 +584,36 @@ impl Factory {
     }
 
     #[allow(dead_code)]
-    pub fn update(env: Env, new_wasm_hash: BytesN<32>, new_stable_pool_hash: BytesN<32>) {
+    pub fn update(env: Env, new_wasm_hash: BytesN<32>) {
         let admin = get_config(&env).admin;
         admin.require_auth();
 
         env.deployer().update_current_contract_wasm(new_wasm_hash);
-        save_stable_wasm_hash(&env, new_stable_pool_hash);
+    }
+
+    #[allow(dead_code)]
+    pub fn migrate_storage_data(env: Env) -> Result<(), ContractError> {
+        let old_config: OldConfig = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Config)
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::ConfigNotFound));
+
+        let latest_config = Config {
+            admin: old_config.admin,
+            multihop_address: old_config.multihop_address,
+            lp_wasm_hash: old_config.lp_wasm_hash,
+            stake_wasm_hash: old_config.stake_wasm_hash,
+            token_wasm_hash: old_config.token_wasm_hash,
+            whitelisted_accounts: old_config.whitelisted_accounts,
+            lp_token_decimals: old_config.lp_token_decimals,
+        };
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Config, &latest_config);
+
+        Ok(())
     }
 
     pub fn query_version(env: Env) -> String {
