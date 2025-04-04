@@ -3,6 +3,7 @@
 mod admin;
 mod allowance;
 mod balance;
+mod certora;
 mod contract;
 mod metadata;
 mod storage_types;
