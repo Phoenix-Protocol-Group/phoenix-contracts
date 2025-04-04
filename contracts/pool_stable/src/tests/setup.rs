@@ -37,6 +37,22 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
+pub mod old_stable_liquidity_pool {
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_pool_stable.wasm");
+}
+
+pub fn install_old_token_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../../.artifacts_sdk_update/old_soroban_token_contract.wasm"
+    );
+    env.deployer().upload_contract_wasm(WASM)
+}
+
+pub fn install_old_stake_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_stake.wasm");
+    env.deployer().upload_contract_wasm(WASM)
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn deploy_stable_liquidity_pool_contract<'a>(
     env: &Env,
