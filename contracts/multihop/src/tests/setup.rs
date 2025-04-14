@@ -11,7 +11,7 @@ use soroban_sdk::{vec, String};
 
 #[allow(clippy::too_many_arguments)]
 pub mod old_multihop {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_multihop.wasm");
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_multihop.wasm");
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -257,6 +257,7 @@ fn test_update() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
+    let new_admin = Address::generate(&env);
 
     let old_multihop_addr = env.register(old_multihop::WASM, ());
     let multihop = old_multihop::Client::new(&env, &old_multihop_addr);
@@ -265,6 +266,9 @@ fn test_update() {
     let new_wasm_hash = install_multihop_wasm(&env);
 
     multihop.update(&new_wasm_hash);
+
+    let latest_multihop_client = MultihopClient::new(&env, &old_multihop_addr);
+    latest_multihop_client.propose_admin(&new_admin, &Some(1_000));
 }
 
 #[test]
