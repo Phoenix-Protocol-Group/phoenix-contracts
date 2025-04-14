@@ -21,7 +21,7 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub mod old_liquidity_pool {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_pool.wasm");
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_pool.wasm");
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -33,15 +33,14 @@ pub mod latest_liquidity_pool {
 
 #[cfg(feature = "upgrade")]
 pub fn install_old_token_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../../.artifacts_sdk_update/old_soroban_token_contract.wasm"
-    );
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_token_contract.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
 #[cfg(feature = "upgrade")]
+#[allow(clippy::too_many_arguments)]
 pub fn install_old_stake_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_stake.wasm");
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_stake.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
