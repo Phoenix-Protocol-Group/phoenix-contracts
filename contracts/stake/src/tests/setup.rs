@@ -78,18 +78,18 @@ pub mod tests {
         // - A ContractClient type that can be used to invoke functions on the contract.
         // - Any types in the contract that were annotated with #[contracttype].
         soroban_sdk::contractimport!(
-            file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
+            file = "../../.wasm_binaries_mainnet/live_token_contract.wasm"
         );
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub mod old_stake {
+    pub mod old_pho_usdc_stake {
         soroban_sdk::contractimport!(
-            file = "../../.artifacts_stake_migration_test/old_phoenix_stake.wasm"
+            file = "../../.wasm_binaries_mainnet/live_pho_usdc_stake.wasm"
         );
     }
 
-    use old_stake::{StakedResponse, WithdrawableReward, WithdrawableRewardsResponse};
+    use old_pho_usdc_stake::{StakedResponse, WithdrawableReward, WithdrawableRewardsResponse};
     use pretty_assertions::assert_eq;
     use soroban_sdk::testutils::Ledger;
     use soroban_sdk::{testutils::Address as _, Address};
@@ -117,8 +117,8 @@ pub mod tests {
 
         let new_user = Address::generate(&env);
 
-        let stake_addr = env.register(old_stake::WASM, ());
-        let old_stake_client = old_stake::Client::new(&env, &stake_addr);
+        let stake_addr = env.register(old_pho_usdc_stake::WASM, ());
+        let old_stake_client = old_pho_usdc_stake::Client::new(&env, &stake_addr);
 
         let lp_token_addr = env.register(
             token::WASM,
@@ -158,6 +158,7 @@ pub mod tests {
             &7,
         );
 
+        old_stake_client.add_lp_share(&lp_token_client.address);
         // after a day the manager creates a distribution flow
         env.ledger().with_mut(|li| li.timestamp += DAY_AS_SECONDS);
         old_stake_client.create_distribution_flow(&manager, &reward_token_addr);
@@ -175,7 +176,7 @@ pub mod tests {
                 last_reward_time: 0,
                 stakes: vec![
                     &env,
-                    old_stake::Stake {
+                    old_pho_usdc_stake::Stake {
                         stake: 10_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2,
                     }
@@ -190,7 +191,7 @@ pub mod tests {
                 last_reward_time: 0,
                 stakes: vec![
                     &env,
-                    old_stake::Stake {
+                    old_pho_usdc_stake::Stake {
                         stake: 20_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2,
                     }
@@ -205,7 +206,7 @@ pub mod tests {
                 last_reward_time: 0,
                 stakes: vec![
                     &env,
-                    old_stake::Stake {
+                    old_pho_usdc_stake::Stake {
                         stake: 15_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2,
                     }
@@ -518,9 +519,9 @@ pub mod tests {
         let token_client = deploy_token_contract(&env, &admin);
         token_client.mint(&user, &1_000);
 
-        let stake_addr = env.register_contract_wasm(None, old_stake::WASM);
+        let stake_addr = env.register_contract_wasm(None, old_pho_usdc_stake::WASM);
 
-        let old_stake_client = old_stake::Client::new(&env, &stake_addr);
+        let old_stake_client = old_pho_usdc_stake::Client::new(&env, &stake_addr);
 
         let manager = Address::generate(&env);
         let owner = Address::generate(&env);
@@ -541,13 +542,14 @@ pub mod tests {
         assert_eq!(old_stake_client.query_admin(), admin);
 
         env.ledger().with_mut(|li| li.timestamp = 100);
+        old_stake_client.add_lp_share(&token_client.address);
         old_stake_client.bond(&user, &1_000);
         assert_eq!(
             old_stake_client.query_staked(&user),
-            old_stake::StakedResponse {
+            old_pho_usdc_stake::StakedResponse {
                 stakes: vec![
                     &env,
-                    old_stake::Stake {
+                    old_pho_usdc_stake::Stake {
                         stake: 1_000i128,
                         stake_timestamp: 100
                     }
