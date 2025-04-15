@@ -1,4 +1,7 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger},
+    Address, BytesN, Env,
+};
 
 use crate::token_contract;
 
@@ -66,16 +69,8 @@ fn upgrade_vesting_contract() {
                 max_y: 0,
             }),
         },
-        old_vesting::VestingSchedule {
-            recipient: Address::generate(&env),
-            curve: old_vesting::Curve::SaturatingLinear(old_vesting::SaturatingLinear {
-                min_x: 15,
-                min_y: 200,
-                max_x: 60,
-                max_y: 0,
-            }),
-        },
     ];
+
     let vesting_addr = env.register_contract_wasm(None, old_vesting::WASM);
 
     let old_vesting_client = old_vesting::Client::new(&env, &vesting_addr);
@@ -83,4 +78,26 @@ fn upgrade_vesting_contract() {
     old_vesting_client.initialize(&admin, &vesting_token_info, &10u32);
 
     old_vesting_client.create_vesting_schedules(&vesting_schedules);
+
+    assert_eq!(token_client.balance(&old_vesting_client.address), 120);
+
+    env.ledger().with_mut(|li| li.timestamp = 30);
+
+    old_vesting_client.claim(&vester1, &0);
+    assert_eq!(token_client.balance(&vester1), 60);
+    assert_eq!(token_client.balance(&old_vesting_client.address), 60);
+
+    let new_wasm_hash = install_latest_vesting(&env);
+    old_vesting_client.update(&new_wasm_hash);
+
+    assert_eq!(token_client.balance(&vester1), 60);
+    assert_eq!(token_client.balance(&old_vesting_client.address), 60);
+
+    // fully vested
+    env.ledger().with_mut(|li| li.timestamp = 60);
+
+    old_vesting_client.claim(&vester1, &0);
+
+    assert_eq!(token_client.balance(&vester1), 120);
+    assert_eq!(token_client.balance(&old_vesting_client.address), 0);
 }
