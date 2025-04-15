@@ -89,6 +89,13 @@ pub mod tests {
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub mod old_xlm_usdc_stake {
+        soroban_sdk::contractimport!(
+            file = "../../.wasm_binaries_mainnet/live_xlm_usdc_stake.wasm"
+        );
+    }
+
     use old_pho_usdc_stake::{StakedResponse, WithdrawableReward, WithdrawableRewardsResponse};
     use pretty_assertions::assert_eq;
     use soroban_sdk::testutils::Ledger;
@@ -562,6 +569,68 @@ pub mod tests {
         old_stake_client.update(&new_stake_wasm);
 
         let new_stake_client = latest_stake::Client::new(&env, &stake_addr);
+        new_stake_client.migrate_distributions();
+
+        assert_eq!(new_stake_client.query_admin(), admin);
+
+        env.ledger().with_mut(|li| li.timestamp = 20_000);
+        new_stake_client.distribute_rewards();
+
+        new_stake_client.unbond_deprecated(&user, &1_000, &100);
+
+        assert_eq!(
+            new_stake_client.query_staked(&user),
+            latest_stake::StakedResponse {
+                stakes: vec![&env,],
+            }
+        );
+
+        // this time for xlm/usdc stake contract
+        let xlm_usdc_stake_addr = env.register_contract_wasm(None, old_xlm_usdc_stake::WASM);
+
+        let xlm_usdc_old_stake_client = old_xlm_usdc_stake::Client::new(&env, &xlm_usdc_stake_addr);
+
+        let manager = Address::generate(&env);
+        let owner = Address::generate(&env);
+
+        xlm_usdc_old_stake_client.initialize(
+            &admin,
+            &token_client.address,
+            &10,
+            &10,
+            &manager,
+            &owner,
+            &10,
+        );
+
+        token_client.mint(&owner, &1_000);
+        xlm_usdc_old_stake_client.create_distribution_flow(&owner, &token_client.address);
+
+        assert_eq!(xlm_usdc_old_stake_client.query_admin(), admin);
+
+        env.ledger().with_mut(|li| li.timestamp = 100);
+        xlm_usdc_old_stake_client.bond(&user, &1_000);
+        assert_eq!(
+            xlm_usdc_old_stake_client.query_staked(&user),
+            old_xlm_usdc_stake::StakedResponse {
+                stakes: vec![
+                    &env,
+                    old_xlm_usdc_stake::Stake {
+                        stake: 1_000i128,
+                        stake_timestamp: 100
+                    }
+                ],
+                last_reward_time: 0u64,
+                total_stake: 1_000i128,
+            }
+        );
+
+        env.ledger().with_mut(|li| li.timestamp = 10_000);
+
+        let new_stake_wasm = install_stake_latest_wasm(&env);
+        xlm_usdc_old_stake_client.update(&new_stake_wasm);
+
+        let new_stake_client = latest_stake::Client::new(&env, &xlm_usdc_stake_addr);
         new_stake_client.migrate_distributions();
 
         assert_eq!(new_stake_client.query_admin(), admin);
