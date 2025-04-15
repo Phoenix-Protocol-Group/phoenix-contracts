@@ -120,32 +120,29 @@ pub mod tests {
         let stake_addr = env.register(old_pho_usdc_stake::WASM, ());
         let old_stake_client = old_pho_usdc_stake::Client::new(&env, &stake_addr);
 
-        let lp_token_addr = env.register(
-            token::WASM,
-            (
-                Address::generate(&env),
-                7u32,
-                String::from_str(&env, "LP Token"),
-                String::from_str(&env, "LPT"),
-            ),
+        let lp_token_addr = env.register(token::WASM, ());
+        let lp_token_client = token::Client::new(&env, &lp_token_addr);
+        lp_token_client.initialize(
+            &Address::generate(&env),
+            &7u32,
+            &String::from_str(&env, "LP Token"),
+            &String::from_str(&env, "LPT"),
         );
 
-        let lp_token_client = token::Client::new(&env, &lp_token_addr);
         lp_token_client.mint(&user_1, &10_000_000_000_000);
         lp_token_client.mint(&user_2, &10_000_000_000_000);
         lp_token_client.mint(&user_3, &10_000_000_000_000);
 
-        let reward_token_addr = env.register(
-            token::WASM,
-            (
-                Address::generate(&env),
-                7u32,
-                String::from_str(&env, "Reward Token"),
-                String::from_str(&env, "RWT"),
-            ),
-        );
+        let reward_token_addr = env.register(token::WASM, ());
 
         let reward_token_client = token::Client::new(&env, &reward_token_addr);
+        reward_token_client.initialize(
+            &Address::generate(&env),
+            &7u32,
+            &String::from_str(&env, "Reward Token"),
+            &String::from_str(&env, "RWT"),
+        );
+
         reward_token_client.mint(&manager, &100_000_000_000_000);
 
         old_stake_client.initialize(
