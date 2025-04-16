@@ -269,6 +269,10 @@ fn test_update() {
 
     let latest_multihop_client = MultihopClient::new(&env, &old_multihop_addr);
     latest_multihop_client.propose_admin(&new_admin, &Some(1_000));
+
+    let expected_version = env!("CARGO_PKG_VERSION");
+    let version = latest_multihop_client.query_version();
+    assert_eq!(String::from_str(&env, expected_version), version);
 }
 
 #[test]
