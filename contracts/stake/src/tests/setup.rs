@@ -585,6 +585,21 @@ pub mod tests {
             }
         );
 
+        let actual_config = new_stake_client.query_config();
+        assert_eq!(
+            actual_config,
+            latest_stake::ConfigResponse {
+                config: latest_stake::Config {
+                    lp_token: token_client.address.clone(),
+                    manager,
+                    max_complexity: 10,
+                    min_bond: 10,
+                    min_reward: 10,
+                    owner
+                }
+            }
+        );
+
         // this time for xlm/usdc stake contract
         let xlm_usdc_stake_addr = env.register_contract_wasm(None, old_xlm_usdc_stake::WASM);
 
@@ -646,6 +661,21 @@ pub mod tests {
                 stakes: vec![&env,],
             }
         );
+
+        let actual_config = new_stake_client.query_config();
+        assert_eq!(
+            actual_config,
+            latest_stake::ConfigResponse {
+                config: latest_stake::Config {
+                    lp_token: token_client.address,
+                    manager,
+                    max_complexity: 10,
+                    min_bond: 10,
+                    min_reward: 10,
+                    owner
+                }
+            }
+        )
     }
 
     #[test]
