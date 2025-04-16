@@ -273,6 +273,12 @@ fn test_update() {
     let expected_version = env!("CARGO_PKG_VERSION");
     let version = latest_multihop_client.query_version();
     assert_eq!(String::from_str(&env, expected_version), version);
+
+    let new_admin = Address::generate(&env);
+    latest_multihop_client.propose_admin(&new_admin, &None);
+    latest_multihop_client.accept_admin();
+
+    assert_eq!(new_admin, latest_multihop_client.query_admin());
 }
 
 #[test]
