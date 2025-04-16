@@ -334,4 +334,9 @@ fn update_factory() {
     let pool_query = latest_factory_client.query_pool_details(&second_pool);
     assert_eq!(pool_query.pool_response.asset_a.address, token1.address);
     assert_eq!(pool_query.pool_response.asset_b.address, token2.address);
+
+    let new_admin = Address::generate(&env);
+    latest_factory_client.propose_admin(&new_admin, &None);
+    latest_factory_client.accept_admin();
+    assert_eq!(latest_factory_client.get_admin(), new_admin);
 }
