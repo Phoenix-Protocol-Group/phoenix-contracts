@@ -313,6 +313,21 @@ pub mod tests {
         // now we migrate the distributions
         latest_stake_client.migrate_distributions();
 
+        let actual_config = latest_stake_client.query_config();
+        assert_eq!(
+            actual_config,
+            latest_stake::ConfigResponse {
+                config: latest_stake::Config {
+                    lp_token: lp_token_addr,
+                    manager,
+                    max_complexity: 7,
+                    min_bond: 100,
+                    min_reward: 50,
+                    owner
+                }
+            }
+        );
+
         // check the rewards again, this time with the old deprecated method
         assert_eq!(
             latest_stake_client.query_withdrawable_rewards_dep(&user_1),
