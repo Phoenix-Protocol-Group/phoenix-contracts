@@ -3,7 +3,7 @@ use soroban_sdk::{
     Address, BytesN, Env,
 };
 
-use crate::token_contract;
+use crate::{contract::VestingClient, token_contract};
 
 #[allow(clippy::too_many_arguments)]
 pub mod old_vesting {
@@ -46,6 +46,7 @@ fn upgrade_vesting_contract() {
     env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
+    let new_admin = Address::generate(&env);
     let vester1 = Address::generate(&env);
     let token_client = deploy_token_contract(&env, &admin);
 
@@ -90,13 +91,19 @@ fn upgrade_vesting_contract() {
     let new_wasm_hash = install_latest_vesting(&env);
     old_vesting_client.update(&new_wasm_hash);
 
+    let latest_vesting = VestingClient::new(&env, &vesting_addr);
+
+    latest_vesting.propose_admin(&new_admin, &None);
+
+    latest_vesting.accept_admin();
+
     assert_eq!(token_client.balance(&vester1), 60);
     assert_eq!(token_client.balance(&old_vesting_client.address), 60);
 
     // fully vested
     env.ledger().with_mut(|li| li.timestamp = 60);
 
-    old_vesting_client.claim(&vester1, &0);
+    latest_vesting.claim(&vester1, &0);
 
     assert_eq!(token_client.balance(&vester1), 120);
     assert_eq!(token_client.balance(&old_vesting_client.address), 0);
