@@ -519,6 +519,12 @@ pub mod tests {
 
         latest_stake_client.unbond(&new_user, &10_000_000_000, &time_of_bond);
         assert_eq!(lp_token_client.balance(&new_user), 10_000_000_000_000);
+
+        let new_admin = Address::generate(&env);
+        latest_stake_client.propose_admin(&new_admin, &None);
+        latest_stake_client.accept_admin();
+
+        assert_eq!(new_admin, latest_stake_client.query_admin());
     }
 
     #[test]
@@ -615,6 +621,12 @@ pub mod tests {
             }
         );
 
+        let new_admin = Address::generate(&env);
+        new_stake_client.propose_admin(&new_admin, &None);
+        new_stake_client.accept_admin();
+
+        assert_eq!(new_admin, new_stake_client.query_admin());
+
         // this time for xlm/usdc stake contract
         let xlm_usdc_stake_addr = env.register_contract_wasm(None, old_xlm_usdc_stake::WASM);
 
@@ -690,7 +702,13 @@ pub mod tests {
                     owner
                 }
             }
-        )
+        );
+
+        let another_new_admin = Address::generate(&env);
+        new_stake_client.propose_admin(&another_new_admin, &None);
+        new_stake_client.accept_admin();
+
+        assert_eq!(another_new_admin, new_stake_client.query_admin());
     }
 
     #[test]
