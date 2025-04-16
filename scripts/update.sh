@@ -160,7 +160,7 @@ stellar contract invoke \
   --whitelisted_accounts "[ \"$ADMIN_ADDRESS\" ]" \
   --lp_token_decimals 7
 
-echo "Old factory initialized."
+echo "Old factory initialized at $FACTORY_ADDR."
 
 
 echo "Checking the admin of the old factory..."
@@ -254,7 +254,7 @@ stellar contract invoke \
   --admin "$ADMIN_ADDRESS" \
   --factory "$FACTORY_ADDR"
 
-echo "Old multihop initialized with admin=$ADMIN_ADDRESS factory=$FACTORY_ADDR."
+echo "Old multihop initialized at $OLD_MULTIHOP_ADDR"
 
 echo "Updating old multihop contract to latest multihop code..."
 
@@ -375,7 +375,7 @@ stellar contract invoke \
   --default_slippage_bps 100 \
   --max_allowed_fee_bps 1000
 
-echo "Old LP initialized."
+echo "Old LP initialized at $OLD_LP_ID"
 
 echo "Querying old LP config for fee_recipient..."
 FEE_RECIPIENT=$(stellar contract invoke \
@@ -441,7 +441,7 @@ NEW_FEE_RECIPIENT=$(stellar contract invoke \
   -- \
   query_config | jq -r '.fee_recipient')
 
-echo "Fee recipient in new LP: $NEW_FEE_RECIPIENT (expected ${ADMIN})"
+echo "Fee recipient in new LP: $NEW_FEE_RECIPIENT"
 
 
 echo "User1 withdrawing half of liquidity from new LP..."
@@ -554,7 +554,7 @@ stellar contract invoke \
   --owner "$OWNER_ADDR" \
   --max_complexity "10"
 
-echo "Old stake initialized."
+echo "Old stake initialized at $OLD_STAKE_ADDR"
 
 echo "Bonding 1000 tokens from $STAKE_USER..."
 stellar contract invoke \
