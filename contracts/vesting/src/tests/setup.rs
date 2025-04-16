@@ -3,7 +3,7 @@ use soroban_sdk::{
     Address, BytesN, Env,
 };
 
-use crate::{contract::VestingClient, token_contract};
+use crate::{contract::VestingClient, storage::Config, token_contract};
 
 #[allow(clippy::too_many_arguments)]
 pub mod old_vesting {
@@ -93,9 +93,22 @@ fn upgrade_vesting_contract() {
 
     let latest_vesting = VestingClient::new(&env, &vesting_addr);
 
+    latest_vesting.migrate_config(&false);
+
+    let actual_config = latest_vesting.query_config();
+    assert_eq!(
+        actual_config,
+        Config {
+            is_with_minter: false
+        }
+    );
+
     latest_vesting.propose_admin(&new_admin, &None);
 
     latest_vesting.accept_admin();
+
+    let actual_admin = latest_vesting.query_admin();
+    assert_eq!(actual_admin, new_admin);
 
     assert_eq!(token_client.balance(&vester1), 60);
     assert_eq!(token_client.balance(&old_vesting_client.address), 60);
