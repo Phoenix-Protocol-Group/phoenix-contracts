@@ -373,7 +373,7 @@ impl MultihopTrait for Multihop {
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
 
-        let admin = get_factory(&env);
+        let admin = get_admin_old(&env);
 
         Ok(admin)
     }
