@@ -298,6 +298,12 @@ fn update_liquidity_pool() {
         }
     );
 
+    let new_admin = Address::generate(&env);
+    new_lp_client.propose_admin(&new_admin, &None);
+    new_lp_client.accept_admin();
+
+    assert_eq!(new_admin, new_lp_client.query_admin());
+
     // now same with the xlm/usdc pool
     let mut token3 = deploy_token_contract(&env, &admin1);
     let mut token4 = deploy_token_contract(&env, &admin2);
@@ -415,4 +421,10 @@ fn update_liquidity_pool() {
             stake_address: new_lp_client.query_stake_contract_address(),
         }
     );
+
+    let another_new_admin = Address::generate(&env);
+    new_lp_client.propose_admin(&another_new_admin, &None);
+    new_lp_client.accept_admin();
+
+    assert_eq!(another_new_admin, new_lp_client.query_admin());
 }
