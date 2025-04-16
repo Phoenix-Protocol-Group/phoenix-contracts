@@ -257,7 +257,6 @@ fn test_update() {
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
-    let new_admin = Address::generate(&env);
 
     let old_multihop_addr = env.register(old_multihop::WASM, ());
     let multihop = old_multihop::Client::new(&env, &old_multihop_addr);
@@ -268,13 +267,14 @@ fn test_update() {
     multihop.update(&new_wasm_hash);
 
     let latest_multihop_client = MultihopClient::new(&env, &old_multihop_addr);
-    latest_multihop_client.propose_admin(&new_admin, &Some(1_000));
 
     let expected_version = env!("CARGO_PKG_VERSION");
     let version = latest_multihop_client.query_version();
     assert_eq!(String::from_str(&env, expected_version), version);
 
     let new_admin = Address::generate(&env);
+    soroban_sdk::testutils::arbitrary::std::dbg!(&admin, &new_admin);
+
     latest_multihop_client.propose_admin(&new_admin, &None);
     latest_multihop_client.accept_admin();
 
