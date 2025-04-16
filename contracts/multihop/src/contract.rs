@@ -68,6 +68,8 @@ pub trait MultihopTrait {
     fn revoke_admin_change(env: Env) -> Result<(), ContractError>;
 
     fn accept_admin(env: Env) -> Result<Address, ContractError>;
+
+    fn query_admin(env: Env) -> Result<Address, ContractError>;
 }
 
 #[contractimpl]
@@ -364,6 +366,16 @@ impl MultihopTrait for Multihop {
             .publish(("Multihop: ", "Accepted new admin: "), &pending_admin);
 
         Ok(pending_admin)
+    }
+
+    fn query_admin(env: Env) -> Result<Address, ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let admin = get_factory(&env);
+
+        Ok(admin)
     }
 }
 
