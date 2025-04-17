@@ -74,8 +74,8 @@ upgrade_stellar_contract() {
   local account="$2"
   local new_wasm_hash="$3"
 
-  if [[ -z "$pool_id" || -z "$account" || -z "$new_wasm_hash" ]]; then
-    echo "Error: Missing required parameters (pool_id, account, new_wasm_hash)."
+  if [[ -z "$contract_id" || -z "$account" || -z "$new_wasm_hash" ]]; then
+    echo "Error: Missing required parameters (contract_id, account, new_wasm_hash)."
     return 1
   fi
 
