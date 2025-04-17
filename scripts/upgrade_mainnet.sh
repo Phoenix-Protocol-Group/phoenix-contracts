@@ -88,7 +88,7 @@ upgrade_stellar_contract() {
     --rpc-url https://mainnet.sorobanrpc.com \
     --network-passphrase "Public Global Stellar Network ; September 2015" \
     -- \
-    upgrade \
+    update \
     --new_wasm_hash "$new_wasm_hash" \
     --build-only) || { echo "Error: Build failed."; return 1; }
 
