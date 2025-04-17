@@ -69,6 +69,52 @@ stakes=(
     GBPX_USDC_STAKE_ADDRESS
 )
 
+upgrade_stellar_contract() {
+  local contract_id="$1"
+  local account="$2"
+  local new_wasm_hash="$3"
+
+  if [[ -z "$pool_id" || -z "$account" || -z "$new_wasm_hash" ]]; then
+    echo "Error: Missing required parameters (pool_id, account, new_wasm_hash)."
+    return 1
+  fi
+
+  echo "Processing contract id: $contract_id"
+
+  echo "Building..."
+  built=$(stellar contract invoke \
+    --id "$contract_id" \
+    --source-account "$account" \
+    --rpc-url https://mainnet.sorobanrpc.com \
+    --network-passphrase "Public Global Stellar Network ; September 2015" \
+    -- \
+    upgrade \
+    --new_wasm_hash "$new_wasm_hash" \
+    --build-only) || { echo "Error: Build failed."; return 1; }
+
+  echo "Simulate..."
+  simulated=$(stellar tx simulate \
+    --source-account "$account" \
+    --rpc-url https://mainnet.sorobanrpc.com \
+    --network-passphrase "Public Global Stellar Network ; September 2015" \
+    "$built") || { echo "Error: Simulation failed."; return 1; }
+
+  echo "Sign..."
+  signed=$(stellar tx sign \
+    --rpc-url https://mainnet.sorobanrpc.com \
+    --network-passphrase "Public Global Stellar Network ; September 2015" \
+    --sign-with-key "$account" \
+    "$simulated") || { echo "Error: Signing failed."; return 1; }
+
+  echo "Send!"
+  stellar tx send --quiet \
+    --rpc-url https://mainnet.sorobanrpc.com \
+    --network-passphrase "Public Global Stellar Network ; September 2015" \
+    "$signed" || { echo "Error: Sending failed."; return 1; }
+
+  echo "Transaction sent successfully for contract: $contract_id"
+}
+
 
 echo "Build and optimize the contracts...";
 
@@ -86,7 +132,63 @@ soroban contract optimize --wasm phoenix_vesting.wasm
 
 echo "Contracts optimized."
 
+echo "Uploading latest factory wasm..."
+NEW_FACTORY_WASM_HASH = $(stellar contract upload \
+    --wasm ../target/wasm32-unknown-unknown/release/phoenix_factory.optimized.wasm \
+    --source $IDENTITY_STRING \
+    --network $NETWORK)
 
+echo "Uploading latest multihop wasm..."
+NEW_MULTIHOP_WASM_HASH = $(stellar contract upload \
+    --wasm ../target/wasm32-unknown-unknown/release/phoenix_multihop.optimized.wasm \
+    --source $IDENTITY_STRING \
+    --network $NETWORK)
+
+echo "Uploading latest pool wasm..."
+NEW_POOL_WASM_HASH = $(stellar contract upload \
+    --wasm ../target/wasm32-unknown-unknown/release/phoenix_pool.optimized.wasm \
+    --source $IDENTITY_STRING \
+    --network $NETWORK)
+
+echo "Uploading latest stake wasm..."
+NEW_STAKE_WASM_HASH = $(stellar contract upload \
+    --wasm ../target/wasm32-unknown-unknown/release/phoenix_stake.optimized.wasm \
+    --source $IDENTITY_STRING \
+    --network $NETWORK)
+
+echo "Uploading latest vesting wasm..."
+NEW_VESTING_WASM_HASH = $(stellar contract upload \
+    --wasm ../target/wasm32-unknown-unknown/release/phoenix_vesting.optimized.wasm \
+    --source $IDENTITY_STRING \
+    --network $NETWORK)
+
+echo "Updating factory contract..."
+upgrade_stellar_contract $FACTORY_ADDRESS $ACCOUNT $NEW_FACTORY_WASM_HASH
+echo "Updated factory contract..."
+
+echo "Updating multihop contract..."
+upgrade_stellar_contract $MULTIHOP_ADDRESS $ACCOUNT $NEW_MULTIHOP_WASM_HASH
+echo "Updated multihop contract..."
+
+echo "Updating pools..."
 for pool in "${pools[@]}"; do
-  echo "$var_name=${!pool}"
+  echo "Will update $pool"
+  pool_id="${!pool}"
+  upgrade_stellar_contract $pool_id $ACCOUNT $NEW_POOL_WASM_HASH
+  echo "Done updating $pool"
 done
+echo "Updated all pools"
+
+
+echo "Updating stake contracts..."
+for stake in "${stakes[@]}"; do
+  echo "Will update $stake"
+  stake_id="${!stake}"
+  upgrade_stellar_contract $stake_id $ACCOUNT $NEW_STAKE_WASM_HASH
+  echo "Done updating $stake"
+done
+echo "Updated all staking contracts"
+
+echo "Updating vesting contract..."
+upgrade_stellar_contract $VESTING_ADDRESS $ACCOUNT $NEW_VESTING_WASM_HASH
+echo "Updated vesting contract..."
