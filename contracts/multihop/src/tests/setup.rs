@@ -273,7 +273,6 @@ fn test_update() {
     assert_eq!(String::from_str(&env, expected_version), version);
 
     let new_admin = Address::generate(&env);
-    soroban_sdk::testutils::arbitrary::std::dbg!(&admin, &new_admin);
 
     latest_multihop_client.propose_admin(&new_admin, &None);
     latest_multihop_client.accept_admin();
