@@ -530,7 +530,7 @@ pub mod tests {
     #[test]
     #[allow(deprecated)]
     #[cfg(feature = "upgrade")]
-    fn upgrade_stake_contract() {
+    fn upgrade_pho_usdc_stake_contract() {
         use soroban_sdk::{testutils::Ledger, vec};
 
         use crate::tests::setup::{deploy_token_contract, install_stake_latest_wasm};
@@ -626,8 +626,25 @@ pub mod tests {
         new_stake_client.accept_admin();
 
         assert_eq!(new_admin, new_stake_client.query_admin());
+    }
 
-        // this time for xlm/usdc stake contract
+    #[test]
+    #[allow(deprecated)]
+    #[cfg(feature = "upgrade")]
+    fn upgrade_xlm_usdc_stake_contract() {
+        use soroban_sdk::{testutils::Ledger, vec};
+
+        use crate::tests::setup::{deploy_token_contract, install_stake_latest_wasm};
+
+        let env = Env::default();
+        env.mock_all_auths();
+        env.cost_estimate().budget().reset_unlimited();
+        let admin = Address::generate(&env);
+        let user = Address::generate(&env);
+
+        let token_client = deploy_token_contract(&env, &admin);
+        token_client.mint(&user, &1_000);
+
         let xlm_usdc_stake_addr = env.register_contract_wasm(None, old_xlm_usdc_stake::WASM);
 
         let xlm_usdc_old_stake_client = old_xlm_usdc_stake::Client::new(&env, &xlm_usdc_stake_addr);
