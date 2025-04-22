@@ -147,7 +147,7 @@ pub fn deploy_liquidity_pool_contract<'a>(
 #[test]
 #[allow(deprecated)]
 #[cfg(feature = "upgrade")]
-fn update_liquidity_pool() {
+fn update_pho_usdc_liquidity_pool() {
     use pretty_assertions::assert_eq;
     use soroban_sdk::testutils::Ledger;
 
@@ -303,8 +303,23 @@ fn update_liquidity_pool() {
     new_lp_client.accept_admin();
 
     assert_eq!(new_admin, new_lp_client.query_admin());
+}
 
-    // now same with the xlm/usdc pool
+#[test]
+#[allow(deprecated)]
+#[cfg(feature = "upgrade")]
+fn update_xlm_usdc_liquidity_pool() {
+    use pretty_assertions::assert_eq;
+    use soroban_sdk::testutils::Ledger;
+
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin1 = Address::generate(&env);
+    let admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
+
     let mut token3 = deploy_token_contract(&env, &admin1);
     let mut token4 = deploy_token_contract(&env, &admin2);
 
@@ -419,6 +434,23 @@ fn update_liquidity_pool() {
                 amount: 500000000000000
             },
             stake_address: new_lp_client.query_stake_contract_address(),
+        }
+    );
+
+    let latest_config = new_lp_client.query_config();
+    assert_eq!(
+        latest_config,
+        latest_liquidity_pool::Config {
+            token_a: token3.address,
+            token_b: token4.address,
+            share_token: share_addr,
+            stake_contract: stake_addr,
+            pool_type: latest_liquidity_pool::PairType::Xyk,
+            total_fee_bps: 0i64,
+            fee_recipient: admin1.clone(),
+            max_allowed_slippage_bps: 5_000i64,
+            max_allowed_spread_bps: 1_000i64,
+            max_referral_bps: 5_000i64
         }
     );
 
