@@ -143,6 +143,8 @@ pub trait LiquidityPoolTrait {
     fn revoke_admin_change(env: Env) -> Result<(), ContractError>;
 
     fn accept_admin(env: Env) -> Result<Address, ContractError>;
+
+    fn query_admin(env: Env) -> Result<Address, ContractError>;
 }
 
 #[contractimpl]
@@ -840,6 +842,16 @@ impl LiquidityPoolTrait for LiquidityPool {
             .publish(("XYK Pool: ", "Accepted new admin: "), &pending_admin);
 
         Ok(pending_admin)
+    }
+
+    fn query_admin(env: Env) -> Result<Address, ContractError> {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let admin = utils::get_admin_old(&env);
+
+        Ok(admin)
     }
 }
 

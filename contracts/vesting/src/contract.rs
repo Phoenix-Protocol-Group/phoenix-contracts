@@ -14,7 +14,7 @@ use crate::{
     storage::{
         get_admin_old, get_config, get_max_vesting_complexity, get_token_info, get_vesting,
         save_admin_old, save_config, save_max_vesting_complexity, save_token_info, save_vesting,
-        update_vesting, Config, VestingCounterKey, VestingInfo, VestingInfoKey,
+        update_vesting, Config, DataKey, VestingCounterKey, VestingInfo, VestingInfoKey,
         VestingInfoResponse, VestingSchedule, VestingTokenInfo, ADMIN, PENDING_ADMIN, VESTING_KEY,
     },
     token_contract,
@@ -69,6 +69,8 @@ pub trait VestingTrait {
     fn query_minter(env: Env) -> MinterInfo;
 
     fn query_config(env: Env) -> Config;
+
+    fn query_admin(env: Env) -> Address;
 
     fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 
@@ -434,6 +436,14 @@ impl VestingTrait for Vesting {
         get_config(&env)
     }
 
+    fn query_admin(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        get_admin_old(&env)
+    }
+
     fn query_vesting_contract_balance(env: Env) -> i128 {
         env.storage()
             .instance()
@@ -670,5 +680,18 @@ impl Vesting {
     #[cfg(not(tarpaulin_include))]
     pub fn query_version(env: Env) -> String {
         String::from_str(&env, env!("CARGO_PKG_VERSION"))
+    }
+
+    #[allow(dead_code)]
+    #[cfg(not(tarpaulin_include))]
+    pub fn migrate_config(env: Env, is_with_minter: bool) -> bool {
+        env.storage()
+            .persistent()
+            .set(&DataKey::Config, &Config { is_with_minter });
+
+        env.events()
+            .publish(("Vesting", "Migrate Config"), is_with_minter);
+
+        is_with_minter
     }
 }

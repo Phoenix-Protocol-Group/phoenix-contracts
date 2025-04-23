@@ -20,8 +20,14 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
 
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
-pub mod old_liquidity_pool {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_pool.wasm");
+pub mod old_pho_usdc_liquidity_pool {
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_pool.wasm");
+}
+
+#[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
+pub mod old_xlm_usdc_liquidity_pool {
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_xlm_usdc_pool.wasm");
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -33,15 +39,21 @@ pub mod latest_liquidity_pool {
 
 #[cfg(feature = "upgrade")]
 pub fn install_old_token_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../../.artifacts_sdk_update/old_soroban_token_contract.wasm"
-    );
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_token_contract.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
 #[cfg(feature = "upgrade")]
-pub fn install_old_stake_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_stake.wasm");
+#[allow(clippy::too_many_arguments)]
+pub fn install_old_pho_usdc_stake_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_stake.wasm");
+    env.deployer().upload_contract_wasm(WASM)
+}
+
+#[cfg(feature = "upgrade")]
+#[allow(clippy::too_many_arguments)]
+pub fn install_old_xlm_usdc_stake_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_xlm_usdc_stake.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
@@ -135,7 +147,8 @@ pub fn deploy_liquidity_pool_contract<'a>(
 #[test]
 #[allow(deprecated)]
 #[cfg(feature = "upgrade")]
-fn update_liquidity_pool() {
+fn update_pho_usdc_liquidity_pool() {
+    use pretty_assertions::assert_eq;
     use soroban_sdk::testutils::Ledger;
 
     let env = Env::default();
@@ -154,23 +167,23 @@ fn update_liquidity_pool() {
         std::mem::swap(&mut admin1, &mut admin2);
     }
 
-    let old_lp_addr = env.register_contract_wasm(None, old_liquidity_pool::WASM);
-    let old_lp_client = old_liquidity_pool::Client::new(&env, &old_lp_addr);
+    let old_lp_addr = env.register_contract_wasm(None, old_pho_usdc_liquidity_pool::WASM);
+    let old_lp_client = old_pho_usdc_liquidity_pool::Client::new(&env, &old_lp_addr);
 
-    let token_init_info = old_liquidity_pool::TokenInitInfo {
+    let token_init_info = old_pho_usdc_liquidity_pool::TokenInitInfo {
         token_a: token1.address.clone(),
         token_b: token2.address.clone(),
     };
-    let stake_init_info = old_liquidity_pool::StakeInitInfo {
+    let stake_init_info = old_pho_usdc_liquidity_pool::StakeInitInfo {
         min_bond: 10i128,
         min_reward: 5i128,
         manager: Address::generate(&env),
         max_complexity: 10u32,
     };
-    let stake_wasm_hash = install_old_stake_wasm(&env);
+    let stake_wasm_hash = install_old_pho_usdc_stake_wasm(&env);
     let token_wasm_hash = install_old_token_wasm(&env);
 
-    let lp_init_info = old_liquidity_pool::LiquidityPoolInitInfo {
+    let lp_init_info = old_pho_usdc_liquidity_pool::LiquidityPoolInitInfo {
         admin: admin1.clone(),
         swap_fee_bps: 0i64,
         fee_recipient: admin1.clone(),
@@ -192,6 +205,25 @@ fn update_liquidity_pool() {
         &String::from_str(&env, "PHOBTC"),
         &100i64,
         &1_000i64,
+    );
+
+    let old_config = old_lp_client.query_config();
+    let share_addr = old_lp_client.query_share_token_address();
+    let stake_addr = old_lp_client.query_stake_contract_address();
+    assert_eq!(
+        old_config,
+        old_pho_usdc_liquidity_pool::Config {
+            fee_recipient: admin1.clone(),
+            max_allowed_slippage_bps: 5_000i64,
+            max_allowed_spread_bps: 1_000i64,
+            max_referral_bps: 5_000i64,
+            pool_type: old_pho_usdc_liquidity_pool::PairType::Xyk,
+            share_token: share_addr.clone(),
+            stake_contract: stake_addr.clone(),
+            token_a: token1.address.clone(),
+            token_b: token2.address.clone(),
+            total_fee_bps: 0i64
+        }
     );
 
     assert_eq!(old_lp_client.query_config().fee_recipient, admin1);
@@ -234,11 +266,11 @@ fn update_liquidity_pool() {
         pool_info_after_upgrade.pool_response,
         latest_liquidity_pool::PoolResponse {
             asset_a: latest_liquidity_pool::Asset {
-                address: token1.address,
+                address: token1.address.clone(),
                 amount: 500000000000000
             },
             asset_b: latest_liquidity_pool::Asset {
-                address: token2.address,
+                address: token2.address.clone(),
                 amount: 500000000000000,
             },
             asset_lp_share: latest_liquidity_pool::Asset {
@@ -248,4 +280,183 @@ fn update_liquidity_pool() {
             stake_address: new_lp_client.query_stake_contract_address(),
         }
     );
+
+    let latest_config = new_lp_client.query_config();
+    assert_eq!(
+        latest_config,
+        latest_liquidity_pool::Config {
+            token_a: token1.address,
+            token_b: token2.address,
+            share_token: share_addr,
+            stake_contract: stake_addr,
+            pool_type: latest_liquidity_pool::PairType::Xyk,
+            total_fee_bps: 0i64,
+            fee_recipient: admin1.clone(),
+            max_allowed_slippage_bps: 5_000i64,
+            max_allowed_spread_bps: 1_000i64,
+            max_referral_bps: 5_000i64
+        }
+    );
+
+    let new_admin = Address::generate(&env);
+    new_lp_client.propose_admin(&new_admin, &None);
+    new_lp_client.accept_admin();
+
+    assert_eq!(new_admin, new_lp_client.query_admin());
+}
+
+#[test]
+#[allow(deprecated)]
+#[cfg(feature = "upgrade")]
+fn update_xlm_usdc_liquidity_pool() {
+    use pretty_assertions::assert_eq;
+    use soroban_sdk::testutils::Ledger;
+
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    let admin1 = Address::generate(&env);
+    let admin2 = Address::generate(&env);
+    let user1 = Address::generate(&env);
+
+    let mut token3 = deploy_token_contract(&env, &admin1);
+    let mut token4 = deploy_token_contract(&env, &admin2);
+
+    if token4.address < token3.address {
+        std::mem::swap(&mut token3, &mut token4);
+    }
+
+    let old_lp_addr = env.register_contract_wasm(None, old_xlm_usdc_liquidity_pool::WASM);
+    let old_lp_client = old_xlm_usdc_liquidity_pool::Client::new(&env, &old_lp_addr);
+
+    let token_init_info = old_xlm_usdc_liquidity_pool::TokenInitInfo {
+        token_a: token3.address.clone(),
+        token_b: token4.address.clone(),
+    };
+    let stake_init_info = old_xlm_usdc_liquidity_pool::StakeInitInfo {
+        min_bond: 10i128,
+        min_reward: 5i128,
+        manager: Address::generate(&env),
+        max_complexity: 10u32,
+    };
+    let stake_wasm_hash = install_old_xlm_usdc_stake_wasm(&env);
+    let token_wasm_hash = install_old_token_wasm(&env);
+
+    let lp_init_info = old_xlm_usdc_liquidity_pool::LiquidityPoolInitInfo {
+        admin: admin1.clone(),
+        swap_fee_bps: 0i64,
+        fee_recipient: admin1.clone(),
+        max_allowed_slippage_bps: 5_000i64,
+        default_slippage_bps: 2_500i64,
+        max_allowed_spread_bps: 1_000i64,
+        max_referral_bps: 5_000i64,
+        token_init_info,
+        stake_init_info,
+    };
+
+    old_lp_client.initialize(
+        &stake_wasm_hash,
+        &token_wasm_hash,
+        &lp_init_info,
+        &Address::generate(&env),
+        &7u32,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "XLMUSDC"),
+        &100i64,
+        &1_000i64,
+    );
+
+    let old_config = old_lp_client.query_config();
+    let share_addr = old_lp_client.query_share_token_address();
+    let stake_addr = old_lp_client.query_stake_contract_address();
+    assert_eq!(
+        old_config,
+        old_xlm_usdc_liquidity_pool::Config {
+            fee_recipient: admin1.clone(),
+            max_allowed_slippage_bps: 5_000i64,
+            max_allowed_spread_bps: 1_000i64,
+            max_referral_bps: 5_000i64,
+            pool_type: old_xlm_usdc_liquidity_pool::PairType::Xyk,
+            share_token: share_addr.clone(),
+            stake_contract: stake_addr.clone(),
+            token_a: token3.address.clone(),
+            token_b: token4.address.clone(),
+            total_fee_bps: 0i64
+        }
+    );
+
+    env.ledger().with_mut(|li| li.timestamp = 100);
+
+    token3.mint(&user1, &1_000_000_000_000_000);
+    token4.mint(&user1, &1_000_000_000_000_000);
+
+    old_lp_client.provide_liquidity(
+        &user1,
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &Some(1_000_000_000_000_000),
+        &None,
+        &None,
+    );
+
+    let new_lp_wasm = install_new_lp_wasm(&env);
+    old_lp_client.update(&new_lp_wasm);
+
+    let new_lp_client = latest_liquidity_pool::Client::new(&env, &old_lp_addr);
+
+    env.ledger().with_mut(|li| li.timestamp = 10_000);
+
+    new_lp_client.withdraw_liquidity(
+        &user1,
+        &500_000_000_000_000,
+        &500_000_000_000_000,
+        &500_000_000_000_000,
+        &None,
+        &None,
+    );
+
+    let pool_info_after_upgrade = new_lp_client.query_pool_info_for_factory();
+    assert_eq!(
+        pool_info_after_upgrade.pool_response,
+        latest_liquidity_pool::PoolResponse {
+            asset_a: latest_liquidity_pool::Asset {
+                address: token3.address.clone(),
+                amount: 500000000000000
+            },
+            asset_b: latest_liquidity_pool::Asset {
+                address: token4.address.clone(),
+                amount: 500000000000000,
+            },
+            asset_lp_share: latest_liquidity_pool::Asset {
+                address: new_lp_client.query_share_token_address(),
+                amount: 500000000000000
+            },
+            stake_address: new_lp_client.query_stake_contract_address(),
+        }
+    );
+
+    let latest_config = new_lp_client.query_config();
+    assert_eq!(
+        latest_config,
+        latest_liquidity_pool::Config {
+            token_a: token3.address,
+            token_b: token4.address,
+            share_token: share_addr,
+            stake_contract: stake_addr,
+            pool_type: latest_liquidity_pool::PairType::Xyk,
+            total_fee_bps: 0i64,
+            fee_recipient: admin1.clone(),
+            max_allowed_slippage_bps: 5_000i64,
+            max_allowed_spread_bps: 1_000i64,
+            max_referral_bps: 5_000i64
+        }
+    );
+
+    let another_new_admin = Address::generate(&env);
+    new_lp_client.propose_admin(&another_new_admin, &None);
+    new_lp_client.accept_admin();
+
+    assert_eq!(another_new_admin, new_lp_client.query_admin());
 }

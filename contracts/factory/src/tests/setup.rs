@@ -1,3 +1,5 @@
+extern crate std;
+
 use crate::{
     contract::{Factory, FactoryClient},
     token_contract,
@@ -11,27 +13,34 @@ const TOKEN_WASM: &[u8] =
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub mod old_factory {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_factory.wasm");
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_factory.wasm");
 }
 
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn install_old_multihop_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_multihop.wasm");
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_multihop.wasm");
+    env.deployer().upload_contract_wasm(WASM)
+}
+
+#[allow(clippy::too_many_arguments)]
+#[cfg(feature = "upgrade")]
+pub fn install_old_token_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_token_contract.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn old_lp_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_pool.wasm");
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_pool.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
 #[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn old_stake_wasm(env: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(file = "../../.artifacts_sdk_update/old_phoenix_stake.wasm");
+    soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_stake.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
@@ -172,6 +181,8 @@ pub fn install_and_deploy_token_contract<'a>(
 #[allow(deprecated)]
 #[cfg(feature = "upgrade")]
 fn update_factory() {
+    use phoenix::utils::PoolType;
+
     let env = Env::default();
     env.mock_all_auths();
     env.cost_estimate().budget().reset_unlimited();
@@ -186,7 +197,7 @@ fn update_factory() {
         &old_lp_wasm(&env),
         &install_stable_lp(&env),
         &old_stake_wasm(&env),
-        &install_token_wasm(&env),
+        &install_old_token_wasm(&env),
         &vec![
             &env,
             admin.clone(),
@@ -196,12 +207,68 @@ fn update_factory() {
         &7u32,
     );
 
+    let mut token_a = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        9,
+        String::from_str(&env, "Phoenix"),
+        String::from_str(&env, "PHO"),
+    );
+    let mut token_b = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        13,
+        String::from_str(&env, "Stellar"),
+        String::from_str(&env, "XLM"),
+    );
+
+    if token_b.address < token_a.address {
+        std::mem::swap(&mut token_a, &mut token_b);
+    }
+
+    let factory = deploy_factory_contract(&env, Some(admin.clone()));
+    assert_eq!(factory.get_admin(), admin);
+
+    let token_init_info = old_factory::TokenInitInfo {
+        token_a: token_a.address.clone(),
+        token_b: token_b.address.clone(),
+    };
+
+    let stake_init_info = old_factory::StakeInitInfo {
+        min_bond: 10,
+        min_reward: 10,
+        manager: admin.clone(),
+        max_complexity: 10u32,
+    };
+
+    let lp_init_info = old_factory::LiquidityPoolInitInfo {
+        admin: admin.clone(),
+        fee_recipient: admin.clone(),
+        max_allowed_slippage_bps: 5000,
+        max_allowed_spread_bps: 500,
+        default_slippage_bps: 2_500,
+        swap_fee_bps: 0,
+        max_referral_bps: 5000,
+        token_init_info,
+        stake_init_info,
+    };
+
+    let pool_addr = old_factory_client.create_liquidity_pool(
+        &admin.clone(),
+        &lp_init_info,
+        &String::from_str(&env, "Pool"),
+        &String::from_str(&env, "PHO/BTC"),
+        &old_factory::PoolType::Xyk,
+        &None::<u64>,
+        &100i64,
+        &1_000,
+    );
+
     assert_eq!(old_factory_client.get_admin(), admin.clone());
 
     let latest_factory_wasm = install_latest_factory(&env);
-    let stable_wasm = install_stable_lp(&env);
 
-    old_factory_client.update(&latest_factory_wasm, &stable_wasm);
+    old_factory_client.update(&latest_factory_wasm);
 
     let latest_factory_client = FactoryClient::new(&env, &factory_addr);
 
@@ -216,4 +283,60 @@ fn update_factory() {
         &None,
         &None,
     );
+
+    let _ = latest_factory_client.get_config();
+
+    let pool_query = latest_factory_client.query_pool_details(&pool_addr);
+    assert_eq!(pool_query.pool_response.asset_a.address, token_a.address);
+    assert_eq!(pool_query.pool_response.asset_b.address, token_b.address);
+
+    let mut token1 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        9,
+        String::from_str(&env, "Bitcoin"),
+        String::from_str(&env, "BTC"),
+    );
+    let mut token2 = install_and_deploy_token_contract(
+        &env,
+        admin.clone(),
+        13,
+        String::from_str(&env, "Stellar"),
+        String::from_str(&env, "XLM"),
+    );
+
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+    }
+
+    let second_lp_init_info = generate_lp_init_info(
+        token1.address.clone(),
+        token2.address.clone(),
+        Address::generate(&env),
+        admin.clone(),
+        Address::generate(&env),
+    );
+
+    let second_pool = latest_factory_client.create_liquidity_pool(
+        &admin,
+        &second_lp_init_info,
+        &String::from_str(&env, "SecondPool"),
+        &String::from_str(&env, "BTC/XLM"),
+        &PoolType::Xyk,
+        &None::<u64>,
+        &100i64,
+        &1_000,
+    );
+
+    let pool_query = latest_factory_client.query_pool_details(&second_pool);
+    assert_eq!(pool_query.pool_response.asset_a.address, token1.address);
+    assert_eq!(pool_query.pool_response.asset_b.address, token2.address);
+
+    let new_admin = Address::generate(&env);
+    latest_factory_client.propose_admin(&new_admin, &None);
+    latest_factory_client.accept_admin();
+    assert_eq!(latest_factory_client.get_admin(), new_admin);
 }
