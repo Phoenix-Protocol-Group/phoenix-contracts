@@ -20,3 +20,5 @@ cobertura.xml
 
 **/test_snapshots
 .stellar/
+
+**/.certora_internal
