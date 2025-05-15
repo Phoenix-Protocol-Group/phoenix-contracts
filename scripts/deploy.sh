@@ -40,26 +40,14 @@ TOKEN_ADDR1=$XLM
 TOKEN_ADDR2=$(soroban contract deploy \
     --wasm soroban_token_contract.optimized.wasm \
     --source $IDENTITY_STRING \
-    --network $NETWORK)
-
-soroban contract invoke \
-    --id $TOKEN_ADDR2 \
-    --source $IDENTITY_STRING \
     --network $NETWORK \
     -- \
     --admin $ADMIN_ADDRESS \
     --decimal 7 \
     --name PHOENIX \
-    --symbol PHO
+    --symbol PHO)
 
 echo "PHO Token initialized."
-
-FACTORY_ADDR=$(soroban contract deploy \
-    --wasm phoenix_factory.optimized.wasm \
-    --source $IDENTITY_STRING \
-    --network $NETWORK)
-
-echo "Tokens and factory deployed."
 
 # Sort the token addresses alphabetically
 if [[ "$TOKEN_ADDR1" < "$TOKEN_ADDR2" ]]; then
@@ -107,8 +95,8 @@ MULTIHOP=$(soroban contract install \
     --source $IDENTITY_STRING \
     --network $NETWORK)
 
-soroban contract invoke \
-    --id $FACTORY_ADDR \
+FACTORY_ADDR=$(soroban contract deploy \
+    --wasm phoenix_factory.optimized.wasm \
     --source $IDENTITY_STRING \
     --network $NETWORK \
     -- \
@@ -117,10 +105,9 @@ soroban contract invoke \
     --lp_wasm_hash $PAIR_WASM_HASH \
     --stable_wasm_hash $STABLE_PAIR_WASM_HASH \
     --stake_wasm_hash $STAKE_WASM_HASH \
-    --stake_rewards_wasm_hash $STAKE_REWARDS_WASM_HASH \
     --token_wasm_hash $TOKEN_WASM_HASH \
     --whitelisted_accounts "[ \"${ADMIN_ADDRESS}\" ]" \
-    --lp_token_decimals 7
+    --lp_token_decimals 7)
 
 echo "Factory initialized: " $FACTORY_ADDR
 
@@ -196,17 +183,12 @@ echo "#############################"
 TOKEN_ADDR1=$(soroban contract deploy \
     --wasm soroban_token_contract.optimized.wasm \
     --source $IDENTITY_STRING \
-    --network $NETWORK)
-
-soroban contract invoke \
-    --id $TOKEN_ADDR1 \
-    --source $IDENTITY_STRING \
     --network $NETWORK \
     -- \
     --admin $ADMIN_ADDRESS \
     --decimal 7 \
     --name USDC \
-    --symbol USDC
+    --symbol USDC)
 
 echo "USDC Token initialized."
 
