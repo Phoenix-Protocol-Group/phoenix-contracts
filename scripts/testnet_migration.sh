@@ -36,7 +36,6 @@ echo "=== PHASE 1: DEPLOYING FROM EARLIEST COMMIT (77742b01) ==="
 
 # All contracts from the same commit (77742b01) for initial deployment
 echo "Building all contracts from commit 77742b01..."
-git stash push -m "temp_stash_$(date +%s)" || true
 git checkout 77742b01fd65cce26cbe1ee47f229fb52d889a43
 
 make build > /dev/null
@@ -48,15 +47,10 @@ cp target/wasm32-unknown-unknown/release/phoenix_multihop.wasm .temp_old_multiho
 cp target/wasm32-unknown-unknown/release/phoenix_pool.wasm .temp_old_pool.wasm
 cp target/wasm32-unknown-unknown/release/phoenix_stake.wasm .temp_old_stake.wasm
 
-# Return to current branch and restore
-git checkout $CURRENT_BRANCH
-git stash pop || true
-
 # Now build intermediate versions for phase 2 upgrades
 echo "Building intermediate contract versions..."
 
 # Pool version 4a0b6e6c (most pools)
-git stash push -m "temp_stash_phase2_$(date +%s)" || true
 git checkout 4a0b6e6c8d8a25a7f2956799bea8a1eddaa5dcb6
 make -C contracts/pool build > /dev/null
 cp target/wasm32-unknown-unknown/release/phoenix_pool.wasm .temp_pool_4a0b6e6c.wasm
@@ -83,7 +77,6 @@ cp target/wasm32-unknown-unknown/release/phoenix_stake.wasm .temp_stake_e4f767d.
 
 # Return to current branch
 git checkout $CURRENT_BRANCH
-git stash pop || true
 
 # Optimize all WASM files
 echo "Optimizing WASM files..."
