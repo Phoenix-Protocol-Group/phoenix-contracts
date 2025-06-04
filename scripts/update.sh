@@ -7,18 +7,6 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# Folder name to check and delete
-FOLDER=".stellar"
-
-# Check if the folder exists
-if [ -d "$FOLDER" ]; then
-    echo "Folder '$FOLDER' exists. Deleting it..."
-    rm -rf "$FOLDER"
-    echo "Folder '$FOLDER' has been deleted."
-else
-    echo "Folder '$FOLDER' does not exist."
-fi
-
 IDENTITY_STRING=$1
 ADMIN_ADDRESS=$(stellar keys address $IDENTITY_STRING)
 NETWORK="testnet"
