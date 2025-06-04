@@ -20,7 +20,7 @@ else
 fi
 
 IDENTITY_STRING=$1
-ADMIN_ADDRESS=$(soroban keys address $IDENTITY_STRING)
+ADMIN_ADDRESS=$(stellar keys address $IDENTITY_STRING)
 NETWORK="testnet"
 
 echo "Build and optimize the contracts...";
@@ -30,105 +30,104 @@ make build > /dev/null
 echo "Contracts compiled."
 echo "Optimize contracts..."
 
-soroban contract optimize --wasm target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
-soroban contract optimize --wasm .artifacts_sdk_update/old_soroban_token_contract.wasm
+stellar contract optimize --wasm target/wasm32-unknown-unknown/release/soroban_token_contract.wasm
+stellar contract optimize --wasm .wasm_binaries_mainnet/live_token_contract.wasm
 
-soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_factory.wasm
-soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_factory.wasm
+stellar contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_factory.wasm
+stellar contract optimize --wasm .wasm_binaries_mainnet/live_factory.wasm
 
-soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_pool.wasm
-soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_pool.wasm
+stellar contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_pool.wasm
+stellar contract optimize --wasm .wasm_binaries_mainnet/live_xlm_usdc_pool.wasm
 
-soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_pool_stable.wasm
-soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_pool_stable.wasm
+stellar contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_pool_stable.wasm
 
-soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_stake.wasm
-soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_stake.wasm
+stellar contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_stake.wasm
+stellar contract optimize --wasm .wasm_binaries_mainnet/live_xlm_usdc_stake.wasm
 
-soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_stake_rewards.wasm
-soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_stake_rewards.wasm
+stellar contract optimize --wasm .artifacts_sdk_update/old_phoenix_stake_rewards.wasm
 
-soroban contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_multihop.wasm
-soroban contract optimize --wasm .artifacts_sdk_update/old_phoenix_multihop.wasm
+stellar contract optimize --wasm target/wasm32-unknown-unknown/release/phoenix_multihop.wasm
+stellar contract optimize --wasm .wasm_binaries_mainnet/live_multihop.wasm
 
 echo "Contracts optimized."
 
 echo "installing old and latest wasm hashes"
 
-OLD_SOROBAN_TOKEN_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts_sdk_update/old_soroban_token_contract.wasm \
+OLD_SOROBAN_TOKEN_WASM_HASH=$(stellar contract upload \
+    --wasm .wasm_binaries_mainnet/live_token_contract.optimized.wasm \
     --source $IDENTITY_STRING \
     --network $NETWORK)
 
-LATEST_SOROBAN_TOKEN_WASM_HASH=$(soroban contract install \
-    --wasm target/wasm32-unknown-unknown/release/soroban_token_contract.wasm \
+LATEST_SOROBAN_TOKEN_WASM_HASH=$(stellar contract upload \
+    --wasm target/wasm32-unknown-unknown/release/soroban_token_contract.optimized.wasm \
     --source $IDENTITY_STRING \
     --network $NETWORK)
 
 echo "Installed old token wasm: $OLD_SOROBAN_TOKEN_WASM_HASH"
 echo "Installed latest token wasm: $LATEST_SOROBAN_TOKEN_WASM_HASH"
 
-OLD_PHOENIX_FACTORY_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts_sdk_update/old_phoenix_factory.wasm \
+OLD_PHOENIX_FACTORY_WASM_HASH=$(stellar contract upload \
+    --wasm .wasm_binaries_mainnet/live_factory.optimized.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
-LATEST_PHOENIX_FACTORY_WASM_HASH=$(soroban contract install \
-    --wasm target/wasm32-unknown-unknown/release/phoenix_factory.wasm \
+LATEST_PHOENIX_FACTORY_WASM_HASH=$(stellar contract upload \
+    --wasm target/wasm32-unknown-unknown/release/phoenix_factory.optimized.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 echo "Installed old factory wasm: $OLD_PHOENIX_FACTORY_WASM_HASH"
 echo "Installed latest factory wasm: $LATEST_PHOENIX_FACTORY_WASM_HASH"
 
-OLD_PHOENIX_POOL_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts_sdk_update/old_phoenix_pool.wasm \
+OLD_PHOENIX_POOL_WASM_HASH=$(stellar contract upload \
+    --wasm .wasm_binaries_mainnet/live_xlm_usdc_pool.optimized.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
-LATEST_PHOENIX_POOL_WASM_HASH=$(soroban contract install \
-    --wasm target/wasm32-unknown-unknown/release/phoenix_pool.wasm \
+LATEST_PHOENIX_POOL_WASM_HASH=$(stellar contract upload \
+    --wasm target/wasm32-unknown-unknown/release/phoenix_pool.optimized.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 echo "Installed old pool wasm: $OLD_PHOENIX_POOL_WASM_HASH"
 echo "Installed latest pool wasm: $LATEST_PHOENIX_POOL_WASM_HASH"
 
-OLD_PHOENIX_POOL_STABLE_WASM_HASH=$(soroban contract install \
+OLD_PHOENIX_POOL_STABLE_WASM_HASH=$(stellar contract upload \
     --wasm .artifacts_sdk_update/old_phoenix_pool_stable.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
-LATEST_PHOENIX_POOL_STABLE_WASM_HASH=$(soroban contract install \
-    --wasm target/wasm32-unknown-unknown/release/phoenix_pool_stable.wasm \
+LATEST_PHOENIX_POOL_STABLE_WASM_HASH=$(stellar contract upload \
+    --wasm .artifacts_sdk_update/old_phoenix_pool_stable.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
+
 echo "Installed old stable pool wasm: $OLD_PHOENIX_POOL_STABLE_WASM_HASH"
 echo "Installed latest stable pool wasm: $LATEST_PHOENIX_POOL_STABLE_WASM_HASH"
 
-OLD_PHOENIX_STAKE_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts_sdk_update/old_phoenix_stake.wasm \
+OLD_PHOENIX_STAKE_WASM_HASH=$(stellar contract upload \
+    --wasm .wasm_binaries_mainnet/live_xlm_usdc_stake.optimized.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
-LATEST_PHOENIX_STAKE_WASM_HASH=$(soroban contract install \
-    --wasm target/wasm32-unknown-unknown/release/phoenix_stake.wasm \
+LATEST_PHOENIX_STAKE_WASM_HASH=$(stellar contract upload \
+    --wasm target/wasm32-unknown-unknown/release/phoenix_stake.optimized.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 echo "Installed old stake wasm: $OLD_PHOENIX_STAKE_WASM_HASH"
 echo "Installed latest stake wasm: $LATEST_PHOENIX_STAKE_WASM_HASH"
 
-OLD_PHOENIX_STAKE_REWARDS_WASM_HASH=$(soroban contract install \
+OLD_PHOENIX_STAKE_REWARDS_WASM_HASH=$(stellar contract upload \
     --wasm .artifacts_sdk_update/old_phoenix_stake_rewards.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
-LATEST_PHOENIX_STAKE_REWARDS_WASM_HASH=$(soroban contract install \
-    --wasm target/wasm32-unknown-unknown/release/phoenix_stake_rewards.wasm \
+LATEST_PHOENIX_STAKE_REWARDS_WASM_HASH=$(stellar contract upload \
+    --wasm .artifacts_sdk_update/old_phoenix_stake_rewards.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 echo "Installed old stake rewards wasm: $OLD_PHOENIX_STAKE_REWARDS_WASM_HASH"
 echo "Installed latest stake rewards wasm: $LATEST_PHOENIX_STAKE_REWARDS_WASM_HASH"
 
-OLD_PHOENIX_MULTIHOP_WASM_HASH=$(soroban contract install \
-    --wasm .artifacts_sdk_update/old_phoenix_multihop.wasm \
+OLD_PHOENIX_MULTIHOP_WASM_HASH=$(stellar contract upload \
+    --wasm .wasm_binaries_mainnet/live_multihop.optimized.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
-LATEST_PHOENIX_MULTIHOP_WASM_HASH=$(soroban contract install \
-    --wasm target/wasm32-unknown-unknown/release/phoenix_multihop.wasm \
+LATEST_PHOENIX_MULTIHOP_WASM_HASH=$(stellar contract upload \
+    --wasm target/wasm32-unknown-unknown/release/phoenix_multihop.optimized.wasm \
     --source "$IDENTITY_STRING" \
     --network "$NETWORK")
 echo "Installed old multihop wasm: $OLD_PHOENIX_MULTIHOP_WASM_HASH"
@@ -138,7 +137,7 @@ echo "All old and latest WASMs have been installed successfully."
 
 
 echo "Deploying old factory contract..."
-FACTORY_ADDR=$(soroban contract deploy \
+FACTORY_ADDR=$(stellar contract deploy \
   --wasm-hash "$OLD_PHOENIX_FACTORY_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
@@ -146,7 +145,7 @@ echo "Old factory deployed at: $FACTORY_ADDR"
 
 
 echo "Initializing old factory..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$FACTORY_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -161,11 +160,11 @@ soroban contract invoke \
   --whitelisted_accounts "[ \"$ADMIN_ADDRESS\" ]" \
   --lp_token_decimals 7
 
-echo "Old factory initialized."
+echo "Old factory initialized at $FACTORY_ADDR."
 
 
 echo "Checking the admin of the old factory..."
-FACTORY_ADMIN=$(soroban contract invoke \
+FACTORY_ADMIN=$(stellar contract invoke \
   --id "$FACTORY_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -184,20 +183,19 @@ fi
 
 echo "Updating old factory to new factory code..."
 
-soroban contract invoke \
+stellar contract invoke \
   --id "$FACTORY_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
   -- \
   update \
   --new_wasm_hash "$LATEST_PHOENIX_FACTORY_WASM_HASH" \
-  --new_stable_pool_hash "$LATEST_PHOENIX_POOL_STABLE_WASM_HASH"
 
 echo "Factory updated to the latest code."
 
 
 echo "Checking the admin of the updated factory..."
-UPDATED_FACTORY_ADMIN=$(soroban contract invoke \
+UPDATED_FACTORY_ADMIN=$(stellar contract invoke \
   --id "$FACTORY_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -219,12 +217,12 @@ LATEST_LP_WASM_HASH="$LATEST_PHOENIX_POOL_WASM_HASH"
 LATEST_STAKE_WASM_HASH="$LATEST_PHOENIX_STAKE_WASM_HASH"
 LATEST_TOKEN_WASM_HASH="$LATEST_SOROBAN_TOKEN_WASM_HASH"
 
-soroban contract invoke \
+stellar contract invoke \
   --id "$FACTORY_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
   -- \
-  update_wasm_hashes \
+  update_config \
   --lp_wasm_hash "$LATEST_LP_WASM_HASH" \
   --stake_wasm_hash "$LATEST_STAKE_WASM_HASH" \
   --token_wasm_hash "$LATEST_TOKEN_WASM_HASH"
@@ -237,7 +235,7 @@ echo "'update_factory' test have been replicated via shell."
 
 echo "Deploying old multihop contract..."
 
-OLD_MULTIHOP_ADDR=$(soroban contract deploy \
+OLD_MULTIHOP_ADDR=$(stellar contract deploy \
   --wasm-hash "$OLD_PHOENIX_MULTIHOP_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
@@ -247,7 +245,7 @@ echo "Old multihop contract deployed at: $OLD_MULTIHOP_ADDR"
 
 echo "Initializing old multihop contract..."
 
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_MULTIHOP_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -256,11 +254,11 @@ soroban contract invoke \
   --admin "$ADMIN_ADDRESS" \
   --factory "$FACTORY_ADDR"
 
-echo "Old multihop initialized with admin=$ADMIN_ADDRESS factory=$FACTORY_ADDR."
+echo "Old multihop initialized at $OLD_MULTIHOP_ADDR"
 
 echo "Updating old multihop contract to latest multihop code..."
 
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_MULTIHOP_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -273,23 +271,23 @@ echo "Multihop contract updated to the latest code."
 echo "'updapte_multihop' test have been replicated."
 echo "Old -> Updated multihop contract address: $OLD_MULTIHOP_ADDR"
 
-soroban keys generate luke --network $NETWORK --fund
-soroban keys generate obiwan --network $NETWORK --fund
-soroban keys generate jarjar --network $NETWORK --fund
+stellar keys generate luke --network $NETWORK --fund
+stellar keys generate obiwan --network $NETWORK --fund
+stellar keys generate jarjar --network $NETWORK --fund
 
-ADMIN=$(soroban keys address luke)
-USER=$(soroban keys address jarjar)
+ADMIN=$(stellar keys address luke)
+USER=$(stellar keys address jarjar)
 
 
 echo "Deploying token contract 1 under admin..."
-TOKEN_ADDR1=$(soroban contract deploy \
+TOKEN_ADDR1=$(stellar contract deploy \
   --wasm-hash "$OLD_SOROBAN_TOKEN_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
 echo "token1 deployed at: $TOKEN_ADDR1"
 
 echo "Initializing token1 with admin=$ADMIN..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$TOKEN_ADDR1" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -301,14 +299,14 @@ soroban contract invoke \
   --symbol "TKN1"
 
 echo "Deploying token contract 2 under admin..."
-TOKEN_ADDR2=$(soroban contract deploy \
+TOKEN_ADDR2=$(stellar contract deploy \
   --wasm-hash "$OLD_SOROBAN_TOKEN_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
 echo "token2 deployed at: $TOKEN_ADDR2"
 
 echo "Initializing token2 with admin=$ADMIN..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$TOKEN_ADDR2" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -332,7 +330,7 @@ echo "Sorted token1: $TOKEN_ID1 (admin: $ADMIN)"
 echo "Sorted token2: $TOKEN_ID2 (admin: $ADMIN)"
 
 echo "Deploying old liquidity pool contract..."
-OLD_LP_ID=$(soroban contract deploy \
+OLD_LP_ID=$(stellar contract deploy \
   --wasm-hash "$OLD_PHOENIX_POOL_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
@@ -343,14 +341,14 @@ STAKE_WASM_HASH="$OLD_PHOENIX_STAKE_WASM_HASH"
 TOKEN_WASM_HASH="$OLD_SOROBAN_TOKEN_WASM_HASH"
 
 echo "Initializing old liquidity pool..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_LP_ID" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
   -- \
   initialize \
-  --stake_wasm_hash "$STAKE_WASM_HASH" \
-  --token_wasm_hash "$TOKEN_WASM_HASH" \
+  --stake_wasm_hash "$OLD_PHOENIX_STAKE_WASM_HASH" \
+  --token_wasm_hash "$OLD_SOROBAN_TOKEN_WASM_HASH" \
   --lp_init_info "{ 
        \"admin\": \"${ADMIN_ADDRESS}\",
        \"swap_fee_bps\": 1000,
@@ -377,10 +375,10 @@ soroban contract invoke \
   --default_slippage_bps 100 \
   --max_allowed_fee_bps 1000
 
-echo "Old LP initialized."
+echo "Old LP initialized at $OLD_LP_ID"
 
 echo "Querying old LP config for fee_recipient..."
-FEE_RECIPIENT=$(soroban contract invoke \
+FEE_RECIPIENT=$(stellar contract invoke \
   --id "$OLD_LP_ID" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -392,14 +390,14 @@ echo "Fee recipient in old LP: $FEE_RECIPIENT (expected ${ADMIN_ADDRESS})"
 
 echo "Minting big amounts of token1 and token2 for user..."
 
-soroban contract invoke \
+stellar contract invoke \
   --id $TOKEN_ID1 \
   --source $IDENTITY_STRING \
   --network $NETWORK \
   -- \
   mint --to $USER --amount 10000000000 # 7 decimals, 1k tokens
 
-soroban contract invoke \
+stellar contract invoke \
   --id $TOKEN_ID2 \
   --source $IDENTITY_STRING \
   --network $NETWORK \
@@ -412,13 +410,13 @@ echo "User providing liquidity to old LP..."
 echo "USER: " $USER
 echo "OLD_LP_ID: " $OLD_LP_ID
 
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_LP_ID" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
   -- \
   provide_liquidity \
-  --sender $(soroban keys secret jarjar) \
+  --sender $(stellar keys secret jarjar) \
   --min_a 5000000000 \
   --min_b 5000000000 \
   --desired_a 5000000000 \
@@ -426,7 +424,7 @@ soroban contract invoke \
 
 echo "Liquidity provided in old LP."
 
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_LP_ID" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -436,32 +434,32 @@ soroban contract invoke \
 
 echo "Old LP updated to new code!"
 
-NEW_FEE_RECIPIENT=$(soroban contract invoke \
+NEW_FEE_RECIPIENT=$(stellar contract invoke \
   --id "$OLD_LP_ID" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
   -- \
   query_config | jq -r '.fee_recipient')
 
-echo "Fee recipient in new LP: $NEW_FEE_RECIPIENT (expected ${ADMIN})"
+echo "Fee recipient in new LP: $NEW_FEE_RECIPIENT"
 
 
 echo "User1 withdrawing half of liquidity from new LP..."
 
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_LP_ID" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
   -- \
   withdraw_liquidity \
-  --sender $(soroban keys secret jarjar) \
+  --sender $(stellar keys secret jarjar) \
   --share_amount 2500000000 \
   --min_a 2500000000 \
   --min_b 2500000000 \
 
 echo "Liquidity partially withdrawn."
 
-POOL_INFO=$(soroban contract invoke \
+POOL_INFO=$(stellar contract invoke \
   --id "$OLD_LP_ID" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -482,21 +480,21 @@ echo "ASSET_LP_SHARE: $ASSET_LP_SHARE_AMOUNT"
 echo "'update_liquidity_pool' test have been replicated via shell."
 echo "Liquidity Pool contract address: $OLD_LP_ID"
 
-soroban keys generate stake_admin --network "$NETWORK" --fund
-soroban keys generate stake_user --network "$NETWORK" --fund
+stellar keys generate stake_admin --network "$NETWORK" --fund
+stellar keys generate stake_user --network "$NETWORK" --fund
 
-STAKE_ADMIN=$(soroban keys address stake_admin)
-STAKE_USER=$(soroban keys address stake_user)
+STAKE_ADMIN=$(stellar keys address stake_admin)
+STAKE_USER=$(stellar keys address stake_user)
 
-STAKE_ADMIN_SECRET=$(soroban keys secret stake_admin)
-STAKE_USER_SECRET=$(soroban keys secret stake_user)
+STAKE_ADMIN_SECRET=$(stellar keys secret stake_admin)
+STAKE_USER_SECRET=$(stellar keys secret stake_user)
 
 echo "Stake admin: $STAKE_ADMIN"
 echo "Stake user:  $STAKE_USER"
 echo "Stake admin: $STAKE_ADMIN_SECRET"
 echo "Stake user:  $STAKE_USER_SECRET"
 
-STAKE_TOKEN_ADDR=$(soroban contract deploy \
+STAKE_TOKEN_ADDR=$(stellar contract deploy \
   --wasm-hash "$OLD_SOROBAN_TOKEN_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
@@ -504,7 +502,7 @@ STAKE_TOKEN_ADDR=$(soroban contract deploy \
 echo "Token for stake deployed at: $STAKE_TOKEN_ADDR"
 
 echo "Initializing stake token with admin=$STAKE_ADMIN..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$STAKE_TOKEN_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -515,7 +513,7 @@ soroban contract invoke \
   --name "StakeToken" \
   --symbol "STK"
 
-soroban contract invoke \
+stellar contract invoke \
   --id "$STAKE_TOKEN_ADDR" \
   --source "$STAKE_ADMIN_SECRET" \
   --network "$NETWORK" \
@@ -524,25 +522,25 @@ soroban contract invoke \
   --to "$STAKE_USER" \
   --amount 1000
 
-OLD_STAKE_ADDR=$(soroban contract deploy \
+OLD_STAKE_ADDR=$(stellar contract deploy \
   --wasm-hash "$OLD_PHOENIX_STAKE_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
 echo "Old stake contract deployed at: $OLD_STAKE_ADDR"
 
-soroban keys generate stake_manager --network "$NETWORK" --fund
-soroban keys generate stake_owner --network "$NETWORK" --fund
+stellar keys generate stake_manager --network "$NETWORK" --fund
+stellar keys generate stake_owner --network "$NETWORK" --fund
 
-MANAGER_ADDR=$(soroban keys address stake_manager)
-OWNER_ADDR=$(soroban keys address stake_owner)
+MANAGER_ADDR=$(stellar keys address stake_manager)
+OWNER_ADDR=$(stellar keys address stake_owner)
 
-MANAGER_SECRET=$(soroban keys secret stake_manager)
-OWNER_SECRET=$(soroban keys secret stake_owner)
+MANAGER_SECRET=$(stellar keys secret stake_manager)
+OWNER_SECRET=$(stellar keys secret stake_owner)
 
 echo "Manager: $MANAGER_ADDR"
 echo "Owner:   $OWNER_ADDR"
 
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_STAKE_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -556,10 +554,10 @@ soroban contract invoke \
   --owner "$OWNER_ADDR" \
   --max_complexity "10"
 
-echo "Old stake initialized."
+echo "Old stake initialized at $OLD_STAKE_ADDR"
 
 echo "Bonding 1000 tokens from $STAKE_USER..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_STAKE_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -572,7 +570,7 @@ echo "Bonded 1000 tokens."
 
 echo "Checking staked info for user after bonding..."
 
-STAKED_INFO=$(soroban contract invoke \
+STAKED_INFO=$(stellar contract invoke \
   --id "$OLD_STAKE_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -600,7 +598,7 @@ else
 fi
 
 echo "Updating old stake contract to latest stake code..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_STAKE_ADDR" \
   --source "$STAKE_ADMIN_SECRET" \
   --network "$NETWORK" \
@@ -610,7 +608,7 @@ soroban contract invoke \
 
 echo "Stake contract updated."
 
-UPDATED_STAKE_ADMIN=$(soroban contract invoke \
+UPDATED_STAKE_ADMIN=$(stellar contract invoke \
   --id "$OLD_STAKE_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -620,7 +618,7 @@ UPDATED_STAKE_ADMIN=$(soroban contract invoke \
 echo "Updated stake admin is: $UPDATED_STAKE_ADMIN (expected \"$STAKE_ADMIN\")"
 
 echo "Unbonding 1000 tokens from user..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_STAKE_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -635,19 +633,19 @@ echo "Stake contract address: $OLD_STAKE_ADDR"
 
 echo "Running updapte_stake_rewards test"
 
-soroban keys generate stake_rewards_admin --network "$NETWORK" --fund
-soroban keys generate stake_rewards_staking --network "$NETWORK" --fund
-soroban keys generate stake_rewards_token --network "$NETWORK" --fund
+stellar keys generate stake_rewards_admin --network "$NETWORK" --fund
+stellar keys generate stake_rewards_staking --network "$NETWORK" --fund
+stellar keys generate stake_rewards_token --network "$NETWORK" --fund
 
-STAKE_REWARDS_ADMIN=$(soroban keys address stake_rewards_admin)
-STAKE_REWARDS_STAKING=$(soroban keys address stake_rewards_staking)
-STAKE_REWARDS_TOKEN=$(soroban keys address stake_rewards_token)
+STAKE_REWARDS_ADMIN=$(stellar keys address stake_rewards_admin)
+STAKE_REWARDS_STAKING=$(stellar keys address stake_rewards_staking)
+STAKE_REWARDS_TOKEN=$(stellar keys address stake_rewards_token)
 
 echo "Stake Rewards Admin:     $STAKE_REWARDS_ADMIN"
 echo "Staking Contract (mock): $STAKE_REWARDS_STAKING"
 echo "Reward Token (mock):     $STAKE_REWARDS_TOKEN"
 
-OLD_STAKE_REWARDS_ADDR=$(soroban contract deploy \
+OLD_STAKE_REWARDS_ADDR=$(stellar contract deploy \
   --wasm-hash "$OLD_PHOENIX_STAKE_REWARDS_WASM_HASH" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK")
@@ -659,7 +657,7 @@ MIN_REWARD="5"
 MIN_BOND="5"
 
 echo "Initializing old stake rewards contract..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_STAKE_REWARDS_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -675,7 +673,7 @@ soroban contract invoke \
 echo "Old stake rewards contract initialized."
 
 echo "Checking old stake rewards admin..."
-OLD_STAKE_REWARDS_ADMIN=$(soroban contract invoke \
+OLD_STAKE_REWARDS_ADMIN=$(stellar contract invoke \
   --id "$OLD_STAKE_REWARDS_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -684,7 +682,7 @@ OLD_STAKE_REWARDS_ADMIN=$(soroban contract invoke \
 echo "Admin in old stake rewards: $OLD_STAKE_REWARDS_ADMIN (expected \"$STAKE_REWARDS_ADMIN\")"
 
 echo "Querying old stake rewards config..."
-OLD_SR_CONFIG=$(soroban contract invoke \
+OLD_SR_CONFIG=$(stellar contract invoke \
   --id "$OLD_STAKE_REWARDS_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -693,9 +691,9 @@ OLD_SR_CONFIG=$(soroban contract invoke \
 
 echo "Old stake rewards config: $OLD_SR_CONFIG"
 echo "Updating old stake rewards contract to latest code..."
-soroban contract invoke \
+stellar contract invoke \
   --id "$OLD_STAKE_REWARDS_ADDR" \
-  --source "$(soroban keys secret stake_rewards_admin)" \
+  --source "$(stellar keys secret stake_rewards_admin)" \
   --network "$NETWORK" \
   -- \
   update \
@@ -704,7 +702,7 @@ soroban contract invoke \
 echo "Stake rewards contract updated."
 
 echo "Checking updated stake rewards admin..."
-UPDATED_STAKE_REWARDS_ADMIN=$(soroban contract invoke \
+UPDATED_STAKE_REWARDS_ADMIN=$(stellar contract invoke \
   --id "$OLD_STAKE_REWARDS_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \
@@ -713,7 +711,7 @@ UPDATED_STAKE_REWARDS_ADMIN=$(soroban contract invoke \
 echo "Updated stake rewards admin is: $UPDATED_STAKE_REWARDS_ADMIN (expected \"$STAKE_REWARDS_ADMIN\")"
 
 echo "Querying updated stake rewards config..."
-UPDATED_SR_CONFIG=$(soroban contract invoke \
+UPDATED_SR_CONFIG=$(stellar contract invoke \
   --id "$OLD_STAKE_REWARDS_ADDR" \
   --source "$IDENTITY_STRING" \
   --network "$NETWORK" \

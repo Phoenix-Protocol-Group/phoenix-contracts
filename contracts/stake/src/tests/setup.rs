@@ -78,18 +78,25 @@ pub mod tests {
         // - A ContractClient type that can be used to invoke functions on the contract.
         // - Any types in the contract that were annotated with #[contracttype].
         soroban_sdk::contractimport!(
-            file = "../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
+            file = "../../.wasm_binaries_mainnet/live_token_contract.wasm"
         );
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub mod old_stake {
+    pub mod old_pho_usdc_stake {
         soroban_sdk::contractimport!(
-            file = "../../.artifacts_stake_migration_test/old_phoenix_stake.wasm"
+            file = "../../.wasm_binaries_mainnet/live_pho_usdc_stake.wasm"
         );
     }
 
-    use old_stake::{StakedResponse, WithdrawableReward, WithdrawableRewardsResponse};
+    #[allow(clippy::too_many_arguments)]
+    pub mod old_xlm_usdc_stake {
+        soroban_sdk::contractimport!(
+            file = "../../.wasm_binaries_mainnet/live_xlm_usdc_stake.wasm"
+        );
+    }
+
+    use old_pho_usdc_stake::{StakedResponse, WithdrawableReward, WithdrawableRewardsResponse};
     use pretty_assertions::assert_eq;
     use soroban_sdk::testutils::Ledger;
     use soroban_sdk::{testutils::Address as _, Address};
@@ -117,35 +124,32 @@ pub mod tests {
 
         let new_user = Address::generate(&env);
 
-        let stake_addr = env.register(old_stake::WASM, ());
-        let old_stake_client = old_stake::Client::new(&env, &stake_addr);
+        let stake_addr = env.register(old_pho_usdc_stake::WASM, ());
+        let old_stake_client = old_pho_usdc_stake::Client::new(&env, &stake_addr);
 
-        let lp_token_addr = env.register(
-            token::WASM,
-            (
-                Address::generate(&env),
-                7u32,
-                String::from_str(&env, "LP Token"),
-                String::from_str(&env, "LPT"),
-            ),
+        let lp_token_addr = env.register(token::WASM, ());
+        let lp_token_client = token::Client::new(&env, &lp_token_addr);
+        lp_token_client.initialize(
+            &Address::generate(&env),
+            &7u32,
+            &String::from_str(&env, "LP Token"),
+            &String::from_str(&env, "LPT"),
         );
 
-        let lp_token_client = token::Client::new(&env, &lp_token_addr);
         lp_token_client.mint(&user_1, &10_000_000_000_000);
         lp_token_client.mint(&user_2, &10_000_000_000_000);
         lp_token_client.mint(&user_3, &10_000_000_000_000);
 
-        let reward_token_addr = env.register(
-            token::WASM,
-            (
-                Address::generate(&env),
-                7u32,
-                String::from_str(&env, "Reward Token"),
-                String::from_str(&env, "RWT"),
-            ),
-        );
+        let reward_token_addr = env.register(token::WASM, ());
 
         let reward_token_client = token::Client::new(&env, &reward_token_addr);
+        reward_token_client.initialize(
+            &Address::generate(&env),
+            &7u32,
+            &String::from_str(&env, "Reward Token"),
+            &String::from_str(&env, "RWT"),
+        );
+
         reward_token_client.mint(&manager, &100_000_000_000_000);
 
         old_stake_client.initialize(
@@ -158,6 +162,7 @@ pub mod tests {
             &7,
         );
 
+        old_stake_client.add_lp_share(&lp_token_client.address);
         // after a day the manager creates a distribution flow
         env.ledger().with_mut(|li| li.timestamp += DAY_AS_SECONDS);
         old_stake_client.create_distribution_flow(&manager, &reward_token_addr);
@@ -175,7 +180,7 @@ pub mod tests {
                 last_reward_time: 0,
                 stakes: vec![
                     &env,
-                    old_stake::Stake {
+                    old_pho_usdc_stake::Stake {
                         stake: 10_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2,
                     }
@@ -190,7 +195,7 @@ pub mod tests {
                 last_reward_time: 0,
                 stakes: vec![
                     &env,
-                    old_stake::Stake {
+                    old_pho_usdc_stake::Stake {
                         stake: 20_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2,
                     }
@@ -205,7 +210,7 @@ pub mod tests {
                 last_reward_time: 0,
                 stakes: vec![
                     &env,
-                    old_stake::Stake {
+                    old_pho_usdc_stake::Stake {
                         stake: 15_000_000_000,
                         stake_timestamp: DAY_AS_SECONDS * 2,
                     }
@@ -307,6 +312,21 @@ pub mod tests {
 
         // now we migrate the distributions
         latest_stake_client.migrate_distributions();
+
+        let actual_config = latest_stake_client.query_config();
+        assert_eq!(
+            actual_config,
+            latest_stake::ConfigResponse {
+                config: latest_stake::Config {
+                    lp_token: lp_token_addr,
+                    manager,
+                    max_complexity: 7,
+                    min_bond: 100,
+                    min_reward: 50,
+                    owner
+                }
+            }
+        );
 
         // check the rewards again, this time with the old deprecated method
         assert_eq!(
@@ -499,12 +519,18 @@ pub mod tests {
 
         latest_stake_client.unbond(&new_user, &10_000_000_000, &time_of_bond);
         assert_eq!(lp_token_client.balance(&new_user), 10_000_000_000_000);
+
+        let new_admin = Address::generate(&env);
+        latest_stake_client.propose_admin(&new_admin, &None);
+        latest_stake_client.accept_admin();
+
+        assert_eq!(new_admin, latest_stake_client.query_admin());
     }
 
     #[test]
     #[allow(deprecated)]
     #[cfg(feature = "upgrade")]
-    fn upgrade_stake_contract() {
+    fn upgrade_pho_usdc_stake_contract() {
         use soroban_sdk::{testutils::Ledger, vec};
 
         use crate::tests::setup::{deploy_token_contract, install_stake_latest_wasm};
@@ -518,9 +544,9 @@ pub mod tests {
         let token_client = deploy_token_contract(&env, &admin);
         token_client.mint(&user, &1_000);
 
-        let stake_addr = env.register_contract_wasm(None, old_stake::WASM);
+        let stake_addr = env.register_contract_wasm(None, old_pho_usdc_stake::WASM);
 
-        let old_stake_client = old_stake::Client::new(&env, &stake_addr);
+        let old_stake_client = old_pho_usdc_stake::Client::new(&env, &stake_addr);
 
         let manager = Address::generate(&env);
         let owner = Address::generate(&env);
@@ -541,13 +567,14 @@ pub mod tests {
         assert_eq!(old_stake_client.query_admin(), admin);
 
         env.ledger().with_mut(|li| li.timestamp = 100);
+        old_stake_client.add_lp_share(&token_client.address);
         old_stake_client.bond(&user, &1_000);
         assert_eq!(
             old_stake_client.query_staked(&user),
-            old_stake::StakedResponse {
+            old_pho_usdc_stake::StakedResponse {
                 stakes: vec![
                     &env,
-                    old_stake::Stake {
+                    old_pho_usdc_stake::Stake {
                         stake: 1_000i128,
                         stake_timestamp: 100
                     }
@@ -578,6 +605,127 @@ pub mod tests {
                 stakes: vec![&env,],
             }
         );
+
+        let actual_config = new_stake_client.query_config();
+        assert_eq!(
+            actual_config,
+            latest_stake::ConfigResponse {
+                config: latest_stake::Config {
+                    lp_token: token_client.address.clone(),
+                    manager,
+                    max_complexity: 10,
+                    min_bond: 10,
+                    min_reward: 10,
+                    owner
+                }
+            }
+        );
+
+        let new_admin = Address::generate(&env);
+        new_stake_client.propose_admin(&new_admin, &None);
+        new_stake_client.accept_admin();
+
+        assert_eq!(new_admin, new_stake_client.query_admin());
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    #[cfg(feature = "upgrade")]
+    fn upgrade_xlm_usdc_stake_contract() {
+        use soroban_sdk::{testutils::Ledger, vec};
+
+        use crate::tests::setup::{deploy_token_contract, install_stake_latest_wasm};
+
+        let env = Env::default();
+        env.mock_all_auths();
+        env.cost_estimate().budget().reset_unlimited();
+        let admin = Address::generate(&env);
+        let user = Address::generate(&env);
+
+        let token_client = deploy_token_contract(&env, &admin);
+        token_client.mint(&user, &1_000);
+
+        let xlm_usdc_stake_addr = env.register_contract_wasm(None, old_xlm_usdc_stake::WASM);
+
+        let xlm_usdc_old_stake_client = old_xlm_usdc_stake::Client::new(&env, &xlm_usdc_stake_addr);
+
+        let manager = Address::generate(&env);
+        let owner = Address::generate(&env);
+
+        xlm_usdc_old_stake_client.initialize(
+            &admin,
+            &token_client.address,
+            &10,
+            &10,
+            &manager,
+            &owner,
+            &10,
+        );
+
+        token_client.mint(&owner, &1_000);
+        xlm_usdc_old_stake_client.create_distribution_flow(&owner, &token_client.address);
+
+        assert_eq!(xlm_usdc_old_stake_client.query_admin(), admin);
+
+        env.ledger().with_mut(|li| li.timestamp = 100);
+        xlm_usdc_old_stake_client.bond(&user, &1_000);
+        assert_eq!(
+            xlm_usdc_old_stake_client.query_staked(&user),
+            old_xlm_usdc_stake::StakedResponse {
+                stakes: vec![
+                    &env,
+                    old_xlm_usdc_stake::Stake {
+                        stake: 1_000i128,
+                        stake_timestamp: 100
+                    }
+                ],
+                last_reward_time: 0u64,
+                total_stake: 1_000i128,
+            }
+        );
+
+        env.ledger().with_mut(|li| li.timestamp = 10_000);
+
+        let new_stake_wasm = install_stake_latest_wasm(&env);
+        xlm_usdc_old_stake_client.update(&new_stake_wasm);
+
+        let new_stake_client = latest_stake::Client::new(&env, &xlm_usdc_stake_addr);
+        new_stake_client.migrate_distributions();
+
+        assert_eq!(new_stake_client.query_admin(), admin);
+
+        env.ledger().with_mut(|li| li.timestamp = 20_000);
+        new_stake_client.distribute_rewards();
+
+        new_stake_client.unbond_deprecated(&user, &1_000, &100);
+
+        assert_eq!(
+            new_stake_client.query_staked(&user),
+            latest_stake::StakedResponse {
+                stakes: vec![&env,],
+            }
+        );
+
+        let actual_config = new_stake_client.query_config();
+        assert_eq!(
+            actual_config,
+            latest_stake::ConfigResponse {
+                config: latest_stake::Config {
+                    lp_token: token_client.address,
+                    manager,
+                    max_complexity: 10,
+                    min_bond: 10,
+                    min_reward: 10,
+                    owner
+                }
+            }
+        );
+
+        let another_new_admin = Address::generate(&env);
+        new_stake_client.propose_admin(&another_new_admin, &None);
+        new_stake_client.accept_admin();
+
+        assert_eq!(another_new_admin, new_stake_client.query_admin());
     }
 
     #[test]
