@@ -2,9 +2,10 @@
 
 # Testnet deployment script for Phoenix Protocol upgrade testing
 # This script simulates the mainnet migration path:
-# 1. Deploy all contracts from the earliest commit (factory commit 77742b01)
-# 2. Upgrade pools and stakes to their intermediate versions (matching current network)
-# 3. Final migration to latest main branch versions
+# 1. Deploy factory with old WASM hashes (factory automatically deploys multihop)
+# 2. Use factory to create pools with specific liquidity amounts (pools auto-deploy stakes)
+# 3. Upgrade pools and stakes to their intermediate versions (matching current network)
+# 4. Final migration to latest main branch versions
 
 set -e
 
@@ -30,9 +31,9 @@ echo "Main branch contracts compiled."
 # Store current branch to return to
 CURRENT_BRANCH=$(git branch --show-current)
 
-# === PHASE 1: Deploy all contracts from earliest commit ===
+# === PHASE 1: Deploy factory from earliest commit ===
 echo ""
-echo "=== PHASE 1: DEPLOYING FROM EARLIEST COMMIT (77742b01) ==="
+echo "=== PHASE 1: DEPLOYING FACTORY FROM EARLIEST COMMIT (77742b01) ==="
 
 # All contracts from the same commit (77742b01) for initial deployment
 echo "Building all contracts from commit 77742b01..."
@@ -139,18 +140,14 @@ echo "Pool: $LATEST_POOL_HASH"
 echo "Stake: $LATEST_STAKE_HASH"
 echo "Token: $TOKEN_HASH"
 
-# Deploy factory with old version
+# Deploy factory with old version (this automatically calls __constructor and deploys multihop)
 echo ""
-echo "Deploying factory with old version..."
-FACTORY_ADDR=$(stellar contract deploy --wasm-hash $OLD_FACTORY_HASH --source $IDENTITY_STRING --network $NETWORK)
-
-echo "Initializing factory..."
-stellar contract invoke \
-  --id $FACTORY_ADDR \
+echo "Deploying factory with old version (__constructor automatically called, deploys multihop)..."
+FACTORY_ADDR=$(stellar contract deploy \
+  --wasm-hash $OLD_FACTORY_HASH \
   --source $IDENTITY_STRING \
   --network $NETWORK \
   -- \
-  initialize \
   --admin $ADMIN_ADDRESS \
   --multihop_wasm_hash $OLD_MULTIHOP_HASH \
   --lp_wasm_hash $OLD_POOL_HASH \
@@ -158,29 +155,17 @@ stellar contract invoke \
   --stake_wasm_hash $OLD_STAKE_HASH \
   --token_wasm_hash $TOKEN_HASH \
   --whitelisted_accounts "[ \"$ADMIN_ADDRESS\" ]" \
-  --lp_token_decimals 7
+  --lp_token_decimals 7)
 
 echo "Factory deployed and initialized at: $FACTORY_ADDR"
 
-# Deploy multihop with old version
-echo "Deploying multihop with old version..."
-MULTIHOP_ADDR=$(stellar contract deploy --wasm-hash $OLD_MULTIHOP_HASH --source $IDENTITY_STRING --network $NETWORK)
-
-stellar contract invoke \
-  --id $MULTIHOP_ADDR \
-  --source $IDENTITY_STRING \
-  --network $NETWORK \
-  -- \
-  initialize \
-  --admin $ADMIN_ADDRESS \
-  --factory $FACTORY_ADDR
-
-echo "Multihop deployed and initialized at: $MULTIHOP_ADDR"
+# Get multihop address from factory config
+echo "Getting multihop address from factory..."
+MULTIHOP_ADDR=$(stellar contract invoke --id $FACTORY_ADDR --source $IDENTITY_STRING --network $NETWORK -- get_config | jq -r '.multihop_address')
+echo "Multihop deployed at: $MULTIHOP_ADDR"
 
 # Create test tokens
 echo "Creating test tokens..."
-
-# Create tokens using mainnet-like addresses from CLAUDE.md
 XLM_TOKEN=$(stellar contract deploy --wasm-hash $TOKEN_HASH --source $IDENTITY_STRING --network $NETWORK)
 stellar contract invoke --id $XLM_TOKEN --source $IDENTITY_STRING --network $NETWORK -- initialize --admin $ADMIN_ADDRESS --decimal 7 --name "XLM" --symbol "XLM"
 
@@ -219,11 +204,7 @@ stellar contract invoke --id $PHO_TOKEN --source $IDENTITY_STRING --network $NET
 stellar contract invoke --id $EURC_TOKEN --source $IDENTITY_STRING --network $NETWORK -- mint --to $POOL_USER --amount 1000000000000000
 stellar contract invoke --id $VEUR_TOKEN --source $IDENTITY_STRING --network $NETWORK -- mint --to $POOL_USER --amount 1000000000000000
 
-# Deploy pools with old versions and specified liquidity amounts
-echo ""
-echo "=== DEPLOYING POOLS WITH OLD VERSIONS ==="
-
-# Helper function to sort tokens
+# Helper function to sort tokens for factory
 get_sorted_tokens() {
     local token1=$1
     local token2=$2
@@ -234,21 +215,22 @@ get_sorted_tokens() {
     fi
 }
 
+echo ""
+echo "=== CREATING POOLS VIA FACTORY ==="
+
 # Pool 1: XLM-USDC (will upgrade to 4a0b6e6c, stake to 612f44f)
-echo "Creating XLM-USDC pool..."
+echo "Creating XLM-USDC pool via factory..."
 SORTED_TOKENS_1=$(get_sorted_tokens $XLM_TOKEN $USDC_TOKEN)
 TOKEN_A_1=$(echo $SORTED_TOKENS_1 | cut -d' ' -f1)
 TOKEN_B_1=$(echo $SORTED_TOKENS_1 | cut -d' ' -f2)
 
-POOL_1=$(stellar contract deploy --wasm-hash $OLD_POOL_HASH --source $IDENTITY_STRING --network $NETWORK)
-stellar contract invoke \
-  --id $POOL_1 \
+POOL_1=$(stellar contract invoke \
+  --id $FACTORY_ADDR \
   --source $IDENTITY_STRING \
   --network $NETWORK \
   -- \
-  initialize \
-  --stake_wasm_hash $OLD_STAKE_HASH \
-  --token_wasm_hash $TOKEN_HASH \
+  create_liquidity_pool \
+  --sender $ADMIN_ADDRESS \
   --lp_init_info "{
     \"admin\": \"$ADMIN_ADDRESS\",
     \"swap_fee_bps\": 100,
@@ -268,51 +250,28 @@ stellar contract invoke \
       \"max_complexity\": 7
     }
   }" \
-  --factory_addr $FACTORY_ADDR \
-  --share_token_decimals 7 \
   --share_token_name "XLM-USDC LP" \
   --share_token_symbol "XLMUSDC" \
+  --pool_type "Xyk" \
+  --amp "null" \
   --default_slippage_bps 100 \
-  --max_allowed_fee_bps 1000
+  --max_allowed_fee_bps 1000)
 
-# Provide liquidity: 64139988753895 XLM, 17449955004640 USDC
-if [[ "$TOKEN_A_1" == "$XLM_TOKEN" ]]; then
-    DESIRED_A=64139988753895
-    DESIRED_B=17449955004640
-else
-    DESIRED_A=17449955004640
-    DESIRED_B=64139988753895
-fi
+echo "XLM-USDC Pool created: $POOL_1"
 
-stellar contract invoke \
-  --id $POOL_1 \
-  --source pool_user \
-  --network $NETWORK \
-  -- \
-  provide_liquidity \
-  --sender $POOL_USER \
-  --desired_a $DESIRED_A \
-  --min_a $DESIRED_A \
-  --desired_b $DESIRED_B \
-  --min_b $DESIRED_B
-
-echo "XLM-USDC Pool: $POOL_1"
-
-# Pool 2: XLM-PHO (will upgrade to 4a0b6e6c, stake to 612f44f)
-echo "Creating XLM-PHO pool..."
+# Pool 2: XLM-PHO 
+echo "Creating XLM-PHO pool via factory..."
 SORTED_TOKENS_2=$(get_sorted_tokens $XLM_TOKEN $PHO_TOKEN)
 TOKEN_A_2=$(echo $SORTED_TOKENS_2 | cut -d' ' -f1)
 TOKEN_B_2=$(echo $SORTED_TOKENS_2 | cut -d' ' -f2)
 
-POOL_2=$(stellar contract deploy --wasm-hash $OLD_POOL_HASH --source $IDENTITY_STRING --network $NETWORK)
-stellar contract invoke \
-  --id $POOL_2 \
+POOL_2=$(stellar contract invoke \
+  --id $FACTORY_ADDR \
   --source $IDENTITY_STRING \
   --network $NETWORK \
   -- \
-  initialize \
-  --stake_wasm_hash $OLD_STAKE_HASH \
-  --token_wasm_hash $TOKEN_HASH \
+  create_liquidity_pool \
+  --sender $ADMIN_ADDRESS \
   --lp_init_info "{
     \"admin\": \"$ADMIN_ADDRESS\",
     \"swap_fee_bps\": 100,
@@ -332,51 +291,28 @@ stellar contract invoke \
       \"max_complexity\": 7
     }
   }" \
-  --factory_addr $FACTORY_ADDR \
-  --share_token_decimals 7 \
   --share_token_name "XLM-PHO LP" \
   --share_token_symbol "XLMPHO" \
+  --pool_type "Xyk" \
+  --amp "null" \
   --default_slippage_bps 100 \
-  --max_allowed_fee_bps 1000
+  --max_allowed_fee_bps 1000)
 
-# Provide liquidity: 757675338772 XLM, 1125936632179 PHO
-if [[ "$TOKEN_A_2" == "$XLM_TOKEN" ]]; then
-    DESIRED_A=757675338772
-    DESIRED_B=1125936632179
-else
-    DESIRED_A=1125936632179
-    DESIRED_B=757675338772
-fi
+echo "XLM-PHO Pool created: $POOL_2"
 
-stellar contract invoke \
-  --id $POOL_2 \
-  --source pool_user \
-  --network $NETWORK \
-  -- \
-  provide_liquidity \
-  --sender $POOL_USER \
-  --desired_a $DESIRED_A \
-  --min_a $DESIRED_A \
-  --desired_b $DESIRED_B \
-  --min_b $DESIRED_B
-
-echo "XLM-PHO Pool: $POOL_2"
-
-# Pool 3: XLM-EURC (will upgrade to 4a0b6e6c, stake to bc01344)
-echo "Creating XLM-EURC pool..."
+# Pool 3: XLM-EURC
+echo "Creating XLM-EURC pool via factory..."
 SORTED_TOKENS_3=$(get_sorted_tokens $XLM_TOKEN $EURC_TOKEN)
 TOKEN_A_3=$(echo $SORTED_TOKENS_3 | cut -d' ' -f1)
 TOKEN_B_3=$(echo $SORTED_TOKENS_3 | cut -d' ' -f2)
 
-POOL_3=$(stellar contract deploy --wasm-hash $OLD_POOL_HASH --source $IDENTITY_STRING --network $NETWORK)
-stellar contract invoke \
-  --id $POOL_3 \
+POOL_3=$(stellar contract invoke \
+  --id $FACTORY_ADDR \
   --source $IDENTITY_STRING \
   --network $NETWORK \
   -- \
-  initialize \
-  --stake_wasm_hash $OLD_STAKE_HASH \
-  --token_wasm_hash $TOKEN_HASH \
+  create_liquidity_pool \
+  --sender $ADMIN_ADDRESS \
   --lp_init_info "{
     \"admin\": \"$ADMIN_ADDRESS\",
     \"swap_fee_bps\": 100,
@@ -396,51 +332,28 @@ stellar contract invoke \
       \"max_complexity\": 7
     }
   }" \
-  --factory_addr $FACTORY_ADDR \
-  --share_token_decimals 7 \
   --share_token_name "XLM-EURC LP" \
   --share_token_symbol "XLMEURC" \
+  --pool_type "Xyk" \
+  --amp "null" \
   --default_slippage_bps 100 \
-  --max_allowed_fee_bps 1000
+  --max_allowed_fee_bps 1000)
 
-# Provide liquidity: 115142998193 XLM, 27598017336 EURC
-if [[ "$TOKEN_A_3" == "$XLM_TOKEN" ]]; then
-    DESIRED_A=115142998193
-    DESIRED_B=27598017336
-else
-    DESIRED_A=27598017336
-    DESIRED_B=115142998193
-fi
+echo "XLM-EURC Pool created: $POOL_3"
 
-stellar contract invoke \
-  --id $POOL_3 \
-  --source pool_user \
-  --network $NETWORK \
-  -- \
-  provide_liquidity \
-  --sender $POOL_USER \
-  --desired_a $DESIRED_A \
-  --min_a $DESIRED_A \
-  --desired_b $DESIRED_B \
-  --min_b $DESIRED_B
-
-echo "XLM-EURC Pool: $POOL_3"
-
-# Pool 4: USDC-VEUR (will upgrade to 4a0b6e6c, stake to bc01344)
-echo "Creating USDC-VEUR pool..."
+# Pool 4: USDC-VEUR
+echo "Creating USDC-VEUR pool via factory..."
 SORTED_TOKENS_4=$(get_sorted_tokens $USDC_TOKEN $VEUR_TOKEN)
 TOKEN_A_4=$(echo $SORTED_TOKENS_4 | cut -d' ' -f1)
 TOKEN_B_4=$(echo $SORTED_TOKENS_4 | cut -d' ' -f2)
 
-POOL_4=$(stellar contract deploy --wasm-hash $OLD_POOL_HASH --source $IDENTITY_STRING --network $NETWORK)
-stellar contract invoke \
-  --id $POOL_4 \
+POOL_4=$(stellar contract invoke \
+  --id $FACTORY_ADDR \
   --source $IDENTITY_STRING \
   --network $NETWORK \
   -- \
-  initialize \
-  --stake_wasm_hash $OLD_STAKE_HASH \
-  --token_wasm_hash $TOKEN_HASH \
+  create_liquidity_pool \
+  --sender $ADMIN_ADDRESS \
   --lp_init_info "{
     \"admin\": \"$ADMIN_ADDRESS\",
     \"swap_fee_bps\": 100,
@@ -460,51 +373,28 @@ stellar contract invoke \
       \"max_complexity\": 7
     }
   }" \
-  --factory_addr $FACTORY_ADDR \
-  --share_token_decimals 7 \
   --share_token_name "USDC-VEUR LP" \
   --share_token_symbol "USDCVEUR" \
+  --pool_type "Xyk" \
+  --amp "null" \
   --default_slippage_bps 100 \
-  --max_allowed_fee_bps 1000
+  --max_allowed_fee_bps 1000)
 
-# Provide liquidity: 49791689351 USDC, 44946917323 VEUR
-if [[ "$TOKEN_A_4" == "$USDC_TOKEN" ]]; then
-    DESIRED_A=49791689351
-    DESIRED_B=44946917323
-else
-    DESIRED_A=44946917323
-    DESIRED_B=49791689351
-fi
+echo "USDC-VEUR Pool created: $POOL_4"
 
-stellar contract invoke \
-  --id $POOL_4 \
-  --source pool_user \
-  --network $NETWORK \
-  -- \
-  provide_liquidity \
-  --sender $POOL_USER \
-  --desired_a $DESIRED_A \
-  --min_a $DESIRED_A \
-  --desired_b $DESIRED_B \
-  --min_b $DESIRED_B
-
-echo "USDC-VEUR Pool: $POOL_4"
-
-# Pool 5: PHO-USDC (will upgrade to 0e811ce4 hotfix, stake to e4f767d)
-echo "Creating PHO-USDC pool..."
+# Pool 5: PHO-USDC 
+echo "Creating PHO-USDC pool via factory..."
 SORTED_TOKENS_5=$(get_sorted_tokens $PHO_TOKEN $USDC_TOKEN)
 TOKEN_A_5=$(echo $SORTED_TOKENS_5 | cut -d' ' -f1)
 TOKEN_B_5=$(echo $SORTED_TOKENS_5 | cut -d' ' -f2)
 
-POOL_5=$(stellar contract deploy --wasm-hash $OLD_POOL_HASH --source $IDENTITY_STRING --network $NETWORK)
-stellar contract invoke \
-  --id $POOL_5 \
+POOL_5=$(stellar contract invoke \
+  --id $FACTORY_ADDR \
   --source $IDENTITY_STRING \
   --network $NETWORK \
   -- \
-  initialize \
-  --stake_wasm_hash $OLD_STAKE_HASH \
-  --token_wasm_hash $TOKEN_HASH \
+  create_liquidity_pool \
+  --sender $ADMIN_ADDRESS \
   --lp_init_info "{
     \"admin\": \"$ADMIN_ADDRESS\",
     \"swap_fee_bps\": 100,
@@ -524,27 +414,134 @@ stellar contract invoke \
       \"max_complexity\": 7
     }
   }" \
-  --factory_addr $FACTORY_ADDR \
-  --share_token_decimals 7 \
   --share_token_name "PHO-USDC LP" \
   --share_token_symbol "PHOUSDC" \
+  --pool_type "Xyk" \
+  --amp "null" \
   --default_slippage_bps 100 \
-  --max_allowed_fee_bps 1000
+  --max_allowed_fee_bps 1000)
+
+echo "PHO-USDC Pool created: $POOL_5"
+
+echo ""
+echo "=== PROVIDING LIQUIDITY WITH SPECIFIED AMOUNTS ==="
+
+# Provide liquidity: 64139988753895 XLM, 17449955004640 USDC for Pool 1
+echo "Providing liquidity to XLM-USDC pool..."
+if [[ "$TOKEN_A_1" == "$XLM_TOKEN" ]]; then
+    DESIRED_A=64139988753895
+    DESIRED_B=17449955004640
+else
+    DESIRED_A=17449955004640
+    DESIRED_B=64139988753895
+fi
+
+stellar contract invoke \
+  --id $POOL_1 \
+  --source pool_user \
+  --network $NETWORK \
+  -- \
+  provide_liquidity \
+  --depositor $POOL_USER \
+  --desired_a $DESIRED_A \
+  --min_a $DESIRED_A \
+  --desired_b $DESIRED_B \
+  --min_b $DESIRED_B \
+  --custom_slippage_bps "null" \
+  --deadline "null" \
+  --auto_stake false
+
+# Provide liquidity: 757675338772 XLM, 1125936632179 PHO for Pool 2
+echo "Providing liquidity to XLM-PHO pool..."
+if [[ "$TOKEN_A_2" == "$XLM_TOKEN" ]]; then
+    DESIRED_A=757675338772
+    DESIRED_B=1125936632179
+else
+    DESIRED_A=1125936632179
+    DESIRED_B=757675338772
+fi
+
+stellar contract invoke \
+  --id $POOL_2 \
+  --source pool_user \
+  --network $NETWORK \
+  -- \
+  provide_liquidity \
+  --depositor $POOL_USER \
+  --desired_a $DESIRED_A \
+  --min_a $DESIRED_A \
+  --desired_b $DESIRED_B \
+  --min_b $DESIRED_B \
+  --custom_slippage_bps "null" \
+  --deadline "null" \
+  --auto_stake false
+
+# Provide liquidity: 115142998193 XLM, 27598017336 EURC for Pool 3
+echo "Providing liquidity to XLM-EURC pool..."
+if [[ "$TOKEN_A_3" == "$XLM_TOKEN" ]]; then
+    DESIRED_A=115142998193
+    DESIRED_B=27598017336
+else
+    DESIRED_A=27598017336
+    DESIRED_B=115142998193
+fi
+
+stellar contract invoke \
+  --id $POOL_3 \
+  --source pool_user \
+  --network $NETWORK \
+  -- \
+  provide_liquidity \
+  --depositor $POOL_USER \
+  --desired_a $DESIRED_A \
+  --min_a $DESIRED_A \
+  --desired_b $DESIRED_B \
+  --min_b $DESIRED_B \
+  --custom_slippage_bps "null" \
+  --deadline "null" \
+  --auto_stake false
+
+# Provide liquidity: 49791689351 USDC, 44946917323 VEUR for Pool 4
+echo "Providing liquidity to USDC-VEUR pool..."
+if [[ "$TOKEN_A_4" == "$USDC_TOKEN" ]]; then
+    DESIRED_A=49791689351
+    DESIRED_B=44946917323
+else
+    DESIRED_A=44946917323
+    DESIRED_B=49791689351
+fi
+
+stellar contract invoke \
+  --id $POOL_4 \
+  --source pool_user \
+  --network $NETWORK \
+  -- \
+  provide_liquidity \
+  --depositor $POOL_USER \
+  --desired_a $DESIRED_A \
+  --min_a $DESIRED_A \
+  --desired_b $DESIRED_B \
+  --min_b $DESIRED_B \
+  --custom_slippage_bps "null" \
+  --deadline "null" \
+  --auto_stake false
 
 # Add reasonable liquidity for PHO-USDC
+echo "Providing liquidity to PHO-USDC pool..."
 stellar contract invoke \
   --id $POOL_5 \
   --source pool_user \
   --network $NETWORK \
   -- \
   provide_liquidity \
-  --sender $POOL_USER \
+  --depositor $POOL_USER \
   --desired_a 1000000000000 \
   --min_a 1000000000000 \
   --desired_b 1000000000000 \
-  --min_b 1000000000000 > /dev/null 2>&1
-
-echo "PHO-USDC Pool: $POOL_5"
+  --min_b 1000000000000 \
+  --custom_slippage_bps "null" \
+  --deadline "null" \
+  --auto_stake false
 
 # Get stake addresses from pools
 echo "Getting stake addresses from pools..."
@@ -570,7 +567,7 @@ echo "XLM-EURC Stake: $STAKE_3"
 echo "USDC-VEUR Stake: $STAKE_4"
 echo "PHO-USDC Stake: $STAKE_5"
 
-# Stake some LP tokens to simulate real conditions
+# Stake some LP tokens
 echo ""
 echo "=== STAKING LP TOKENS ==="
 
@@ -580,8 +577,7 @@ LP_3=$(echo "$POOL_3_INFO" | jq -r '.pool_response.asset_lp_share.address')
 LP_4=$(echo "$POOL_4_INFO" | jq -r '.pool_response.asset_lp_share.address')
 LP_5=$(echo "$POOL_5_INFO" | jq -r '.pool_response.asset_lp_share.address')
 
-# Stake 50% of LP tokens
-echo "Staking LP tokens..."
+echo "Staking 50% of LP tokens..."
 LP_1_BALANCE=$(stellar contract invoke --id $LP_1 --source $IDENTITY_STRING --network $NETWORK -- balance --id $POOL_USER | tr -d '"')
 LP_1_STAKE_AMOUNT=$((LP_1_BALANCE / 2))
 stellar contract invoke --id $STAKE_1 --source pool_user --network $NETWORK -- bond --sender $POOL_USER --tokens $LP_1_STAKE_AMOUNT
@@ -604,7 +600,6 @@ stellar contract invoke --id $STAKE_5 --source pool_user --network $NETWORK -- b
 
 echo "LP tokens staked successfully"
 
-# === PHASE 2: Upgrade to intermediate versions ===
 echo ""
 echo "=== PHASE 2: UPGRADING TO INTERMEDIATE VERSIONS (SIMULATING NETWORK STATE) ==="
 
@@ -612,23 +607,23 @@ echo "Upgrading pools to their intermediate versions..."
 
 # Pool 1 (XLM-USDC): upgrade to 4a0b6e6c
 echo "Upgrading XLM-USDC pool to hash 4a0b6e6c..."
-stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $POOL_4A0B6E6C_HASH
+stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $POOL_4A0B6E6C_HASH
 
-# Pool 2 (XLM-PHO): upgrade to 4a0b6e6c
+# Pool 2 (XLM-PHO): upgrade to 4a0b6e6c  
 echo "Upgrading XLM-PHO pool to hash 4a0b6e6c..."
-stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $POOL_4A0B6E6C_HASH
+stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $POOL_4A0B6E6C_HASH
 
 # Pool 3 (XLM-EURC): upgrade to 4a0b6e6c
 echo "Upgrading XLM-EURC pool to hash 4a0b6e6c..."
-stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $POOL_4A0B6E6C_HASH
+stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $POOL_4A0B6E6C_HASH
 
 # Pool 4 (USDC-VEUR): upgrade to 4a0b6e6c
 echo "Upgrading USDC-VEUR pool to hash 4a0b6e6c..."
-stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $POOL_4A0B6E6C_HASH
+stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $POOL_4A0B6E6C_HASH
 
 # Pool 5 (PHO-USDC): upgrade to 0e811ce4 (hotfix)
 echo "Upgrading PHO-USDC pool to hash 0e811ce4 (hotfix)..."
-stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $POOL_0E811CE4_HASH
+stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $POOL_0E811CE4_HASH
 
 echo "Upgrading stakes to their intermediate versions..."
 
@@ -652,18 +647,18 @@ echo "Phase 2 upgrade complete - contracts now match current network state"
 echo ""
 echo "=== VERIFYING PHASE 2 UPGRADES ==="
 echo "Testing pool queries after intermediate upgrade..."
-stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 1 (XLM-USDC) config query successful"
-stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 2 (XLM-PHO) config query successful"
-stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 3 (XLM-EURC) config query successful"
-stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 4 (USDC-VEUR) config query successful"
-stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 5 (PHO-USDC) config query successful"
+stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 1 (XLM-USDC) config query successful"
+stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 2 (XLM-PHO) config query successful"
+stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 3 (XLM-EURC) config query successful"
+stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 4 (USDC-VEUR) config query successful"
+stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 5 (PHO-USDC) config query successful"
 
 echo "Testing stake queries after intermediate upgrade..."
-stellar contract invoke --id $STAKE_1 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 1 admin query successful"
-stellar contract invoke --id $STAKE_2 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 2 admin query successful"
-stellar contract invoke --id $STAKE_3 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 3 admin query successful"
-stellar contract invoke --id $STAKE_4 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 4 admin query successful"
-stellar contract invoke --id $STAKE_5 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 5 admin query successful"
+stellar contract invoke --id $STAKE_1 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 1 admin query successful"
+stellar contract invoke --id $STAKE_2 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 2 admin query successful"
+stellar contract invoke --id $STAKE_3 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 3 admin query successful"
+stellar contract invoke --id $STAKE_4 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 4 admin query successful"
+stellar contract invoke --id $STAKE_5 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 5 admin query successful"
 
 # === PHASE 3: Final migration to latest versions ===
 echo ""
@@ -692,23 +687,23 @@ echo "Upgrading all pools to latest version..."
 echo "Latest Pool Hash being used: $LATEST_POOL_HASH"
 
 echo "Upgrading Pool 1 (XLM-USDC): $POOL_1"
-stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $LATEST_POOL_HASH
+stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $LATEST_POOL_HASH
 echo "✓ Pool 1 upgrade completed"
 
 echo "Upgrading Pool 2 (XLM-PHO): $POOL_2"
-stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $LATEST_POOL_HASH
+stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $LATEST_POOL_HASH
 echo "✓ Pool 2 upgrade completed"
 
 echo "Upgrading Pool 3 (XLM-EURC): $POOL_3"
-stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $LATEST_POOL_HASH
+stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $LATEST_POOL_HASH
 echo "✓ Pool 3 upgrade completed"
 
 echo "Upgrading Pool 4 (USDC-VEUR): $POOL_4"
-stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $LATEST_POOL_HASH
+stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $LATEST_POOL_HASH
 echo "✓ Pool 4 upgrade completed"
 
 echo "Upgrading Pool 5 (PHO-USDC): $POOL_5"
-stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- update --new_wasm_hash $LATEST_POOL_HASH
+stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- upgrade --new_wasm_hash $LATEST_POOL_HASH
 echo "✓ Pool 5 upgrade completed"
 echo ""
 
@@ -742,38 +737,38 @@ echo "🎉 All Phase 3 upgrades completed!"
 echo ""
 echo "=== VERIFYING PHASE 3 UPGRADES ==="
 echo "Testing factory query after final upgrade..."
-stellar contract invoke --id $FACTORY_ADDR --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Factory config query successful"
+stellar contract invoke --id $FACTORY_ADDR --source $IDENTITY_STRING --network $NETWORK -- get_config > /dev/null 2>&1 && echo "✓ Factory config query successful"
 
 echo "Testing multihop query after final upgrade..."
-stellar contract invoke --id $MULTIHOP_ADDR --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Multihop config query successful"
+stellar contract invoke --id $MULTIHOP_ADDR --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Multihop config query successful"
 
 echo "Testing pool queries after final upgrade..."
-stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 1 (XLM-USDC) config query successful"
-stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 2 (XLM-PHO) config query successful"
-stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 3 (XLM-EURC) config query successful"
-stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 4 (USDC-VEUR) config query successful"
-stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- query_config && echo "✓ Pool 5 (PHO-USDC) config query successful"
+stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 1 (XLM-USDC) config query successful"
+stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 2 (XLM-PHO) config query successful"
+stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 3 (XLM-EURC) config query successful"
+stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 4 (USDC-VEUR) config query successful"
+stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- query_config > /dev/null 2>&1 && echo "✓ Pool 5 (PHO-USDC) config query successful"
 
 echo "Testing stake queries after final upgrade..."
-stellar contract invoke --id $STAKE_1 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 1 admin query successful"
-stellar contract invoke --id $STAKE_2 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 2 admin query successful"
-stellar contract invoke --id $STAKE_3 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 3 admin query successful"
-stellar contract invoke --id $STAKE_4 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 4 admin query successful"
-stellar contract invoke --id $STAKE_5 --source $IDENTITY_STRING --network $NETWORK -- query_admin && echo "✓ Stake 5 admin query successful"
+stellar contract invoke --id $STAKE_1 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 1 admin query successful"
+stellar contract invoke --id $STAKE_2 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 2 admin query successful"
+stellar contract invoke --id $STAKE_3 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 3 admin query successful"
+stellar contract invoke --id $STAKE_4 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 4 admin query successful"
+stellar contract invoke --id $STAKE_5 --source $IDENTITY_STRING --network $NETWORK -- query_admin > /dev/null 2>&1 && echo "✓ Stake 5 admin query successful"
 
 echo "Testing pool functionality after final upgrade..."
-stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory && echo "✓ Pool 1 factory query successful"
-stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory && echo "✓ Pool 2 factory query successful"
-stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory && echo "✓ Pool 3 factory query successful"
-stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory && echo "✓ Pool 4 factory query successful"
-stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory && echo "✓ Pool 5 factory query successful"
+stellar contract invoke --id $POOL_1 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory > /dev/null 2>&1 && echo "✓ Pool 1 factory query successful"
+stellar contract invoke --id $POOL_2 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory > /dev/null 2>&1 && echo "✓ Pool 2 factory query successful"
+stellar contract invoke --id $POOL_3 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory > /dev/null 2>&1 && echo "✓ Pool 3 factory query successful"
+stellar contract invoke --id $POOL_4 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory > /dev/null 2>&1 && echo "✓ Pool 4 factory query successful"
+stellar contract invoke --id $POOL_5 --source $IDENTITY_STRING --network $NETWORK -- query_pool_info_for_factory > /dev/null 2>&1 && echo "✓ Pool 5 factory query successful"
 
 echo "Testing stake functionality after final upgrade..."
-stellar contract invoke --id $STAKE_1 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER && echo "✓ Stake 1 staked query successful"
-stellar contract invoke --id $STAKE_2 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER && echo "✓ Stake 2 staked query successful"
-stellar contract invoke --id $STAKE_3 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER && echo "✓ Stake 3 staked query successful"
-stellar contract invoke --id $STAKE_4 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER && echo "✓ Stake 4 staked query successful"
-stellar contract invoke --id $STAKE_5 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER && echo "✓ Stake 5 staked query successful"
+stellar contract invoke --id $STAKE_1 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER > /dev/null 2>&1 && echo "✓ Stake 1 staked query successful"
+stellar contract invoke --id $STAKE_2 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER > /dev/null 2>&1 && echo "✓ Stake 2 staked query successful"
+stellar contract invoke --id $STAKE_3 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER > /dev/null 2>&1 && echo "✓ Stake 3 staked query successful"
+stellar contract invoke --id $STAKE_4 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER > /dev/null 2>&1 && echo "✓ Stake 4 staked query successful"
+stellar contract invoke --id $STAKE_5 --source $IDENTITY_STRING --network $NETWORK -- query_staked --address $POOL_USER > /dev/null 2>&1 && echo "✓ Stake 5 staked query successful"
 
 # Cleanup temporary files
 echo ""
@@ -783,7 +778,7 @@ rm -f .temp_*.wasm .temp_*.optimized.wasm
 echo ""
 echo "=== MIGRATION TESTING COMPLETE ==="
 echo ""
-echo "✅ Phase 1: All contracts deployed from earliest commit (77742b01)"
+echo "✅ Phase 1: Factory deployed from earliest commit, pools created via factory"
 echo "✅ Phase 2: Contracts upgraded to intermediate versions matching network state"
 echo "✅ Phase 3: Final migration to latest main branch versions completed successfully"
 echo ""
@@ -791,7 +786,7 @@ echo "Contract Addresses:"
 echo "Factory: $FACTORY_ADDR"
 echo "Multihop: $MULTIHOP_ADDR"
 echo ""
-echo "Pools:"
+echo "Pools (created via factory):"
 echo "XLM-USDC Pool: $POOL_1 (Stake: $STAKE_1)"
 echo "XLM-PHO Pool: $POOL_2 (Stake: $STAKE_2)"
 echo "XLM-EURC Pool: $POOL_3 (Stake: $STAKE_3)"
@@ -807,6 +802,4 @@ echo "VEUR: $VEUR_TOKEN"
 echo ""
 echo "Test User: $POOL_USER"
 echo ""
-echo "🎉 All migration phases completed successfully! The testnet now simulates the"
-echo "   complete upgrade path from the original deployment through current network"
-echo "   state to the latest main branch version."
+echo "🎉 Complete testnet migration successful! Now properly follows the factory architecture."
