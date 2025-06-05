@@ -1316,14 +1316,6 @@ fn provide_liquidity_and_autostake() {
     let reward_amount = 1_000_000_000_000_000;
     //100_000_000
     reward_token.mint(&stake_manager, &reward_amount);
-    let distribution_duration = 10_000;
-    stake.fund_distribution(
-        &stake_manager,
-        &0,
-        &distribution_duration,
-        &reward_token.address,
-        &reward_amount,
-    );
 
     token1.mint(&user, &1_000_000_000_000_000);
     assert_eq!(token1.balance(&user), 1_000_000_000_000_000);
@@ -1381,7 +1373,9 @@ fn provide_liquidity_and_autostake() {
                     stake: 999_999_999_999_000, // the og lp_share amount is already staked
                     stake_timestamp
                 }
-            ]
+            ],
+            last_reward_time: 0,
+            total_stake: 999_999_999_999_000
         }
     );
 
@@ -1398,8 +1392,7 @@ fn provide_liquidity_and_autostake() {
         }
     );
 
-    env.ledger().set_timestamp(distribution_duration / 2);
-    stake.distribute_rewards();
+    stake.distribute_rewards(&stake_manager, &reward_amount, &reward_token.address);
 
     // og stake amount is 999_999_999_999_000 rewards should be 1/2 of that
     assert_eq!(
@@ -1537,14 +1530,6 @@ fn withdraw_liquidity_with_auto_unstake() {
     stake.create_distribution_flow(&stake_manager, &reward_token.address);
     let reward_amount = 1_000_000_000_000_000;
     reward_token.mint(&stake_manager, &reward_amount);
-    let distribution_duration = 10_000;
-    stake.fund_distribution(
-        &stake_manager,
-        &0,
-        &distribution_duration,
-        &reward_token.address,
-        &reward_amount,
-    );
 
     token1.mint(&user, &1_000_000_000_000_000);
     token2.mint(&user, &1_000_000_000_000_000);
@@ -1570,7 +1555,9 @@ fn withdraw_liquidity_with_auto_unstake() {
                     stake: 999_999_999_999_000,
                     stake_timestamp
                 }
-            ]
+            ],
+            last_reward_time: 0,
+            total_stake: 999_999_999_999_000
         }
     );
     assert_eq!(
@@ -1591,7 +1578,7 @@ fn withdraw_liquidity_with_auto_unstake() {
     };
 
     env.ledger().with_mut(|li| li.timestamp += 1000);
-    stake.distribute_rewards();
+    stake.distribute_rewards(&stake_manager, &(reward_amount / 10), &reward_token.address);
     assert_eq!(
         stake.query_withdrawable_rewards(&user),
         WithdrawableRewardsResponse {
@@ -1626,7 +1613,7 @@ fn withdraw_liquidity_with_auto_unstake() {
     assert_eq!(token_share.balance(&user), 499999999999000); // should be 1/2 of the og staked
 
     env.ledger().with_mut(|li| li.timestamp += 1000);
-    stake.distribute_rewards();
+    stake.distribute_rewards(&stake_manager, &(reward_amount / 10), &reward_token.address);
     assert_eq!(
         stake.query_withdrawable_rewards(&user),
         WithdrawableRewardsResponse {

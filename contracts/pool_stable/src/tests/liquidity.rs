@@ -1222,14 +1222,6 @@ fn provide_liqudity_with_auto_stake() {
     let reward_amount = 1_000_000_000_000_000;
     //100_000_000
     reward_token.mint(&manager, &reward_amount);
-    let distribution_duration = 10_000;
-    stake.fund_distribution(
-        &manager,
-        &0,
-        &distribution_duration,
-        &reward_token.address,
-        &reward_amount,
-    );
 
     token1.mint(&user1, &1000);
     assert_eq!(token1.balance(&user1), 1000);
@@ -1298,14 +1290,15 @@ fn provide_liqudity_with_auto_stake() {
                     stake: 1_000,
                     stake_timestamp
                 }
-            ]
+            ],
+            last_reward_time: 0,
+            total_stake: 999_999_999_999_000
         }
     );
 
     assert_eq!(pool.query_total_issued_lp(), 1000);
 
-    env.ledger().set_timestamp(distribution_duration / 2);
-    stake.distribute_rewards();
+    stake.distribute_rewards(&manager, &(reward_amount / 2), &reward_token.address);
 
     assert_eq!(
         stake.query_withdrawable_rewards(&user1),
@@ -1362,14 +1355,6 @@ fn withdraw_liquidity_with_auto_unstake() {
     stake.create_distribution_flow(&stake_manager, &reward_token.address);
     let reward_amount = 1_000_000_000_000_000;
     reward_token.mint(&stake_manager, &reward_amount);
-    let distribution_duration = 10_000;
-    stake.fund_distribution(
-        &stake_manager,
-        &0,
-        &distribution_duration,
-        &reward_token.address,
-        &reward_amount,
-    );
 
     token1.mint(&user, &1_000_000_000_000_000);
     token2.mint(&user, &1_000_000_000_000_000);
@@ -1394,7 +1379,9 @@ fn withdraw_liquidity_with_auto_unstake() {
                     stake: initial_stake.stakes.get(0).unwrap().stake,
                     stake_timestamp
                 }
-            ]
+            ],
+            last_reward_time: 0,
+            total_stake: 999_999_999_999_000
         }
     );
     assert_eq!(
@@ -1415,7 +1402,7 @@ fn withdraw_liquidity_with_auto_unstake() {
     };
 
     env.ledger().with_mut(|li| li.timestamp += 1000);
-    stake.distribute_rewards();
+    stake.distribute_rewards(&stake_manager, &reward_amount, &reward_token.address);
     assert_eq!(
         stake.query_withdrawable_rewards(&user),
         WithdrawableRewardsResponse {
