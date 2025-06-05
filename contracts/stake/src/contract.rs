@@ -17,10 +17,11 @@ use crate::{
             self, add_distribution, get_admin_old, get_distributions, get_total_staked_counter,
             is_initialized, set_initialized,
         },
-        Config, Stake, ADMIN,
+        Config, Stake, ADMIN, NEW_LP,
     },
     token_contract,
 };
+use phoenix::ttl::{PERSISTENT_RENEWAL_THRESHOLD, PERSISTENT_TARGET_TTL};
 
 // Metadata that is added on to the WASM custom section
 contractmeta!(
@@ -145,9 +146,30 @@ impl StakingTrait for Staking {
             panic_with_error!(&env, ContractError::InvalidBond);
         }
 
-        let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
-        lp_token_client.transfer(&sender, &env.current_contract_address(), &tokens);
+        let new_lp_address = env
+            .storage()
+            .persistent()
+            .get::<_, Address>(&crate::storage::NEW_LP)
+            .expect("NEW LP address not configured!");
+        env.storage().persistent().extend_ttl(
+            &crate::storage::NEW_LP,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
 
+        let new_lp_client = token_contract::Client::new(&env, &new_lp_address);
+        let new_lp_balance = new_lp_client.balance(&sender);
+
+        if new_lp_balance >= tokens {
+            // Transfer the new LP tokens if balance is sufficient
+            new_lp_client.transfer(&sender, &env.current_contract_address(), &tokens);
+        } else {
+            // Otherwise, use the old LP tokens
+            let old_lp_client = token_contract::Client::new(&env, &config.lp_token);
+            old_lp_client.transfer(&sender, &env.current_contract_address(), &tokens);
+        }
+
+        // Update stakes
         let mut stakes = get_stakes(&env, &sender);
 
         stakes.total_stake = stakes.total_stake.checked_add(tokens).unwrap_or_else(|| {
@@ -188,9 +210,37 @@ impl StakingTrait for Staking {
                 panic_with_error!(&env, ContractError::ContractMathError);
             });
 
-        let lp_token_client = token_contract::Client::new(&env, &config.lp_token);
-        lp_token_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
+        // Handle LP token transfer
+        let old_lp_client = token_contract::Client::new(&env, &config.lp_token);
+        let old_lp_balance = old_lp_client.balance(&env.current_contract_address());
 
+        if old_lp_balance >= stake_amount {
+            // Transfer the stake amount from OLD_LP
+            old_lp_client.transfer(&env.current_contract_address(), &sender, &stake_amount);
+        } else {
+            // Fallback to NEW_LP
+            let new_lp_address = env
+                .storage()
+                .persistent()
+                .get::<_, Address>(&NEW_LP)
+                .expect("NEW_LP address not configured!");
+            env.storage().persistent().extend_ttl(
+                &crate::storage::NEW_LP,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+
+            let new_lp_client = token_contract::Client::new(&env, &new_lp_address);
+            let remaining_amount = stake_amount - old_lp_balance;
+
+            // Transfer all available from OLD_LP and the rest from NEW_LP
+            if old_lp_balance > 0 {
+                old_lp_client.transfer(&env.current_contract_address(), &sender, &old_lp_balance);
+            }
+            new_lp_client.transfer(&env.current_contract_address(), &sender, &remaining_amount);
+        }
+
+        // Save updated stakes
         save_stakes(&env, &sender, &stakes);
         utils::decrease_total_staked(&env, &stake_amount);
 

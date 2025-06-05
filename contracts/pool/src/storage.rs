@@ -13,6 +13,8 @@ pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const XYK_POOL_KEY: Symbol = symbol_short!("XYK_POOL");
 pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
 
+pub const OLD_LP: Symbol = symbol_short!("OLDLP");
+
 #[derive(Clone, Copy)]
 #[repr(u32)]
 pub enum DataKey {

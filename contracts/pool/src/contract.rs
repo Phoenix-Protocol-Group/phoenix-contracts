@@ -1,3 +1,4 @@
+use phoenix::ttl::{PERSISTENT_RENEWAL_THRESHOLD, PERSISTENT_TARGET_TTL};
 use soroban_sdk::{
     contract, contractimpl, contractmeta, log, panic_with_error, Address, BytesN, Env, String, U256,
 };
@@ -452,8 +453,31 @@ impl LiquidityPoolTrait for LiquidityPool {
             );
         }
 
-        let share_token_client = token_contract::Client::new(&env, &config.share_token);
-        share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
+        let old_lp_address = env
+            .storage()
+            .persistent()
+            .get::<_, Address>(&crate::storage::OLD_LP)
+            .expect("Old LP address not configured!");
+        env.storage().persistent().extend_ttl(
+            &crate::storage::OLD_LP,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+        let old_lp_client = token_contract::Client::new(&env, &old_lp_address);
+        let old_lp_balance = old_lp_client.balance(&sender);
+
+        if old_lp_balance >= share_amount {
+            // Use the old LP token
+            old_lp_client.transfer(&sender, &env.current_contract_address(), &share_amount);
+            let total = crate::storage::utils::get_total_shares(&env);
+            crate::storage::utils::save_total_shares(&env, total - share_amount);
+        } else {
+            // Use the current LP token from config
+            let share_token_client = token_contract::Client::new(&env, &config.share_token);
+            share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
+            // burn shares
+            utils::burn_shares(&env, &config.share_token, share_amount);
+        }
 
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
@@ -486,8 +510,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             );
         }
 
-        // burn shares
-        utils::burn_shares(&env, &config.share_token, share_amount);
         // transfer tokens from sender to contract
         token_contract::Client::new(&env, &config.token_a).transfer(
             &env.current_contract_address(),
