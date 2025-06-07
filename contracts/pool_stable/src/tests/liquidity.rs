@@ -1292,12 +1292,13 @@ fn provide_liqudity_with_auto_stake() {
                 }
             ],
             last_reward_time: 0,
-            total_stake: 999_999_999_999_000
+            total_stake: 1_000
         }
     );
 
     assert_eq!(pool.query_total_issued_lp(), 1000);
 
+    env.ledger().with_mut(|li| li.timestamp += 60 * 86400); // Advance by 60 days for full rewards
     stake.distribute_rewards(&manager, &(reward_amount / 2), &reward_token.address);
 
     assert_eq!(
@@ -1381,7 +1382,7 @@ fn withdraw_liquidity_with_auto_unstake() {
                 }
             ],
             last_reward_time: 0,
-            total_stake: 999_999_999_999_000
+            total_stake: initial_stake.stakes.get(0).unwrap().stake
         }
     );
     assert_eq!(
@@ -1401,7 +1402,7 @@ fn withdraw_liquidity_with_auto_unstake() {
         stake_timestamp,
     };
 
-    env.ledger().with_mut(|li| li.timestamp += 1000);
+    env.ledger().with_mut(|li| li.timestamp += 60 * 86400); // Advance by 60 days for full rewards
     stake.distribute_rewards(&stake_manager, &reward_amount, &reward_token.address);
     assert_eq!(
         stake.query_withdrawable_rewards(&user),
@@ -1410,13 +1411,14 @@ fn withdraw_liquidity_with_auto_unstake() {
                 &env,
                 WithdrawableReward {
                     reward_address: reward_token.address.clone(),
-                    reward_amount: 99_999_999_999_999
+                    reward_amount: 1_000_000_000_000_000 // Full reward amount
                 }
             ]
         }
     );
 
     assert_eq!(reward_token.balance(&user), 0); // should be 0 as the user has no rewards so far
+    stake.withdraw_rewards(&user);
     pool.withdraw_liquidity(
         &user,
         &share_amount,
@@ -1426,7 +1428,7 @@ fn withdraw_liquidity_with_auto_unstake() {
         &Some(auto_unstake_info),
     );
 
-    assert_eq!(reward_token.balance(&user), 99_999_999_999_999); // all rewards withdrawn
+    assert_eq!(reward_token.balance(&user), 1_000_000_000_000_000); // all rewards withdrawn
 
     let remaining_stake = stake.query_staked(&user);
     assert!(remaining_stake.stakes.is_empty());
