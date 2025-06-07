@@ -11,14 +11,14 @@ jobs:
         rust-version: [1.81.0]
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust-version }}
-          target: wasm32-unknown-unknown
-          override: true
+          targets: wasm32-unknown-unknown
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
       - name: Build
         run: make build
 
@@ -31,14 +31,14 @@ jobs:
         rust-version: [1.81.0]
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust-version }}
-          target: wasm32-unknown-unknown
-          override: true
+          targets: wasm32-unknown-unknown
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
       - name: Run tests
         run: make test
 
@@ -48,17 +48,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust-version: [1.81.0]
+        rust-version: ['1.81.0']
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
-      - name: Install stable toolchain
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain with components
         uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust-version }}
           override: true
-          target: wasm32-unknown-unknown
           components: rustfmt, clippy
+          target: wasm32-unknown-unknown
+
       - name: Run lints
         run: make lints
