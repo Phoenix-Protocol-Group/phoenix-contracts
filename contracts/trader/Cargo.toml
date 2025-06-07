@@ -12,13 +12,13 @@ crate-type = ["cdylib"]
 [features]
 testutils = ["soroban-sdk/testutils"]
 
+[lints]
+workspace = true
+
 [dependencies]
 soroban-sdk = { workspace = true }
 soroban-decimal = { workspace = true }
 phoenix = { workspace = true }
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ["cfg(tarpaulin_include)"] }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }

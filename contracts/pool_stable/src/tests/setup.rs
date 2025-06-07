@@ -29,7 +29,6 @@ pub fn install_stable_pool_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
@@ -53,7 +52,6 @@ pub fn install_old_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn deploy_stable_liquidity_pool_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,

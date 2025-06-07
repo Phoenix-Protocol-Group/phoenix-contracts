@@ -31,7 +31,6 @@ pub struct Factory;
 
 #[allow(dead_code)]
 pub trait FactoryTrait {
-    #[allow(clippy::too_many_arguments)]
     fn create_liquidity_pool(
         env: Env,
         sender: Address,
@@ -84,7 +83,6 @@ pub trait FactoryTrait {
 
 #[contractimpl]
 impl FactoryTrait for Factory {
-    #[allow(clippy::too_many_arguments)]
     fn create_liquidity_pool(
         env: Env,
         sender: Address,
@@ -182,7 +180,6 @@ impl FactoryTrait for Factory {
         lp_contract_address
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         multihop_address: Option<Address>,
@@ -543,7 +540,6 @@ impl FactoryTrait for Factory {
 
 #[contractimpl]
 impl Factory {
-    #[allow(clippy::too_many_arguments)]
     pub fn __constructor(
         env: Env,
         admin: Address,

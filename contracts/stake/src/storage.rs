@@ -1,10 +1,7 @@
 use phoenix::ttl::{PERSISTENT_RENEWAL_THRESHOLD, PERSISTENT_TARGET_TTL};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
 
-#[allow(dead_code)]
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
-pub const STAKE_KEY: Symbol = symbol_short!("STAKE");
-pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -114,8 +111,8 @@ pub mod utils {
         Admin = 0,
         TotalStaked = 1,
         Distributions = 2,
-        Initialized = 3,  // TODO: deprecated, remove in future upgrade
-        StakeRewards = 4, // maybe deprecated
+        Initialized = 3,
+        StakeRewards = 4,
     }
 
     impl TryFromVal<Env, DataKey> for Val {
@@ -124,6 +121,20 @@ pub mod utils {
         fn try_from_val(_env: &Env, v: &DataKey) -> Result<Self, Self::Error> {
             Ok((*v as u32).into())
         }
+    }
+
+    pub fn is_initialized(e: &Env) -> bool {
+        e.storage()
+            .instance()
+            .get(&DataKey::Initialized)
+            .unwrap_or(false)
+    }
+
+    pub fn set_initialized(e: &Env) {
+        e.storage().instance().set(&DataKey::Initialized, &true);
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
     }
 
     pub fn save_admin_old(e: &Env, address: &Address) {
@@ -135,7 +146,6 @@ pub mod utils {
         );
     }
 
-    #[cfg(not(tarpaulin_include))]
     pub fn _save_admin(e: &Env, address: &Address) {
         e.storage().instance().set(&ADMIN, &address);
         e.storage()
@@ -154,7 +164,6 @@ pub mod utils {
         admin
     }
 
-    #[cfg(not(tarpaulin_include))]
     pub fn _get_admin(e: &Env) -> Address {
         e.storage()
             .instance()
@@ -194,7 +203,6 @@ pub mod utils {
 
     pub fn decrease_total_staked(e: &Env, amount: &i128) {
         let count = get_total_staked_counter(e);
-
         let new_diff = count.checked_sub(*amount).unwrap_or_else(|| {
             log!(&e, "Stake: Increase Total Staked: Overflow occured.");
             panic_with_error!(&e, ContractError::ContractMathError);
@@ -215,11 +223,7 @@ pub mod utils {
             .storage()
             .persistent()
             .get(&DataKey::TotalStaked)
-            // or maybe .unwrap_or(0)
-            .unwrap_or_else(|| {
-                log!(&env, "Stake: Get Total Staked Counter: No value found");
-                panic_with_error!(&env, ContractError::StakeNotFound);
-            });
+            .unwrap_or(0);
         env.storage().persistent().extend_ttl(
             &DataKey::TotalStaked,
             PERSISTENT_RENEWAL_THRESHOLD,

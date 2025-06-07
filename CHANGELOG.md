@@ -7,6 +7,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.0.0] - 2025-06-07
+
 ## Changed
 
 - All: Updates the soroban SDK to latest stable version 22 ([#411])
@@ -34,6 +36,7 @@ and this project adheres to
 - All: Adds a mechanism to change the admin of a contract that ensures safety of transition ([#448])
 - All: Adds constructors instead of using `initialize` (#[455])
 - Factory, Trader, Vesting: adds `update_config` ([#457])
+- Set phoenix version v2.0.0 ([#461])
 
 ## Fixed
 
@@ -66,6 +69,7 @@ and this project adheres to
 [#455]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/455
 [#457]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/457
 [#458]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/458
+[#461]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/461
 
 ## [1.1.0] - 2024-08-27
 

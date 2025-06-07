@@ -3,7 +3,7 @@ members = ["contracts/*", "packages/*"]
 resolver = "2"
 
 [workspace.package]
-version = "1.1.0"
+version = "2.0.0"
 edition = "2021"
 license = "GPL-3.0"
 repository = "https://github.com/Phoenix-Protocol-Group/phoenix-contracts"
@@ -19,6 +19,12 @@ soroban-sdk = "22.0.7"
 soroban-token-sdk = "22.0.7"
 test-case = "3.3"
 pretty_assertions = "1.4.0"
+
+[workspace.lints.clippy]
+too_many_arguments = "allow"
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(tarpaulin_include)"] }
 
 [profile.release]
 opt-level = "z"

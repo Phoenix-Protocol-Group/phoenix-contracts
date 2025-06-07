@@ -18,19 +18,16 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
     )
 }
 
-#[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub mod old_pho_usdc_liquidity_pool {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_pool.wasm");
 }
 
-#[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub mod old_xlm_usdc_liquidity_pool {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_xlm_usdc_pool.wasm");
 }
 
-#[allow(clippy::too_many_arguments)]
 pub mod latest_liquidity_pool {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm"
@@ -44,14 +41,12 @@ pub fn install_old_token_wasm(env: &Env) -> BytesN<32> {
 }
 
 #[cfg(feature = "upgrade")]
-#[allow(clippy::too_many_arguments)]
 pub fn install_old_pho_usdc_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_stake.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
 #[cfg(feature = "upgrade")]
-#[allow(clippy::too_many_arguments)]
 pub fn install_old_xlm_usdc_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_xlm_usdc_stake.wasm");
     env.deployer().upload_contract_wasm(WASM)
@@ -64,7 +59,6 @@ pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
@@ -72,7 +66,6 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn install_new_lp_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
@@ -81,7 +74,6 @@ pub fn install_new_lp_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn deploy_liquidity_pool_contract<'a>(
     env: &Env,
     admin: impl Into<Option<Address>>,

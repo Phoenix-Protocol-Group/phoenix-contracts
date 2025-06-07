@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set +x
+
 # validate the input arguments
 if [ -z "$2" ]; then
   echo "Error: Source account and Send is required as an argument." >&2
