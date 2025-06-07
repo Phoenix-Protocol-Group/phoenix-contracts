@@ -9,12 +9,10 @@ use soroban_sdk::{
 };
 use soroban_sdk::{vec, String};
 
-#[allow(clippy::too_many_arguments)]
 pub mod old_multihop {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_multihop.wasm");
 }
 
-#[allow(clippy::too_many_arguments)]
 pub mod latest_multihop {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_multihop.wasm"
@@ -57,7 +55,6 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
     )
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
@@ -65,7 +62,6 @@ pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_multihop.wasm"
@@ -124,7 +120,6 @@ pub fn deploy_and_initialize_factory(env: &Env, admin: Address) -> factory_contr
     factory_client
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn deploy_and_initialize_pool(
     env: &Env,
     factory: &factory_contract::Client,

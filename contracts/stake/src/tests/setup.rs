@@ -16,7 +16,6 @@ pub fn deploy_token_contract<'a>(env: &Env, admin: &Address) -> token_contract::
     )
 }
 
-#[allow(clippy::too_many_arguments)]
 pub mod latest_stake {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"

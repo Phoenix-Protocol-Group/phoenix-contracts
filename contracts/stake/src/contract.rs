@@ -66,7 +66,6 @@ pub trait StakingTrait {
 
 #[contractimpl]
 impl Staking {
-    #[allow(clippy::too_many_arguments)]
     pub fn __constructor(
         env: Env,
         admin: Address,

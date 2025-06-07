@@ -29,7 +29,6 @@ pub struct Multihop;
 
 #[allow(dead_code)]
 pub trait MultihopTrait {
-    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         recipient: Address,
@@ -74,7 +73,6 @@ pub trait MultihopTrait {
 
 #[contractimpl]
 impl MultihopTrait for Multihop {
-    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         recipient: Address,

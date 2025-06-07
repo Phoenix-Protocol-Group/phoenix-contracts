@@ -27,7 +27,6 @@ pub struct Trader;
 
 #[allow(dead_code)]
 pub trait TraderTrait {
-    #[allow(clippy::too_many_arguments)]
     fn trade_token(
         env: Env,
         sender: Address,
@@ -79,7 +78,6 @@ pub trait TraderTrait {
 
 #[contractimpl]
 impl TraderTrait for Trader {
-    #[allow(clippy::too_many_arguments)]
     fn trade_token(
         env: Env,
         sender: Address,

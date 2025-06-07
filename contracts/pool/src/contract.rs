@@ -41,7 +41,6 @@ pub trait LiquidityPoolTrait {
     // Deposits token_a and token_b. Also mints pool shares for the "to" Identifier. The amount minted
     // is determined based on the difference between the reserves stored by this contract, and
     // the actual balance of token_a and token_b for this contract.
-    #[allow(clippy::too_many_arguments)]
     fn provide_liquidity(
         env: Env,
         depositor: Address,
@@ -58,7 +57,6 @@ pub trait LiquidityPoolTrait {
     // `offer_amount` is the amount being sold, with `max_spread_bps` being a safety to make sure you receive at least that amount.
     // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to `sender`.
     // Returns the amount of the token being bought.
-    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         sender: Address,
@@ -88,7 +86,6 @@ pub trait LiquidityPoolTrait {
 
     // Allows admin address set during initialization to change some parameters of the
     // configuration
-    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         new_admin: Option<Address>,
@@ -149,7 +146,6 @@ pub trait LiquidityPoolTrait {
 
 #[contractimpl]
 impl LiquidityPoolTrait for LiquidityPool {
-    #[allow(clippy::too_many_arguments)]
     fn provide_liquidity(
         env: Env,
         sender: Address,
@@ -359,7 +355,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             .publish(("provide_liquidity", "token_b-amount"), actual_received_b);
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         sender: Address,
@@ -515,7 +510,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         (return_amount_a, return_amount_b)
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn update_config(
         env: Env,
         new_admin: Option<Address>,
@@ -857,7 +851,6 @@ impl LiquidityPoolTrait for LiquidityPool {
 
 #[contractimpl]
 impl LiquidityPool {
-    #[allow(clippy::too_many_arguments)]
     pub fn __constructor(
         env: Env,
         stake_wasm_hash: BytesN<32>,

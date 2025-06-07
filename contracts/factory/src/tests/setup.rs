@@ -10,41 +10,35 @@ pub const ONE_DAY: u64 = 86400;
 const TOKEN_WASM: &[u8] =
     include_bytes!("../../../../target/wasm32-unknown-unknown/release/soroban_token_contract.wasm");
 
-#[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub mod old_factory {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_factory.wasm");
 }
 
-#[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn install_old_multihop_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_multihop.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn install_old_token_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_token_contract.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn old_lp_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_pool.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 #[cfg(feature = "upgrade")]
 pub fn old_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_pho_usdc_stake.wasm");
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(crate) fn install_latest_factory(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_factory.wasm"
@@ -52,28 +46,24 @@ pub(crate) fn install_latest_factory(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub mod lp_contract {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_pool.wasm"
     );
 }
 
-#[allow(clippy::too_many_arguments)]
 pub mod stable_lp {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_pool_stable.wasm"
     );
 }
 
-#[allow(clippy::too_many_arguments)]
 pub mod stake_contract {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
     );
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn install_multihop_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_multihop.wasm"
@@ -93,7 +83,6 @@ pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(token_contract::WASM)
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn install_stake_wasm(env: &Env) -> BytesN<32> {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"

@@ -5,7 +5,6 @@ use soroban_sdk::{
 
 use crate::{contract::VestingClient, storage::Config, token_contract};
 
-#[allow(clippy::too_many_arguments)]
 pub mod old_vesting {
     soroban_sdk::contractimport!(file = "../../.wasm_binaries_mainnet/live_vesting.wasm");
 }

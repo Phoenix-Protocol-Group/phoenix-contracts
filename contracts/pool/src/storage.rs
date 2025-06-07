@@ -189,7 +189,6 @@ pub mod utils {
 
     use super::*;
 
-    #[allow(clippy::too_many_arguments)]
     pub fn deploy_token_contract(
         env: &Env,
         token_wasm_hash: BytesN<32>,
@@ -209,7 +208,6 @@ pub mod utils {
             .deploy_v2(token_wasm_hash, (admin, decimals, name, symbol))
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn deploy_stake_contract(
         e: &Env,
         stake_wasm_hash: BytesN<32>,
@@ -358,7 +356,6 @@ pub mod utils {
         token_contract::Client::new(e, contract).balance(&e.current_contract_address())
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn get_deposit_amounts(
         env: &Env,
         desired_a: i128,

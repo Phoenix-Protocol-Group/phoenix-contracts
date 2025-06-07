@@ -58,7 +58,6 @@ pub trait StableLiquidityPoolTrait {
     // `offer_amount` is the amount being sold, with `max_spread_bps` being a safety to make sure you receive at least that amount.
     // swap will transfer the selling token "to" to this contract, and then the contract will transfer the buying token to `sender`.
     // Returns the amount of the token being bought.
-    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         sender: Address,
@@ -363,7 +362,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
             .publish(("provide_liquidity", "token_b-amount"), actual_received_b);
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn swap(
         env: Env,
         sender: Address,
@@ -870,7 +868,6 @@ impl StableLiquidityPoolTrait for StableLiquidityPool {
 
 #[contractimpl]
 impl StableLiquidityPool {
-    #[allow(clippy::too_many_arguments)]
     pub fn __constructor(
         env: Env,
         stake_wasm_hash: BytesN<32>,

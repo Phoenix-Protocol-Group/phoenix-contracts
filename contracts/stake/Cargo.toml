@@ -12,6 +12,9 @@ crate-type = ["cdylib"]
 [features]
 testutils = ["soroban-sdk/testutils"]
 
+[lints]
+workspace = true
+
 [dependencies]
 soroban-decimal = { workspace = true }
 curve = { workspace = true }
