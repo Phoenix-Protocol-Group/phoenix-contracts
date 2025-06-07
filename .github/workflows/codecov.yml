@@ -9,34 +9,27 @@ jobs:
 
   coverage:
     name: Code Coverage
-    # https://github.com/actions/virtual-environments
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         rust-version: [1.81.0]
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust-version }}
-          target: wasm32-unknown-unknown
-          override: true
+          targets: wasm32-unknown-unknown
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
       - name: Install tarpaulin
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-tarpaulin --version 0.30.0
+        run: cargo install cargo-tarpaulin --version 0.30.0
       - run: make build
       - name: Run code coverage check with tarpaulin
-        uses: actions-rs/cargo@v1
-        with:
-          command: tarpaulin
-          args: --all-features --workspace --timeout 120 --out Xml --exclude soroban-token-contract
+        run: cargo tarpaulin --all-features --workspace --timeout 120 --out Xml --exclude soroban-token-contract
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./cobertura.xml
