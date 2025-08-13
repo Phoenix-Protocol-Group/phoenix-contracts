@@ -19,6 +19,8 @@ jobs:
         with:
           toolchain: ${{ matrix.rust-version }}
           targets: wasm32-unknown-unknown
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
       - name: Build artifacts
         run: make build
       - name: Generate checksums

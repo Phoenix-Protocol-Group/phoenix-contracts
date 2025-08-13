@@ -17,6 +17,8 @@ jobs:
         with:
           toolchain: ${{ matrix.rust-version }}
           targets: wasm32-unknown-unknown
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
       - name: Build
         run: make build
 
@@ -35,6 +37,8 @@ jobs:
         with:
           toolchain: ${{ matrix.rust-version }}
           targets: wasm32-unknown-unknown
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
       - name: Run tests
         run: make test
 
@@ -48,11 +52,12 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust toolchain with components
+        uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust-version }}
-          targets: wasm32-unknown-unknown
+          override: true
           components: rustfmt, clippy
           target: wasm32-unknown-unknown
 
