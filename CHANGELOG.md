@@ -7,6 +7,14 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.0.1] - 2025-06-07
+
+## Changed
+
+- Stake: bring back `update_config` message which was removed by accident ([#463])
+
+[#463]: https://github.com/Phoenix-Protocol-Group/phoenix-contracts/pull/463
+
 ## [2.0.0] - 2025-06-07
 
 ## Changed
