@@ -21,6 +21,9 @@ pub enum DataKey {
     ReserveB = 2,
     Admin = 3,
     Initialized = 4, // TODO: deprecated, remove in next upgrade
+    Delegate = 5,
+    DelegatedOutA = 6,
+    DelegatedOutB = 7,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -181,6 +184,21 @@ pub struct SimulateReverseSwapResponse {
     pub offer_amount: i128,
     pub commission_amount: i128,
     pub spread_amount: i128,
+}
+
+/// Snapshot of the pool's delegate accounting, exposed as a read for off-chain
+/// circuits and dashboards. The contract maintains the invariant
+/// `liquid + delegated == total` for each side.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DelegateState {
+    pub delegate: Option<Address>,
+    pub liquid_a: i128,
+    pub liquid_b: i128,
+    pub delegated_a: i128,
+    pub delegated_b: i128,
+    pub total_a: i128,
+    pub total_b: i128,
 }
 
 pub mod utils {
@@ -350,6 +368,85 @@ pub mod utils {
         );
 
         balance_b
+    }
+
+    pub fn save_delegate(e: &Env, delegate: &Address) {
+        e.storage().persistent().set(&DataKey::Delegate, delegate);
+        e.storage().persistent().extend_ttl(
+            &DataKey::Delegate,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+    }
+
+    pub fn clear_delegate(e: &Env) {
+        e.storage().persistent().remove(&DataKey::Delegate);
+    }
+
+    pub fn get_delegate(e: &Env) -> Option<Address> {
+        let delegate: Option<Address> = e.storage().persistent().get(&DataKey::Delegate);
+        if delegate.is_some() {
+            e.storage().persistent().extend_ttl(
+                &DataKey::Delegate,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+        }
+        delegate
+    }
+
+    pub fn save_delegated_out_a(e: &Env, amount: i128) {
+        e.storage()
+            .persistent()
+            .set(&DataKey::DelegatedOutA, &amount);
+        e.storage().persistent().extend_ttl(
+            &DataKey::DelegatedOutA,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+    }
+
+    pub fn save_delegated_out_b(e: &Env, amount: i128) {
+        e.storage()
+            .persistent()
+            .set(&DataKey::DelegatedOutB, &amount);
+        e.storage().persistent().extend_ttl(
+            &DataKey::DelegatedOutB,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+    }
+
+    pub fn get_delegated_out_a(e: &Env) -> i128 {
+        let amount: i128 = e
+            .storage()
+            .persistent()
+            .get(&DataKey::DelegatedOutA)
+            .unwrap_or(0);
+        if amount != 0 {
+            e.storage().persistent().extend_ttl(
+                &DataKey::DelegatedOutA,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+        }
+        amount
+    }
+
+    pub fn get_delegated_out_b(e: &Env) -> i128 {
+        let amount: i128 = e
+            .storage()
+            .persistent()
+            .get(&DataKey::DelegatedOutB)
+            .unwrap_or(0);
+        if amount != 0 {
+            e.storage().persistent().extend_ttl(
+                &DataKey::DelegatedOutB,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+        }
+        amount
     }
 
     pub fn get_balance(e: &Env, contract: &Address) -> i128 {

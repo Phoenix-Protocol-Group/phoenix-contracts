@@ -41,4 +41,9 @@ pub enum ContractError {
     SameAdmin = 330,
     NoAdminChangeInPlace = 331,
     AdminChangeExpired = 332,
+
+    DelegateNotSet = 333,
+    DelegateUnauthorizedToken = 334,
+    DelegatedOutUnderflow = 335,
+    DelegateInvalidAmount = 336,
 }

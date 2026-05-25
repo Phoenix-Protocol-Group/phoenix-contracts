@@ -10,7 +10,7 @@ use crate::{
     storage::{
         get_config, get_default_slippage_bps, save_config, save_default_slippage_bps,
         utils::{self, get_admin_old},
-        Asset, ComputeSwap, Config, LiquidityPoolInfo, PairType, PoolResponse,
+        Asset, ComputeSwap, Config, DelegateState, LiquidityPoolInfo, PairType, PoolResponse,
         SimulateReverseSwapResponse, SimulateSwapResponse, ADMIN, PENDING_ADMIN, XYK_POOL_KEY,
     },
     token_contract,
@@ -142,6 +142,37 @@ pub trait LiquidityPoolTrait {
     fn accept_admin(env: Env) -> Result<Address, ContractError>;
 
     fn query_admin(env: Env) -> Result<Address, ContractError>;
+
+    // === Delegate / blend integration surface ===
+    //
+    // The pool optionally exposes pull/push/donate primitives to a single
+    // configured "delegate" contract address. The delegate can move tokens out
+    // of the pool's vault (e.g. to park them in an external yield venue like
+    // Blend) and push them back later, without disturbing the pool's
+    // pricing math. It can also donate tokens into the pool to be distributed
+    // pro-rata to LP holders without minting new LP tokens.
+
+    // Sets (or clears, with None) the delegate address. Pool admin only.
+    fn set_delegate(env: Env, delegate: Option<Address>);
+
+    // Withdraws `amount` of `token` from the pool's vault to the delegate.
+    // The pool's stored reserve counter is unchanged; the equivalent amount is
+    // tracked in DelegatedOut{A,B}. Delegate auth required.
+    fn withdraw_to_delegate(env: Env, token: Address, amount: i128);
+
+    // Inverse of withdraw_to_delegate: returns `amount` of `token` from the
+    // delegate to the pool's vault. DelegatedOut{A,B} decreases by `amount`.
+    // Delegate auth required.
+    fn deposit_from_delegate(env: Env, token: Address, amount: i128);
+
+    // Donates `amount` of `token` from the delegate to the pool. The stored
+    // reserve counter increases by `amount`; no LP shares are minted. This
+    // increases every existing LP's pro-rata claim on the donated token.
+    // Delegate auth required.
+    fn donate(env: Env, token: Address, amount: i128);
+
+    // Returns a snapshot of delegate state for off-chain consumption.
+    fn query_delegate_state(env: Env) -> DelegateState;
 }
 
 #[contractimpl]
@@ -257,9 +288,28 @@ impl LiquidityPoolTrait for LiquidityPool {
         let pool_balance_a = utils::get_pool_balance_a(&env);
         let pool_balance_b = utils::get_pool_balance_b(&env);
 
-        // Now calculate how many new pool shares to mint
-        let balance_a = utils::get_balance(&env, &config.token_a);
-        let balance_b = utils::get_balance(&env, &config.token_b);
+        // Use *logical* reserves (stored counter + freshly received), not physical
+        // balance. Physical balance may be lower than the logical reserve when a
+        // delegate has parked some of the assets elsewhere (see Delegate state);
+        // pricing/share math must still account for those parked amounts.
+        let balance_a = pool_balance_a
+            .checked_add(actual_received_a)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool: Provide Liquidity: addition overflowed for logical balance_a"
+                );
+                panic_with_error!(env, ContractError::ContractMathError);
+            });
+        let balance_b = pool_balance_b
+            .checked_add(actual_received_b)
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Pool: Provide Liquidity: addition overflowed for logical balance_b"
+                );
+                panic_with_error!(env, ContractError::ContractMathError);
+            });
         let total_shares = utils::get_total_shares(&env);
 
         let new_total_shares = if pool_balance_a > 0 && pool_balance_b > 0 {
@@ -846,6 +896,212 @@ impl LiquidityPoolTrait for LiquidityPool {
         let admin = utils::get_admin_old(&env);
 
         Ok(admin)
+    }
+
+    fn set_delegate(env: Env, delegate: Option<Address>) {
+        let admin = utils::get_admin_old(&env);
+        admin.require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        match &delegate {
+            Some(addr) => utils::save_delegate(&env, addr),
+            None => utils::clear_delegate(&env),
+        }
+
+        env.events()
+            .publish(("blend_pool", "set_delegate"), delegate);
+    }
+
+    fn withdraw_to_delegate(env: Env, token: Address, amount: i128) {
+        if amount <= 0 {
+            log!(&env, "Pool: WithdrawToDelegate: amount must be positive");
+            panic_with_error!(env, ContractError::DelegateInvalidAmount);
+        }
+
+        let delegate = utils::get_delegate(&env).unwrap_or_else(|| {
+            log!(&env, "Pool: WithdrawToDelegate: delegate is not set");
+            panic_with_error!(env, ContractError::DelegateNotSet);
+        });
+        delegate.require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let config = get_config(&env);
+        let is_a = token == config.token_a;
+        let is_b = token == config.token_b;
+        if !is_a && !is_b {
+            log!(&env, "Pool: WithdrawToDelegate: token not in pool");
+            panic_with_error!(env, ContractError::DelegateUnauthorizedToken);
+        }
+
+        token_contract::Client::new(&env, &token).transfer(
+            &env.current_contract_address(),
+            &delegate,
+            &amount,
+        );
+
+        if is_a {
+            let new_out = utils::get_delegated_out_a(&env)
+                .checked_add(amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool: WithdrawToDelegate: delegated_out_a overflow");
+                    panic_with_error!(env, ContractError::ContractMathError);
+                });
+            utils::save_delegated_out_a(&env, new_out);
+        } else {
+            let new_out = utils::get_delegated_out_b(&env)
+                .checked_add(amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool: WithdrawToDelegate: delegated_out_b overflow");
+                    panic_with_error!(env, ContractError::ContractMathError);
+                });
+            utils::save_delegated_out_b(&env, new_out);
+        }
+
+        env.events()
+            .publish(("blend_pool", "withdraw_to_delegate"), &delegate);
+        env.events()
+            .publish(("blend_pool", "withdraw_token"), &token);
+        env.events()
+            .publish(("blend_pool", "withdraw_amount"), amount);
+    }
+
+    fn deposit_from_delegate(env: Env, token: Address, amount: i128) {
+        if amount <= 0 {
+            log!(&env, "Pool: DepositFromDelegate: amount must be positive");
+            panic_with_error!(env, ContractError::DelegateInvalidAmount);
+        }
+
+        let delegate = utils::get_delegate(&env).unwrap_or_else(|| {
+            log!(&env, "Pool: DepositFromDelegate: delegate is not set");
+            panic_with_error!(env, ContractError::DelegateNotSet);
+        });
+        delegate.require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let config = get_config(&env);
+        let is_a = token == config.token_a;
+        let is_b = token == config.token_b;
+        if !is_a && !is_b {
+            log!(&env, "Pool: DepositFromDelegate: token not in pool");
+            panic_with_error!(env, ContractError::DelegateUnauthorizedToken);
+        }
+
+        let current_out = if is_a {
+            utils::get_delegated_out_a(&env)
+        } else {
+            utils::get_delegated_out_b(&env)
+        };
+        let new_out = current_out.checked_sub(amount).unwrap_or_else(|| {
+            log!(&env, "Pool: DepositFromDelegate: delegated_out underflow");
+            panic_with_error!(env, ContractError::DelegatedOutUnderflow);
+        });
+
+        token_contract::Client::new(&env, &token).transfer(
+            &delegate,
+            &env.current_contract_address(),
+            &amount,
+        );
+
+        if is_a {
+            utils::save_delegated_out_a(&env, new_out);
+        } else {
+            utils::save_delegated_out_b(&env, new_out);
+        }
+
+        env.events()
+            .publish(("blend_pool", "deposit_from_delegate"), &delegate);
+        env.events()
+            .publish(("blend_pool", "deposit_token"), &token);
+        env.events()
+            .publish(("blend_pool", "deposit_amount"), amount);
+    }
+
+    fn donate(env: Env, token: Address, amount: i128) {
+        if amount <= 0 {
+            log!(&env, "Pool: Donate: amount must be positive");
+            panic_with_error!(env, ContractError::DelegateInvalidAmount);
+        }
+
+        let delegate = utils::get_delegate(&env).unwrap_or_else(|| {
+            log!(&env, "Pool: Donate: delegate is not set");
+            panic_with_error!(env, ContractError::DelegateNotSet);
+        });
+        delegate.require_auth();
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let config = get_config(&env);
+        let is_a = token == config.token_a;
+        let is_b = token == config.token_b;
+        if !is_a && !is_b {
+            log!(&env, "Pool: Donate: token not in pool");
+            panic_with_error!(env, ContractError::DelegateUnauthorizedToken);
+        }
+
+        token_contract::Client::new(&env, &token).transfer(
+            &delegate,
+            &env.current_contract_address(),
+            &amount,
+        );
+
+        if is_a {
+            let new_reserve = utils::get_pool_balance_a(&env)
+                .checked_add(amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool: Donate: reserve_a overflow");
+                    panic_with_error!(env, ContractError::ContractMathError);
+                });
+            utils::save_pool_balance_a(&env, new_reserve);
+        } else {
+            let new_reserve = utils::get_pool_balance_b(&env)
+                .checked_add(amount)
+                .unwrap_or_else(|| {
+                    log!(&env, "Pool: Donate: reserve_b overflow");
+                    panic_with_error!(env, ContractError::ContractMathError);
+                });
+            utils::save_pool_balance_b(&env, new_reserve);
+        }
+
+        env.events()
+            .publish(("blend_pool", "donate_from"), &delegate);
+        env.events().publish(("blend_pool", "donate_token"), &token);
+        env.events()
+            .publish(("blend_pool", "donate_amount"), amount);
+    }
+
+    fn query_delegate_state(env: Env) -> DelegateState {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let config = get_config(&env);
+        let liquid_a = utils::get_balance(&env, &config.token_a);
+        let liquid_b = utils::get_balance(&env, &config.token_b);
+        let delegated_a = utils::get_delegated_out_a(&env);
+        let delegated_b = utils::get_delegated_out_b(&env);
+        let total_a = utils::get_pool_balance_a(&env);
+        let total_b = utils::get_pool_balance_b(&env);
+
+        DelegateState {
+            delegate: utils::get_delegate(&env),
+            liquid_a,
+            liquid_b,
+            delegated_a,
+            delegated_b,
+            total_a,
+            total_b,
+        }
     }
 }
 
