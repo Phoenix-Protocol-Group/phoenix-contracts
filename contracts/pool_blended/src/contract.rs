@@ -11,7 +11,8 @@ use crate::{
         get_config, get_default_slippage_bps, save_config, save_default_slippage_bps,
         utils::{self, get_admin_old},
         Asset, ComputeSwap, Config, DelegateState, LiquidityPoolInfo, PairType, PoolResponse,
-        SimulateReverseSwapResponse, SimulateSwapResponse, ADMIN, PENDING_ADMIN, XYK_POOL_KEY,
+        ProvideLiquidityEvent, SimulateReverseSwapResponse, SimulateSwapResponse, SwapEvent,
+        WithdrawLiquidityEvent, ADMIN, PENDING_ADMIN, XYK_POOL_KEY,
     },
     token_contract,
 };
@@ -393,16 +394,16 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::save_pool_balance_a(&env, balance_a);
         utils::save_pool_balance_b(&env, balance_b);
 
-        env.events()
-            .publish(("provide_liquidity", "sender"), sender);
-        env.events()
-            .publish(("provide_liquidity", "token_a"), &config.token_a);
-        env.events()
-            .publish(("provide_liquidity", "token_a-amount"), actual_received_a);
-        env.events()
-            .publish(("provide_liquidity", "token_b"), &config.token_b);
-        env.events()
-            .publish(("provide_liquidity", "token_b-amount"), actual_received_b);
+        env.events().publish(
+            (soroban_sdk::Symbol::new(&env, "provide_liquidity"),),
+            ProvideLiquidityEvent {
+                actual_received_a,
+                actual_received_b,
+                sender,
+                token_a: config.token_a.clone(),
+                token_b: config.token_b.clone(),
+            },
+        );
     }
 
     fn swap(
@@ -480,22 +481,24 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let config = get_config(&env);
 
-        if let Some(auto_unstake_info) = auto_unstake {
-            let stake_client = stake_contract::Client::new(&env, &config.stake_contract);
-            stake_client.unbond(
-                &sender,
-                &auto_unstake_info.stake_amount,
-                &auto_unstake_info.stake_timestamp,
-            );
-
-            env.events().publish(
-                ("withdraw_liquidity", "auto unbonded"),
+        // Capture (not consume) the optional auto-unstake info so we can roll
+        // it into the single withdraw_liquidity event at the end. The unbond
+        // side-effect still runs here, but no separate sub-event is emitted.
+        let (auto_unstake_amount, auto_unstake_timestamp) =
+            if let Some(auto_unstake_info) = &auto_unstake {
+                let stake_client = stake_contract::Client::new(&env, &config.stake_contract);
+                stake_client.unbond(
+                    &sender,
+                    &auto_unstake_info.stake_amount,
+                    &auto_unstake_info.stake_timestamp,
+                );
                 (
-                    auto_unstake_info.stake_amount,
-                    auto_unstake_info.stake_timestamp,
-                ),
-            );
-        }
+                    Some(auto_unstake_info.stake_amount),
+                    Some(auto_unstake_info.stake_timestamp),
+                )
+            } else {
+                (None, None)
+            };
 
         let share_token_client = token_contract::Client::new(&env, &config.share_token);
         share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
@@ -548,14 +551,17 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::save_pool_balance_a(&env, pool_balance_a - return_amount_a);
         utils::save_pool_balance_b(&env, pool_balance_b - return_amount_b);
 
-        env.events()
-            .publish(("withdraw_liquidity", "sender"), sender);
-        env.events()
-            .publish(("withdraw_liquidity", "shares_amount"), share_amount);
-        env.events()
-            .publish(("withdraw_liquidity", "return_amount_a"), return_amount_a);
-        env.events()
-            .publish(("withdraw_liquidity", "return_amount_b"), return_amount_b);
+        env.events().publish(
+            (soroban_sdk::Symbol::new(&env, "withdraw_liquidity"),),
+            WithdrawLiquidityEvent {
+                auto_unstake_amount,
+                auto_unstake_timestamp,
+                return_amount_a,
+                return_amount_b,
+                sender,
+                shares_amount: share_amount,
+            },
+        );
 
         (return_amount_a, return_amount_b)
     }
@@ -1425,19 +1431,18 @@ fn do_swap(
     utils::save_pool_balance_a(&env, balance_a);
     utils::save_pool_balance_b(&env, balance_b);
 
-    env.events().publish(("swap", "sender"), sender);
-    env.events().publish(("swap", "sell_token"), sell_token);
-    env.events().publish(("swap", "offer_amount"), offer_amount);
-    env.events()
-        .publish(("swap", "actual received amount"), actual_received_amount);
-    env.events().publish(("swap", "buy_token"), buy_token);
-    env.events()
-        .publish(("swap", "return_amount"), compute_swap.return_amount);
-    env.events()
-        .publish(("swap", "spread_amount"), compute_swap.spread_amount);
-    env.events().publish(
-        ("swap", "referral_fee_amount"),
-        compute_swap.referral_fee_amount,
+        env.events().publish(
+        (soroban_sdk::symbol_short!("swap"),),
+        SwapEvent {
+            actual_received_amount,
+            buy_token,
+            offer_amount,
+            referral_fee_amount: compute_swap.referral_fee_amount,
+            return_amount: compute_swap.return_amount,
+            sell_token,
+            sender,
+            spread_amount: compute_swap.spread_amount,
+        },
     );
     compute_swap.return_amount
 }

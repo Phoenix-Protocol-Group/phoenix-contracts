@@ -201,6 +201,50 @@ pub struct DelegateState {
     pub total_b: i128,
 }
 
+
+/// Payload of the `swap` event. Emitted once per logical swap (one event,
+/// not one per field). Field order is alphabetical: Soroban contracttype
+/// encodes structs as ScMap and enforces alphabetical key order on decode.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SwapEvent {
+    pub actual_received_amount: i128,
+    pub buy_token: Address,
+    pub offer_amount: i128,
+    pub referral_fee_amount: i128,
+    pub return_amount: i128,
+    pub sell_token: Address,
+    pub sender: Address,
+    pub spread_amount: i128,
+}
+
+/// Payload of the `provide_liquidity` event. One event per logical deposit.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProvideLiquidityEvent {
+    pub actual_received_a: i128,
+    pub actual_received_b: i128,
+    pub sender: Address,
+    pub token_a: Address,
+    pub token_b: Address,
+}
+
+/// Payload of the `withdraw_liquidity` event. One event per logical
+/// redeem. When the caller asked for auto-unstake, both `auto_unstake_amount`
+/// and `auto_unstake_timestamp` are populated; otherwise both are None.
+/// Flattened from `Option<AutoUnstakeInfo>` because nested contracttype
+/// Options don't round-trip through the host's `From<&Option<T>>` bound.
+#[contracttype]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WithdrawLiquidityEvent {
+    pub auto_unstake_amount: Option<i128>,
+    pub auto_unstake_timestamp: Option<u64>,
+    pub return_amount_a: i128,
+    pub return_amount_b: i128,
+    pub sender: Address,
+    pub shares_amount: i128,
+}
+
 pub mod utils {
     use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
     use soroban_sdk::String;
