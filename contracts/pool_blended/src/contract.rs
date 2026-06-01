@@ -1006,10 +1006,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         } else {
             utils::get_delegated_out_b(&env)
         };
-        let new_out = current_out.checked_sub(amount).unwrap_or_else(|| {
+        if amount > current_out {
             log!(&env, "Pool: DepositFromDelegate: delegated_out underflow");
             panic_with_error!(env, ContractError::DelegatedOutUnderflow);
-        });
+        }
+        let new_out = current_out - amount;
 
         token_contract::Client::new(&env, &token).transfer(
             &delegate,

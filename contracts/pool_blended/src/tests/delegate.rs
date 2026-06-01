@@ -158,8 +158,11 @@ fn donate_increases_lp_redemption_pro_rata() {
         &false,
     );
 
-    // Pool now has 2M each side, two LPs with equal shares (minus the burned
-    // 1000 minimum-liquidity shares on lp1 from pool bootstrap).
+    // Pool now has 2M each side. LP1 bootstrapped the pool so
+    // `MINIMUM_LIQUIDITY_AMOUNT = 1000` shares were minted to the pool
+    // itself (Uniswap-style first-deposit burn). LP2's deposit minted
+    // exactly `ONE_M` shares on top. Total supply = `2 * ONE_M`; LP1 owns
+    // `ONE_M - 1000`, LP2 owns `ONE_M`, pool owns `1000` permanently.
 
     // Mint donation amount to the delegate and donate it to side B.
     let donation: i128 = 100_000_0000000; // 100k
@@ -173,12 +176,17 @@ fn donate_increases_lp_redemption_pro_rata() {
         "donate must not mint LP"
     );
 
-    // Both LPs withdraw their entire stake.
-    let lp1_shares = token_contract::Client::new(&h.env, &h.pool.query_share_token_address())
-        .balance(&h.lp);
-    let lp2_shares = token_contract::Client::new(&h.env, &h.pool.query_share_token_address())
-        .balance(&lp2);
-    assert_eq!(lp1_shares, lp2_shares, "equal stakes => equal shares");
+    let share_token = h.pool.query_share_token_address();
+    let lp1_shares = token_contract::Client::new(&h.env, &share_token).balance(&h.lp);
+    let lp2_shares = token_contract::Client::new(&h.env, &share_token).balance(&lp2);
+    // LP1 is the bootstrap LP so it is short MINIMUM_LIQUIDITY_AMOUNT shares.
+    // The two LPs deposited equal stakes; the only difference is the burn.
+    const MINIMUM_LIQUIDITY_AMOUNT: i128 = 1_000;
+    assert_eq!(
+        lp2_shares - lp1_shares,
+        MINIMUM_LIQUIDITY_AMOUNT,
+        "bootstrap LP should be short MINIMUM_LIQUIDITY_AMOUNT shares",
+    );
 
     let lp1_b_before = h.token_b.balance(&h.lp);
     let lp2_b_before = h.token_b.balance(&lp2);
@@ -191,21 +199,34 @@ fn donate_increases_lp_redemption_pro_rata() {
     let lp1_gain_b = h.token_b.balance(&h.lp) - lp1_b_before;
     let lp2_gain_b = h.token_b.balance(&lp2) - lp2_b_before;
 
-    // Each LP should get back their original ONE_M + ~half of the donation
-    // (minus tiny rounding on the burned MINIMUM_LIQUIDITY shares).
+    // Each LP should get back ~ONE_M + ~half of the donation. Tolerance
+    // accounts for: the 1000 shares permanently locked in the pool (dilutes
+    // each LP by ~MIN/total_supply of the post-donate pool) plus integer
+    // rounding on the share-ratio math. Empirically the deviation is on
+    // the order of MIN * (1 + donation/(2*ONE_M)) ~= 1050; we accept 5000.
     let expected_per_lp = ONE_M + donation / 2;
-    let tolerance = 100_i128; // accept dust from integer division
+    let tolerance: i128 = 5_000;
     assert!(
         (lp1_gain_b - expected_per_lp).abs() <= tolerance,
-        "lp1 gain {} should be ~{}",
+        "lp1 gain {} should be within {} of ~{}",
         lp1_gain_b,
+        tolerance,
         expected_per_lp,
     );
     assert!(
         (lp2_gain_b - expected_per_lp).abs() <= tolerance,
-        "lp2 gain {} should be ~{}",
+        "lp2 gain {} should be within {} of ~{}",
         lp2_gain_b,
+        tolerance,
         expected_per_lp,
+    );
+    // LP2 should get back slightly more than LP1 since LP1 carried the
+    // bootstrap dust loss.
+    assert!(
+        lp2_gain_b > lp1_gain_b,
+        "lp2 ({}) should out-gain lp1 ({}) by the bootstrap dust",
+        lp2_gain_b,
+        lp1_gain_b,
     );
 }
 
@@ -335,4 +356,58 @@ fn query_delegate_state_tracks_delegated_amounts() {
     // Quiet "unused field" warnings on the harness without touching the rest
     // of the test surface.
     let _ = h.admin;
+}
+
+/// query_pool_info must return the LOGICAL reserve (= physical balance +
+/// delegated_out), unchanged by delegate movements. Factory/multihop
+/// callers depend on this invariant for pricing math.
+#[test]
+fn query_pool_info_preserves_logical_reserve_under_delegation() {
+    let h = setup();
+
+    let before = h.pool.query_pool_info();
+    assert_eq!(before.asset_a.amount, ONE_M);
+    assert_eq!(before.asset_b.amount, ONE_M);
+
+    let parked_a = ONE_M / 4;
+    let parked_b = ONE_M / 3;
+    h.pool.withdraw_to_delegate(&h.token_a.address, &parked_a);
+    h.pool.withdraw_to_delegate(&h.token_b.address, &parked_b);
+
+    let mid = h.pool.query_pool_info();
+    assert_eq!(
+        mid.asset_a.amount, before.asset_a.amount,
+        "delegate withdraw must not shrink logical reserve A",
+    );
+    assert_eq!(
+        mid.asset_b.amount, before.asset_b.amount,
+        "delegate withdraw must not shrink logical reserve B",
+    );
+
+    // Cross-check: the logical reserve from query_pool_info equals the
+    // total_{a,b} reported by query_delegate_state.
+    let state = h.pool.query_delegate_state();
+    assert_eq!(mid.asset_a.amount, state.total_a);
+    assert_eq!(mid.asset_b.amount, state.total_b);
+    // And `liquid + delegated == total` on each side.
+    assert_eq!(state.liquid_a + state.delegated_a, state.total_a);
+    assert_eq!(state.liquid_b + state.delegated_b, state.total_b);
+
+    // Return-then-donate cycle on side B: logical reserve grows by the
+    // donation, regardless of the delegated leg returning first.
+    h.pool.deposit_from_delegate(&h.token_b.address, &parked_b);
+    let donation: i128 = 50_000_0000000; // 50k
+    h.token_b.mint(&h.delegate, &donation);
+    h.pool.donate(&h.token_b.address, &donation);
+
+    let after = h.pool.query_pool_info();
+    assert_eq!(
+        after.asset_a.amount, before.asset_a.amount,
+        "side A logical reserve unchanged across roundtrip on B",
+    );
+    assert_eq!(
+        after.asset_b.amount,
+        before.asset_b.amount + donation,
+        "donate must increase logical reserve by exactly the donated amount",
+    );
 }
