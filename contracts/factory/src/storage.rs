@@ -13,6 +13,7 @@ pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const FACTORY_KEY: Symbol = symbol_short!("FACTORY");
 pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
 const STABLE_WASM_HASH: Symbol = symbol_short!("stabwasm");
+const BLEND_WASM_HASH: Symbol = symbol_short!("blndwasm");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -67,6 +68,31 @@ pub fn get_stable_wasm_hash(env: &Env) -> BytesN<32> {
 
     env.storage().persistent().extend_ttl(
         &STABLE_WASM_HASH,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
+    );
+
+    hash
+}
+
+pub fn save_blend_wasm_hash(env: &Env, hash: BytesN<32>) {
+    env.storage().persistent().set(&BLEND_WASM_HASH, &hash);
+    env.storage().persistent().extend_ttl(
+        &BLEND_WASM_HASH,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
+    );
+}
+
+pub fn get_blend_wasm_hash(env: &Env) -> BytesN<32> {
+    let hash = env
+        .storage()
+        .persistent()
+        .get(&BLEND_WASM_HASH)
+        .expect("Blend wasm hash not set");
+
+    env.storage().persistent().extend_ttl(
+        &BLEND_WASM_HASH,
         PERSISTENT_RENEWAL_THRESHOLD,
         PERSISTENT_TARGET_TTL,
     );

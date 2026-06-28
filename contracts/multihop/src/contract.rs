@@ -133,6 +133,18 @@ impl MultihopTrait for Multihop {
                         &max_allowed_fee_bps,
                     );
                 }
+                PoolType::Blend => {
+                    let lp_client = xyk_pool::Client::new(&env, &liquidity_pool_addr);
+                    next_offer_amount = lp_client.swap(
+                        &recipient,
+                        &op.offer_asset,
+                        &next_offer_amount,
+                        &op.ask_asset_min_amount,
+                        &max_spread_bps,
+                        &deadline,
+                        &max_allowed_fee_bps,
+                    );
+                }
             }
         });
     }
@@ -188,6 +200,23 @@ impl MultihopTrait for Multihop {
                 }
                 PoolType::Stable => {
                     let lp_client = stable_pool::Client::new(&env, &pool_addres);
+                    let simulated_swap =
+                        lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
+
+                    let token_symbol = token_contract::Client::new(&env, &op.offer_asset).symbol();
+
+                    simulate_swap_response
+                        .commission_amounts
+                        .push_back((token_symbol, simulated_swap.commission_amount));
+                    simulate_swap_response.ask_amount = simulated_swap.ask_amount;
+                    simulate_swap_response
+                        .spread_amount
+                        .push_back(simulated_swap.spread_amount);
+
+                    next_offer_amount = simulated_swap.ask_amount;
+                }
+                PoolType::Blend => {
+                    let lp_client = xyk_pool::Client::new(&env, &pool_addres);
                     let simulated_swap =
                         lp_client.simulate_swap(&op.offer_asset, &next_offer_amount);
 
@@ -260,6 +289,23 @@ impl MultihopTrait for Multihop {
                 }
                 PoolType::Stable => {
                     let lp_client = stable_pool::Client::new(&env, &pool_address);
+                    let simulated_reverse_swap =
+                        lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
+
+                    let token_symbol = token_contract::Client::new(&env, &op.ask_asset).symbol();
+
+                    simulate_swap_response
+                        .commission_amounts
+                        .push_back((token_symbol, simulated_reverse_swap.commission_amount));
+                    simulate_swap_response.offer_amount = simulated_reverse_swap.offer_amount;
+                    simulate_swap_response
+                        .spread_amount
+                        .push_back(simulated_reverse_swap.spread_amount);
+
+                    next_ask_amount = simulated_reverse_swap.offer_amount;
+                }
+                PoolType::Blend => {
+                    let lp_client = xyk_pool::Client::new(&env, &pool_address);
                     let simulated_reverse_swap =
                         lp_client.simulate_reverse_swap(&op.ask_asset, &next_ask_amount);
 
