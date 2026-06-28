@@ -12,7 +12,7 @@ use crate::{
         utils::{self, get_admin_old},
         Asset, ComputeSwap, Config, DelegateState, LiquidityPoolInfo, PairType, PoolResponse,
         ProvideLiquidityEvent, SimulateReverseSwapResponse, SimulateSwapResponse, SwapEvent,
-        WithdrawLiquidityEvent, ADMIN, PENDING_ADMIN, XYK_POOL_KEY,
+        WithdrawLiquidityEvent, PENDING_ADMIN, XYK_POOL_KEY,
     },
     token_contract,
 };
@@ -129,8 +129,6 @@ pub trait LiquidityPoolTrait {
     fn query_share(env: Env, amount: i128) -> (Asset, Asset);
 
     fn query_total_issued_lp(env: Env) -> i128;
-
-    fn migrate_admin_key(env: Env) -> Result<(), ContractError>;
 
     fn propose_admin(
         env: Env,
@@ -808,12 +806,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         utils::get_total_shares(&env)
-    }
-
-    fn migrate_admin_key(env: Env) -> Result<(), ContractError> {
-        let admin = get_admin_old(&env);
-        env.storage().instance().set(&ADMIN, &admin);
-        Ok(())
     }
 
     fn propose_admin(

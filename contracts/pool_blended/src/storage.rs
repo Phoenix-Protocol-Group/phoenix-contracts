@@ -9,7 +9,6 @@ use soroban_decimal::Decimal;
 
 const CONFIG: Symbol = symbol_short!("CONFIG");
 const DEFAULT_SLIPPAGE_BPS: Symbol = symbol_short!("DSLIPBPS");
-pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const XYK_POOL_KEY: Symbol = symbol_short!("XYK_POOL");
 pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
 
@@ -246,7 +245,6 @@ pub struct WithdrawLiquidityEvent {
 }
 
 pub mod utils {
-    use phoenix::ttl::{INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL};
     use soroban_sdk::String;
 
     use super::*;
@@ -307,14 +305,6 @@ pub mod utils {
         );
     }
 
-    #[cfg(not(tarpaulin_include))]
-    pub fn _save_admin(e: &Env, address: Address) {
-        e.storage().instance().set(&ADMIN, &address);
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-    }
-
     pub fn save_total_shares(e: &Env, amount: i128) {
         e.storage().persistent().set(&DataKey::TotalShares, &amount);
         e.storage().persistent().extend_ttl(
@@ -368,18 +358,6 @@ pub mod utils {
         );
 
         admin
-    }
-
-    #[cfg(not(tarpaulin_include))]
-    pub fn _get_admin(e: &Env) -> Address {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-
-        e.storage().instance().get(&ADMIN).unwrap_or_else(|| {
-            log!(e, "XYZ Pool: Admin not set");
-            panic_with_error!(&e, ContractError::AdminNotSet)
-        })
     }
 
     pub fn get_total_shares(e: &Env) -> i128 {
