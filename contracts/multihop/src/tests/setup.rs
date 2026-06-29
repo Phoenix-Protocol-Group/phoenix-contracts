@@ -161,7 +161,7 @@ pub fn deploy_and_initialize_pool(
 
     let amp = match pool_type {
         PoolType::Stable => Some(10u64),
-        PoolType::Xyk => None,
+        PoolType::Xyk | PoolType::Blend => None,
     };
 
     let lp = factory.create_liquidity_pool(
@@ -198,6 +198,19 @@ pub fn deploy_and_initialize_pool(
                 &None,
                 &None::<u64>,
                 &None::<u128>,
+                &false,
+            );
+        }
+        PoolType::Blend => {
+            let lp_client = xyk_pool::Client::new(env, &lp);
+            lp_client.provide_liquidity(
+                &admin.clone(),
+                &Some(token_a_amount),
+                &None,
+                &Some(token_b_amount),
+                &None,
+                &None::<i64>,
+                &None::<u64>,
                 &false,
             );
         }

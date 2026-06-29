@@ -2,10 +2,10 @@ use crate::{
     error::ContractError,
     stake_contract::StakedResponse,
     storage::{
-        get_config, get_lp_vec, get_stable_wasm_hash, save_config, save_lp_vec,
-        save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, Asset, Config, LiquidityPoolInfo,
-        LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN, FACTORY_KEY,
-        PENDING_ADMIN,
+        get_blend_wasm_hash, get_config, get_lp_vec, get_stable_wasm_hash, save_blend_wasm_hash,
+        save_config, save_lp_vec, save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, Asset,
+        Config, LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio,
+        ADMIN, FACTORY_KEY, PENDING_ADMIN,
     },
     utils::deploy_and_initialize_multihop_contract,
     ConvertVec,
@@ -139,7 +139,7 @@ impl FactoryTrait for Factory {
         )
             .into_val(&env);
 
-        if let PoolType::Xyk = pool_type {
+        if matches!(pool_type, PoolType::Xyk | PoolType::Blend) {
             init_fn_args.push_back(default_slippage_bps.into_val(&env));
         }
 
@@ -163,6 +163,10 @@ impl FactoryTrait for Factory {
                 .deployer()
                 .with_current_contract(salt)
                 .deploy_v2(get_stable_wasm_hash(&env), init_fn_args),
+            PoolType::Blend => env
+                .deployer()
+                .with_current_contract(salt)
+                .deploy_v2(get_blend_wasm_hash(&env), init_fn_args),
         };
 
         let mut lp_vec = get_lp_vec(&env);
@@ -590,6 +594,19 @@ impl Factory {
         save_stable_wasm_hash(&env, new_stable_pool_hash);
     }
 
+    /// Admin-only setter for the Blend-pool wasm hash. Separate from the
+    /// `update` entrypoint so the factory's two-arg upgrade signature stays
+    /// stable; the blend hash gets installed post-upgrade by calling this.
+    #[allow(dead_code)]
+    pub fn set_blend_wasm_hash(env: Env, new_blend_pool_hash: BytesN<32>) {
+        let admin = get_config(&env).admin;
+        admin.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        save_blend_wasm_hash(&env, new_blend_pool_hash);
+    }
+
     pub fn query_version(env: Env) -> String {
         String::from_str(&env, env!("CARGO_PKG_VERSION"))
     }
@@ -640,6 +657,7 @@ fn validate_pool_info(pool_type: &PoolType, amp: &Option<u64>) {
             amp.is_some(),
             "Factory: Create Liquidity Pool: Amp must be set for stable pool"
         ),
+        PoolType::Blend => (),
     }
 }
 

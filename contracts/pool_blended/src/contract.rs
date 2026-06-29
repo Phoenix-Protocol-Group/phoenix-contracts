@@ -6,7 +6,6 @@ use num_integer::Roots;
 
 use crate::{
     error::ContractError,
-    stake_contract,
     storage::{
         get_config, get_default_slippage_bps, save_config, save_default_slippage_bps,
         utils::{self, get_admin_old},
@@ -172,6 +171,20 @@ pub trait LiquidityPoolTrait {
 
     // Returns a snapshot of delegate state for off-chain consumption.
     fn query_delegate_state(env: Env) -> DelegateState;
+
+    // === Bootstrap trading floor ===
+    //
+    // Below the floor, `swap` reverts with `TradingFloorNotMet`; deposits
+    // and withdrawals are unaffected. Both reserves must meet their floor
+    // for trading to be permitted. Default = 0 (no floor); admin sets to
+    // gate the pool until it has sufficient depth to absorb real swap
+    // sizes without slipping outside the spread cap.
+
+    // Admin-only setter. Pass `(0, 0)` to disable the gate.
+    fn set_min_trading_balances(env: Env, min_a: i128, min_b: i128);
+
+    // Read the current bootstrap-mode floors.
+    fn min_trading_balances(env: Env) -> (i128, i128);
 }
 
 #[contractimpl]
@@ -384,9 +397,11 @@ impl LiquidityPoolTrait for LiquidityPool {
         utils::mint_shares(&env, &config.share_token, &sender, shares_amount);
 
         if auto_stake {
-            let stake_contract_client = stake_contract::Client::new(&env, &config.stake_contract);
-
-            stake_contract_client.bond(&sender, &shares_amount);
+            log!(
+                &env,
+                "Pool: ProvideLiquidity: auto_stake=true requested but staking is disabled on this pool"
+            );
+            panic_with_error!(env, ContractError::StakingDisabled);
         }
 
         utils::save_pool_balance_a(&env, balance_a);
@@ -430,6 +445,24 @@ impl LiquidityPoolTrait for LiquidityPool {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        // Bootstrap-mode trading-floor gate. Default-zero floors short-circuit;
+        // admin-set floors block `swap` until BOTH reserves reach their threshold.
+        // `provide_liquidity` and `withdraw_liquidity` are unaffected — LPs can
+        // seed and exit the pool freely during the warm-up phase.
+        let min_a = utils::get_min_trading_balance_a(&env);
+        let min_b = utils::get_min_trading_balance_b(&env);
+        if min_a > 0 || min_b > 0 {
+            let pool_balance_a = utils::get_pool_balance_a(&env);
+            let pool_balance_b = utils::get_pool_balance_b(&env);
+            if pool_balance_a < min_a || pool_balance_b < min_b {
+                log!(
+                    &env,
+                    "Pool: Swap: trading floor not met (pool below bootstrap depth)"
+                );
+                panic_with_error!(env, ContractError::TradingFloorNotMet);
+            }
+        }
 
         do_swap(
             env,
@@ -483,19 +516,14 @@ impl LiquidityPoolTrait for LiquidityPool {
         // it into the single withdraw_liquidity event at the end. The unbond
         // side-effect still runs here, but no separate sub-event is emitted.
         let (auto_unstake_amount, auto_unstake_timestamp) =
-            if let Some(auto_unstake_info) = &auto_unstake {
-                let stake_client = stake_contract::Client::new(&env, &config.stake_contract);
-                stake_client.unbond(
-                    &sender,
-                    &auto_unstake_info.stake_amount,
-                    &auto_unstake_info.stake_timestamp,
+            if let Some(_auto_unstake_info) = &auto_unstake {
+                log!(
+                    &env,
+                    "Pool: WithdrawLiquidity: auto_unstake requested but staking is disabled on this pool"
                 );
-                (
-                    Some(auto_unstake_info.stake_amount),
-                    Some(auto_unstake_info.stake_timestamp),
-                )
+                panic_with_error!(env, ContractError::StakingDisabled);
             } else {
-                (None, None)
+                (None::<i128>, None::<u64>)
             };
 
         let share_token_client = token_contract::Client::new(&env, &config.share_token);
@@ -1102,6 +1130,38 @@ impl LiquidityPoolTrait for LiquidityPool {
             total_b,
         }
     }
+
+    fn set_min_trading_balances(env: Env, min_a: i128, min_b: i128) {
+        let admin = utils::get_admin_old(&env);
+        admin.require_auth();
+
+        if min_a < 0 || min_b < 0 {
+            log!(&env, "Pool: SetMinTradingBalances: floors must be non-negative");
+            panic_with_error!(env, ContractError::NegativeInputProvided);
+        }
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        utils::save_min_trading_balance_a(&env, min_a);
+        utils::save_min_trading_balance_b(&env, min_b);
+
+        env.events()
+            .publish(("blend_pool", "set_min_trading_a"), min_a);
+        env.events()
+            .publish(("blend_pool", "set_min_trading_b"), min_b);
+    }
+
+    fn min_trading_balances(env: Env) -> (i128, i128) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        (
+            utils::get_min_trading_balance_a(&env),
+            utils::get_min_trading_balance_b(&env),
+        )
+    }
 }
 
 #[contractimpl]
@@ -1147,10 +1207,8 @@ impl LiquidityPool {
         // Token info
         let token_a = token_init_info.token_a;
         let token_b = token_init_info.token_b;
-        // Stake info
-        let min_bond = stake_init_info.min_bond;
-        let min_reward = stake_init_info.min_reward;
-        let manager = stake_init_info.manager;
+        // Stake info ignored — pool_blended no longer deploys a separate
+        // stake contract. See the stake_contract sentinel block below.
 
         // Token order validation to make sure only one instance of a pool can exist
         if token_a >= token_b {
@@ -1181,17 +1239,18 @@ impl LiquidityPool {
             share_token_symbol,
         );
 
-        let stake_contract_address = utils::deploy_stake_contract(
-            &env,
-            stake_wasm_hash,
-            &admin,
-            &share_token_address,
-            min_bond,
-            min_reward,
-            &manager,
-            &factory_addr,
-            stake_init_info.max_complexity,
-        );
+        // pool_blended ships without a separate stake contract. LP shares are
+        // still minted/burned normally; staking is handled outside the pool
+        // (or not at all). The `stake_init_info` arg is accepted for factory
+        // / call-shape compatibility but its `min_bond` / `min_reward` /
+        // `manager` / `max_complexity` fields are intentionally ignored.
+        // Config.stake_contract is set to the pool's own address as a stable
+        // "no separate stake contract" sentinel so query_stake_contract_address
+        // still returns a valid Address and Config decodes the same shape on
+        // every pool deploy — calling stake methods on it will revert
+        // naturally (no such functions on this contract).
+        let _ = (stake_wasm_hash, stake_init_info, factory_addr);
+        let stake_contract_address = env.current_contract_address();
 
         let config = Config {
             token_a: token_a.clone(),

@@ -104,6 +104,7 @@ pub struct AutoUnstakeInfo {
 pub enum PoolType {
     Xyk = 0,
     Stable = 1,
+    Blend = 2,
 }
 
 #[cfg(test)]

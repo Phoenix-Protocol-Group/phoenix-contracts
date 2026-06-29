@@ -46,4 +46,16 @@ pub enum ContractError {
     DelegateUnauthorizedToken = 334,
     DelegatedOutUnderflow = 335,
     DelegateInvalidAmount = 336,
+
+    /// `swap` invoked while either pool reserve is below its admin-set
+    /// bootstrap floor. The pool is still in deposit-only mode;
+    /// `provide_liquidity` and `withdraw_liquidity` are unaffected.
+    TradingFloorNotMet = 337,
+
+    /// `provide_liquidity(auto_stake=true)` or
+    /// `withdraw_liquidity(auto_unstake=Some(_))` called on a pool that
+    /// was deployed without a stake contract (default for `pool_blended`).
+    /// The LP share token is still minted/burned normally; the caller
+    /// must just pass `auto_stake=false` and skip the unstake hint.
+    StakingDisabled = 338,
 }

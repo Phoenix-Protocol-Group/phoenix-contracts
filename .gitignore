@@ -20,3 +20,6 @@ cobertura.xml
 
 **/test_snapshots
 .stellar/
+
+# Knowledge-graph cache
+.understand-anything/
