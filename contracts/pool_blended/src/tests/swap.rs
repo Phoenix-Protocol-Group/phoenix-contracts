@@ -1929,7 +1929,10 @@ fn small_swap_replica_of_live_pools_xlm_usdc() {
 // === Trading floor (bootstrap-mode) gate ============================
 
 /// Helper: deploy a pool seeded with `seed` units on each side.
-fn deploy_with_seed(env: &Env, seed: i128) -> (
+fn deploy_with_seed(
+    env: &Env,
+    seed: i128,
+) -> (
     crate::contract::LiquidityPoolClient<'static>,
     crate::token_contract::Client<'static>,
     crate::token_contract::Client<'static>,
@@ -1985,7 +1988,15 @@ fn swap_reverts_when_pool_below_trading_floor() {
     pool.set_min_trading_balances(&floor, &0);
     let (min_a, min_b) = pool.min_trading_balances();
     assert_eq!((min_a, min_b), (floor, 0));
-    pool.swap(&user, &token1.address, &1_000_000_000, &None, &Some(500), &None::<u64>, &None);
+    pool.swap(
+        &user,
+        &token1.address,
+        &1_000_000_000,
+        &None,
+        &Some(500),
+        &None::<u64>,
+        &None,
+    );
 }
 
 #[test]
@@ -1997,7 +2008,15 @@ fn swap_succeeds_after_floor_cleared() {
     let floor = 500_000_000_000_i128; // 50_000.0000000
     let (pool, token1, _token2, user) = deploy_with_seed(&env, seed);
     pool.set_min_trading_balances(&floor, &0);
-    let out = pool.swap(&user, &token1.address, &1_000_000_000, &None, &Some(500), &None::<u64>, &None);
+    let out = pool.swap(
+        &user,
+        &token1.address,
+        &1_000_000_000,
+        &None,
+        &Some(500),
+        &None::<u64>,
+        &None,
+    );
     assert!(out > 0);
 }
 

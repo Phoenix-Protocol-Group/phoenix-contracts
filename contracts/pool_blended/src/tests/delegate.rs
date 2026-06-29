@@ -6,8 +6,7 @@ use soroban_sdk::{testutils::Address as _, Address, Env};
 use super::setup::{deploy_liquidity_pool_contract, deploy_token_contract};
 use crate::token_contract;
 
-const ONE_M: i128 = 1_000_000_0000000; // 1,000,000 with 7 decimals
-const HALF_M: i128 = 500_000_0000000;
+const ONE_M: i128 = 10_000_000_000_000; // 1,000,000 with 7 decimals
 
 /// Helper: spin up a pool with two tokens (sorted so A < B), an admin, and a
 /// delegate; provide initial liquidity from `lp`. Returns the configured
@@ -107,7 +106,7 @@ fn clear_delegate_unsets_it() {
 fn pull_does_not_change_simulated_swap_price() {
     let h = setup();
 
-    let swap_in: i128 = 1_000_0000000;
+    let swap_in: i128 = 10_000_000_000; // 1,000 with 7 decimals
     let pre = h.pool.simulate_swap(&h.token_a.address, &swap_in);
 
     // Pull a quarter of the B-side reserve out to the delegate.
@@ -165,7 +164,7 @@ fn donate_increases_lp_redemption_pro_rata() {
     // `ONE_M - 1000`, LP2 owns `ONE_M`, pool owns `1000` permanently.
 
     // Mint donation amount to the delegate and donate it to side B.
-    let donation: i128 = 100_000_0000000; // 100k
+    let donation: i128 = 1_000_000_000_000; // 100k with 7 decimals
     h.token_b.mint(&h.delegate, &donation);
 
     let total_shares_before = h.pool.query_total_issued_lp();
@@ -396,7 +395,7 @@ fn query_pool_info_preserves_logical_reserve_under_delegation() {
     // Return-then-donate cycle on side B: logical reserve grows by the
     // donation, regardless of the delegated leg returning first.
     h.pool.deposit_from_delegate(&h.token_b.address, &parked_b);
-    let donation: i128 = 50_000_0000000; // 50k
+    let donation: i128 = 500_000_000_000; // 50k with 7 decimals
     h.token_b.mint(&h.delegate, &donation);
     h.pool.donate(&h.token_b.address, &donation);
 

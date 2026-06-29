@@ -1265,4 +1265,3 @@ fn withdraw_liquidity_past_deadline_should_panic() {
     env.ledger().with_mut(|li| li.timestamp = 50);
     pool.withdraw_liquidity(&user1, &share_amount, &min_a, &min_b, &Some(49), &None);
 }
-

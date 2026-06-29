@@ -7,6 +7,14 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Token: move `#[cfg(test)] get_allowance` to its own `#[contractimpl]` block so non-test builds compile (`#[contractimpl]` does not propagate `#[cfg]` to the symbol-trampoline module it generates).
+- Vesting: move minter-gated methods (`burn`, `mint`, `update_minter`, `update_minter_capacity`, `query_minter`) out of `impl VestingTrait for Vesting` into a dedicated `#[cfg(feature = "minter")] #[contractimpl] impl Vesting` block, fixing the `--no-default-features` build of the lib-test target.
+- Vesting: gate `test_update_vesting_with_minter` behind the `minter` feature so the test target builds without it.
+- Vesting: `__constructor` no longer triggers `unused_mut` on the `Config` binding when the `minter` feature is off.
+- Pool Blended: remove the unused `HALF_M` constant from `tests/delegate.rs`; regroup token-amount literals with consistent 3-digit underscores so clippy's `inconsistent_digit_grouping` lint stops failing CI.
+
 ## [2.0.0] - 2025-06-07
 
 ## Changed

@@ -62,8 +62,11 @@ impl Token {
         write_administrator(&e, &new_admin);
         TokenUtils::new(&e).events().set_admin(admin, new_admin);
     }
+}
 
-    #[cfg(test)]
+#[cfg(test)]
+#[contractimpl]
+impl Token {
     pub fn get_allowance(e: Env, from: Address, spender: Address) -> Option<AllowanceValue> {
         let key = DataKey::Allowance(AllowanceDataKey { from, spender });
         e.storage().temporary().get::<_, AllowanceValue>(&key)
