@@ -6,55 +6,31 @@ jobs:
   build:
     name: Build binaries
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust-version: [1.81.0]
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.rust-version }}
-          targets: wasm32-unknown-unknown
-      - name: Build
-        run: make build
+          toolchain: 1.81.0
+      - run: make build
 
   test:
     needs: build
     name: Test Suite
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust-version: [1.81.0]
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.rust-version }}
-          targets: wasm32-unknown-unknown
-      - name: Run tests
-        run: make test
+          toolchain: 1.81.0
+      - run: make test
 
   lints:
     needs: build
     name: Lints
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust-version: ['1.81.0']
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.rust-version }}
-          targets: wasm32-unknown-unknown
-          components: rustfmt, clippy
-          target: wasm32-unknown-unknown
-
-      - name: Run lints
-        run: make lints
+          toolchain: 1.81.0
+      - run: make lints

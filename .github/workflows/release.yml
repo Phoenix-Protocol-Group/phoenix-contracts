@@ -8,17 +8,11 @@ on:
 jobs:
   release-artifacts:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust-version: [1.81.0]
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.rust-version }}
-          targets: wasm32-unknown-unknown
+          toolchain: 1.81.0
       - name: Build artifacts
         run: make build
       - name: Generate checksums
@@ -34,4 +28,3 @@ jobs:
           target/wasm32-unknown-unknown/release/checksums.txt
           --generate-notes
           --title "${{ github.ref_name }}"
-

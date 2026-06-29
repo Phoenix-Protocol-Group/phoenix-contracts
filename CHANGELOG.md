@@ -14,6 +14,7 @@ and this project adheres to
 - Vesting: gate `test_update_vesting_with_minter` behind the `minter` feature so the test target builds without it.
 - Vesting: `__constructor` no longer triggers `unused_mut` on the `Config` binding when the `minter` feature is off.
 - Pool Blended: remove the unused `HALF_M` constant from `tests/delegate.rs`; regroup token-amount literals with consistent 3-digit underscores so clippy's `inconsistent_digit_grouping` lint stops failing CI.
+- CI: pin `rust-toolchain.toml` to `1.81.0` (was `1.81`) and declare `targets`/`components` in it so rustup auto-installs `wasm32-unknown-unknown`, `rustfmt`, and `clippy` for whatever toolchain the file selects. The previous setup mismatched the CI action's `1.81.0` install against the file's `1.81` channel — rustup treated them as separate toolchains, so the wasm target the action installed was on a toolchain cargo never used. The workflows now drop redundant matrix/`targets`/`components`/`target` inputs and rely on the toolchain file as the single source of truth.
 
 ## [2.0.0] - 2025-06-07
 
