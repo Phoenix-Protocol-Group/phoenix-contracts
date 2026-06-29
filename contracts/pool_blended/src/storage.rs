@@ -270,34 +270,6 @@ pub mod utils {
             .deploy_v2(token_wasm_hash, (admin, decimals, name, symbol))
     }
 
-    pub fn deploy_stake_contract(
-        e: &Env,
-        stake_wasm_hash: BytesN<32>,
-        admin: &Address,
-        share_token_address: &Address,
-        min_bond: i128,
-        min_reward: i128,
-        manager: &Address,
-        factory_addr: &Address,
-        max_complexity: u32,
-    ) -> Address {
-        let salt = Bytes::new(e);
-        let salt = e.crypto().sha256(&salt);
-
-        e.deployer().with_current_contract(salt).deploy_v2(
-            stake_wasm_hash,
-            (
-                admin,
-                share_token_address,
-                min_bond,
-                min_reward,
-                manager,
-                factory_addr,
-                max_complexity,
-            ),
-        )
-    }
-
     pub fn save_admin_old(e: &Env, address: Address) {
         e.storage().persistent().set(&DataKey::Admin, &address);
         e.storage().persistent().extend_ttl(
