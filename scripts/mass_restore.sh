@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Define the JSON data inline or load from a file
+json='[
+  {
+    "pool_address": "CBHCRSVX3ZZ7EGTSYMKPEFGZNWRVCSESQR3UABET4MIW52N4EVU6BIZX"
+  },
+  {
+    "pool_address": "CBCZGGNOEUZG4CAAE7TGTQQHETZMKUT4OIPFHHPKEUX46U4KXBBZ3GLH"
+  },
+  {
+    "pool_address": "CBISULYO5ZGS32WTNCBMEFCNKNSLFXCQ4Z3XHVDP4X4FLPSEALGSY3PS"
+  },
+  {
+    "pool_address": "CDQLKNH3725BUP4HPKQKMM7OO62FDVXVTO7RCYPID527MZHJG2F3QBJW"
+  },
+  {
+    "pool_address": "CBW5G5SO5SDYUGQVU7RMZ2KJ34POM3AMODOBIV2RQYG4KJDUUBVC3P2T"
+  },
+  {
+    "pool_address": "CDMXKSLG5GITGFYERUW2MRYOBUQCMRT2QE5Y4PU3QZ53EBFWUXAXUTBC"
+  },
+  {
+    "pool_address": "CD5XNKK3B6BEF2N7ULNHHGAMOKZ7P6456BFNIHRF4WNTEDKBRWAE7IAA"
+  },
+  {
+    "pool_address": "CC6MJZN3HFOJKXN42ANTSCLRFOMHLFXHWPNAX64DQNUEBDMUYMPHASAV"
+  },
+  {
+    "pool_address": "CB5QUVK5GS3IU23TMFZQ3P5J24YBBZP5PHUQAEJ2SP5K55PFTJRUQG2L"
+  },
+  {
+    "pool_address": "CCKOC2LJTPDBKDHTL3M5UO7HFZ2WFIHSOKCELMKQP3TLCIVUBKOQL4HB"
+  },
+  {
+    "pool_address": "CCUCE5H5CKW3S7JBESGCES6ZGDMWLNRY3HOFET3OH33MXZWKXNJTKSM3"
+  }
+]'
+
+# Loop through each pool_address and execute the command
+echo "$json" | jq -r '.[].pool_address' | while read -r ADDR; do
+  echo "Running ./restore.sh $ADDR feeaccount"
+  ./restore.sh "$ADDR" feeaccount
+done
+

@@ -140,14 +140,18 @@ echo "Pool: $LATEST_POOL_HASH"
 echo "Stake: $LATEST_STAKE_HASH"
 echo "Token: $TOKEN_HASH"
 
-# Deploy factory with old version (this automatically calls __constructor and deploys multihop)
+# Deploy factory with old version (this automatically deploys multihop)
 echo ""
-echo "Deploying factory with old version (__constructor automatically called, deploys multihop)..."
-FACTORY_ADDR=$(stellar contract deploy \
-  --wasm-hash $OLD_FACTORY_HASH \
+echo "Deploying factory with old version (automatically deploys multihop)..."
+FACTORY_ADDR=$(stellar contract deploy --wasm-hash $OLD_FACTORY_HASH --source $IDENTITY_STRING --network $NETWORK)
+
+echo "Initializing factory..."
+stellar contract invoke \
+  --id $FACTORY_ADDR \
   --source $IDENTITY_STRING \
   --network $NETWORK \
   -- \
+  __constructor \
   --admin $ADMIN_ADDRESS \
   --multihop_wasm_hash $OLD_MULTIHOP_HASH \
   --lp_wasm_hash $OLD_POOL_HASH \
@@ -155,7 +159,7 @@ FACTORY_ADDR=$(stellar contract deploy \
   --stake_wasm_hash $OLD_STAKE_HASH \
   --token_wasm_hash $TOKEN_HASH \
   --whitelisted_accounts "[ \"$ADMIN_ADDRESS\" ]" \
-  --lp_token_decimals 7)
+  --lp_token_decimals 7
 
 echo "Factory deployed and initialized at: $FACTORY_ADDR"
 
