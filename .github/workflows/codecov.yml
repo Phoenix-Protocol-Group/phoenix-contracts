@@ -15,7 +15,7 @@ jobs:
         with:
           toolchain: 1.81.0
       - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin --version 0.30.0
+        run: cargo install cargo-tarpaulin --version 0.30.0 --locked
       - run: make build
       - name: Run code coverage check with tarpaulin
         run: cargo tarpaulin --all-features --workspace --timeout 120 --out Xml --exclude soroban-token-contract
