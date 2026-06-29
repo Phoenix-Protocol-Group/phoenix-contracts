@@ -172,6 +172,20 @@ pub trait LiquidityPoolTrait {
 
     // Returns a snapshot of delegate state for off-chain consumption.
     fn query_delegate_state(env: Env) -> DelegateState;
+
+    // === Bootstrap trading floor ===
+    //
+    // Below the floor, `swap` reverts with `TradingFloorNotMet`; deposits
+    // and withdrawals are unaffected. Both reserves must meet their floor
+    // for trading to be permitted. Default = 0 (no floor); admin sets to
+    // gate the pool until it has sufficient depth to absorb real swap
+    // sizes without slipping outside the spread cap.
+
+    // Admin-only setter. Pass `(0, 0)` to disable the gate.
+    fn set_min_trading_balances(env: Env, min_a: i128, min_b: i128);
+
+    // Read the current bootstrap-mode floors.
+    fn min_trading_balances(env: Env) -> (i128, i128);
 }
 
 #[contractimpl]
@@ -430,6 +444,24 @@ impl LiquidityPoolTrait for LiquidityPool {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        // Bootstrap-mode trading-floor gate. Default-zero floors short-circuit;
+        // admin-set floors block `swap` until BOTH reserves reach their threshold.
+        // `provide_liquidity` and `withdraw_liquidity` are unaffected — LPs can
+        // seed and exit the pool freely during the warm-up phase.
+        let min_a = utils::get_min_trading_balance_a(&env);
+        let min_b = utils::get_min_trading_balance_b(&env);
+        if min_a > 0 || min_b > 0 {
+            let pool_balance_a = utils::get_pool_balance_a(&env);
+            let pool_balance_b = utils::get_pool_balance_b(&env);
+            if pool_balance_a < min_a || pool_balance_b < min_b {
+                log!(
+                    &env,
+                    "Pool: Swap: trading floor not met (pool below bootstrap depth)"
+                );
+                panic_with_error!(env, ContractError::TradingFloorNotMet);
+            }
+        }
 
         do_swap(
             env,
@@ -1101,6 +1133,38 @@ impl LiquidityPoolTrait for LiquidityPool {
             total_a,
             total_b,
         }
+    }
+
+    fn set_min_trading_balances(env: Env, min_a: i128, min_b: i128) {
+        let admin = utils::get_admin_old(&env);
+        admin.require_auth();
+
+        if min_a < 0 || min_b < 0 {
+            log!(&env, "Pool: SetMinTradingBalances: floors must be non-negative");
+            panic_with_error!(env, ContractError::NegativeInputProvided);
+        }
+
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        utils::save_min_trading_balance_a(&env, min_a);
+        utils::save_min_trading_balance_b(&env, min_b);
+
+        env.events()
+            .publish(("blend_pool", "set_min_trading_a"), min_a);
+        env.events()
+            .publish(("blend_pool", "set_min_trading_b"), min_b);
+    }
+
+    fn min_trading_balances(env: Env) -> (i128, i128) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        (
+            utils::get_min_trading_balance_a(&env),
+            utils::get_min_trading_balance_b(&env),
+        )
     }
 }
 

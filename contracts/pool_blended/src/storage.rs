@@ -23,6 +23,8 @@ pub enum DataKey {
     Delegate = 5,
     DelegatedOutA = 6,
     DelegatedOutB = 7,
+    MinTradingA = 8,
+    MinTradingB = 9,
 }
 
 impl TryFromVal<Env, DataKey> for Val {
@@ -464,6 +466,64 @@ pub mod utils {
         if amount != 0 {
             e.storage().persistent().extend_ttl(
                 &DataKey::DelegatedOutB,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+        }
+        amount
+    }
+
+    pub fn save_min_trading_balance_a(e: &Env, amount: i128) {
+        e.storage()
+            .persistent()
+            .set(&DataKey::MinTradingA, &amount);
+        e.storage().persistent().extend_ttl(
+            &DataKey::MinTradingA,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+    }
+
+    pub fn save_min_trading_balance_b(e: &Env, amount: i128) {
+        e.storage()
+            .persistent()
+            .set(&DataKey::MinTradingB, &amount);
+        e.storage().persistent().extend_ttl(
+            &DataKey::MinTradingB,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+    }
+
+    /// Bootstrap-mode floor for `pool_balance_a` below which `swap` reverts.
+    /// Default 0 = no floor (legacy + permissive); admin sets via
+    /// `set_min_trading_balances`. `provide_liquidity` / `withdraw_liquidity`
+    /// are NOT gated by this value — the floor is a trading-only switch.
+    pub fn get_min_trading_balance_a(e: &Env) -> i128 {
+        let amount: i128 = e
+            .storage()
+            .persistent()
+            .get(&DataKey::MinTradingA)
+            .unwrap_or(0);
+        if amount != 0 {
+            e.storage().persistent().extend_ttl(
+                &DataKey::MinTradingA,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+        }
+        amount
+    }
+
+    pub fn get_min_trading_balance_b(e: &Env) -> i128 {
+        let amount: i128 = e
+            .storage()
+            .persistent()
+            .get(&DataKey::MinTradingB)
+            .unwrap_or(0);
+        if amount != 0 {
+            e.storage().persistent().extend_ttl(
+                &DataKey::MinTradingB,
                 PERSISTENT_RENEWAL_THRESHOLD,
                 PERSISTENT_TARGET_TTL,
             );

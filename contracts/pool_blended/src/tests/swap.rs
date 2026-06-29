@@ -1925,3 +1925,116 @@ fn small_swap_replica_of_live_pools_xlm_usdc() {
         "Second swap result does not match expected net amount"
     );
 }
+
+// === Trading floor (bootstrap-mode) gate ============================
+
+/// Helper: deploy a pool seeded with `seed` units on each side.
+fn deploy_with_seed(env: &Env, seed: i128) -> (
+    crate::contract::LiquidityPoolClient<'static>,
+    crate::token_contract::Client<'static>,
+    crate::token_contract::Client<'static>,
+    Address,
+) {
+    let mut admin1 = Address::generate(env);
+    let mut admin2 = Address::generate(env);
+    let mut token1 = deploy_token_contract(env, &admin1);
+    let mut token2 = deploy_token_contract(env, &admin2);
+    if token2.address < token1.address {
+        std::mem::swap(&mut token1, &mut token2);
+        std::mem::swap(&mut admin1, &mut admin2);
+    }
+    let user = Address::generate(env);
+    let stake_manager = Address::generate(env);
+    let stake_owner = Address::generate(env);
+    let pool = deploy_liquidity_pool_contract(
+        env,
+        None,
+        (&token1.address, &token2.address),
+        0i64,
+        None,
+        None,
+        None,
+        stake_manager,
+        stake_owner,
+    );
+    token1.mint(&user, &(seed * 4));
+    token2.mint(&user, &(seed * 4));
+    pool.provide_liquidity(
+        &user,
+        &Some(seed),
+        &Some(seed),
+        &Some(seed),
+        &Some(seed),
+        &None,
+        &None::<u64>,
+        &false,
+    );
+    (pool, token1, token2, user)
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #337)")]
+fn swap_reverts_when_pool_below_trading_floor() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+    // Pool seeded with 10k each side; floor set to 50k. Below.
+    let seed = 100_000_000_000_i128; // 10_000.0000000
+    let floor = 500_000_000_000_i128; // 50_000.0000000
+    let (pool, token1, _token2, user) = deploy_with_seed(&env, seed);
+    pool.set_min_trading_balances(&floor, &0);
+    let (min_a, min_b) = pool.min_trading_balances();
+    assert_eq!((min_a, min_b), (floor, 0));
+    pool.swap(&user, &token1.address, &1_000_000_000, &None, &Some(500), &None::<u64>, &None);
+}
+
+#[test]
+fn swap_succeeds_after_floor_cleared() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+    let seed = 1_000_000_000_000_i128; // 100_000.0000000 — above 50k floor
+    let floor = 500_000_000_000_i128; // 50_000.0000000
+    let (pool, token1, _token2, user) = deploy_with_seed(&env, seed);
+    pool.set_min_trading_balances(&floor, &0);
+    let out = pool.swap(&user, &token1.address, &1_000_000_000, &None, &Some(500), &None::<u64>, &None);
+    assert!(out > 0);
+}
+
+#[test]
+fn provide_and_withdraw_unaffected_by_floor() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+    // Pool deliberately seeded below floor; deposit + withdraw must still work.
+    let seed = 100_000_000_000_i128;
+    let floor = 500_000_000_000_i128;
+    let (pool, _token1, _token2, user) = deploy_with_seed(&env, seed);
+    pool.set_min_trading_balances(&floor, &floor);
+    // Top-up deposit while below floor — should NOT revert.
+    pool.provide_liquidity(
+        &user,
+        &Some(seed / 2),
+        &Some(seed / 2),
+        &Some(seed / 2),
+        &Some(seed / 2),
+        &None,
+        &None::<u64>,
+        &false,
+    );
+    // Partial withdraw while still below floor — should NOT revert.
+    let share_token = pool.query_share_token_address();
+    let share_client = crate::token_contract::Client::new(&env, &share_token);
+    let shares = share_client.balance(&user);
+    pool.withdraw_liquidity(&user, &(shares / 4), &0, &0, &None::<u64>, &None);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #329)")]
+fn set_min_trading_balances_rejects_negative() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.cost_estimate().budget().reset_unlimited();
+    let (pool, _, _, _) = deploy_with_seed(&env, 100_000_000_000);
+    pool.set_min_trading_balances(&-1, &0);
+}

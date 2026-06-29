@@ -46,4 +46,9 @@ pub enum ContractError {
     DelegateUnauthorizedToken = 334,
     DelegatedOutUnderflow = 335,
     DelegateInvalidAmount = 336,
+
+    /// `swap` invoked while either pool reserve is below its admin-set
+    /// bootstrap floor. The pool is still in deposit-only mode;
+    /// `provide_liquidity` and `withdraw_liquidity` are unaffected.
+    TradingFloorNotMet = 337,
 }
