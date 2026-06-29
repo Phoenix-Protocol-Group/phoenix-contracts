@@ -186,6 +186,7 @@ fn test_update_vesting() {
     );
 }
 
+#[cfg(feature = "minter")]
 #[test]
 fn test_update_vesting_with_minter() {
     let env = Env::default();

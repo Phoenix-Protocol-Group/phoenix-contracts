@@ -515,16 +515,17 @@ impl LiquidityPoolTrait for LiquidityPool {
         // Capture (not consume) the optional auto-unstake info so we can roll
         // it into the single withdraw_liquidity event at the end. The unbond
         // side-effect still runs here, but no separate sub-event is emitted.
-        let (auto_unstake_amount, auto_unstake_timestamp) =
-            if let Some(_auto_unstake_info) = &auto_unstake {
-                log!(
+        let (auto_unstake_amount, auto_unstake_timestamp) = if let Some(_auto_unstake_info) =
+            &auto_unstake
+        {
+            log!(
                     &env,
                     "Pool: WithdrawLiquidity: auto_unstake requested but staking is disabled on this pool"
                 );
-                panic_with_error!(env, ContractError::StakingDisabled);
-            } else {
-                (None::<i128>, None::<u64>)
-            };
+            panic_with_error!(env, ContractError::StakingDisabled);
+        } else {
+            (None::<i128>, None::<u64>)
+        };
 
         let share_token_client = token_contract::Client::new(&env, &config.share_token);
         share_token_client.transfer(&sender, &env.current_contract_address(), &share_amount);
@@ -1136,7 +1137,10 @@ impl LiquidityPoolTrait for LiquidityPool {
         admin.require_auth();
 
         if min_a < 0 || min_b < 0 {
-            log!(&env, "Pool: SetMinTradingBalances: floors must be non-negative");
+            log!(
+                &env,
+                "Pool: SetMinTradingBalances: floors must be non-negative"
+            );
             panic_with_error!(env, ContractError::NegativeInputProvided);
         }
 
@@ -1483,7 +1487,7 @@ fn do_swap(
     utils::save_pool_balance_a(&env, balance_a);
     utils::save_pool_balance_b(&env, balance_b);
 
-        env.events().publish(
+    env.events().publish(
         (soroban_sdk::symbol_short!("swap"),),
         SwapEvent {
             actual_received_amount,

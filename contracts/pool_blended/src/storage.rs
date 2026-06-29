@@ -202,7 +202,6 @@ pub struct DelegateState {
     pub total_b: i128,
 }
 
-
 /// Payload of the `swap` event. Emitted once per logical swap (one event,
 /// not one per field). Field order is alphabetical: Soroban contracttype
 /// encodes structs as ScMap and enforces alphabetical key order on decode.
@@ -446,9 +445,7 @@ pub mod utils {
     }
 
     pub fn save_min_trading_balance_a(e: &Env, amount: i128) {
-        e.storage()
-            .persistent()
-            .set(&DataKey::MinTradingA, &amount);
+        e.storage().persistent().set(&DataKey::MinTradingA, &amount);
         e.storage().persistent().extend_ttl(
             &DataKey::MinTradingA,
             PERSISTENT_RENEWAL_THRESHOLD,
@@ -457,9 +454,7 @@ pub mod utils {
     }
 
     pub fn save_min_trading_balance_b(e: &Env, amount: i128) {
-        e.storage()
-            .persistent()
-            .set(&DataKey::MinTradingB, &amount);
+        e.storage().persistent().set(&DataKey::MinTradingB, &amount);
         e.storage().persistent().extend_ttl(
             &DataKey::MinTradingB,
             PERSISTENT_RENEWAL_THRESHOLD,

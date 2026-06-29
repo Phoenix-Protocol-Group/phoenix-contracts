@@ -7,9 +7,9 @@ use soroban_sdk::{
     Vec,
 };
 
+use crate::storage::MinterInfo;
 #[cfg(feature = "minter")]
 use crate::storage::{get_minter, save_minter};
-use crate::storage::MinterInfo;
 use crate::{
     error::ContractError,
     storage::{
@@ -53,22 +53,6 @@ pub trait VestingTrait {
     fn update_vesting_token(env: Env, new_token_address: Address) -> Result<(), ContractError>;
 
     fn update_max_complexity(env: Env, new_max_complexity: u32) -> Result<(), ContractError>;
-
-    #[cfg(feature = "minter")]
-    fn burn(env: Env, sender: Address, amount: u128);
-
-    #[cfg(feature = "minter")]
-    fn mint(env: Env, sender: Address, amount: i128);
-
-    #[cfg(feature = "minter")]
-    fn update_minter(env: Env, sender: Address, new_minter: Address);
-
-    #[cfg(feature = "minter")]
-    fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128);
-
-    #[cfg(feature = "minter")]
-    fn query_minter(env: Env) -> MinterInfo;
-
     fn query_config(env: Env) -> Config;
 
     fn query_admin(env: Env) -> Address;
@@ -215,151 +199,6 @@ impl VestingTrait for Vesting {
             .publish(("Claim", "Claimed tokens: "), available_to_claim);
     }
 
-    #[cfg(feature = "minter")]
-    fn burn(env: Env, sender: Address, amount: u128) {
-        sender.require_auth();
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-
-        if amount == 0 {
-            log!(&env, "Vesting: Burn: Invalid burn amount");
-            panic_with_error!(env, ContractError::InvalidBurnAmount);
-        }
-
-        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
-
-        token_client.burn(&sender, &(amount as i128));
-
-        env.events().publish(("Burn", "Burned from: "), sender);
-        env.events().publish(("Burn", "Burned tokens: "), amount);
-    }
-
-    #[cfg(feature = "minter")]
-    fn mint(env: Env, sender: Address, amount: i128) {
-        sender.require_auth();
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-
-        if amount <= 0 {
-            log!(&env, "Vesting: Mint: Invalid mint amount");
-            panic_with_error!(env, ContractError::InvalidMintAmount);
-        }
-
-        // check if minter is set
-        let minter = if let Some(minter) = get_minter(&env) {
-            minter
-        } else {
-            log!(&env, "Vesting: Mint: Minter not found");
-            panic_with_error!(env, ContractError::MinterNotFound);
-        };
-
-        // check if sender is minter
-        if sender != minter.address {
-            log!(&env, "Vesting: Mint: Not authorized to mint");
-            panic_with_error!(env, ContractError::NotAuthorized);
-        }
-
-        // check if minter has enough to mint
-        let minter_remainder = get_minter(&env)
-            .map_or(0, |m| m.mint_capacity)
-            .checked_sub(convert_i128_to_u128(amount))
-            .unwrap_or_else(|| {
-                log!(
-                    &env,
-                    "Vesting: Mint: Minter does not have enough capacity to mint"
-                );
-                panic_with_error!(env, ContractError::NotEnoughCapacity);
-            });
-
-        // mint to recipient
-        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
-        token_client.mint(&env.current_contract_address(), &amount);
-
-        // we update the minter
-        save_minter(
-            &env,
-            &MinterInfo {
-                address: minter.address,
-                mint_capacity: minter_remainder,
-            },
-        );
-
-        env.events().publish(("Mint", "sender: "), sender);
-        env.events().publish(("Mint", "Minted tokens: "), amount);
-    }
-
-    #[cfg(feature = "minter")]
-    fn update_minter(env: Env, sender: Address, new_minter: Address) {
-        sender.require_auth();
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-
-        let current_minter = get_minter(&env);
-
-        let is_authorized = if let Some(current_minter) = current_minter.clone() {
-            sender == current_minter.address
-        } else {
-            sender == get_admin_old(&env)
-        };
-
-        if !is_authorized {
-            log!(
-                env,
-                "Vesting: Update minter: Not authorized to update minter"
-            );
-            panic_with_error!(env, ContractError::NotAuthorized);
-        }
-
-        let mint_capacity = current_minter.map_or(0, |m| m.mint_capacity);
-        save_minter(
-            &env,
-            &MinterInfo {
-                address: new_minter.clone(),
-                mint_capacity,
-            },
-        );
-
-        env.events()
-            .publish(("Update minter", "Updated minter to: "), new_minter);
-    }
-
-    #[cfg(feature = "minter")]
-    fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128) {
-        sender.require_auth();
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-
-        if sender != get_admin_old(&env) {
-            log!(
-                &env,
-                "Vesting: Update minter capacity: Only contract's admin can update the minter's capacity"
-            );
-            panic_with_error!(env, ContractError::NotAuthorized);
-        }
-
-        if let Some(minter) = get_minter(&env) {
-            save_minter(
-                &env,
-                &MinterInfo {
-                    address: minter.address,
-                    mint_capacity: new_capacity,
-                },
-            );
-        } else {
-            log!(&env, "Vesting: Update Minter Capacity: Minter not found");
-            panic_with_error!(env, ContractError::MinterNotFound);
-        };
-
-        env.events().publish(
-            ("Update minter capacity", "Updated minter capacity to: "),
-            new_capacity,
-        );
-    }
-
     fn query_balance(env: Env, address: Address) -> i128 {
         env.storage()
             .instance()
@@ -414,19 +253,6 @@ impl VestingTrait for Vesting {
             .instance()
             .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
         get_token_info(&env)
-    }
-
-    #[cfg(feature = "minter")]
-    fn query_minter(env: Env) -> MinterInfo {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
-        if let Some(minter) = get_minter(&env) {
-            minter
-        } else {
-            log!(&env, "Vesting: Query Minter: Minter not found");
-            panic_with_error!(env, ContractError::MinterNotFound);
-        }
     }
 
     fn query_config(env: Env) -> Config {
@@ -651,7 +477,12 @@ impl Vesting {
             address: vesting_token.address,
         };
 
+        #[cfg(feature = "minter")]
         let mut config = Config {
+            is_with_minter: false,
+        };
+        #[cfg(not(feature = "minter"))]
+        let config = Config {
             is_with_minter: false,
         };
 
@@ -697,5 +528,162 @@ impl Vesting {
             .publish(("Vesting", "Migrate Config"), is_with_minter);
 
         is_with_minter
+    }
+}
+
+#[cfg(feature = "minter")]
+#[contractimpl]
+impl Vesting {
+    pub fn burn(env: Env, sender: Address, amount: u128) {
+        sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        if amount == 0 {
+            log!(&env, "Vesting: Burn: Invalid burn amount");
+            panic_with_error!(env, ContractError::InvalidBurnAmount);
+        }
+
+        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
+
+        token_client.burn(&sender, &(amount as i128));
+
+        env.events().publish(("Burn", "Burned from: "), sender);
+        env.events().publish(("Burn", "Burned tokens: "), amount);
+    }
+
+    pub fn mint(env: Env, sender: Address, amount: i128) {
+        sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        if amount <= 0 {
+            log!(&env, "Vesting: Mint: Invalid mint amount");
+            panic_with_error!(env, ContractError::InvalidMintAmount);
+        }
+
+        // check if minter is set
+        let minter = if let Some(minter) = get_minter(&env) {
+            minter
+        } else {
+            log!(&env, "Vesting: Mint: Minter not found");
+            panic_with_error!(env, ContractError::MinterNotFound);
+        };
+
+        // check if sender is minter
+        if sender != minter.address {
+            log!(&env, "Vesting: Mint: Not authorized to mint");
+            panic_with_error!(env, ContractError::NotAuthorized);
+        }
+
+        // check if minter has enough to mint
+        let minter_remainder = get_minter(&env)
+            .map_or(0, |m| m.mint_capacity)
+            .checked_sub(convert_i128_to_u128(amount))
+            .unwrap_or_else(|| {
+                log!(
+                    &env,
+                    "Vesting: Mint: Minter does not have enough capacity to mint"
+                );
+                panic_with_error!(env, ContractError::NotEnoughCapacity);
+            });
+
+        // mint to recipient
+        let token_client = token_contract::Client::new(&env, &get_token_info(&env).address);
+        token_client.mint(&env.current_contract_address(), &amount);
+
+        // we update the minter
+        save_minter(
+            &env,
+            &MinterInfo {
+                address: minter.address,
+                mint_capacity: minter_remainder,
+            },
+        );
+
+        env.events().publish(("Mint", "sender: "), sender);
+        env.events().publish(("Mint", "Minted tokens: "), amount);
+    }
+
+    pub fn update_minter(env: Env, sender: Address, new_minter: Address) {
+        sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        let current_minter = get_minter(&env);
+
+        let is_authorized = if let Some(current_minter) = current_minter.clone() {
+            sender == current_minter.address
+        } else {
+            sender == get_admin_old(&env)
+        };
+
+        if !is_authorized {
+            log!(
+                env,
+                "Vesting: Update minter: Not authorized to update minter"
+            );
+            panic_with_error!(env, ContractError::NotAuthorized);
+        }
+
+        let mint_capacity = current_minter.map_or(0, |m| m.mint_capacity);
+        save_minter(
+            &env,
+            &MinterInfo {
+                address: new_minter.clone(),
+                mint_capacity,
+            },
+        );
+
+        env.events()
+            .publish(("Update minter", "Updated minter to: "), new_minter);
+    }
+
+    pub fn update_minter_capacity(env: Env, sender: Address, new_capacity: u128) {
+        sender.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        if sender != get_admin_old(&env) {
+            log!(
+                &env,
+                "Vesting: Update minter capacity: Only contract's admin can update the minter's capacity"
+            );
+            panic_with_error!(env, ContractError::NotAuthorized);
+        }
+
+        if let Some(minter) = get_minter(&env) {
+            save_minter(
+                &env,
+                &MinterInfo {
+                    address: minter.address,
+                    mint_capacity: new_capacity,
+                },
+            );
+        } else {
+            log!(&env, "Vesting: Update Minter Capacity: Minter not found");
+            panic_with_error!(env, ContractError::MinterNotFound);
+        };
+
+        env.events().publish(
+            ("Update minter capacity", "Updated minter capacity to: "),
+            new_capacity,
+        );
+    }
+
+    pub fn query_minter(env: Env) -> MinterInfo {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        if let Some(minter) = get_minter(&env) {
+            minter
+        } else {
+            log!(&env, "Vesting: Query Minter: Minter not found");
+            panic_with_error!(env, ContractError::MinterNotFound);
+        }
     }
 }
