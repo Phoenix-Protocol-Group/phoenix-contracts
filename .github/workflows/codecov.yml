@@ -21,8 +21,6 @@ jobs:
         with:
           toolchain: ${{ matrix.rust-version }}
           targets: wasm32-unknown-unknown
-      - name: Add wasm32 target
-        run: rustup target add wasm32-unknown-unknown
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin --version 0.30.0
       - run: make build

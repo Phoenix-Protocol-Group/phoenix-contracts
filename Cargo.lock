@@ -869,6 +869,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "phoenix-pool-blended"
+version = "2.0.0"
+dependencies = [
+ "num-integer",
+ "phoenix",
+ "pretty_assertions",
+ "soroban-decimal",
+ "soroban-sdk",
+ "test-case",
+]
+
+[[package]]
 name = "phoenix-pool-stable"
 version = "2.0.0"
 dependencies = [

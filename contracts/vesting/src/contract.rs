@@ -8,7 +8,8 @@ use soroban_sdk::{
 };
 
 #[cfg(feature = "minter")]
-use crate::storage::{get_minter, save_minter, MinterInfo};
+use crate::storage::{get_minter, save_minter};
+use crate::storage::MinterInfo;
 use crate::{
     error::ContractError,
     storage::{
@@ -657,10 +658,13 @@ impl Vesting {
         save_token_info(&env, &token_info);
         save_max_vesting_complexity(&env, &max_vesting_complexity);
 
+        #[cfg(feature = "minter")]
         if let Some(minter_info) = minter_info {
             save_minter(&env, &minter_info);
             config.is_with_minter = true;
         }
+        #[cfg(not(feature = "minter"))]
+        let _ = minter_info;
 
         save_config(&env, config);
 
