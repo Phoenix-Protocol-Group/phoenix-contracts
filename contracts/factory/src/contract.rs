@@ -2,10 +2,11 @@ use crate::{
     error::ContractError,
     stake_contract::StakedResponse,
     storage::{
-        get_blend_wasm_hash, get_config, get_lp_vec, get_stable_wasm_hash, save_blend_wasm_hash,
-        save_config, save_lp_vec, save_lp_vec_with_tuple_as_key, save_stable_wasm_hash, Asset,
-        Config, LiquidityPoolInfo, LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN,
-        FACTORY_KEY, PENDING_ADMIN,
+        get_blend_wasm_hash, get_config, get_lp_by_tuple_v2, get_lp_vec, get_stable_wasm_hash,
+        save_blend_wasm_hash, save_config, save_lp_vec, save_lp_vec_with_tuple_as_key,
+        save_lp_vec_with_tuple_v2_as_key, save_stable_wasm_hash, Asset, Config, LiquidityPoolInfo,
+        LpPortfolio, PairTupleKey, StakePortfolio, UserPortfolio, ADMIN, FACTORY_KEY,
+        PENDING_ADMIN,
     },
     utils::deploy_and_initialize_multihop_contract,
     ConvertVec,
@@ -61,6 +62,17 @@ pub trait FactoryTrait {
     fn query_all_pools_details(env: Env) -> Vec<LiquidityPoolInfo>;
 
     fn query_for_pool_by_token_pair(env: Env, token_a: Address, token_b: Address) -> Address;
+
+    /// Type-aware sibling of `query_for_pool_by_token_pair`. Resolves a pool
+    /// by `(token_a, token_b)` for the requested `pool_type`. For Xyk it
+    /// falls back to the legacy `PairTupleKey` storage so pools that pre-date
+    /// the V2 key (i.e., everything on mainnet today) still resolve cleanly.
+    fn query_pool_by_pair_type(
+        env: Env,
+        token_a: Address,
+        token_b: Address,
+        pool_type: PoolType,
+    ) -> Address;
 
     fn get_admin(env: Env) -> Address;
 
@@ -149,7 +161,15 @@ impl FactoryTrait for Factory {
 
         init_fn_args.push_back(max_allowed_fee_bps.into_val(&env));
 
+        // Salt formula: legacy `sha256(token_a || token_b)` for Xyk/Stable
+        // (preserves on-chain addresses of existing pools), but Blend pools
+        // prefix with the pool-type discriminant so they get a fresh, distinct
+        // deterministic address — letting Xyk and Blend coexist for the same
+        // unordered pair.
         let mut salt = Bytes::new(&env);
+        if let PoolType::Blend = pool_type {
+            salt.append(&Bytes::from_array(&env, &[PoolType::Blend as u8]));
+        }
         salt.append(&lp_init_info.token_init_info.token_a.clone().to_xdr(&env));
         salt.append(&lp_init_info.token_init_info.token_b.clone().to_xdr(&env));
         let salt = env.crypto().sha256(&salt);
@@ -176,7 +196,25 @@ impl FactoryTrait for Factory {
         save_lp_vec(&env, lp_vec);
         let token_a = &lp_init_info.token_init_info.token_a;
         let token_b = &lp_init_info.token_init_info.token_b;
-        save_lp_vec_with_tuple_as_key(&env, (token_a, token_b), &lp_contract_address);
+
+        // Storage policy:
+        // * Xyk: keep writing the legacy `PairTupleKey { a, b }` slot so any
+        //   client that still calls `query_for_pool_by_token_pair(a, b)` (no
+        //   `pool_type` arg) keeps resolving the Xyk pool — preserving the
+        //   semantics of all pools that pre-date this V2 key.
+        // * Stable: writes legacy too (no Stable pools coexist with anything
+        //   else on the current factory; same backwards-compat reasoning).
+        // * Blend: writes ONLY the V2 slot so it never clobbers an existing
+        //   legacy entry pointing at a different-type pool for the same pair.
+        // All three also write the explicit V2 slot so the type-aware query
+        // returns the correct pool unambiguously.
+        match pool_type {
+            PoolType::Xyk | PoolType::Stable => {
+                save_lp_vec_with_tuple_as_key(&env, (token_a, token_b), &lp_contract_address);
+            }
+            PoolType::Blend => {}
+        }
+        save_lp_vec_with_tuple_v2_as_key(&env, pool_type, (token_a, token_b), &lp_contract_address);
 
         env.events()
             .publish(("create", "liquidity_pool"), &lp_contract_address);
@@ -345,6 +383,69 @@ impl FactoryTrait for Factory {
         log!(
             &env,
             "Factory: query_for_pool_by_token_pair failed: No liquidity pool found"
+        );
+        panic_with_error!(&env, ContractError::LiquidityPoolNotFound);
+    }
+
+    fn query_pool_by_pair_type(
+        env: Env,
+        token_a: Address,
+        token_b: Address,
+        pool_type: PoolType,
+    ) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+
+        // Try V2 in both orderings first — this is the authoritative source
+        // for any pool created after this entrypoint shipped.
+        if let Some(addr) = get_lp_by_tuple_v2(&env, pool_type, &token_a, &token_b) {
+            return addr;
+        }
+        if let Some(addr) = get_lp_by_tuple_v2(&env, pool_type, &token_b, &token_a) {
+            return addr;
+        }
+
+        // Legacy fallback. Pre-V2 pools wrote `PairTupleKey { a, b }` only,
+        // and on the current factory those are all Xyk. Anything Stable/Blend
+        // routed only through V2 (Blend never writes the legacy slot), so the
+        // fallback applies to Xyk lookups exclusively.
+        if let PoolType::Xyk = pool_type {
+            let pool_result: Option<Address> = env.storage().persistent().get(&PairTupleKey {
+                token_a: token_a.clone(),
+                token_b: token_b.clone(),
+            });
+            if let Some(addr) = pool_result {
+                env.storage().persistent().extend_ttl(
+                    &PairTupleKey {
+                        token_a: token_a.clone(),
+                        token_b: token_b.clone(),
+                    },
+                    PERSISTENT_RENEWAL_THRESHOLD,
+                    PERSISTENT_TARGET_TTL,
+                );
+                return addr;
+            }
+            let reverted: Option<Address> = env.storage().persistent().get(&PairTupleKey {
+                token_a: token_b.clone(),
+                token_b: token_a.clone(),
+            });
+            if let Some(addr) = reverted {
+                env.storage().persistent().extend_ttl(
+                    &PairTupleKey {
+                        token_a: token_b,
+                        token_b: token_a,
+                    },
+                    PERSISTENT_RENEWAL_THRESHOLD,
+                    PERSISTENT_TARGET_TTL,
+                );
+                return addr;
+            }
+        }
+
+        log!(
+            &env,
+            "Factory: query_for_pool_by_token_pair_and_type failed: No liquidity pool found"
         );
         panic_with_error!(&env, ContractError::LiquidityPoolNotFound);
     }
@@ -667,9 +768,7 @@ mod tests {
     use soroban_sdk::{testutils::Address as _, Address, String};
 
     #[test]
-    #[should_panic(
-        expected = "Factory: validate_token info failed: token_a must be less than token_b"
-    )]
+    #[should_panic(expected = "Error(Contract, #104)")]
     fn validate_token_info_should_fail_on_token_a_less_than_token_b() {
         let env = Env::default();
 
@@ -694,9 +793,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected = "Factory: validate_token_info: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
-    )]
+    #[should_panic(expected = "Error(Contract, #105)")]
     fn validate_token_info_should_fail_on_min_bond_less_than_zero() {
         let env = Env::default();
 
@@ -716,9 +813,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected = "Factory: validate_token_info failed: min_reward must be bigger then 0!"
-    )]
+    #[should_panic(expected = "Error(Contract, #106)")]
     fn validate_token_info_should_fail_on_min_reward_less_than_zero() {
         let env = Env::default();
 

@@ -43,6 +43,20 @@ pub fn install_stable_lp_contract(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(stable_pool::WASM)
 }
 
+pub fn install_blend_pool_wasm(env: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool_blended.wasm"
+    );
+    env.deployer().upload_contract_wasm(WASM)
+}
+
+pub fn deploy_factory_with_blend_support(env: &Env, admin: Address) -> factory_contract::Client {
+    let factory = deploy_and_initialize_factory(env, admin);
+    let blend_wasm_hash = install_blend_pool_wasm(env);
+    factory.set_blend_wasm_hash(&blend_wasm_hash);
+    factory
+}
+
 pub fn install_token_wasm(env: &Env) -> BytesN<32> {
     env.deployer().upload_contract_wasm(token_contract::WASM)
 }

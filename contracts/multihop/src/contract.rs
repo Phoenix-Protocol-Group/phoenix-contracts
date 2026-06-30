@@ -103,8 +103,8 @@ impl MultihopTrait for Multihop {
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
         operations.iter().for_each(|op| {
-            let liquidity_pool_addr: Address = factory_client
-                .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
+            let liquidity_pool_addr: Address =
+                resolve_pool_addr(&factory_client, pool_type, &op.offer_asset, &op.ask_asset);
 
             match pool_type {
                 PoolType::Xyk => {
@@ -176,8 +176,8 @@ impl MultihopTrait for Multihop {
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
         operations.iter().for_each(|op| {
-            let pool_addres: Address = factory_client
-                .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
+            let pool_addres: Address =
+                resolve_pool_addr(&factory_client, pool_type, &op.offer_asset, &op.ask_asset);
 
             // due to different pool libraries we cannot use shorter match statement.
             match pool_type {
@@ -265,8 +265,8 @@ impl MultihopTrait for Multihop {
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
         operations.iter().for_each(|op| {
-            let pool_address: Address = factory_client
-                .query_for_pool_by_token_pair(&op.clone().offer_asset, &op.ask_asset.clone());
+            let pool_address: Address =
+                resolve_pool_addr(&factory_client, pool_type, &op.offer_asset, &op.ask_asset);
 
             // due to different pool libraries we cannot use shorter match statement.
             match pool_type {
@@ -455,5 +455,26 @@ impl Multihop {
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&MULTIHOP_KEY, &true);
         Ok(())
+    }
+}
+
+/// Choose the right factory query depending on `pool_type`:
+/// * `Xyk` continues to use the legacy `query_for_pool_by_token_pair`. This
+///   keeps existing routing semantics intact for pools that pre-date the V2
+///   pair-tuple key in the factory.
+/// * `Stable` and `Blend` use `query_pool_by_pair_type`, which reads the
+///   `(pool_type, a, b)` storage slot and lets same-pair pools of different
+///   types coexist without clobbering each other's routing.
+fn resolve_pool_addr(
+    factory_client: &factory_contract::Client,
+    pool_type: PoolType,
+    offer_asset: &Address,
+    ask_asset: &Address,
+) -> Address {
+    match pool_type {
+        PoolType::Xyk => factory_client.query_for_pool_by_token_pair(offer_asset, ask_asset),
+        PoolType::Stable | PoolType::Blend => {
+            factory_client.query_pool_by_pair_type(offer_asset, ask_asset, &pool_type)
+        }
     }
 }
