@@ -78,9 +78,7 @@ fn confirm_stake_contract_deployment() {
 }
 
 #[test]
-#[should_panic(
-    expected = "Pool Stable: Initialize: First token must be alphabetically smaller than second token"
-)]
+#[should_panic(expected = "Error(Contract, #407)")]
 fn pool_stable_initialization_should_fail_with_token_a_bigger_than_token_b() {
     let env = Env::default();
     env.mock_all_auths();

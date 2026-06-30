@@ -13,9 +13,7 @@ use crate::{
     storage::{Config, PairType, ADMIN, XYK_POOL_KEY},
 };
 
-#[should_panic(
-    expected = "Pool: Initialize: First token must be alphabetically smaller than second token"
-)]
+#[should_panic(expected = "Error(Contract, #317)")]
 #[test]
 fn test_initialize_with_bigger_first_token_should_fail() {
     let env = Env::default();
@@ -406,7 +404,7 @@ fn update_configs_all_bps_values_should_work() {
     );
 }
 
-#[should_panic(expected = "Pool: Initialize: swap fee is higher than the maximum allowed!")]
+#[should_panic(expected = "Error(Contract, #324)")]
 #[test]
 fn test_initialize_with_maximum_allowed_swap_fee_bps_over_the_cap_should_fail() {
     let env = Env::default();

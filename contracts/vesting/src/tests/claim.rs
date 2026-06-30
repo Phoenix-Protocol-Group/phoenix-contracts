@@ -282,7 +282,7 @@ fn user_can_claim_tokens_way_after_the_testing_period() {
 }
 
 #[test]
-#[should_panic(expected = "Vesting: Claim: No tokens available to claim")]
+#[should_panic(expected = "Error(Contract, #713)")]
 fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
     const START_TIMESTAMP: u64 = 15;
     let env = Env::default();
@@ -331,7 +331,7 @@ fn transfer_vesting_token_before_vesting_period_starts_should_fail() {
 }
 
 #[test]
-#[should_panic(expected = "Vesting: Claim: No tokens available to claim")]
+#[should_panic(expected = "Error(Contract, #713)")]
 fn claim_after_all_tokens_have_been_claimed() {
     let env = Env::default();
     env.mock_all_auths();

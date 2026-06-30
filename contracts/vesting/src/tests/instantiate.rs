@@ -87,9 +87,7 @@ fn instantiate_contract_successfully() {
     vesting_client.update_max_complexity(&10);
 }
 
-#[should_panic(
-    expected = "Vesting: Create vesting account: At least one vesting schedule must be provided."
-)]
+#[should_panic(expected = "Error(Contract, #706)")]
 #[test]
 fn instantiate_contract_without_any_vesting_balances_should_fail() {
     let env = Env::default();
@@ -115,9 +113,7 @@ fn instantiate_contract_without_any_vesting_balances_should_fail() {
     vesting_client.create_vesting_schedules(&vesting_schedules);
 }
 
-#[should_panic(
-    expected = "Vesting: Create vesting account: Admin does not have enough tokens to start the vesting schedule"
-)]
+#[should_panic(expected = "Error(Contract, #724)")]
 #[test]
 fn create_schedule_panics_when_admin_has_no_tokens_to_fund() {
     let env = Env::default();
