@@ -13,10 +13,7 @@ use super::setup::{
 use crate::contract::FactoryClient;
 
 use phoenix::utils::PoolType;
-use soroban_sdk::{
-    testutils::{Address as _},
-    Address, Env, String,
-};
+use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 fn setup_factory_with_blend<'a>(env: &Env, admin: &Address) -> FactoryClient<'a> {
     let factory = deploy_factory_contract(env, Some(admin.clone()));
@@ -94,11 +91,7 @@ fn xyk_then_blend_same_pair_coexist() {
     );
     // Type-aware query for Xyk: must agree.
     assert_eq!(
-        factory.query_pool_by_pair_type(
-            &token_a.address,
-            &token_b.address,
-            &PoolType::Xyk,
-        ),
+        factory.query_pool_by_pair_type(&token_a.address, &token_b.address, &PoolType::Xyk,),
         xyk_pool
     );
 
@@ -115,7 +108,10 @@ fn xyk_then_blend_same_pair_coexist() {
     );
 
     // Different deterministic address — salt prefix did its job.
-    assert_ne!(xyk_pool, blend_pool, "Xyk and Blend pools must occupy distinct addresses");
+    assert_ne!(
+        xyk_pool, blend_pool,
+        "Xyk and Blend pools must occupy distinct addresses"
+    );
 
     // Legacy query MUST still return the Xyk pool (back-compat invariant).
     assert_eq!(

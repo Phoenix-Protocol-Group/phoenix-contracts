@@ -72,10 +72,13 @@ fn multihop_routes_xyk_and_blend_independently_for_same_pair() {
     // Discover both pool addresses from the factory; sanity-check that they
     // are distinct and that the legacy query still resolves the Xyk one
     // (back-compat invariant — multihop's Xyk routing depends on it).
-    let xyk_addr =
-        pool_address_for(&factory, &token_a.address, &token_b.address, PoolType::Xyk);
-    let blend_addr =
-        pool_address_for(&factory, &token_a.address, &token_b.address, PoolType::Blend);
+    let xyk_addr = pool_address_for(&factory, &token_a.address, &token_b.address, PoolType::Xyk);
+    let blend_addr = pool_address_for(
+        &factory,
+        &token_a.address,
+        &token_b.address,
+        PoolType::Blend,
+    );
     assert_ne!(xyk_addr, blend_addr);
     assert_eq!(
         factory.query_for_pool_by_token_pair(&token_a.address, &token_b.address),
@@ -218,10 +221,8 @@ fn simulate_swap_dispatches_per_pool_type() {
         ask_asset_min_amount: None::<i128>,
     };
 
-    let xyk_sim =
-        multihop.simulate_swap(&vec![&env, swap_op.clone()], &10_000i128, &PoolType::Xyk);
-    let blend_sim =
-        multihop.simulate_swap(&vec![&env, swap_op], &10_000i128, &PoolType::Blend);
+    let xyk_sim = multihop.simulate_swap(&vec![&env, swap_op.clone()], &10_000i128, &PoolType::Xyk);
+    let blend_sim = multihop.simulate_swap(&vec![&env, swap_op], &10_000i128, &PoolType::Blend);
 
     assert!(xyk_sim.ask_amount > 0);
     assert!(blend_sim.ask_amount > 0);
@@ -267,8 +268,7 @@ fn pre_existing_xyk_routes_via_legacy_query_after_factory_upgrade() {
         PoolType::Xyk,
     );
 
-    let xyk_addr =
-        factory.query_for_pool_by_token_pair(&token_a.address, &token_b.address);
+    let xyk_addr = factory.query_for_pool_by_token_pair(&token_a.address, &token_b.address);
     let multihop = deploy_multihop_contract(&env, admin.clone(), &factory.address);
     let recipient = Address::generate(&env);
     let offer: i128 = 5_000;

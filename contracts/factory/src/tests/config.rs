@@ -192,9 +192,7 @@ fn factory_successfully_inits_stable_pool() {
 }
 
 #[test]
-#[should_panic(
-    expected = "Factory: Create Liquidity Pool: You are not authorized to create liquidity pool!"
-)]
+#[should_panic(expected = "Error(Contract, #102)")]
 fn factory_fails_to_init_lp_when_authorized_address_not_present() {
     let env = Env::default();
     let admin = Address::generate(&env);
@@ -238,9 +236,7 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
     );
 }
 
-#[should_panic(
-    expected = "Factory: Initialize: there must be at least one whitelisted account able to create liquidity pools."
-)]
+#[should_panic(expected = "Error(Contract, #101)")]
 #[test]
 fn factory_fails_to_init_lp_when_no_whitelisted_accounts() {
     let env = Env::default();

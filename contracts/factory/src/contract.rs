@@ -214,12 +214,7 @@ impl FactoryTrait for Factory {
             }
             PoolType::Blend => {}
         }
-        save_lp_vec_with_tuple_v2_as_key(
-            &env,
-            pool_type,
-            (token_a, token_b),
-            &lp_contract_address,
-        );
+        save_lp_vec_with_tuple_v2_as_key(&env, pool_type, (token_a, token_b), &lp_contract_address);
 
         env.events()
             .publish(("create", "liquidity_pool"), &lp_contract_address);
@@ -773,9 +768,7 @@ mod tests {
     use soroban_sdk::{testutils::Address as _, Address, String};
 
     #[test]
-    #[should_panic(
-        expected = "Factory: validate_token info failed: token_a must be less than token_b"
-    )]
+    #[should_panic(expected = "Error(Contract, #104)")]
     fn validate_token_info_should_fail_on_token_a_less_than_token_b() {
         let env = Env::default();
 
@@ -800,9 +793,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected = "Factory: validate_token_info: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
-    )]
+    #[should_panic(expected = "Error(Contract, #105)")]
     fn validate_token_info_should_fail_on_min_bond_less_than_zero() {
         let env = Env::default();
 
@@ -822,9 +813,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected = "Factory: validate_token_info failed: min_reward must be bigger then 0!"
-    )]
+    #[should_panic(expected = "Error(Contract, #106)")]
     fn validate_token_info_should_fail_on_min_reward_less_than_zero() {
         let env = Env::default();
 

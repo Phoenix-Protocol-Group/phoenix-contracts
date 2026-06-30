@@ -506,7 +506,7 @@ fn test_queries_by_tuple() {
 }
 
 #[test]
-#[should_panic(expected = "Factory: query_for_pool_by_token_pair failed: No liquidity pool found")]
+#[should_panic(expected = "Error(Contract, #103)")]
 fn test_queries_by_tuple_errors() {
     let env = Env::default();
     env.cost_estimate().budget().reset_unlimited();

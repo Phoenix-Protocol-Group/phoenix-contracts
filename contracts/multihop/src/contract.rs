@@ -103,12 +103,8 @@ impl MultihopTrait for Multihop {
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
         operations.iter().for_each(|op| {
-            let liquidity_pool_addr: Address = resolve_pool_addr(
-                &factory_client,
-                pool_type,
-                &op.offer_asset,
-                &op.ask_asset,
-            );
+            let liquidity_pool_addr: Address =
+                resolve_pool_addr(&factory_client, pool_type, &op.offer_asset, &op.ask_asset);
 
             match pool_type {
                 PoolType::Xyk => {
@@ -180,12 +176,8 @@ impl MultihopTrait for Multihop {
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
         operations.iter().for_each(|op| {
-            let pool_addres: Address = resolve_pool_addr(
-                &factory_client,
-                pool_type,
-                &op.offer_asset,
-                &op.ask_asset,
-            );
+            let pool_addres: Address =
+                resolve_pool_addr(&factory_client, pool_type, &op.offer_asset, &op.ask_asset);
 
             // due to different pool libraries we cannot use shorter match statement.
             match pool_type {
@@ -273,12 +265,8 @@ impl MultihopTrait for Multihop {
         let factory_client = factory_contract::Client::new(&env, &get_factory(&env));
 
         operations.iter().for_each(|op| {
-            let pool_address: Address = resolve_pool_addr(
-                &factory_client,
-                pool_type,
-                &op.offer_asset,
-                &op.ask_asset,
-            );
+            let pool_address: Address =
+                resolve_pool_addr(&factory_client, pool_type, &op.offer_asset, &op.ask_asset);
 
             // due to different pool libraries we cannot use shorter match statement.
             match pool_type {

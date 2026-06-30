@@ -91,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Multihop: Verify Swap: Provided bad swap order")]
+    #[should_panic(expected = "Error(Contract, #202)")]
     fn verify_operations_should_fail_when_bad_order_provided() {
         let env = Env::default();
 
@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Multihop: Verify Reverse Swap: Provided bad swap order")]
+    #[should_panic(expected = "Error(Contract, #202)")]
     fn verify_operations_reverse_swap_should_fail_when_bad_order_provided() {
         let env = Env::default();
 
