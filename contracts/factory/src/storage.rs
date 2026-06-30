@@ -7,6 +7,8 @@ use soroban_sdk::{
     Symbol, TryFromVal, Val, Vec,
 };
 
+use phoenix::utils::PoolType;
+
 use crate::error::ContractError;
 
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
@@ -26,6 +28,18 @@ pub enum DataKey {
 #[derive(Clone)]
 #[contracttype]
 pub struct PairTupleKey {
+    pub(crate) token_a: Address,
+    pub(crate) token_b: Address,
+}
+
+/// V2 pair-tuple key, used to disambiguate same-pair pools deployed with
+/// different `pool_type`s. Coexists with `PairTupleKey` (which remains the
+/// canonical lookup for Xyk pools to preserve backwards-compatible behaviour
+/// for clients that haven't migrated to the type-aware query yet).
+#[derive(Clone)]
+#[contracttype]
+pub struct PairTupleKeyV2 {
+    pub(crate) pool_type: PoolType,
     pub(crate) token_a: Address,
     pub(crate) token_b: Address,
 }
@@ -259,4 +273,47 @@ pub fn save_lp_vec_with_tuple_as_key(
         PERSISTENT_RENEWAL_THRESHOLD,
         PERSISTENT_TARGET_TTL,
     );
+}
+
+pub fn save_lp_vec_with_tuple_v2_as_key(
+    env: &Env,
+    pool_type: PoolType,
+    tuple_pool: (&Address, &Address),
+    lp_address: &Address,
+) {
+    let key = PairTupleKeyV2 {
+        pool_type,
+        token_a: tuple_pool.0.clone(),
+        token_b: tuple_pool.1.clone(),
+    };
+    env.storage().persistent().set(&key, &lp_address);
+    env.storage().persistent().extend_ttl(
+        &key,
+        PERSISTENT_RENEWAL_THRESHOLD,
+        PERSISTENT_TARGET_TTL,
+    );
+}
+
+/// Read a pool address by `(pool_type, token_a, token_b)`. Caller is
+/// responsible for trying both orderings.
+pub fn get_lp_by_tuple_v2(
+    env: &Env,
+    pool_type: PoolType,
+    token_a: &Address,
+    token_b: &Address,
+) -> Option<Address> {
+    let key = PairTupleKeyV2 {
+        pool_type,
+        token_a: token_a.clone(),
+        token_b: token_b.clone(),
+    };
+    let result: Option<Address> = env.storage().persistent().get(&key);
+    if env.storage().persistent().has(&key) {
+        env.storage().persistent().extend_ttl(
+            &key,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+    }
+    result
 }

@@ -58,6 +58,16 @@ pub mod stable_lp {
     );
 }
 
+pub mod blend_lp {
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/phoenix_pool_blended.wasm"
+    );
+}
+
+pub fn install_blend_lp(env: &Env) -> BytesN<32> {
+    env.deployer().upload_contract_wasm(blend_lp::WASM)
+}
+
 pub mod stake_contract {
     soroban_sdk::contractimport!(
         file = "../../target/wasm32-unknown-unknown/release/phoenix_stake.wasm"
