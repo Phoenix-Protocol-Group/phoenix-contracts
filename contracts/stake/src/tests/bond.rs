@@ -57,7 +57,7 @@ fn initialize_staking_contract() {
 }
 
 #[test]
-#[should_panic = "Stake: Bond: Trying to stake less than minimum required"]
+#[should_panic = "Error(Contract, #503)"]
 fn bond_too_few() {
     let env = Env::default();
     env.mock_all_auths();
@@ -253,7 +253,7 @@ fn initializing_contract_sets_total_staked_var() {
 }
 
 #[test]
-#[should_panic(expected = "Stake: Remove stake: Stake not found")]
+#[should_panic(expected = "Error(Contract, #509)")]
 fn unbond_wrong_user_stake_not_found() {
     let env = Env::default();
     env.mock_all_auths();
@@ -350,9 +350,10 @@ fn pay_rewards_during_unbond() {
     );
     assert_eq!(reward_token.balance(&user), 0);
 
-    // we first have to withdraw_rewards _before_ unbonding
-    // as this messes up with the reward calculation
-    // if we unbond first then we get no rewards
+    // Withdrawing rewards before unbond is no longer load-bearing — `unbond`
+    // settles pending rewards internally now — but the explicit pattern is
+    // still supported and must not double-pay (see
+    // `unbond_settles_rewards::explicit_withdraw_then_unbond_does_not_double_pay`).
     staking.withdraw_rewards(&user);
     assert_eq!(reward_token.balance(&user), 20_000);
 
@@ -370,9 +371,7 @@ fn pay_rewards_during_unbond() {
     );
 }
 
-#[should_panic(
-    expected = "Stake: initialize: Minimum amount of lp share tokens to bond can not be smaller or equal to 0"
-)]
+#[should_panic(expected = "Error(Contract, #501)")]
 #[test]
 fn initialize_staking_contract_should_panic_when_min_bond_invalid() {
     let env = Env::default();
@@ -395,7 +394,7 @@ fn initialize_staking_contract_should_panic_when_min_bond_invalid() {
     );
 }
 
-#[should_panic(expected = "Stake: initialize: min_reward must be bigger than 0!")]
+#[should_panic(expected = "Error(Contract, #502)")]
 #[test]
 fn initialize_staking_contract_should_panic_when_min_rewards_invalid() {
     let env = Env::default();
@@ -418,7 +417,7 @@ fn initialize_staking_contract_should_panic_when_min_rewards_invalid() {
     );
 }
 
-#[should_panic(expected = "Stake: initialize: max_complexity must be bigger than 0!")]
+#[should_panic(expected = "Error(Contract, #513)")]
 #[test]
 fn initialize_staking_contract_should_panic_when_max_complexity_invalid() {
     let env = Env::default();

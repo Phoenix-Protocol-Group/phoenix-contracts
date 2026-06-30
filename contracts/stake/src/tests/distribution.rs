@@ -317,9 +317,7 @@ fn four_users_with_different_stakes() {
 }
 
 #[test]
-#[should_panic(
-    expected = "Stake: Distribute rewards: No distribution for this reward token exists"
-)]
+#[should_panic(expected = "Error(Contract, #514)")]
 fn fund_rewards_without_establishing_distribution() {
     let env = Env::default();
     env.mock_all_auths();
