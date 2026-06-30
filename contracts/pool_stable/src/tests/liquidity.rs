@@ -631,9 +631,7 @@ fn swap_with_no_amounts() {
 }
 
 #[test]
-#[should_panic(
-    expected = "Pool Stable: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied!"
-)]
+#[should_panic(expected = "Error(Contract, #402)")]
 fn withdraw_liqudity_below_min() {
     let env = Env::default();
     env.mock_all_auths();
@@ -767,7 +765,7 @@ fn provide_liqudity_with_deadline_works() {
 }
 
 #[test]
-#[should_panic(expected = "Pool Stable: Provide Liquidity: Transaction executed after deadline!")]
+#[should_panic(expected = "Error(Contract, #418)")]
 fn provide_liqudity_past_deadline_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
@@ -927,7 +925,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
 }
 
 #[test]
-#[should_panic(expected = "Pool Stable: Withdraw Liquidity: Transaction executed after deadline!")]
+#[should_panic(expected = "Error(Contract, #418)")]
 fn withdraw_liquidity_past_deadline_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1128,9 +1126,7 @@ fn provide_liqudity_with_user_specified_minimum_lp_shares() {
 }
 
 #[test]
-#[should_panic(
-    expected = "Pool Stable: Provide Liquidity: Issued shares are less than the user requsted"
-)]
+#[should_panic(expected = "Error(Contract, #420)")]
 fn provide_liqudity_with_user_specified_minimum_lp_shares_should_panic_when_user_expected_is_more_than_issued(
 ) {
     let env = Env::default();

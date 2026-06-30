@@ -17,7 +17,7 @@ use crate::{
             self, add_distribution, get_admin_old, get_distributions, get_total_staked_counter,
             is_initialized, set_initialized,
         },
-        Config, Stake, ADMIN,
+        BondingInfo, Config, Stake, ADMIN,
     },
     token_contract,
 };
@@ -178,6 +178,14 @@ impl StakingTrait for Staking {
 
         let mut stakes = get_stakes(&env, &sender);
 
+        // FIX: settle accrued rewards BEFORE mutating the user's stake vector.
+        // `calculate_pending_rewards` iterates `stakes.stakes`, so removing
+        // the entry first leaves any rewards attributable to it stranded in
+        // the contract. The pool's `withdraw_liquidity(auto_unstake = …)`
+        // helper calls this entrypoint directly, so the fix flows through
+        // there too.
+        settle_user_rewards(&env, &sender, &mut stakes);
+
         remove_stake(&env, &mut stakes.stakes, stake_amount, stake_timestamp);
         stakes.total_stake = stakes
             .total_stake
@@ -267,19 +275,7 @@ impl StakingTrait for Staking {
         env.events().publish(("withdraw_rewards", "user"), &sender);
 
         let mut stakes = get_stakes(&env, &sender);
-
-        for asset in get_distributions(&env) {
-            let pending_reward = calculate_pending_rewards(&env, &asset, &stakes);
-            env.events()
-                .publish(("withdraw_rewards", "reward_token"), &asset);
-
-            token_contract::Client::new(&env, &asset).transfer(
-                &env.current_contract_address(),
-                &sender,
-                &pending_reward,
-            );
-        }
-        stakes.last_reward_time = env.ledger().timestamp();
+        settle_user_rewards(&env, &sender, &mut stakes);
         save_stakes(&env, &sender, &stakes);
     }
 
@@ -415,6 +411,29 @@ fn remove_stake(env: &Env, stakes: &mut Vec<Stake>, stake: i128, stake_timestamp
     }
 }
 
+/// Pay out all pending rewards for `sender` and roll `last_reward_time`
+/// forward to the current ledger timestamp. Mutates `stakes` in place but
+/// does NOT persist — caller is responsible for `save_stakes` after any
+/// further mutations (e.g. removing a stake entry in `unbond`).
+///
+/// MUST be called BEFORE any mutation to `stakes.stakes`, because
+/// `calculate_pending_rewards` iterates that vector and unattributes any
+/// removed entry's accrued share otherwise.
+fn settle_user_rewards(env: &Env, sender: &Address, stakes: &mut BondingInfo) {
+    for asset in get_distributions(env) {
+        let pending_reward = calculate_pending_rewards(env, &asset, stakes);
+        env.events()
+            .publish(("withdraw_rewards", "reward_token"), &asset);
+
+        token_contract::Client::new(env, &asset).transfer(
+            &env.current_contract_address(),
+            sender,
+            &pending_reward,
+        );
+    }
+    stakes.last_reward_time = env.ledger().timestamp();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -468,7 +487,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Stake: Remove stake: Stake not found")]
+    #[should_panic(expected = "Error(Contract, #509)")]
     fn test_remove_stake_not_found_case1() {
         let env = Env::default();
         let mut stakes = vec![
@@ -491,7 +510,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Stake: Remove stake: Stake not found")]
+    #[should_panic(expected = "Error(Contract, #509)")]
     fn test_remove_stake_not_found_case2() {
         let env = Env::default();
         let mut stakes = vec![
@@ -514,7 +533,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Stake: Remove stake: Stake not found")]
+    #[should_panic(expected = "Error(Contract, #509)")]
     fn test_remove_stake_not_found_case3() {
         let env = Env::default();
         let mut stakes = vec![

@@ -274,9 +274,7 @@ fn withdraw_liquidity() {
 }
 
 #[test]
-#[should_panic(
-    expected = "Pool: ProvideLiquidity: Both tokens must be provided and must be bigger then 0!"
-)]
+#[should_panic(expected = "Error(Contract, #302)")]
 fn swap_with_no_amounts() {
     let env = Env::default();
     env.mock_all_auths();
@@ -323,9 +321,7 @@ fn swap_with_no_amounts() {
 }
 
 #[test]
-#[should_panic(
-    expected = "Pool: WithdrawLiquidity: Minimum amount of token_a or token_b is not satisfied!"
-)]
+#[should_panic(expected = "Error(Contract, #303)")]
 fn withdraw_liqudity_below_min() {
     let env = Env::default();
     env.mock_all_auths();
@@ -810,9 +806,7 @@ fn query_share_empty_pool() {
     );
 }
 
-#[should_panic(
-    expected = "Pool: ProvideLiquidity: Custom slippage tolerance is more than max allowed slippage tolerance"
-)]
+#[should_panic(expected = "Error(Contract, #301)")]
 #[test]
 fn provide_liquidity_slippage_tolerance_too_high() {
     let env = Env::default();
@@ -1031,7 +1025,7 @@ fn provide_liqudity_with_deadline_should_work() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: Provide Liquidity: Transaction executed after deadline!")]
+#[should_panic(expected = "Error(Contract, #321)")]
 fn provide_liqudity_past_deadline_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1209,7 +1203,7 @@ fn withdraw_liquidity_with_deadline_should_work() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: Withdraw Liquidity: Transaction executed after deadline!")]
+#[should_panic(expected = "Error(Contract, #321)")]
 fn withdraw_liquidity_past_deadline_should_panic() {
     let env = Env::default();
     env.mock_all_auths();

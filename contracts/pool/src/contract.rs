@@ -1524,7 +1524,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Slippage tolerance exceeds the maximum allowed value")]
+    #[should_panic(expected = "Error(Contract, #319)")]
     fn test_assert_slippage_tolerance_fail_tolerance_too_high() {
         let env = Env::default();
         // Test case that should fail due to slippage tolerance being too high
@@ -1539,7 +1539,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "slippage tolerance violated")]
+    #[should_panic(expected = "Error(Contract, #319)")]
     fn test_assert_slippage_tolerance_fail_slippage_violated() {
         let env = Env::default();
         let max_allowed_slippage = Decimal::bps(5_000i64);
@@ -1656,7 +1656,7 @@ mod tests {
         assert_eq!(result.2, result.0 * Decimal::percent(10));
     }
 
-    #[should_panic(expected = "Pool: Token offered to swap not found in Pool")]
+    #[should_panic(expected = "Error(Contract, #315)")]
     #[test]
     fn should_panic_when_splitting_non_existent_token() {
         let env = Env::default();
@@ -1693,7 +1693,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Pool: Compute swap: Unable to convert U256 to i128")]
+    #[should_panic(expected = "Error(Contract, #322)")]
     fn convert_u256_to_i128_should_panic_when_og_value_outside_the_i128_max_range() {
         let env = Env::default();
 

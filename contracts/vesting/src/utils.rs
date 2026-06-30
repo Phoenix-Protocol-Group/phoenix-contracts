@@ -91,7 +91,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Vesting: Initialize: Duplicate addresses found")]
+    #[should_panic(expected = "Error(Contract, #718)")]
     fn check_duplications_should_panic() {
         let env = Env::default();
         let duplicate_address = Address::generate(&env);
@@ -148,7 +148,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Vesting: Transfer Vesting: Cannot transfer when non-fully vested")]
+    #[should_panic(expected = "Error(Contract, #713)")]
     fn saturating_linear_schedule_fails_when_not_fully_vested() {
         let env = Env::default();
         let curve = Curve::SaturatingLinear(SaturatingLinear {
@@ -162,7 +162,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Vesting: Transfer Vesting: Cannot transfer when non-fully vested")]
+    #[should_panic(expected = "Error(Contract, #713)")]
     fn piecewise_linear_schedule_fails_when_not_fully_vested() {
         let env = Env::default();
         let curve = Curve::PiecewiseLinear(PiecewiseLinear {

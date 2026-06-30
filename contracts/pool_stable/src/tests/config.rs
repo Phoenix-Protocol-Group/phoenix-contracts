@@ -100,7 +100,7 @@ fn update_config() {
 }
 
 #[test]
-#[should_panic(expected = "Pool Stable: UpdateConfig: Unauthorize")]
+#[should_panic(expected = "Error(Contract, #410)")]
 fn update_config_unauthorized() {
     let env = Env::default();
     env.mock_all_auths();
@@ -242,7 +242,7 @@ fn update_config_too_high_fees() {
 }
 
 #[test]
-#[should_panic(expected = "Pool Stable: Initialize: AMP parameter is incorrect")]
+#[should_panic(expected = "Error(Contract, #417)")]
 fn initialize_with_incorrect_amp() {
     let env = Env::default();
     env.mock_all_auths();
@@ -352,7 +352,7 @@ fn update_config_all_bps_params_should_work() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: Initialize: swap fee is higher than the maximum allowed!")]
+#[should_panic(expected = "Error(Contract, #421)")]
 fn create_stable_pool_with_too_high_swap_fee_bps_should_panic() {
     let env = Env::default();
     env.mock_all_auths();

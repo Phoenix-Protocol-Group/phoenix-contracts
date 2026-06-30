@@ -328,7 +328,7 @@ fn simple_swap_with_preferred_pool_fee() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: do_swap: User agrees to swap at a lower percentage.")]
+#[should_panic(expected = "Error(Contract, #323)")]
 fn simple_swap_should_panic_when_user_accepted_fee_is_less_than_pool_fee() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1105,7 +1105,7 @@ fn test_swap_fee_variants(swap_fees: i64, commission_fee: i128) {
 #[test_case(Some(-100))]
 #[test_case(Some(600))]
 #[test_case(Some(501))]
-#[should_panic(expected = "max spread is out of bounds")]
+#[should_panic(expected = "Error(Contract, #318)")]
 fn test_v_phx_vul_021_should_panic_when_max_spread_invalid_range(max_spread: Option<i64>) {
     let env = Env::default();
     env.mock_all_auths();
@@ -1347,7 +1347,7 @@ fn test_should_swap_with_valid_ask_asset_min_amount() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: do_swap: Return amount is smaller then expected minimum amount")]
+#[should_panic(expected = "Error(Contract, #320)")]
 fn test_should_fail_when_invalid_ask_asset_min_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1523,7 +1523,7 @@ fn simple_swap_with_deadline_success() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: Swap: Transaction executed after deadline!")]
+#[should_panic(expected = "Error(Contract, #321)")]
 fn simple_swap_with_should_fail_when_after_the_deadline() {
     let env = Env::default();
     env.mock_all_auths();

@@ -821,7 +821,7 @@ fn simple_swap_with_deadline_should_work() {
 }
 
 #[test]
-#[should_panic(expected = "Pool Stable: Swap: Transaction executed after deadline!")]
+#[should_panic(expected = "Error(Contract, #418)")]
 fn simple_swap_should_panic_after_deadline() {
     let env = Env::default();
     env.mock_all_auths();
@@ -880,7 +880,7 @@ fn simple_swap_should_panic_after_deadline() {
 }
 
 #[test]
-#[should_panic(expected = "Pool: do_swap: User agrees to swap at a lower percentage.")]
+#[should_panic(expected = "Error(Contract, #422)")]
 fn simple_swap_with_low_user_fee_should_panic() {
     let env = Env::default();
     env.mock_all_auths();
