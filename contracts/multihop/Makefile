@@ -1,5 +1,5 @@
 ifeq (,$(BUILD_FLAGS))
-  DEPS = ../factory ../pool
+  DEPS = ../factory ../pool ../pool_blended
 endif
 
 default: all
@@ -9,6 +9,7 @@ all: lint build test
 test:
 	$(MAKE) -C ../factory build || break;
 	$(MAKE) -C ../pool build || break;
+	$(MAKE) -C ../pool_blended build || break;
 	cargo test
 
 build:
