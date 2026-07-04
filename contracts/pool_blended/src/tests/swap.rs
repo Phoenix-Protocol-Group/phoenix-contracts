@@ -309,7 +309,7 @@ fn simple_swap_with_preferred_pool_fee() {
         PoolResponse {
             asset_a: Asset {
                 address: token1.address.clone(),
-                amount: 1_000_001 - 1_000, // previous balance minus 1_000
+                amount: 1_000_001 - output_amount, // commission stays in pool → decreases only by return
             },
             asset_b: Asset {
                 address: token2.address.clone(),
@@ -783,7 +783,15 @@ fn swap_with_high_fee() {
     // Y_new = (X_in * Y_old) / (X_in + X_old)
     // Y_new = (100_000 * 1_000_000) / (100_000 + 1_000_000)
     // Y_new = 90_909.0909
-    let output_amount = 90_910i128; // rounding
+    // FEE-TO-LP: return_amount = ask_before_commission - commission.
+    // ask_before_commission = 90_910 (rounded), commission = 10% = 9_091.
+    let ask_before_commission = 90_910i128;
+    let fees = Decimal::percent(10) * ask_before_commission;
+    let return_amount = ask_before_commission - fees;
+
+    // Pool retains the commission → pool_balance_b decreases only by
+    // return_amount, not by (return_amount + commission) as it did in the
+    // fee-to-external-recipient design.
     let result = pool.query_pool_info();
     assert_eq!(
         result,
@@ -794,7 +802,7 @@ fn swap_with_high_fee() {
             },
             asset_b: Asset {
                 address: token2.address.clone(),
-                amount: initial_liquidity - output_amount,
+                amount: initial_liquidity - return_amount,
             },
             asset_lp_share: Asset {
                 address: pool.query_share_token_address(),
@@ -803,10 +811,20 @@ fn swap_with_high_fee() {
             stake_address: result.clone().stake_address,
         }
     );
-    // 10% fees are deducted from the swap result and sent to fee recipient address
-    let fees = Decimal::percent(10) * output_amount;
-    assert_eq!(token2.balance(&user1), output_amount - fees);
-    assert_eq!(token2.balance(&fee_recipient), fees);
+
+    // User still pays the fee (receives less than the fee-free constant-product).
+    assert_eq!(token2.balance(&user1), return_amount);
+    // `fee_recipient` receives NOTHING — the fee was retained in the pool
+    // reserves so LP redemption value grows.
+    assert_eq!(token2.balance(&fee_recipient), 0);
+
+    // Constant-product invariant: k grew after the swap (fee-on-LP behavior).
+    let k_before = initial_liquidity * initial_liquidity;
+    let k_after = (initial_liquidity + 100_000i128) * (initial_liquidity - return_amount);
+    assert!(
+        k_after > k_before,
+        "k must grow to reflect the accumulated fee inside the pool"
+    );
 }
 
 #[test]
@@ -1779,7 +1797,7 @@ fn swap_with_smaller_amounts() {
         PoolResponse {
             asset_a: Asset {
                 address: usdc_client.address.clone(),
-                amount: liquidity_amount - swap_amount,
+                amount: liquidity_amount - usdc_received, // commission stays in pool
             },
             asset_b: Asset {
                 address: xlm_client.address.clone(),

@@ -1425,12 +1425,11 @@ fn do_swap(
         &compute_swap.return_amount,
     );
 
-    // send commission to fee recipient
-    buy_token_client.transfer(
-        &env.current_contract_address(),
-        &config.fee_recipient,
-        &compute_swap.commission_amount,
-    );
+    // FEE-TO-LP: the commission is NOT paid out to `fee_recipient`. It stays
+    // in the pool contract, so `k = pool_balance_a * pool_balance_b` grows on
+    // every swap and every LP holder's redemption value increases. The
+    // `fee_recipient` field in `Config` is kept for backward compatibility
+    // (it remains readable via `query_config`) but is no longer credited.
 
     // 2. If referral is present and return amount is larger than 0 we send referral fee commision
     //    to fee recipient
@@ -1456,8 +1455,7 @@ fn do_swap(
             });
 
         let balance_b = pool_balance_b
-            .checked_sub(compute_swap.commission_amount)
-            .and_then(|partial| partial.checked_sub(compute_swap.referral_fee_amount))
+            .checked_sub(compute_swap.referral_fee_amount)
             .and_then(|partial| partial.checked_sub(compute_swap.return_amount))
             .unwrap_or_else(|| {
                 log!(&env, "Pool: Do Swap: subtraction underflowed");
@@ -1467,8 +1465,7 @@ fn do_swap(
         (balance_a, balance_b)
     } else {
         let balance_a = pool_balance_a
-            .checked_sub(compute_swap.commission_amount)
-            .and_then(|partial| partial.checked_sub(compute_swap.referral_fee_amount))
+            .checked_sub(compute_swap.referral_fee_amount)
             .and_then(|partial| partial.checked_sub(compute_swap.return_amount))
             .unwrap_or_else(|| {
                 log!(&env, "Pool: Do Swap: subtraction underflowed");
