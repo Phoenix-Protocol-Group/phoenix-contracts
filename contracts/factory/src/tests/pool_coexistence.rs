@@ -78,6 +78,7 @@ fn xyk_then_blend_same_pair_coexist() {
         &None::<u64>,
         &500i64,
         &10_000i64,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     // Legacy query returns the Xyk pool, both orders.
@@ -105,6 +106,7 @@ fn xyk_then_blend_same_pair_coexist() {
         &None::<u64>,
         &500i64,
         &10_000i64,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     // Different deterministic address — salt prefix did its job.
@@ -181,6 +183,7 @@ fn blend_then_xyk_same_pair_coexist() {
         &None::<u64>,
         &500i64,
         &10_000i64,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     // Before any Xyk exists, the type-aware Blend query resolves; the
@@ -201,6 +204,7 @@ fn blend_then_xyk_same_pair_coexist() {
         &None::<u64>,
         &500i64,
         &10_000i64,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     assert_ne!(xyk_pool, blend_pool);
@@ -251,6 +255,7 @@ fn second_xyk_for_same_pair_fails() {
         &None::<u64>,
         &500i64,
         &10_000i64,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     // Second Xyk for the same pair must blow up on `deploy_v2`.
@@ -263,6 +268,7 @@ fn second_xyk_for_same_pair_fails() {
         &None::<u64>,
         &500i64,
         &10_000i64,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 }
 
@@ -297,6 +303,7 @@ fn pair_type_query_unknown_blend_panics() {
         &None::<u64>,
         &500i64,
         &10_000i64,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     factory.query_pool_by_pair_type(&token_a.address, &token_b.address, &PoolType::Blend);

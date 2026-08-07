@@ -127,7 +127,7 @@ impl Staking {
     /// Admin-only. Materialize pre-existing stake positions on behalf of users
     /// (used for pool-migration / recovery deploys). Callable multiple times
     /// to fit into per-tx compute/write budgets. Each entry MUST reference a
-    /// user with no prior stake position — attempting to seed the same user
+    /// user with no prior stake position; attempting to seed the same user
     /// twice panics. The caller (admin) MUST separately transfer the summed
     /// LP amount into this contract, in the same or a subsequent tx, or
     /// unbonds by seeded users will revert with insufficient balance.
@@ -149,8 +149,8 @@ impl Staking {
                 log!(&env, "Stake: seed_stakes: amount below min_bond");
                 panic_with_error!(&env, ContractError::InvalidBond);
             }
-            // Refuse to overwrite an existing position — makes double-seeding
-            // a hard error instead of a silent doubling / clobbering bug.
+            // Refuse to overwrite an existing position: double-seeding is a
+            // hard error instead of a silent doubling / clobbering bug.
             let existing = get_stakes(&env, &user);
             if existing.total_stake != 0 || !existing.stakes.is_empty() {
                 log!(&env, "Stake: seed_stakes: user already has a stake position");

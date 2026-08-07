@@ -187,6 +187,7 @@ pub fn deploy_and_initialize_pool(
         &amp,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     match pool_type {

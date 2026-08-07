@@ -93,6 +93,7 @@ fn factory_successfully_inits_lp() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
 
@@ -166,6 +167,7 @@ fn factory_successfully_inits_stable_pool() {
         &Some(10),
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();
@@ -233,6 +235,7 @@ fn factory_fails_to_init_lp_when_authorized_address_not_present() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 }
 
@@ -410,6 +413,7 @@ fn factory_stable_pool_creation_should_fail_early_without_amp() {
         &None,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 }
 
@@ -464,6 +468,7 @@ fn factory_create_xyk_pool_with_amp_parameter_should_still_succeed() {
         &Some(10),
         &100i64,
         &1_000i64,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let lp_contract_addr = factory.query_pools().get(0).unwrap();

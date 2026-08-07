@@ -42,6 +42,7 @@ pub trait FactoryTrait {
         amp: Option<u64>,
         default_slippage_bps: i64,
         max_allowed_fee_bps: i64,
+        custom_stake_wasm_hash: Option<BytesN<32>>,
     ) -> Address;
 
     fn update_config(
@@ -105,6 +106,7 @@ impl FactoryTrait for Factory {
         amp: Option<u64>,
         default_slippage_bps: i64,
         max_allowed_fee_bps: i64,
+        custom_stake_wasm_hash: Option<BytesN<32>>,
     ) -> Address {
         sender.require_auth();
         env.storage()
@@ -128,7 +130,7 @@ impl FactoryTrait for Factory {
         );
 
         let config = get_config(&env);
-        let stake_wasm_hash = config.stake_wasm_hash;
+        let stake_wasm_hash = custom_stake_wasm_hash.unwrap_or(config.stake_wasm_hash);
         let token_wasm_hash = config.token_wasm_hash;
 
         validate_bps!(

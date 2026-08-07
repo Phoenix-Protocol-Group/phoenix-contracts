@@ -186,6 +186,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -196,6 +197,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -206,6 +208,7 @@ fn test_deploy_multiple_liquidity_pools() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -439,6 +442,7 @@ fn test_queries_by_tuple() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
     let second_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -449,6 +453,7 @@ fn test_queries_by_tuple() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
     let third_lp_contract_addr = factory.create_liquidity_pool(
         &admin.clone(),
@@ -459,6 +464,7 @@ fn test_queries_by_tuple() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let first_result = factory.query_pool_details(&lp_contract_addr);
@@ -583,6 +589,7 @@ fn test_query_user_portfolio_with_stake() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -685,6 +692,7 @@ fn test_query_user_portfolio_with_stake() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -839,6 +847,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &first_lp_contract_addr);
@@ -868,6 +877,7 @@ fn test_query_user_portfolio_with_multiple_users_staking_in_multiple_liquidity_p
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let second_lp_client = lp_contract::Client::new(&env, &second_lp_contract_addr);
@@ -1372,6 +1382,7 @@ fn test_query_user_portfolio_without_stake() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let first_lp_client = lp_contract::Client::new(&env, &lp_contract_addr);
@@ -1460,6 +1471,7 @@ fn test_ttl_extensions_with_multiple_pool_queries() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     // initial TTL verification
