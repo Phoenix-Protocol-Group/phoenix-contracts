@@ -126,11 +126,12 @@ impl Staking {
 
     /// Admin-only. Materialize pre-existing stake positions on behalf of users
     /// (used for pool-migration / recovery deploys). Callable multiple times
-    /// to fit into per-tx compute/write budgets. Each entry MUST reference a
-    /// user with no prior stake position; attempting to seed the same user
-    /// twice panics. The caller (admin) MUST separately transfer the summed
-    /// LP amount into this contract, in the same or a subsequent tx, or
-    /// unbonds by seeded users will revert with insufficient balance.
+    /// to fit into per-tx compute/write budgets.
+    ///
+    /// For every call, the caller (admin) must hold LP tokens equal to the
+    /// batch sum; the batch total is transferred from admin to this contract
+    /// as part of the same tx. Each entry MUST reference a user with no prior
+    /// stake position; attempting to seed the same user twice panics.
     pub fn seed_stakes(env: Env, sender: Address, entries: Vec<(Address, i128)>) {
         sender.require_auth();
         let admin = utils::get_admin_old(&env);
@@ -180,6 +181,14 @@ impl Staking {
             env.events().publish(("bond", "amount"), amount);
             env.events().publish(("bond", "seeded"), true);
         }
+
+        // Move the batch's LP into the contract so unbonds by the seeded
+        // users are backed by real tokens.
+        token_contract::Client::new(&env, &config.lp_token).transfer(
+            &sender,
+            &env.current_contract_address(),
+            &batch_total,
+        );
 
         utils::increase_total_staked(&env, &batch_total);
     }
