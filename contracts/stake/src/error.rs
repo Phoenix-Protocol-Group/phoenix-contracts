@@ -23,4 +23,5 @@ pub enum ContractError {
     SameAdmin = 518,
     NoAdminChangeInPlace = 519,
     AdminChangeExpired = 520,
+    StakeAlreadySeeded = 521,
 }

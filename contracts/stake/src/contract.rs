@@ -123,6 +123,66 @@ impl Staking {
         utils::init_total_staked(&env);
         save_total_staked_history(&env, map![&env]);
     }
+
+    /// Admin-only. Materialize pre-existing stake positions on behalf of users
+    /// (used for pool-migration / recovery deploys). Callable multiple times
+    /// to fit into per-tx compute/write budgets. Each entry MUST reference a
+    /// user with no prior stake position — attempting to seed the same user
+    /// twice panics. The caller (admin) MUST separately transfer the summed
+    /// LP amount into this contract, in the same or a subsequent tx, or
+    /// unbonds by seeded users will revert with insufficient balance.
+    pub fn seed_stakes(env: Env, sender: Address, entries: Vec<(Address, i128)>) {
+        sender.require_auth();
+        let admin = utils::get_admin_old(&env);
+        if sender != admin {
+            log!(&env, "Stake: seed_stakes: caller is not admin");
+            panic_with_error!(&env, ContractError::Unauthorized);
+        }
+
+        let config = get_config(&env);
+        let ts = env.ledger().timestamp();
+        let mut batch_total: i128 = 0;
+
+        for entry in entries.iter() {
+            let (user, amount) = entry;
+            if amount < config.min_bond {
+                log!(&env, "Stake: seed_stakes: amount below min_bond");
+                panic_with_error!(&env, ContractError::InvalidBond);
+            }
+            // Refuse to overwrite an existing position — makes double-seeding
+            // a hard error instead of a silent doubling / clobbering bug.
+            let existing = get_stakes(&env, &user);
+            if existing.total_stake != 0 || !existing.stakes.is_empty() {
+                log!(&env, "Stake: seed_stakes: user already has a stake position");
+                panic_with_error!(&env, ContractError::StakeAlreadySeeded);
+            }
+
+            let info = BondingInfo {
+                stakes: vec![
+                    &env,
+                    Stake {
+                        stake: amount,
+                        stake_timestamp: ts,
+                    },
+                ],
+                reward_debt: 0u128,
+                last_reward_time: ts,
+                total_stake: amount,
+            };
+            save_stakes(&env, &user, &info);
+
+            batch_total = batch_total.checked_add(amount).unwrap_or_else(|| {
+                log!(&env, "Stake: seed_stakes: batch total overflow");
+                panic_with_error!(&env, ContractError::ContractMathError);
+            });
+
+            env.events().publish(("bond", "user"), &user);
+            env.events().publish(("bond", "amount"), amount);
+            env.events().publish(("bond", "seeded"), true);
+        }
+
+        utils::increase_total_staked(&env, &batch_total);
+    }
 }
 
 #[contractimpl]
