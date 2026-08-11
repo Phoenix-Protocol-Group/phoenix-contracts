@@ -190,6 +190,10 @@ pub fn deploy_and_initialize_pool(
         &None::<soroban_sdk::BytesN<32>>,
     );
 
+    if matches!(pool_type, PoolType::Xyk) {
+        xyk_pool::Client::new(env, &lp).toggle_trading(&true);
+    }
+
     match pool_type {
         PoolType::Xyk => {
             let lp_client = xyk_pool::Client::new(env, &lp);

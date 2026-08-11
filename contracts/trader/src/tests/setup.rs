@@ -86,6 +86,7 @@ pub fn deploy_and_init_lp_client(
             ),
         ),
     );
+    lp_client.toggle_trading(&true);
 
     lp_client.provide_liquidity(
         &admin.clone(),

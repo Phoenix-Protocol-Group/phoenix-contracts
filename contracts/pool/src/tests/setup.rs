@@ -133,6 +133,8 @@ pub fn deploy_liquidity_pool_contract<'a>(
         ),
     );
 
+    pool.toggle_trading(&true);
+
     pool
 }
 
