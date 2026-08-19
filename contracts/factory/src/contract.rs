@@ -163,15 +163,22 @@ impl FactoryTrait for Factory {
 
         init_fn_args.push_back(max_allowed_fee_bps.into_val(&env));
 
-        // Salt formula: legacy `sha256(token_a || token_b)` for Xyk/Stable
-        // (preserves on-chain addresses of existing pools), but Blend pools
-        // prefix with the pool-type discriminant so they get a fresh, distinct
-        // deterministic address — letting Xyk and Blend coexist for the same
-        // unordered pair.
+        // Salt formula: `sha256([pool_type as u8] || token_a || token_b)`,
+        // then routed through `with_current_contract` (which mixes in the
+        // factory address and network id). The pool-type discriminant makes
+        // the derived address distinct across pool types AND lets an admin
+        // redeploy a same-pair pool of the same type at a new address by
+        // upgrading the factory to a different discriminant scheme; without
+        // it, a same-pair, same-type redeploy collides with the existing
+        // contract and `deploy_v2` panics.
+        //
+        // Historical pools (Xyk/Stable that pre-date this change) were
+        // deployed with `sha256(token_a || token_b)` (no prefix) and remain
+        // reachable at their original addresses — they're immutable on-chain
+        // and the factory registry still points at them until the next
+        // successful create for the same pair overwrites the pointer.
         let mut salt = Bytes::new(&env);
-        if let PoolType::Blend = pool_type {
-            salt.append(&Bytes::from_array(&env, &[PoolType::Blend as u8]));
-        }
+        salt.append(&Bytes::from_array(&env, &[pool_type as u8]));
         salt.append(&lp_init_info.token_init_info.token_a.clone().to_xdr(&env));
         salt.append(&lp_init_info.token_init_info.token_b.clone().to_xdr(&env));
         let salt = env.crypto().sha256(&salt);
