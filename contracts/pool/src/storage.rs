@@ -12,6 +12,7 @@ const DEFAULT_SLIPPAGE_BPS: Symbol = symbol_short!("DSLIPBPS");
 pub const ADMIN: Symbol = symbol_short!("ADMIN");
 pub const XYK_POOL_KEY: Symbol = symbol_short!("XYK_POOL");
 pub(crate) const PENDING_ADMIN: Symbol = symbol_short!("p_admin");
+pub const TRADING_ENABLED: Symbol = symbol_short!("TRADEON");
 
 #[derive(Clone, Copy)]
 #[repr(u32)]
@@ -240,6 +241,32 @@ pub mod utils {
         e.storage().persistent().set(&DataKey::Admin, &address);
         e.storage().persistent().extend_ttl(
             &DataKey::Admin,
+            PERSISTENT_RENEWAL_THRESHOLD,
+            PERSISTENT_TARGET_TTL,
+        );
+    }
+
+    /// Returns true when the entry is absent.
+    pub fn get_trading_enabled(e: &Env) -> bool {
+        let enabled = e
+            .storage()
+            .persistent()
+            .get(&TRADING_ENABLED)
+            .unwrap_or(true);
+        if e.storage().persistent().has(&TRADING_ENABLED) {
+            e.storage().persistent().extend_ttl(
+                &TRADING_ENABLED,
+                PERSISTENT_RENEWAL_THRESHOLD,
+                PERSISTENT_TARGET_TTL,
+            );
+        }
+        enabled
+    }
+
+    pub fn save_trading_enabled(e: &Env, enabled: bool) {
+        e.storage().persistent().set(&TRADING_ENABLED, &enabled);
+        e.storage().persistent().extend_ttl(
+            &TRADING_ENABLED,
             PERSISTENT_RENEWAL_THRESHOLD,
             PERSISTENT_TARGET_TTL,
         );

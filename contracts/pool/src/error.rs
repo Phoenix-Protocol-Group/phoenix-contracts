@@ -41,4 +41,5 @@ pub enum ContractError {
     SameAdmin = 330,
     NoAdminChangeInPlace = 331,
     AdminChangeExpired = 332,
+    TradingFrozen = 333,
 }

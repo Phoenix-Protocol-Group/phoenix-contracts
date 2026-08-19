@@ -261,6 +261,7 @@ fn update_factory() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     assert_eq!(old_factory_client.get_admin(), admin.clone());
@@ -328,6 +329,7 @@ fn update_factory() {
         &None::<u64>,
         &100i64,
         &1_000,
+        &None::<soroban_sdk::BytesN<32>>,
     );
 
     let pool_query = latest_factory_client.query_pool_details(&second_pool);

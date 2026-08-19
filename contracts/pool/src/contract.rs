@@ -367,6 +367,10 @@ impl LiquidityPoolTrait for LiquidityPool {
         deadline: Option<u64>,
         max_allowed_fee_bps: Option<i64>,
     ) -> i128 {
+        if !utils::get_trading_enabled(&env) {
+            log!(env, "Pool: Swap: trading is frozen on this pool");
+            panic_with_error!(env, ContractError::TradingFrozen)
+        }
         if let Some(deadline) = deadline {
             if env.ledger().timestamp() > deadline {
                 log!(env, "Pool: Swap: Transaction executed after deadline!");
@@ -959,6 +963,8 @@ impl LiquidityPool {
         utils::save_pool_balance_a(&env, 0);
         utils::save_pool_balance_b(&env, 0);
 
+        utils::save_trading_enabled(&env, false);
+
         env.storage().persistent().set(&XYK_POOL_KEY, &true);
 
         env.events()
@@ -977,6 +983,21 @@ impl LiquidityPool {
     pub fn add_new_key_to_storage(env: Env) -> Result<(), ContractError> {
         env.storage().persistent().set(&XYK_POOL_KEY, &true);
         Ok(())
+    }
+
+    /// Admin-only. Enable or disable swaps. Liquidity ops are unaffected.
+    pub fn toggle_trading(env: Env, enabled: bool) {
+        let admin = utils::get_admin_old(&env);
+        admin.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_RENEWAL_THRESHOLD, INSTANCE_TARGET_TTL);
+        utils::save_trading_enabled(&env, enabled);
+        env.events().publish(("toggle_trading", "enabled"), enabled);
+    }
+
+    pub fn query_trading_enabled(env: Env) -> bool {
+        utils::get_trading_enabled(&env)
     }
 }
 
